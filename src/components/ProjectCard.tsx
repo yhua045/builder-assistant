@@ -81,14 +81,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       <View style={styles.infoRow}>
         <Text style={styles.label}>Budget:</Text>
         <Text style={styles.value}>
-          {CurrencyUtils.formatCurrency(project.budget)}
+          {CurrencyUtils.formatCurrency(project.budget ?? 0)}
         </Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Duration:</Text>
         <Text style={styles.value}>
-          {DateUtils.formatDate(project.startDate)} - {DateUtils.formatDate(project.expectedEndDate)}
+          {project.startDate ? DateUtils.formatDate(project.startDate) : '—'} - {project.expectedEndDate ? DateUtils.formatDate(project.expectedEndDate) : '—'}
         </Text>
       </View>
 

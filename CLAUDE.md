@@ -77,7 +77,6 @@ This project implements Clean Architecture with strict separation of concerns:
 
 ### Key Dependencies
 - React Native 0.81.1 with React 19.1.0
-- AsyncStorage for local persistence
 - Safe Area Context for proper device handling
 - TypeScript for type safety
 - Jest for testing

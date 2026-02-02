@@ -55,6 +55,52 @@ export class LocalStorageProjectRepository implements ProjectRepository {
     }
   }
 
+  async findByPropertyId(propertyId: string): Promise<Project[]> {
+    try {
+      const projects = await this.findAll();
+      return projects.filter(p => p.propertyId === propertyId);
+    } catch (error) {
+      throw new Error(`Failed to find projects by propertyId: ${error}`);
+    }
+  }
+
+  async findByOwnerId(ownerId: string): Promise<Project[]> {
+    try {
+      const projects = await this.findAll();
+      return projects.filter(p => p.ownerId === ownerId);
+    } catch (error) {
+      throw new Error(`Failed to find projects by ownerId: ${error}`);
+    }
+  }
+
+  async findByPhaseDateRange(startDate?: string, endDate?: string): Promise<Project[]> {
+    try {
+      const s = startDate ? new Date(startDate) : undefined;
+      const e = endDate ? new Date(endDate) : undefined;
+      const projects = await this.findAll();
+      return projects.filter(p => (p.phases || []).some(phase => {
+        const ps = phase.startDate;
+        const pe = phase.endDate;
+        if (!ps && !pe) return false;
+        if (s && ps && ps < s) return false;
+        if (e && pe && pe > e) return false;
+        return true;
+      }));
+    } catch (error) {
+      throw new Error(`Failed to find projects by phase date range: ${error}`);
+    }
+  }
+
+  async findWithUpcomingPhases(untilDate: string): Promise<Project[]> {
+    try {
+      const until = new Date(untilDate);
+      const projects = await this.findAll();
+      return projects.filter(p => (p.phases || []).some(phase => phase.startDate && phase.startDate <= until));
+    } catch (error) {
+      throw new Error(`Failed to find projects with upcoming phases: ${error}`);
+    }
+  }
+
   async update(project: Project): Promise<void> {
     try {
       const projects = await this.findAll();
