@@ -79,6 +79,14 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
     const loaded = await repo.findById('int-project-1');
     expect(loaded).not.toBeNull();
     expect(loaded!.name).toBe('Drizzle Integration Project');
+    // primary key assigned by SQLite
+    expect(loaded!.localId).toBeDefined();
+    expect(loaded!.localId).toBeGreaterThan(0);
+    expect(loaded!.materials.length).toBe(1);
+    expect(loaded!.materials[0].localId).toBeDefined();
+    expect(loaded!.materials[0].localId).toBeGreaterThan(0);
+    expect(loaded!.phases[0].localId).toBeDefined();
+    expect(loaded!.phases[0].localId).toBeGreaterThan(0);
 
     // update: change name and add material
     const updated = { ...projectEntity.data, name: 'Drizzle Integration Project Renamed', materials: [ ...(projectEntity.data.materials || []), { id: 'm2', name: 'Sand', quantity: 20, unit: 'kg', unitCost: 0.2 } ] };
@@ -87,6 +95,11 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
     const afterUpdate = await repo.findById('int-project-1');
     expect(afterUpdate).not.toBeNull();
     expect(afterUpdate!.name).toBe('Drizzle Integration Project Renamed');
+    expect(afterUpdate!.materials.length).toBe(2);
+    const newMat = afterUpdate!.materials.find(m => m.id === 'm2');
+    expect(newMat).toBeDefined();
+    expect(newMat!.localId).toBeDefined();
+    expect(newMat!.localId).toBeGreaterThan(0);
 
     // delete
     await repo.delete('int-project-1');
