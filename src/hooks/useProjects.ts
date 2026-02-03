@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Project } from '../domain/entities/Project';
-import { LocalStorageProjectRepository } from '../services/LocalStorageProjectRepository';
+import { DrizzleProjectRepository } from '../infrastructure/repositories/DrizzleProjectRepository';
 import { CreateProjectUseCase, CreateProjectRequest } from '../application/usecases/CreateProjectUseCase';
 import { GetProjectAnalysisUseCase } from '../application/usecases/GetProjectAnalysisUseCase';
 
@@ -22,8 +22,8 @@ export const useProjects = (): UseProjectsReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize repository and use cases with useMemo to prevent recreation
-  const repository = useMemo(() => new LocalStorageProjectRepository(), []);
+  // Initialize Drizzle repository (with automatic migrations) and use cases
+  const repository = useMemo(() => new DrizzleProjectRepository(), []);
   const createProjectUseCase = useMemo(() => new CreateProjectUseCase(repository), [repository]);
   const getProjectAnalysisUseCase = useMemo(() => new GetProjectAnalysisUseCase(repository), [repository]);
 
