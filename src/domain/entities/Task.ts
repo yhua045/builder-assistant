@@ -1,5 +1,6 @@
 export interface Task {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   title: string;
   description?: string;

@@ -1,5 +1,6 @@
 export interface WorkVariation {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   inspectionId?: string;
   description?: string;

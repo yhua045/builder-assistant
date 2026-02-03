@@ -1,5 +1,6 @@
 export interface ChangeOrder {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   description?: string;
   requestedBy?: string; // contactId

@@ -1,5 +1,6 @@
 export interface Expense {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   sourceType?: string;
   sourceUri?: string;

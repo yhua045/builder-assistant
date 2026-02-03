@@ -75,6 +75,14 @@ This project implements Clean Architecture with strict separation of concerns:
 - Repository pattern abstracts data persistence
 - Use cases handle complex business logic
 
+## Repository & DB Changes (added)
+
+- New infrastructure folder for on-device DB: `src/infrastructure/database` and `src/infrastructure/repositories`.
+- Added SQLite DDL: `src/infrastructure/database/schema.sql` (tables use `local_id INTEGER PRIMARY KEY AUTOINCREMENT` and keep `id` as UUID text).
+- Added a SQLite-backed repository implementation prototype: `src/infrastructure/repositories/LocalSqliteProjectRepository.ts` using `react-native-sqlite-storage`.
+- Kept the existing `src/services/LocalStorageProjectRepository.ts` for prototyping; code now supports switching repositories via dependency injection.
+
+
 ### Key Dependencies
 - React Native 0.81.1 with React 19.1.0
 - Safe Area Context for proper device handling

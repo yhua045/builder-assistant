@@ -8,6 +8,7 @@ export interface InvoiceLineItem {
 
 export interface Invoice {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   vendorId?: string; // contacts.id
   amount?: number;

@@ -1,5 +1,6 @@
 export interface Inspection {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   scheduledDate?: string;
   inspectorId?: string; // contacts.id

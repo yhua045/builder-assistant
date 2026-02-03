@@ -2,6 +2,7 @@ export type RoleType = 'INSPECTOR' | 'CONTRACTOR' | 'VENDOR' | 'OWNER' | 'OTHER'
 
 export interface Contact {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   name: string;
   roles?: RoleType[];
   trade?: string;

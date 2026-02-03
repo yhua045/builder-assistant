@@ -1,5 +1,6 @@
 export interface Document {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   type?: 'plan' | 'permit' | 'invoice' | 'photo' | string;
   title?: string;
