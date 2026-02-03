@@ -39,4 +39,9 @@ Next steps
 - Draft encrypted SQLite DDL for core tables and implement `Local*Repository` adapters (start with `projects`/`properties`).
 - Add unit tests for repository queries (pending payments, upcoming schedule, property queries).
 
+Repository testing (summary)
+- Added unit and integration tests for `LocalSqliteProjectRepository`:
+	- Unit: `__tests__/LocalSqliteProjectRepository.test.ts` — mocked `react-native-sqlite-storage` for fast mapping/logic checks.
+	- Integration: `__tests__/LocalSqliteProjectRepository.integration.test.ts` — runs real SQLite via `better-sqlite3` (:memory:) to verify schema, transactions, CRUD, and that `localId` primary keys are assigned.
+
 Status: Domain models and interfaces created — ready to draft DDL and repository implementations.
