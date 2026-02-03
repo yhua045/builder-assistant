@@ -1,0 +1,272 @@
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+
+// Projects Table
+export const projects = sqliteTable('projects', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  propertyId: text('property_id'),
+  ownerId: text('owner_id'),
+  name: text('name').notNull(),
+  description: text('description'),
+  status: text('status', { 
+    enum: ['planning', 'in_progress', 'on_hold', 'completed', 'cancelled'] 
+  }).notNull(),
+  startDate: integer('start_date'), // Unix timestamp (milliseconds)
+  expectedEndDate: integer('expected_end_date'), // Unix timestamp
+  budget: real('budget'),
+  currency: text('currency'),
+  meta: text('meta'), // JSON
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  propertyIdx: index('idx_projects_property').on(table.propertyId),
+  ownerIdx: index('idx_projects_owner').on(table.ownerId),
+  statusIdx: index('idx_projects_status').on(table.status),
+}));
+
+// Project Phases Table
+export const projectPhases = sqliteTable('project_phases', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  startDate: integer('start_date'), // Unix timestamp
+  endDate: integer('end_date'), // Unix timestamp
+  dependencies: text('dependencies'), // JSON array of phase IDs
+  isCompleted: integer('is_completed', { mode: 'boolean' }).default(false),
+  materialsRequired: text('materials_required'), // JSON array of material IDs
+}, (table) => ({
+  projectIdx: index('idx_phases_project').on(table.projectId),
+}));
+
+// Materials Table
+export const materials = sqliteTable('materials', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  name: text('name').notNull(),
+  quantity: real('quantity').notNull(),
+  unit: text('unit').notNull(),
+  unitCost: real('unit_cost').notNull(),
+  supplier: text('supplier'),
+  estimatedDeliveryDate: integer('estimated_delivery_date'), // Unix timestamp
+}, (table) => ({
+  projectIdx: index('idx_materials_project').on(table.projectId),
+}));
+
+// Properties Table
+export const properties = sqliteTable('properties', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  street: text('street'),
+  city: text('city'),
+  state: text('state'),
+  postalCode: text('postal_code'),
+  country: text('country'),
+  address: text('address'),
+  propertyType: text('property_type', { 
+    enum: ['residential', 'commercial', 'mixed'] 
+  }),
+  lotSize: real('lot_size'),
+  lotSizeUnit: text('lot_size_unit'),
+  yearBuilt: integer('year_built'),
+  ownerId: text('owner_id'),
+  meta: text('meta'), // JSON
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+});
+
+// Contacts Table
+export const contacts = sqliteTable('contacts', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  name: text('name').notNull(),
+  roles: text('roles'), // JSON array of RoleType
+  trade: text('trade'),
+  phone: text('phone'),
+  email: text('email'),
+  address: text('address'),
+  rate: real('rate'),
+  notes: text('notes'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+});
+
+// Expenses Table
+export const expenses = sqliteTable('expenses', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  sourceType: text('source_type'),
+  sourceUri: text('source_uri'),
+  rawText: text('raw_text'),
+  vendorId: text('vendor_id'),
+  amount: real('amount'),
+  currency: text('currency'),
+  date: integer('date'), // Unix timestamp
+  category: text('category'),
+  trade: text('trade'),
+  confidence: real('confidence'),
+  validatedByAi: integer('validated_by_ai', { mode: 'boolean' }).default(false),
+  status: text('status', { 
+    enum: ['draft', 'accepted', 'rejected'] 
+  }),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_expenses_project').on(table.projectId),
+}));
+
+// Documents Table
+export const documents = sqliteTable('documents', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  type: text('type'),
+  title: text('title'),
+  uri: text('uri'),
+  issuedBy: text('issued_by'),
+  issuedDate: integer('issued_date'), // Unix timestamp
+  expiresAt: integer('expires_at'), // Unix timestamp
+  notes: text('notes'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_documents_project').on(table.projectId),
+}));
+
+// Invoices Table
+export const invoices = sqliteTable('invoices', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  vendorId: text('vendor_id'),
+  invoiceNumber: text('invoice_number'),
+  issuedDate: integer('issued_date'), // Unix timestamp
+  dueDate: integer('due_date'), // Unix timestamp
+  amount: real('amount'),
+  currency: text('currency'),
+  status: text('status', { 
+    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'] 
+  }),
+  paymentTerms: text('payment_terms'),
+  notes: text('notes'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_invoices_project').on(table.projectId),
+}));
+
+// Payments Table
+export const payments = sqliteTable('payments', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  invoiceId: text('invoice_id'),
+  amount: real('amount').notNull(),
+  currency: text('currency'),
+  paymentDate: integer('payment_date'), // Unix timestamp
+  paymentMethod: text('payment_method'),
+  reference: text('reference'),
+  notes: text('notes'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_payments_project').on(table.projectId),
+}));
+
+// Milestones Table
+export const milestones = sqliteTable('milestones', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  targetDate: integer('target_date'), // Unix timestamp
+  isCompleted: integer('is_completed', { mode: 'boolean' }).default(false),
+  completedDate: integer('completed_date'), // Unix timestamp
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_milestones_project').on(table.projectId),
+}));
+
+// Tasks Table
+export const tasks = sqliteTable('tasks', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  phaseId: text('phase_id'),
+  title: text('title').notNull(),
+  description: text('description'),
+  assignedTo: text('assigned_to'),
+  status: text('status', { 
+    enum: ['pending', 'in_progress', 'completed', 'blocked'] 
+  }),
+  priority: text('priority', { 
+    enum: ['low', 'medium', 'high', 'urgent'] 
+  }),
+  dueDate: integer('due_date'), // Unix timestamp
+  completedDate: integer('completed_date'), // Unix timestamp
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_tasks_project').on(table.projectId),
+}));
+
+// Inspections Table
+export const inspections = sqliteTable('inspections', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  inspectorId: text('inspector_id'),
+  inspectionType: text('inspection_type'),
+  scheduledDate: integer('scheduled_date'), // Unix timestamp
+  completedDate: integer('completed_date'), // Unix timestamp
+  status: text('status', { 
+    enum: ['scheduled', 'passed', 'failed', 'cancelled'] 
+  }),
+  notes: text('notes'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_inspections_project').on(table.projectId),
+}));
+
+// Change Orders Table
+export const changeOrders = sqliteTable('change_orders', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  description: text('description'),
+  requestedBy: text('requested_by'),
+  approvedBy: text('approved_by'),
+  amountDelta: real('amount_delta'),
+  status: text('status', { 
+    enum: ['proposed', 'approved', 'rejected'] 
+  }),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_change_orders_project').on(table.projectId),
+}));
+
+// Work Variations Table
+export const workVariations = sqliteTable('work_variations', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  description: text('description'),
+  reason: text('reason'),
+  costImpact: real('cost_impact'),
+  timelineImpactDays: integer('timeline_impact_days'),
+  status: text('status', { 
+    enum: ['pending', 'approved', 'rejected'] 
+  }),
+  approvedDate: integer('approved_date'), // Unix timestamp
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  projectIdx: index('idx_work_variations_project').on(table.projectId),
+}));
