@@ -1,5 +1,6 @@
 export interface Payment {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   invoiceId?: string;
   expenseId?: string;

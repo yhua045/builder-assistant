@@ -7,6 +7,7 @@
 
 export interface Project {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   propertyId?: string;
   ownerId?: string;
   name: string;
@@ -34,6 +35,7 @@ export enum ProjectStatus {
 
 export interface Material {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   name: string;
   quantity: number;
   unit: string;
@@ -45,6 +47,7 @@ export interface Material {
 
 export interface ProjectPhase {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   name: string;
   description?: string;
   startDate?: Date; // Date

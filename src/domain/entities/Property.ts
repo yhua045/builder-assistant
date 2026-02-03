@@ -1,5 +1,6 @@
 export interface Property {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   street?: string;
   city?: string;
   state?: string;

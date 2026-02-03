@@ -1,5 +1,6 @@
 export interface Milestone {
   id: string;
+  localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
   title: string;
   targetDate?: string;
