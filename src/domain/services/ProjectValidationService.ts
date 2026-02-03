@@ -13,8 +13,8 @@ export class ProjectValidationService {
    */
   static canStartPhase(phase: ProjectPhase, completedPhases: ProjectPhase[]): boolean {
     const completedPhaseIds = new Set(completedPhases.map(p => p.id));
-    
-    return phase.dependencies.every(depId => completedPhaseIds.has(depId));
+
+    return (phase.dependencies ?? []).every(depId => completedPhaseIds.has(depId));
   }
 
   /**
@@ -22,8 +22,8 @@ export class ProjectValidationService {
    */
   static areMaterialsAvailable(phase: ProjectPhase, availableMaterials: Material[]): boolean {
     const availableMaterialIds = new Set(availableMaterials.map(m => m.id));
-    
-    return phase.materialsRequired.every(materialId => 
+
+    return (phase.materialsRequired ?? []).every(materialId =>
       availableMaterialIds.has(materialId)
     );
   }
@@ -35,28 +35,30 @@ export class ProjectValidationService {
     const issues: string[] = [];
     
     // Check for overlapping phases that shouldn't overlap
-    const phases = project.phases.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-    
+    const phases = project.phases
+      .filter(p => p.startDate && p.endDate)
+      .sort((a, b) => (a.startDate!.getTime() - b.startDate!.getTime()));
+
     for (let i = 0; i < phases.length - 1; i++) {
       const currentPhase = phases[i];
       const nextPhase = phases[i + 1];
-      
-      // If next phase starts before current phase ends and has no dependency on current phase
-      if (nextPhase.startDate < currentPhase.endDate && 
-          !nextPhase.dependencies.includes(currentPhase.id)) {
+
+      if (nextPhase.startDate! < currentPhase.endDate! &&
+          !(nextPhase.dependencies ?? []).includes(currentPhase.id)) {
         issues.push(`Phase "${nextPhase.name}" overlaps with "${currentPhase.name}" without proper dependency`);
       }
     }
-    
+
     // Check for unrealistic phase durations
     phases.forEach(phase => {
+      if (!phase.startDate || !phase.endDate) return;
       const duration = phase.endDate.getTime() - phase.startDate.getTime();
       const daysDuration = duration / (1000 * 60 * 60 * 24);
-      
+
       if (daysDuration < 1) {
         issues.push(`Phase "${phase.name}" has unrealistically short duration (less than 1 day)`);
       }
-      
+
       if (daysDuration > 365) {
         issues.push(`Phase "${phase.name}" has very long duration (over 1 year) - consider breaking into sub-phases`);
       }

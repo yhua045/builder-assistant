@@ -60,7 +60,7 @@ export class GetProjectAnalysisUseCase {
       
       // Calculate budget utilization
       const totalMaterialCost = projectEntity.getTotalMaterialCost();
-      const budgetUtilization = (totalMaterialCost / project.budget) * 100;
+      const budgetUtilization = project.budget ? (totalMaterialCost / project.budget) * 100 : 0;
       
       // Generate recommendations based on analysis
       const recommendations: string[] = [];
@@ -73,7 +73,7 @@ export class GetProjectAnalysisUseCase {
         recommendations.push('Project is over budget - consider cost reduction strategies');
       }
       
-      if (materialAnalysis.wasteEstimate > project.budget * 0.1) {
+      if (project.budget !== undefined && materialAnalysis.wasteEstimate > project.budget * 0.1) {
         recommendations.push('Material waste estimate is high - implement waste reduction strategies');
       }
       

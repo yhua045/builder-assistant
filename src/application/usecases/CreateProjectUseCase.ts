@@ -60,14 +60,16 @@ export class CreateProjectUseCase {
 
       // Generate warnings for potential issues
       const warnings: string[] = [];
-      const timelineDuration = project.expectedEndDate.getTime() - project.startDate.getTime();
-      const daysDuration = timelineDuration / (1000 * 60 * 60 * 24);
+      if (project.expectedEndDate && project.startDate) {
+        const timelineDuration = project.expectedEndDate.getTime() - project.startDate.getTime();
+        const daysDuration = timelineDuration / (1000 * 60 * 60 * 24);
 
-      if (daysDuration < 30) {
-        warnings.push('Project timeline is very short - ensure adequate planning time');
+        if (daysDuration < 30) {
+          warnings.push('Project timeline is very short - ensure adequate planning time');
+        }
       }
 
-      if (project.budget < 10000) {
+      if (project.budget !== undefined && project.budget < 10000) {
         warnings.push('Project budget seems low - double-check cost estimates');
       }
 
