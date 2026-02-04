@@ -61,6 +61,48 @@ When your app starts, it:
 3. Runs any new migrations
 4. Tracks them in `__drizzle_migrations` table
 
+### React Native (Bundled Migrations)
+
+React Native cannot load SQL files from disk at runtime (no `node:fs`).
+For RN builds, migrations are bundled into a JS registry and applied programmatically.
+
+**Bundled file:** `src/infrastructure/database/migrations.ts`
+
+#### Update Workflow (RN)
+
+After generating a new migration, update the bundled registry:
+
+1. Generate SQL migrations as usual
+```bash
+npm run db:generate
+```
+
+2. Copy the contents of the new SQL migration file from `drizzle/migrations/` into
+`src/infrastructure/database/migrations.ts` and append a new entry to the `migrations` array.
+
+3. Restart the app (or rebuild) to apply the new migration on launch.
+
+#### Example (Bundled Entry)
+
+```ts
+const rawMigration0001 = `... SQL ...`;
+
+const migrations: RNMigration[] = [
+  // existing entries...
+  {
+    tag: '0001_add_new_field',
+    hash: '0001_add_new_field',
+    folderMillis: 1770083691891,
+    sql: rawMigration0001
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean),
+  },
+];
+```
+
+> Tip: This can be automated with a small script if desired.
+
 ## Migration Workflow Example
 
 ### Adding a New Field

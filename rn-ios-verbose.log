@@ -1,0 +1,14 @@
+warn Package react-native-sqlite-storage contains invalid configuration: "dependency.platforms.ios.project" is not allowed. Please verify it's properly linked using "npx react-native config" command and contact the package maintainers about this.
+info A dev server is already running for this project on port 8081.
+info Found Xcode workspace "BuilderAssistantApp.xcworkspace"
+info Found booted iPhone 15 Pro
+info Building (using "xcodebuild -workspace BuilderAssistantApp.xcworkspace -configuration Debug -scheme BuilderAssistantApp -destination id=3D02EC3C-9931-4025-B1C2-18BF00783CE3")
+debug Command line invocation:
+    
+debug /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace BuilderAssistantApp.xcworkspace -configuration Debug -scheme BuilderAssistantApp -destination id=3D02EC3C-9931-4025-B1C2-18BF00783CE3
+
+
+
+info 💡 Tip: Make sure that you have set up your development environment correctly, by running npx react-native doctor. To read more about doctor command visit: https://github.com/react-native-community/cli/blob/main/packages/cli-doctor/README.md#doctor 
+
+error Failed to build ios project. "xcodebuild" exited with error code '70'. To debug build logs further, consider building your app with Xcode.app, by opening 'BuilderAssistantApp.xcworkspace'.

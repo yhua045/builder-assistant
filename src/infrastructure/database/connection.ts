@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import SQLite from 'react-native-sqlite-storage';
-import { migrate } from 'drizzle-orm/sqlite-proxy/migrator';
 import * as schema from './schema';
+import { getBundledMigrations } from './migrations';
 
 SQLite.enablePromise(true);
 
@@ -75,16 +75,26 @@ async function runMigrations(
       )
     `);
 
-    // Run migrations from the migrations folder
-    await migrate(
-      drizzle,
-      async (queries) => {
-        for (const query of queries) {
-          await db.executeSql(query);
-        }
-      },
-      { migrationsFolder: './drizzle/migrations' }
+    const migrations = getBundledMigrations();
+
+    const [existing] = await db.executeSql(
+      'SELECT hash FROM __drizzle_migrations'
     );
+    const applied = new Set<string>();
+    for (let i = 0; i < existing.rows.length; i++) {
+      applied.add(existing.rows.item(i).hash);
+    }
+
+    for (const migration of migrations) {
+      if (applied.has(migration.hash)) continue;
+      for (const query of migration.sql) {
+        await db.executeSql(query);
+      }
+      await db.executeSql(
+        'INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)',
+        [migration.hash, migration.folderMillis]
+      );
+    }
 
     console.log('Migrations completed successfully');
   } catch (error) {
