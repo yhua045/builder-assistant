@@ -24,105 +24,143 @@ export class DrizzleProjectRepository implements ProjectRepository {
   }
 
   async findAll(): Promise<Project[]> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    const results = await this.drizzle.select().from(schema.projects);
-    return results.map(this.mapToProject);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql('SELECT * FROM projects');
+    const projects: Project[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      projects.push(await this.mapRowToProject(row));
+    }
+    return projects;
   }
 
   async findById(id: string): Promise<Project | null> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    const results = await this.drizzle
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.id, id))
-      .limit(1);
-    
-    if (results.length === 0) return null;
-    return this.mapToProject(results[0]);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql('SELECT * FROM projects WHERE id = ?', [id]);
+    if (result.rows.length === 0) return null;
+    const row = result.rows.item(0);
+    return await this.mapRowToProject(row);
   }
 
   async save(project: Project): Promise<void> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
     const existing = await this.findById(project.id);
-    
     if (existing) {
-      await this.drizzle
-        .update(schema.projects)
-        .set({
-          propertyId: project.propertyId,
-          ownerId: project.ownerId,
-          name: project.name,
-          description: project.description,
-          status: project.status,
-          startDate: project.startDate ? new Date(project.startDate).getTime() : null,
-          expectedEndDate: project.expectedEndDate ? new Date(project.expectedEndDate).getTime() : null,
-          budget: project.budget,
-          currency: project.currency,
-          meta: project.meta ? JSON.stringify(project.meta) : null,
-          updatedAt: Date.now(),
-        })
-        .where(eq(schema.projects.id, project.id));
-    } else {
-      await this.drizzle.insert(schema.projects).values({
-        id: project.id,
-        propertyId: project.propertyId,
-        ownerId: project.ownerId,
-        name: project.name,
-        description: project.description,
-        status: project.status,
-        startDate: project.startDate ? new Date(project.startDate).getTime() : null,
-        expectedEndDate: project.expectedEndDate ? new Date(project.expectedEndDate).getTime() : null,
-        budget: project.budget,
-        currency: project.currency,
-        meta: project.meta ? JSON.stringify(project.meta) : null,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+      await this.update(project);
+      return;
     }
+
+    await db.transaction(async (tx) => {
+      await tx.executeSql(
+        `INSERT INTO projects (
+          id, property_id, owner_id, name, description, status,
+          start_date, expected_end_date, budget, currency, meta,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          project.id,
+          project.propertyId || null,
+          project.ownerId || null,
+          project.name,
+          project.description || null,
+          project.status,
+          project.startDate ? project.startDate.getTime() : null,
+          project.expectedEndDate ? project.expectedEndDate.getTime() : null,
+          project.budget || null,
+          project.currency || null,
+          project.meta ? JSON.stringify(project.meta) : null,
+          project.createdAt ? project.createdAt.getTime() : null,
+          project.updatedAt ? project.updatedAt.getTime() : null,
+        ]
+      );
+
+      for (const phase of project.phases || []) {
+        await tx.executeSql(
+          `INSERT INTO project_phases (
+            id, project_id, name, description, start_date, end_date,
+            dependencies, is_completed, materials_required
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            phase.id,
+            project.id,
+            phase.name,
+            phase.description || null,
+            phase.startDate ? phase.startDate.getTime() : null,
+            phase.endDate ? phase.endDate.getTime() : null,
+            phase.dependencies ? JSON.stringify(phase.dependencies) : null,
+            phase.isCompleted ? 1 : 0,
+            phase.materialsRequired ? JSON.stringify(phase.materialsRequired) : null,
+          ]
+        );
+      }
+
+      for (const material of project.materials || []) {
+        await tx.executeSql(
+          `INSERT INTO materials (
+            id, project_id, name, quantity, unit, unit_cost,
+            supplier, estimated_delivery_date
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            material.id,
+            project.id,
+            material.name,
+            material.quantity,
+            material.unit,
+            material.unitCost,
+            material.supplier || null,
+            material.estimatedDeliveryDate ? material.estimatedDeliveryDate.getTime() : null,
+          ]
+        );
+      }
+    });
   }
 
   async delete(id: string): Promise<void> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    await this.drizzle
-      .delete(schema.projects)
-      .where(eq(schema.projects.id, id));
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+    await db.executeSql('DELETE FROM projects WHERE id = ?', [id]);
   }
 
   async findByStatus(status: string): Promise<Project[]> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    const results = await this.drizzle
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.status, status as any));
-    
-    return results.map(this.mapToProject);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql('SELECT * FROM projects WHERE status = ?', [status]);
+    const projects: Project[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      projects.push(await this.mapRowToProject(result.rows.item(i)));
+    }
+    return projects;
   }
 
   async findByPropertyId(propertyId: string): Promise<Project[]> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    const results = await this.drizzle
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.propertyId, propertyId));
-    
-    return results.map(this.mapToProject);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql('SELECT * FROM projects WHERE property_id = ?', [propertyId]);
+    const projects: Project[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      projects.push(await this.mapRowToProject(result.rows.item(i)));
+    }
+    return projects;
   }
 
   async findByOwnerId(ownerId: string): Promise<Project[]> {
-    if (!this.drizzle) throw new Error('Database not initialized');
-    
-    const results = await this.drizzle
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.ownerId, ownerId));
-    
-    return results.map(this.mapToProject);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql('SELECT * FROM projects WHERE owner_id = ?', [ownerId]);
+    const projects: Project[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      projects.push(await this.mapRowToProject(result.rows.item(i)));
+    }
+    return projects;
   }
 
   async findByPhaseDateRange(startDate?: string, endDate?: string): Promise<Project[]> {
@@ -138,29 +176,143 @@ export class DrizzleProjectRepository implements ProjectRepository {
   }
 
   async update(project: Project): Promise<void> {
-    await this.save(project);
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    await db.transaction(async (tx) => {
+      await tx.executeSql(
+        `UPDATE projects SET
+          property_id = ?, owner_id = ?, name = ?, description = ?, status = ?,
+          start_date = ?, expected_end_date = ?, budget = ?, currency = ?,
+          meta = ?, updated_at = ?
+         WHERE id = ?`,
+        [
+          project.propertyId || null,
+          project.ownerId || null,
+          project.name,
+          project.description || null,
+          project.status,
+          project.startDate ? project.startDate.getTime() : null,
+          project.expectedEndDate ? project.expectedEndDate.getTime() : null,
+          project.budget || null,
+          project.currency || null,
+          project.meta ? JSON.stringify(project.meta) : null,
+          project.updatedAt ? project.updatedAt.getTime() : Date.now(),
+          project.id,
+        ]
+      );
+
+      await tx.executeSql('DELETE FROM project_phases WHERE project_id = ?', [project.id]);
+      await tx.executeSql('DELETE FROM materials WHERE project_id = ?', [project.id]);
+
+      for (const phase of project.phases || []) {
+        await tx.executeSql(
+          `INSERT INTO project_phases (
+            id, project_id, name, description, start_date, end_date,
+            dependencies, is_completed, materials_required
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            phase.id,
+            project.id,
+            phase.name,
+            phase.description || null,
+            phase.startDate ? phase.startDate.getTime() : null,
+            phase.endDate ? phase.endDate.getTime() : null,
+            phase.dependencies ? JSON.stringify(phase.dependencies) : null,
+            phase.isCompleted ? 1 : 0,
+            phase.materialsRequired ? JSON.stringify(phase.materialsRequired) : null,
+          ]
+        );
+      }
+
+      for (const material of project.materials || []) {
+        await tx.executeSql(
+          `INSERT INTO materials (
+            id, project_id, name, quantity, unit, unit_cost,
+            supplier, estimated_delivery_date
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            material.id,
+            project.id,
+            material.name,
+            material.quantity,
+            material.unit,
+            material.unitCost,
+            material.supplier || null,
+            material.estimatedDeliveryDate ? material.estimatedDeliveryDate.getTime() : null,
+          ]
+        );
+      }
+    });
   }
 
   async exists(id: string): Promise<boolean> {
     const project = await this.findById(id);
     return project !== null;
   }
+  private async mapRowToProject(row: any): Promise<Project> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
 
-  private mapToProject(row: any): Project {
+    // Load phases
+    const [phasesResult] = await db.executeSql('SELECT * FROM project_phases WHERE project_id = ?', [row.id]);
+    const phases: ProjectPhase[] = [];
+    for (let i = 0; i < phasesResult.rows.length; i++) {
+      const phaseRow = phasesResult.rows.item(i);
+      phases.push({
+        id: phaseRow.id,
+        localId: phaseRow.local_id,
+        projectId: phaseRow.project_id,
+        name: phaseRow.name,
+        description: phaseRow.description || undefined,
+        startDate: phaseRow.start_date ? new Date(phaseRow.start_date) : undefined,
+        endDate: phaseRow.end_date ? new Date(phaseRow.end_date) : undefined,
+        dependencies: phaseRow.dependencies ? JSON.parse(phaseRow.dependencies) : undefined,
+        isCompleted: phaseRow.is_completed === 1,
+        materialsRequired: phaseRow.materials_required ? JSON.parse(phaseRow.materials_required) : undefined,
+      });
+    }
+
+    // Load materials
+    const [materialsResult] = await db.executeSql('SELECT * FROM materials WHERE project_id = ?', [row.id]);
+    const materials: Material[] = [];
+    for (let i = 0; i < materialsResult.rows.length; i++) {
+      const matRow = materialsResult.rows.item(i);
+      materials.push({
+        id: matRow.id,
+        localId: matRow.local_id,
+        projectId: matRow.project_id,
+        name: matRow.name,
+        quantity: matRow.quantity,
+        unit: matRow.unit,
+        unitCost: matRow.unit_cost,
+        supplier: matRow.supplier || undefined,
+        estimatedDeliveryDate: matRow.estimated_delivery_date ? new Date(matRow.estimated_delivery_date) : undefined,
+      });
+    }
+
     return {
       id: row.id,
-      propertyId: row.propertyId,
-      ownerId: row.ownerId,
+      localId: row.local_id,
+      propertyId: row.property_id || undefined,
+      ownerId: row.owner_id || undefined,
       name: row.name,
-      description: row.description,
+      description: row.description || undefined,
       status: row.status,
-      startDate: row.startDate ? new Date(row.startDate) : undefined,
-      expectedEndDate: row.expectedEndDate ? new Date(row.expectedEndDate) : undefined,
-      budget: row.budget,
-      currency: row.currency,
-      phases: [],
-      materials: [],
+      startDate: row.start_date ? new Date(row.start_date) : undefined,
+      expectedEndDate: row.expected_end_date ? new Date(row.expected_end_date) : undefined,
+      budget: row.budget || undefined,
+      currency: row.currency || undefined,
+      materials,
+      phases,
       meta: row.meta ? JSON.parse(row.meta) : undefined,
+      createdAt: row.created_at ? new Date(row.created_at) : undefined,
+      updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
     };
+  }
+
+  async close(): Promise<void> {
+    const { db } = getDatabase();
+    if (db) await db.close();
   }
 }

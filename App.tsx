@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import {
   StatusBar,
   StyleSheet,
-  useColorScheme,
+  useColorScheme as rnUseColorScheme,
   View,
   Text,
   TouchableOpacity,
@@ -27,17 +27,42 @@ import { ProjectList } from './src/components/ProjectList';
 import { useProjects } from './src/hooks/useProjects';
 import { Project } from './src/domain/entities/Project';
 
+// Navigation Imports
+import { NavigationContainer } from '@react-navigation/native';
+import TabsLayout from './src/pages/tabs';
+import { lightTheme, darkTheme } from './src/pages/theme';
+import { useColorScheme as nwUseColorScheme } from 'nativewind';
+import 'react-native-get-random-values';
+import { verifyInstallation } from 'nativewind';
+
+if (__DEV__) {
+  verifyInstallation();
+}
+
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const isDarkMode = rnUseColorScheme() === 'dark';
+
+  const nwColor = nwUseColorScheme();
+  const isDark = nwColor.colorScheme === 'dark' || isDarkMode;
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <NavigationContainer>
+        <View
+          style={[
+            isDark ? darkTheme : lightTheme,
+            { flex: 1, backgroundColor: isDark ? 'rgb(15,23,42)' : 'rgb(250,251,252)' },
+          ]}
+        >
+          <TabsLayout />
+        </View>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
 
+// Temporary placeholder for original content to be migrated
 function AppContent() {
   const safeAreaInsets = useSafeAreaInsets();
   const { projects, loading, error, createProject, getProjectAnalysis, refreshProjects } = useProjects();
