@@ -54,8 +54,8 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { LocalSqliteProjectRepository } from '../src/infrastructure/repositories/LocalSqliteProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../src/domain/entities/Project';
+import { LocalSqliteProjectRepository } from '../../src/infrastructure/repositories/LocalSqliteProjectRepository';
+import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
 
 describe('LocalSqliteProjectRepository integration (better-sqlite3 :memory:)', () => {
   it('runs real SQL: create, read, update, delete', async () => {
@@ -94,7 +94,7 @@ describe('LocalSqliteProjectRepository integration (better-sqlite3 :memory:)', (
     expect(afterUpdate!.name).toBe('Integration Project Renamed');
     expect(afterUpdate!.materials.length).toBe(2);
     // new material should also have localId
-    const newMat = afterUpdate!.materials.find(m => m.id === 'm2');
+    const newMat = afterUpdate!.materials.find((m: any) => m.id === 'm2');
     expect(newMat).toBeDefined();
     expect(newMat!.localId).toBeDefined();
     expect(newMat!.localId).toBeGreaterThan(0);

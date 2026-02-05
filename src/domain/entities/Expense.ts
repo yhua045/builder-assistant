@@ -1,3 +1,5 @@
+// NOTE: DEPRECATED: `Expense` is considered a duplicate of `Payment` in the domain model.
+// Use `Payment` for expense/payment records. Keeping this file for migration/backcompat only.
 export interface Expense {
   id: string;
   localId?: number; // SQLite INTEGER PRIMARY KEY

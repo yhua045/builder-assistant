@@ -1,5 +1,5 @@
-import { LocalSqliteProjectRepository } from '../src/infrastructure/repositories/LocalSqliteProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../src/domain/entities/Project';
+import { LocalSqliteProjectRepository } from '../../src/infrastructure/repositories/LocalSqliteProjectRepository';
+import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
 
 // Provide a lightweight in-memory mock for react-native-sqlite-storage
 jest.mock('react-native-sqlite-storage', () => {
