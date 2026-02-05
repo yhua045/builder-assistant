@@ -4,12 +4,14 @@ export interface Task {
   projectId: string;
   title: string;
   description?: string;
-  assignedTo?: string; // contactId
+  // Backwards-compatible assignedTo; prefer `assignedToContactId` for clarity
+  assignedTo?: string; // contactId (DEPRECATED: use `assignedToContactId`)
+  assignedToContactId?: string; // contactId - preferred explicit field
   trade?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
   durationEstimate?: number; // in hours
-  status?: 'pending' | 'in_progress' | 'done' | 'cancelled';
+  status?: 'pending' | 'in_progress' | 'done' | 'cancelled' | 'rework_required';
   priority?: number;
   dependencies?: string[]; // taskIds
   createdAt?: string;

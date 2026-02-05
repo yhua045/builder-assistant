@@ -10,13 +10,22 @@ export interface Invoice {
   id: string;
   localId?: number; // SQLite INTEGER PRIMARY KEY
   projectId: string;
-  vendorId?: string; // contacts.id
-  amount?: number;
+  // Contact who issued the invoice (preferred explicit name)
+  vendorId?: string; // contacts.id (DEPRECATED: use `contactId`)
+  contactId?: string; // contacts.id - preferred
+
+  // Amount fields
+  amount?: number; // legacy field
+  totalAmount?: number; // preferred explicit field for invoice total
   currency?: string;
   issueDate?: string;
   dueDate?: string;
   paidAmount?: number;
-  status?: 'unpaid' | 'partially_paid' | 'paid' | 'overdue';
+  // Expanded lifecycle status
+  status?: 'draft' | 'received' | 'approved' | 'unpaid' | 'partially_paid' | 'paid' | 'overdue';
+  
+  // Optional link back to originating quote
+  quoteId?: string;
   lineItems?: InvoiceLineItem[];
   relatedExpenseIds?: string[];
   attachments?: string[];

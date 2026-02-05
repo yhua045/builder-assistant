@@ -54,9 +54,9 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { DrizzleProjectRepository } from '../src/infrastructure/repositories/DrizzleProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../src/domain/entities/Project';
-import { closeDatabase } from '../src/infrastructure/database/connection';
+import { DrizzleProjectRepository } from '../../src/infrastructure/repositories/DrizzleProjectRepository';
+import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
+import { closeDatabase } from '../../src/infrastructure/database/connection';
 
 describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () => {
   it('runs real SQL via Drizzle: create, read, update, delete', async () => {
@@ -96,7 +96,7 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
     expect(afterUpdate).not.toBeNull();
     expect(afterUpdate!.name).toBe('Drizzle Integration Project Renamed');
     expect(afterUpdate!.materials.length).toBe(2);
-    const newMat = afterUpdate!.materials.find(m => m.id === 'm2');
+    const newMat = afterUpdate!.materials.find((m: any) => m.id === 'm2');
     expect(newMat).toBeDefined();
     expect(newMat!.localId).toBeDefined();
     expect(newMat!.localId).toBeGreaterThan(0);

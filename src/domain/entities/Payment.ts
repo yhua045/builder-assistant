@@ -4,6 +4,7 @@ export interface Payment {
   projectId: string;
   invoiceId?: string;
   expenseId?: string;
+  contactId?: string; // optional link to Contact (payee/vendor)
   amount: number;
   date?: string;
   method?: 'bank' | 'cash' | 'check' | 'other';

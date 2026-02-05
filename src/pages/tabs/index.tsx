@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, CreditCard, CheckSquare, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { cssInterop } from 'nativewind';
-
 import DashboardScreen from '../dashboard';
 import PaymentsScreen from '../payments';
 import TasksScreen from '../tasks';
@@ -32,8 +31,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: isDark ? '#3b82f6' : '#2563eb',
         tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#71717a',
       }}
-      sceneContainerStyle={{ backgroundColor: isDark ? '#0f172a' : '#fafbfc', flex: 1 }}
-    >
+      >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
