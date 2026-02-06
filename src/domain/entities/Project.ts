@@ -172,6 +172,14 @@ export class ProjectEntity {
     return { ...this.project };
   }
 
+  /**
+   * Validation helper: does this entity have identity information
+   * indicating it can be considered existing/persisted?
+   */
+  exists(): boolean {
+    return Boolean(this.project.id || this.project.localId);
+  }
+
   updateStatus(newStatus: ProjectStatus): ProjectEntity {
     const updatedProject = {
       ...this.project,

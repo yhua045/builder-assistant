@@ -327,10 +327,4 @@ draft → sent → received → [accepted|rejected|expired]
 
 ---
 
-## Summary of Changes Needed
 
-1. **Add `contactId?: string` to Payment entity** - To support direct payments and maintain consistency
-2. **Create new `Quote` entity** at `src/domain/entities/Quote.ts` with the specification above
-3. **Add `IQuoteRepository` interface** in `src/domain/repositories/`
-4. **Update database schema** to include `quotes` table with proper foreign keys
-5. **Update UI components** to support quote creation, comparison, and acceptance workflows

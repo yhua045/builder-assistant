@@ -34,11 +34,18 @@ npm run db:studio      # Visual database editor
 
 ## Database (Drizzle ORM)
 
-**Default implementation**: DrizzleProjectRepository with automatic migrations
+Drizzle ORM is the canonical and required persistence layer for this project. Infrastructure code and repository implementations MUST use Drizzle (via `DrizzleProjectRepository` or a Drizzle-backed adapter). Do NOT use raw SQLite provider APIs directly (for example, using `react-native-sqlite-storage` directly from application or domain code) except inside the low-level Drizzle adapter or test shims.
+
+**Default implementation**: `DrizzleProjectRepository` with automatic migrations
 
 - **Schema**: TypeScript definitions in `src/infrastructure/database/schema.ts`
 - **Migrations**: Auto-generated in `drizzle/migrations/`, applied on app start
 - **Connection**: Managed by `src/infrastructure/database/connection.ts`
+
+Notes:
+- Production and development code should use Drizzle ORM and the typed schema. Avoid bypassing Drizzle with custom SQL in application code.
+- Small in-memory or mock SQLite adapters are acceptable only for unit tests (see `__tests__/*`), but integration and runtime code must rely on Drizzle.
+- If you need low-level access for a migration or special query, add a small, well-documented Drizzle helper in `src/infrastructure/database/` rather than scattering raw SQL across the codebase.
 
 ### Migration Workflow
 1. Edit TypeScript schema in `schema.ts`
@@ -62,6 +69,40 @@ See [DRIZZLE_SETUP.md](DRIZZLE_SETUP.md) and [docs/DATABASE_MIGRATIONS.md](docs/
 - Repository pattern for data access
 - `useMemo`/`useCallback` in hooks
 - Explicit StyleSheet types
+
+### Test-Driven Development (TDD) Workflow for Implementations
+
+When implementing features (not during planning), follow a strict TDD flow to ensure correctness and maintainability:
+
+1. Design the abstraction (interface/port) first
+	- Define repository/use-case interfaces in `src/domain/repositories` or `src/application` as appropriate.
+	- Keep the interface minimal and focused on the behaviour required by the use cases.
+
+2. Write failing tests against the abstraction
+	- Add unit tests in `__tests__/unit/` that assert required behaviour using mocked adapters.
+	- Add integration tests in `__tests__/integration/` when checking interactions with real adapters (e.g., Drizzle/SQLite).
+	- Tests should be written to fail initially (red) — this verifies the test coverage and spec.
+
+3. Implement the smallest change to make tests pass
+	- Implement a concrete adapter or use-case implementation in `src/infrastructure` or `src/application`.
+	- Prefer simple, well-scoped commits that make a single test pass.
+
+4. Refactor with confidence
+	- Once tests are green, refactor code to improve clarity or remove duplication while keeping tests passing.
+	- Update or add tests if behaviours change.
+
+5. PR and review
+	- Push the branch and open a PR. The PR description should reference failing test(s) and the implemented change.
+	- Request at least one reviewer; wait for approval before merging.
+
+6. Merge and iterate
+	- After merge, create follow-up tasks for remaining work (UI, docs, migrations).
+
+Notes
+- Keep tests fast and deterministic. Use in-memory DBs or mocks for unit tests.
+- Integration tests that touch SQLite/Drizzle should be isolated and given explicit timeouts.
+- For schema changes, write migration tests to verify data preservation where applicable.
+
 
 ### Key Patterns
 - **Repository**: Interface in domain, Drizzle implementation in infrastructure

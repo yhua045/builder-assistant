@@ -43,20 +43,20 @@ export default function TabsLayout() {
         }}
       />
       <Tab.Screen
-        name="Payments"
+        name="Finances"
         component={PaymentsScreen}
         options={{
-          title: 'Payments',
+          title: 'Finances',
           tabBarIcon: ({ focused, color }) => (
             <CreditCard color={color} size={24} />
           ),
         }}
       />
       <Tab.Screen
-        name="Tasks"
+        name="Work"
         component={TasksScreen}
         options={{
-          title: 'Tasks',
+          title: 'Work',
           tabBarIcon: ({ focused, color }) => (
             <CheckSquare color={color} size={24} />
           ),
