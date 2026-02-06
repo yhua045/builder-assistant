@@ -1,4 +1,4 @@
-import { ArchiveProjectUseCase } from '../../src/application/usecases/ArchiveProjectUseCase';
+import { ArchiveProjectUseCase } from '../../src/application/usecases/project/ArchiveProjectUseCase';
 import { ProjectRepository } from '../../src/domain/repositories/ProjectRepository';
 
 describe('ArchiveProjectUseCase (TDD)', () => {

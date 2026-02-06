@@ -1,4 +1,4 @@
-import { BulkUpdateProjectsUseCase } from '../../src/application/usecases/BulkUpdateProjectsUseCase';
+import { BulkUpdateProjectsUseCase } from '../../src/application/usecases/project/BulkUpdateProjectsUseCase';
 import { ProjectRepository } from '../../src/domain/repositories/ProjectRepository';
 
 describe('BulkUpdateProjectsUseCase (TDD)', () => {
