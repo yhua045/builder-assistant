@@ -4,7 +4,19 @@ export class ArchiveProjectUseCase {
   constructor(private readonly repo: ProjectRepository) {}
 
   async execute(id: string, opts?: { archivedBy?: string }): Promise<void> {
-    // TDD: implementation to be added after tests are written and failing.
-    throw new Error('Not implemented');
+    const existing = await this.repo.findById(id);
+    if (!existing) throw new Error(`Project not found: ${id}`);
+
+    const patch: any = { archived: true, updatedAt: new Date() };
+    if (opts?.archivedBy) patch.meta = { ...(existing.meta || {}), archivedBy: opts.archivedBy };
+
+    // call repository update (domain repo may accept id + patch)
+    if (typeof (this.repo as any).update === 'function') {
+      await (this.repo as any).update(id, patch);
+    } else if (typeof (this.repo as any).save === 'function') {
+      await (this.repo as any).save({ ...existing, ...patch });
+    } else {
+      throw new Error('Repository does not support update/save');
+    }
   }
 }

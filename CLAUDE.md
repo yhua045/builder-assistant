@@ -34,11 +34,18 @@ npm run db:studio      # Visual database editor
 
 ## Database (Drizzle ORM)
 
-**Default implementation**: DrizzleProjectRepository with automatic migrations
+Drizzle ORM is the canonical and required persistence layer for this project. Infrastructure code and repository implementations MUST use Drizzle (via `DrizzleProjectRepository` or a Drizzle-backed adapter). Do NOT use raw SQLite provider APIs directly (for example, using `react-native-sqlite-storage` directly from application or domain code) except inside the low-level Drizzle adapter or test shims.
+
+**Default implementation**: `DrizzleProjectRepository` with automatic migrations
 
 - **Schema**: TypeScript definitions in `src/infrastructure/database/schema.ts`
 - **Migrations**: Auto-generated in `drizzle/migrations/`, applied on app start
 - **Connection**: Managed by `src/infrastructure/database/connection.ts`
+
+Notes:
+- Production and development code should use Drizzle ORM and the typed schema. Avoid bypassing Drizzle with custom SQL in application code.
+- Small in-memory or mock SQLite adapters are acceptable only for unit tests (see `__tests__/*`), but integration and runtime code must rely on Drizzle.
+- If you need low-level access for a migration or special query, add a small, well-documented Drizzle helper in `src/infrastructure/database/` rather than scattering raw SQL across the codebase.
 
 ### Migration Workflow
 1. Edit TypeScript schema in `schema.ts`

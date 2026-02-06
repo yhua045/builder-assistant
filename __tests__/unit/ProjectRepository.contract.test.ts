@@ -1,8 +1,8 @@
-import { LocalSqliteProjectRepository } from '../../src/infrastructure/repositories/LocalSqliteProjectRepository';
+import { DrizzleProjectRepository } from '../../src/infrastructure/repositories/DrizzleProjectRepository';
 
 describe('ProjectRepository contract (interface)', () => {
   it('should expose the expected repository methods (contract)', async () => {
-    const repo: any = new LocalSqliteProjectRepository();
+    const repo: any = new DrizzleProjectRepository();
 
     // Methods expected per domain contract
     const expectedMethods = [

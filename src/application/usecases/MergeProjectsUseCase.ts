@@ -5,7 +5,35 @@ export class MergeProjectsUseCase {
   constructor(private readonly repo: ProjectRepository) {}
 
   async execute(targetId: string, sourceId: string, opts?: { fieldsToKeep?: string[]; mergedBy?: string }): Promise<ProjectEntity> {
-    // TDD: implementation to be added after tests are written and failing.
-    throw new Error('Not implemented');
+    const target = await this.repo.findById(targetId);
+    const source = await this.repo.findById(sourceId);
+    if (!target) throw new Error(`Target project not found: ${targetId}`);
+    if (!source) throw new Error(`Source project not found: ${sourceId}`);
+
+    // Basic merge: keep target id, prefer target fields unless missing, merge arrays
+    const merged: any = {
+      ...source,
+      ...target,
+      id: targetId,
+      materials: [ ...(target.materials || []), ...(source.materials || []) ],
+      phases: [ ...(target.phases || []), ...(source.phases || []) ],
+      updatedAt: new Date(),
+    };
+
+    if (opts?.mergedBy) merged.meta = { ...(merged.meta || {}), mergedBy: opts.mergedBy };
+
+    // Persist merged project
+    if (typeof (this.repo as any).save === 'function') {
+      await (this.repo as any).save(merged);
+    } else if (typeof (this.repo as any).create === 'function') {
+      await (this.repo as any).create(merged);
+    }
+
+    // Optionally remove source
+    if (typeof (this.repo as any).delete === 'function') {
+      await (this.repo as any).delete(sourceId);
+    }
+
+    return ProjectEntity.fromData(merged);
   }
 }
