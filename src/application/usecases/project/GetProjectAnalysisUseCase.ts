@@ -5,9 +5,9 @@
  * design flaw detection, material estimation, and timeline validation.
  */
 
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
-import { ProjectValidationService } from '../../domain/services/ProjectValidationService';
-import { ProjectEntity } from '../../domain/entities/Project';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectValidationService } from '../../../domain/services/ProjectValidationService';
+import { ProjectEntity } from '../../../domain/entities/Project';
 
 export interface ProjectAnalysisRequest {
   projectId: string;
