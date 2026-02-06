@@ -10,12 +10,10 @@ export class UnarchiveProjectUseCase {
     const patch: any = { archived: false, updatedAt: new Date() };
     if (opts?.unarchivedBy) patch.meta = { ...(existing.meta || {}), unarchivedBy: opts.unarchivedBy };
 
-    if (typeof (this.repo as any).update === 'function') {
-      await (this.repo as any).update(id, patch);
-    } else if (typeof (this.repo as any).save === 'function') {
+    if (typeof (this.repo as any).save === 'function') {
       await (this.repo as any).save({ ...existing, ...patch });
-    } else {
-      throw new Error('Repository does not support update/save');
+      return;
     }
+    throw new Error('Repository does not support save');
   }
 }

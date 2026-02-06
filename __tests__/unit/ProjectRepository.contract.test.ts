@@ -17,7 +17,6 @@ describe('ProjectRepository contract (interface)', () => {
       'findByOwnerId',
       'findByPhaseDateRange',
       'findWithUpcomingPhases',
-      'update',
       'delete',
       'withTransaction'
     ];

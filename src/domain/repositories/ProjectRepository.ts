@@ -20,9 +20,6 @@ export type ProjectFilters = {
 };
 
 export interface ProjectRepository {
-  // Create a new project (idempotent when externalId or idempotencyKey provided)
-  create(project: Partial<Project>, opts?: { idempotencyKey?: string, createdBy?: string }): Promise<Project>;
-
   // Save (upsert) a project to the data store
   save(project: Project): Promise<void>;
 
@@ -53,8 +50,6 @@ export interface ProjectRepository {
   // Find projects that contain phases with upcoming start dates on or before the provided ISO date
   findWithUpcomingPhases(untilDate: string): Promise<Project[]>;
 
-  // Update (partial patch) an existing project
-  update(id: string, patch: Partial<Project>, opts?: { expectedVersion?: number | null; updatedBy?: string }): Promise<Project>;
   // Hard delete (use with caution)
   delete(id: string): Promise<void>;
 

@@ -124,12 +124,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
   /**
    * Create returns the created project after persisting.
    */
-  async create(project: Project): Promise<Project> {
-    await this.save(project);
-    const created = await this.findById(project.id);
-    if (!created) throw new Error('Failed to create project');
-    return created;
-  }
+  // `create` removed: use `save` (upsert) for create/update semantics
 
   async findByExternalId(externalId: string): Promise<Project | null> {
     if (!this.drizzle) await this.init();

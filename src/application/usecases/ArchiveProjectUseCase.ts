@@ -10,13 +10,11 @@ export class ArchiveProjectUseCase {
     const patch: any = { archived: true, updatedAt: new Date() };
     if (opts?.archivedBy) patch.meta = { ...(existing.meta || {}), archivedBy: opts.archivedBy };
 
-    // call repository update (domain repo may accept id + patch)
-    if (typeof (this.repo as any).update === 'function') {
-      await (this.repo as any).update(id, patch);
-    } else if (typeof (this.repo as any).save === 'function') {
+    // Persist updated entity via save (upsert)
+    if (typeof (this.repo as any).save === 'function') {
       await (this.repo as any).save({ ...existing, ...patch });
-    } else {
-      throw new Error('Repository does not support update/save');
+      return;
     }
+    throw new Error('Repository does not support save');
   }
 }

@@ -10,14 +10,12 @@ export class BulkUpdateProjectsUseCase {
 
     const runUpdate = async (id: string) => {
       try {
-        if (typeof (this.repo as any).update === 'function') {
-          await (this.repo as any).update(id, patch);
-        } else if (typeof (this.repo as any).save === 'function') {
+        if (typeof (this.repo as any).save === 'function') {
           const existing = await this.repo.findById(id);
           if (!existing) throw new Error('not found');
           await (this.repo as any).save({ ...existing, ...patch, updatedAt: new Date() });
         } else {
-          throw new Error('Repository does not support update/save');
+          throw new Error('Repository does not support save');
         }
         succeeded.push(id);
       } catch (err: any) {

@@ -22,11 +22,11 @@ export class MergeProjectsUseCase {
 
     if (opts?.mergedBy) merged.meta = { ...(merged.meta || {}), mergedBy: opts.mergedBy };
 
-    // Persist merged project
+    // Persist merged project using save (upsert).
     if (typeof (this.repo as any).save === 'function') {
       await (this.repo as any).save(merged);
-    } else if (typeof (this.repo as any).create === 'function') {
-      await (this.repo as any).create(merged);
+    } else {
+      throw new Error('Repository does not support save');
     }
 
     // Optionally remove source
