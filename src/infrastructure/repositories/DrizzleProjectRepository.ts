@@ -121,6 +121,113 @@ export class DrizzleProjectRepository implements ProjectRepository {
     });
   }
 
+  /**
+   * Create returns the created project after persisting.
+   */
+  async create(project: Project): Promise<Project> {
+    await this.save(project);
+    const created = await this.findById(project.id);
+    if (!created) throw new Error('Failed to create project');
+    return created;
+  }
+
+  async findByExternalId(externalId: string): Promise<Project | null> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    // Prefer json_extract if available, fallback to LIKE search
+    try {
+      const [result] = await db.executeSql("SELECT * FROM projects WHERE json_extract(meta, '$.externalId') = ?", [externalId]);
+      if (result.rows.length === 0) return null;
+      return await this.mapRowToProject(result.rows.item(0));
+    } catch (e) {
+      const [result] = await db.executeSql('SELECT * FROM projects WHERE meta LIKE ?', [`%\"externalId\":\"${externalId}\"%`]);
+      if (result.rows.length === 0) return null;
+      return await this.mapRowToProject(result.rows.item(0));
+    }
+  }
+
+  async list(filters: any = {}, options: { limit?: number; offset?: number } = {}): Promise<{ items: Project[]; total: number }> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    // Simple filtering: support status filter for tests
+    const where: string[] = [];
+    const params: any[] = [];
+    if (filters.status) {
+      where.push('status = ?');
+      params.push(filters.status);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const limitSql = options.limit ? `LIMIT ${options.limit}` : '';
+    const offsetSql = options.offset ? `OFFSET ${options.offset}` : '';
+
+    const [rows] = await db.executeSql(`SELECT * FROM projects ${whereSql} ${limitSql} ${offsetSql}`);
+    const items: Project[] = [];
+    for (let i = 0; i < rows.rows.length; i++) {
+      items.push(await this.mapRowToProject(rows.rows.item(i)));
+    }
+
+    const [countRows] = await db.executeSql(`SELECT COUNT(*) as cnt FROM projects ${whereSql}`, params);
+    const total = countRows.rows.length ? countRows.rows.item(0).cnt : 0;
+
+    return { items, total };
+  }
+
+  async count(filters: any = {}): Promise<number> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const where: string[] = [];
+    const params: any[] = [];
+    if (filters.status) {
+      where.push('status = ?');
+      params.push(filters.status);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const [countRows] = await db.executeSql(`SELECT COUNT(*) as cnt FROM projects ${whereSql}`, params);
+    return countRows.rows.length ? countRows.rows.item(0).cnt : 0;
+  }
+
+  /**
+   * Provide a transactional context that accepts a repo-like object with a `save` method.
+   * The provided function should throw to force rollback.
+   */
+  async withTransaction(fn: (txRepo: { save: (p: Project) => Promise<void> }) => Promise<void>): Promise<void> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    await db.transaction(async (tx: any) => {
+      // txRepo.save will insert minimal project record using the provided tx
+      const txRepo = {
+        save: async (project: Project) => {
+          await tx.executeSql(
+            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+            [
+              project.id,
+              project.propertyId || null,
+              project.ownerId || null,
+              project.name,
+              project.description || null,
+              project.status,
+              project.startDate ? project.startDate.getTime() : null,
+              project.expectedEndDate ? project.expectedEndDate.getTime() : null,
+              project.budget || null,
+              project.currency || null,
+              project.meta ? JSON.stringify(project.meta) : null,
+              project.createdAt ? project.createdAt.getTime() : null,
+              project.updatedAt ? project.updatedAt.getTime() : null,
+            ]
+          );
+        }
+      };
+
+      await fn(txRepo);
+    });
+  }
+
   async delete(id: string): Promise<void> {
     if (!this.drizzle) await this.init();
     const { db } = getDatabase();
