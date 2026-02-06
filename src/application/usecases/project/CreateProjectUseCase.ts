@@ -5,8 +5,9 @@
  * This is part of the application layer that orchestrates domain entities.
  */
 
-import { ProjectEntity, ProjectStatus } from '../../domain/entities/Project';
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
+import { ProjectEntity, ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ValidationError } from '../../../domain/errors/ValidationError';
 
 export interface CreateProjectRequest {
   name: string;
@@ -27,8 +28,29 @@ export class CreateProjectUseCase {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
   async execute(request: CreateProjectRequest): Promise<CreateProjectResponse> {
+    // Validate request fields explicitly to provide clear errors
+    const errors: string[] = [];
+    if (!request.name || request.name.trim().length === 0) {
+      errors.push('Project name is required');
+    }
+    if (request.budget !== undefined && request.budget < 0) {
+      errors.push('Project budget cannot be negative');
+    }
+    if (request.startDate && request.expectedEndDate) {
+      if (!(request.startDate instanceof Date) || isNaN(request.startDate.getTime()) ||
+          !(request.expectedEndDate instanceof Date) || isNaN(request.expectedEndDate.getTime())) {
+        errors.push('Invalid date for startDate or expectedEndDate');
+      } else if (request.startDate.getTime() >= request.expectedEndDate.getTime()) {
+        errors.push('Expected end date must be after start date');
+      }
+    }
+
+    if (errors.length > 0) {
+      return { success: false, errors };
+    }
+
     try {
-      // Create project entity with domain validation
+      // Create project entity (additional domain-level validation may run here)
       const projectEntity = ProjectEntity.create({
         name: request.name,
         description: request.description,
@@ -78,8 +100,10 @@ export class CreateProjectUseCase {
         projectId: project.id,
         warnings: warnings.length > 0 ? warnings : undefined
       };
-
     } catch (error) {
+      if (error instanceof ValidationError) {
+        return { success: false, errors: [error.message, ...(error.details || [])] };
+      }
       return {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown error occurred']

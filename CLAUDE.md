@@ -103,6 +103,12 @@ Notes
 - Integration tests that touch SQLite/Drizzle should be isolated and given explicit timeouts.
 - For schema changes, write migration tests to verify data preservation where applicable.
 
+### Recent TDD updates
+
+- **Use-case validation (Issue #24):** Added unit and integration tests for `CreateProjectUseCase` following the TDD workflow. Tests cover request-level validation (missing name, negative budget, invalid dates) and repository interactions using an in-memory test repository.
+- **Implementation:** `CreateProjectUseCase` now performs explicit request validation and returns structured errors; a lightweight `ValidationError` type was added in `src/domain/errors/ValidationError.ts` for domain-level validation flows.
+- **Notes for reviewers:** Look for new tests under `__tests__/unit` and `__tests__/integration` and the integration helper `InMemoryProjectRepository` used for repository interaction tests.
+
 
 ### Key Patterns
 - **Repository**: Interface in domain, Drizzle implementation in infrastructure
