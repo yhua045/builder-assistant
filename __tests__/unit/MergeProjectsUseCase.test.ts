@@ -1,4 +1,4 @@
-import { MergeProjectsUseCase } from '../../src/application/usecases/MergeProjectsUseCase';
+import { MergeProjectsUseCase } from '../../src/application/usecases/project/MergeProjectsUseCase';
 import { ProjectRepository } from '../../src/domain/repositories/ProjectRepository';
 
 describe('MergeProjectsUseCase (TDD)', () => {
