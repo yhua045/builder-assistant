@@ -2,6 +2,9 @@
  * Jest setup for React Native tests
  */
 
+// Ensure reflect-metadata is loaded for DI libraries like tsyringe
+import 'reflect-metadata';
+
 // Mock AsyncStorage before any imports
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')

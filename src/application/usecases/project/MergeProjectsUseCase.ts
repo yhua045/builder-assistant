@@ -1,5 +1,5 @@
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
-import { ProjectEntity } from '../../domain/entities/Project';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectEntity } from '../../../domain/entities/Project';
 
 export class MergeProjectsUseCase {
   constructor(private readonly repo: ProjectRepository) {}
