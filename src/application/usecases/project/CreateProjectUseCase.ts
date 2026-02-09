@@ -5,8 +5,8 @@
  * This is part of the application layer that orchestrates domain entities.
  */
 
-import { ProjectEntity, ProjectStatus } from '../../domain/entities/Project';
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
+import { ProjectEntity, ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
 
 export interface CreateProjectRequest {
   name: string;
@@ -43,10 +43,10 @@ export class CreateProjectUseCase {
       const project = projectEntity.data;
 
       // Check if project with same name already exists
-      const existingProjects = await this.projectRepository.findAll();
-      const nameExists = existingProjects.some(p => 
-        p.name.toLowerCase() === project.name.toLowerCase()
-      );
+      // Use `list()` repository method (returns `{ items, meta }`) as required by the domain contract
+      const listed = await this.projectRepository.list();
+      const existingProjects = listed?.items ?? [];
+      const nameExists = existingProjects.some(p => p.name.toLowerCase() === project.name.toLowerCase());
 
       if (nameExists) {
         return {

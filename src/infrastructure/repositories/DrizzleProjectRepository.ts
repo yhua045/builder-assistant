@@ -122,6 +122,14 @@ export class DrizzleProjectRepository implements ProjectRepository {
   }
 
   /**
+   * Convenience create method (preserved for contract compatibility)
+   */
+  async create(project: Project): Promise<Project> {
+    await this.save(project);
+    return project;
+  }
+
+  /**
    * Create returns the created project after persisting.
    */
   // `create` removed: use `save` (upsert) for create/update semantics
