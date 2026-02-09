@@ -33,8 +33,8 @@ export const useProjects = (): UseProjectsReturn => {
     try {
       setLoading(true);
       setError(null);
-      const projectList = await repository.findAll();
-      setProjects(projectList);
+      const output = await repository.list();
+      setProjects(output.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {

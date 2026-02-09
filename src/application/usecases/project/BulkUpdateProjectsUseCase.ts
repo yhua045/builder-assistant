@@ -1,5 +1,5 @@
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
-import { Project } from '../../domain/entities/Project';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { Project } from '../../../domain/entities/Project';
 
 export class BulkUpdateProjectsUseCase {
   constructor(private readonly repo: ProjectRepository) {}

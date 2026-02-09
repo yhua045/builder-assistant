@@ -30,18 +30,17 @@ npx react-native run-android
 ```
 
 
-## Tests location and execution
+Branch: issue-27-drizzle-document-repo
 
-- Unit tests: stored under `__tests__/unit`. These are fast, deterministic, and use lightweight in-memory shims where appropriate (for example in-memory repository implementations) so they can run without native DB dependencies.
-- Integration tests: stored under `__tests__/integration`. Integration suites exercise the Drizzle adapter and run against an in-memory SQLite instance (the test harness uses a `better-sqlite3` :memory: adapter and the `react-native-sqlite-storage` mock) and include migrations before running.
+Recent changes in this branch:
+- Implemented `LocalDocumentStorageEngine` to store files on-device using `react-native-fs` when available, with a Node `fs` wrapper fallback and an injectable `FSLike` interface to allow unit testing and mocking.
+- Made `LocalDocumentStorageEngine` handle binary and string inputs, return file `path` and `size`, and avoid bundler/runtime issues by using safe runtime checks and `buffer` where needed.
+- Refactored code to avoid hard Node-only references (use `globalThis` and `buffer` import) so TypeScript checks pass without forcing Node runtime types into the RN bundles.
+- Fixed TypeScript and linting issues across the codebase: corrected relative imports for use-cases, updated `useProjects` to call `list()` (returns `{ items, meta }`) instead of a removed `findAll()` helper, and adjusted `CreateProjectUseCase` accordingly.
+- Updated `DrizzleProjectRepository` to conform to the `ProjectRepository` interface (return `meta` from `list`, adjusted `withTransaction` signature and transactional behavior, guarded undefined dates), and fixed several related compile errors.
+- Ran lint and `npx tsc --noEmit`; resolved compiler errors so the branch type-checks cleanly.
 
-Run unit tests:
-```bash
-npx jest __tests__/unit --runInBand
-```
-
-Run integration tests (single-threaded):
-```bash
-npx jest __tests__/integration --runInBand
-```
+Notes / Next steps:
+- Add `react-native-fs` to `package.json` and install native deps when ready: `npm i react-native-fs` and run platform installation steps (`pod install` for iOS, rebuild for Android).
+- Add unit tests that inject a mock `FSLike` into `LocalDocumentStorageEngine` to validate behavior without touching device storage.
 

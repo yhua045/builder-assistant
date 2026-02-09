@@ -122,18 +122,43 @@ export const expenses = sqliteTable('expenses', {
 export const documents = sqliteTable('documents', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
-  projectId: text('project_id').notNull(),
+  projectId: text('project_id'), // Optional
   type: text('type'),
   title: text('title'),
-  uri: text('uri'),
+  
+  // File Metadata
+  filename: text('filename'),
+  mimeType: text('mime_type'),
+  size: integer('size'), // in bytes
+  
+  // Storage & Sync
+  status: text('status', { 
+    enum: ['local-only', 'upload-pending', 'uploaded', 'failed'] 
+  }).default('local-only').notNull(),
+  localPath: text('local_path'),
+  storageKey: text('storage_key'),
+  cloudUrl: text('cloud_url'),
+  
+  // Legacy / Other
+  uri: text('uri'), // Legacy, preserved but optional
   issuedBy: text('issued_by'),
   issuedDate: integer('issued_date'), // Unix timestamp
   expiresAt: integer('expires_at'), // Unix timestamp
   notes: text('notes'),
+  
+  // Provenance & Extra
+  tags: text('tags'), // JSON array
+  ocrText: text('ocr_text'),
+  source: text('source'),
+  uploadedBy: text('uploaded_by'),
+  uploadedAt: integer('uploaded_at'),
+  checksum: text('checksum'),
+
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
   projectIdx: index('idx_documents_project').on(table.projectId),
+  statusIdx: index('idx_documents_status').on(table.status),
 }));
 
 // Invoices Table
