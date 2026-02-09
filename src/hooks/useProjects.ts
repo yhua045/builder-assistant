@@ -7,8 +7,8 @@ import { Project } from '../domain/entities/Project';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
-import { CreateProjectUseCase, CreateProjectRequest } from '../application/usecases/CreateProjectUseCase';
-import { GetProjectAnalysisUseCase } from '../application/usecases/GetProjectAnalysisUseCase';
+import { CreateProjectUseCase, CreateProjectRequest } from '../application/usecases/project/CreateProjectUseCase';
+import { GetProjectAnalysisUseCase } from '../application/usecases/project/GetProjectAnalysisUseCase';
 
 interface UseProjectsReturn {
   projects: Project[];
@@ -33,8 +33,8 @@ export const useProjects = (): UseProjectsReturn => {
     try {
       setLoading(true);
       setError(null);
-      const projectList = await repository.findAll();
-      setProjects(projectList);
+      const output = await repository.list();
+      setProjects(output.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {

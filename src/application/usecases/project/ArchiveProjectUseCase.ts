@@ -1,4 +1,4 @@
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
 
 export class ArchiveProjectUseCase {
   constructor(private readonly repo: ProjectRepository) {}
