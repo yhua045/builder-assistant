@@ -1,7 +1,11 @@
 {
     "chat.tools.terminal.autoApprove": {
         "npx tsc": true,
-        "npm install": true
+        "npm install": true,
+        "/^git status --porcelain && git rev-parse --abbrev-ref HEAD && git checkout -b issue-26/workflow-validator-impl && git add -A && git commit -m \"feat\\(workflow\\): add centralized ProjectWorkflowService and integrate with validation \\(issue #26\\)\" \\|\\| true && git push -u origin issue-26/workflow-validator-impl$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     },
     "cSpell.words": [
         "Pressable"

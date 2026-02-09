@@ -5,9 +5,35 @@
  * to a specific entity but is part of the business rules.
  */
 
-import { Project, ProjectPhase, Material } from '../entities/Project';
+import { Project, ProjectPhase, Material, ProjectStatus } from '../entities/Project';
+import { ProjectWorkflowService, WorkflowCheck } from './ProjectWorkflowService';
 
 export class ProjectValidationService {
+  private workflowService: ProjectWorkflowService;
+
+  constructor(workflowService?: ProjectWorkflowService) {
+    this.workflowService = workflowService ?? new ProjectWorkflowService();
+  }
+
+  /**
+   * Validates if a status transition is allowed by workflow rules
+   * @param currentStatus - The current project status
+   * @param newStatus - The desired new project status
+   * @returns WorkflowCheck result indicating if transition is valid
+   */
+  validateStatusTransition(currentStatus: ProjectStatus, newStatus: ProjectStatus): WorkflowCheck {
+    return this.workflowService.canTransition(currentStatus, newStatus);
+  }
+
+  /**
+   * Gets the list of allowed next statuses from current status
+   * @param currentStatus - The current project status
+   * @returns Array of allowed next statuses
+   */
+  getAllowedNextStatuses(currentStatus: ProjectStatus): ProjectStatus[] {
+    return this.workflowService.allowedNext(currentStatus);
+  }
+
   /**
    * Validates if a project phase can be started based on dependencies
    */
