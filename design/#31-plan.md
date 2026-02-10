@@ -19,8 +19,8 @@ export interface Invoice {
   projectId?: string;         // Optional link to project
   
   // External Uniqueness
-  externalId: string;         // Issuer/Source system ID
-  externalReference: string;  // Invoice number from issuer
+  externalId?: string | null;         // Optional: Issuer/Source system ID
+  externalReference?: string | null;  // Optional: Invoice number from issuer
   
   // Metadata
   issuerName?: string;
@@ -83,11 +83,15 @@ export interface InvoiceFilterParams {
 
 ## 2. Error Handling Strategy
 
-### 2.1 Uniqueness & Idempotency
-- **Constraint**: The database must enforce `UNIQUE(externalId, externalReference)`.
-- **Handling**: `createInvoice` will handle duplicate errors. 
-  - If a record exists with the same `(externalId, externalReference)`, the repository can either throw a `DuplicateInvoiceError` or return the existing record (idempotent behavior), depending on configuration or specific API method (e.g., `createOrGet`).
-  - For this plan, `createInvoice` will throw `InvoiceAlreadyExistsError` to be explicit, and a separate `upsertInvoice` or logic in the use case can handle the idempotent requirement if needed.
+### 2.1 Uniqueness & Idempotency (Conditional)
+- **Constraint**: The database must enforce `UNIQUE(externalId, externalReference)` *only* when both are present (non-null).
+- **Handling**:
+  - **Schema**: `externalId` and `externalReference` are nullable columns with a composite UNIQUE index.
+  - **Null Handling**: In SQLite, UNIQUE constraints allow multiple rows with NULLs. We will persist missing/empty values as `NULL` (not empty strings).
+  - **Behavior**:
+    - If `externalId` OR `externalReference` is missing/null: No uniqueness check performed. Multiple such invoices allowed.
+    - If `externalId` AND `externalReference` are provided: DB constraint enforces uniqueness.
+  - `createInvoice` will throw `InvoiceAlreadyExistsError` on constraint violation (SQL `SQLITE_CONSTRAINT`).
 
 ### 2.2 Validation
 - **Domain Validation**: The Entity class (or Zod schema if used) will validate:

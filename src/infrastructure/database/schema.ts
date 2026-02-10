@@ -168,8 +168,8 @@ export const invoices = sqliteTable('invoices', {
   projectId: text('project_id'), // Optional
   
   // External Keys
-  externalId: text('external_id').notNull(),
-  externalReference: text('external_reference').notNull(),
+  externalId: text('external_id'),
+  externalReference: text('external_reference'),
   
   // Participant Info
   issuerName: text('issuer_name'),

@@ -12,8 +12,8 @@ export interface Invoice {
   projectId?: string;         // Optional link to project
   
   // External Uniqueness
-  externalId: string;         // Issuer/Source system ID
-  externalReference: string;  // Invoice number from issuer
+  externalId?: string | null;         // Issuer/Source system ID
+  externalReference?: string | null;  // Invoice number from issuer
   
   // Metadata
   issuerName?: string;

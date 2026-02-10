@@ -90,6 +90,52 @@ describe('DrizzleInvoiceRepository', () => {
     expect(retrieved?.total).toBe(100);
   });
 
+  it('allows invoices without external keys', async () => {
+    const invoice = InvoiceEntity.create({
+      total: 120,
+      projectId: 'proj-optional'
+    }).data();
+
+    await expect(repo.createInvoice(invoice)).resolves.toBeDefined();
+
+    const retrieved = await repo.getInvoice(invoice.id);
+    expect(retrieved).toBeDefined();
+    expect(retrieved?.externalId).toBeUndefined();
+    expect(retrieved?.externalReference).toBeUndefined();
+  });
+
+  it('does not enforce uniqueness when external keys are missing', async () => {
+    const inv1 = InvoiceEntity.create({
+      externalId: 'ext-only',
+      total: 110
+    }).data();
+
+    const inv2 = InvoiceEntity.create({
+      externalId: 'ext-only',
+      total: 210
+    }).data();
+
+    await repo.createInvoice(inv1);
+    await expect(repo.createInvoice(inv2)).resolves.toBeDefined();
+  });
+
+  it('does not enforce uniqueness when external keys are empty strings', async () => {
+    const inv1 = InvoiceEntity.create({
+      externalId: '',
+      externalReference: '',
+      total: 130
+    }).data();
+
+    const inv2 = InvoiceEntity.create({
+      externalId: '',
+      externalReference: '',
+      total: 230
+    }).data();
+
+    await repo.createInvoice(inv1);
+    await expect(repo.createInvoice(inv2)).resolves.toBeDefined();
+  });
+
   it('enforces uniqueness on externalId + externalReference', async () => {
     const inv1 = InvoiceEntity.create({
       externalId: 'ext-unique',

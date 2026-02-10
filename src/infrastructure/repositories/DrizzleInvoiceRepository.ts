@@ -16,6 +16,12 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
             return fallback;
         }
     }
+
+    private normalizeExternalKey(value: string | null | undefined): string | null {
+        if (value === undefined || value === null) return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+    }
     
     private async getDb() {
         if (!this.db) {
@@ -36,8 +42,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
             id: r.id ?? r.id,
             projectId: (r.projectId ?? r.project_id) || undefined,
             
-            externalId: r.externalId ?? r.external_id,
-            externalReference: r.externalReference ?? r.external_reference,
+            externalId: (r.externalId ?? r.external_id) || undefined,
+            externalReference: (r.externalReference ?? r.external_reference) || undefined,
             
             issuerName: (r.issuerName ?? r.issuer_name) || undefined,
             issuerAddress: (r.issuerAddress ?? r.issuer_address) || undefined,
@@ -84,8 +90,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
         await db.insert(invoices).values({
             id: invoice.id,
             projectId: invoice.projectId,
-            externalId: invoice.externalId,
-            externalReference: invoice.externalReference,
+            externalId: this.normalizeExternalKey(invoice.externalId),
+            externalReference: this.normalizeExternalKey(invoice.externalReference),
             issuerName: invoice.issuerName,
             issuerAddress: invoice.issuerAddress,
             issuerTaxId: invoice.issuerTaxId,
@@ -129,8 +135,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
         };
         
         if (updates.projectId !== undefined) updateData.projectId = updates.projectId;
-        if (updates.externalId !== undefined) updateData.externalId = updates.externalId;
-        if (updates.externalReference !== undefined) updateData.externalReference = updates.externalReference;
+        if (updates.externalId !== undefined) updateData.externalId = this.normalizeExternalKey(updates.externalId);
+        if (updates.externalReference !== undefined) updateData.externalReference = this.normalizeExternalKey(updates.externalReference);
         if (updates.issuerName !== undefined) updateData.issuerName = updates.issuerName;
         if (updates.issuerAddress !== undefined) updateData.issuerAddress = updates.issuerAddress;
         if (updates.issuerTaxId !== undefined) updateData.issuerTaxId = updates.issuerTaxId;
