@@ -37,7 +37,7 @@ export default function TabsLayout() {
         component={DashboardScreen}
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ color }) => (
             <Home color={color} size={24} />
           ),
         }}
@@ -47,7 +47,7 @@ export default function TabsLayout() {
         component={PaymentsScreen}
         options={{
           title: 'Finances',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ color }) => (
             <CreditCard color={color} size={24} />
           ),
         }}
@@ -57,7 +57,7 @@ export default function TabsLayout() {
         component={TasksScreen}
         options={{
           title: 'Work',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ color }) => (
             <CheckSquare color={color} size={24} />
           ),
         }}
@@ -67,7 +67,7 @@ export default function TabsLayout() {
         component={ProfileScreen}
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ color }) => (
             <User color={color} size={24} />
           ),
         }}

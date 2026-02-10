@@ -40,7 +40,20 @@ Recent changes in this branch:
 - Updated `DrizzleProjectRepository` to conform to the `ProjectRepository` interface (return `meta` from `list`, adjusted `withTransaction` signature and transactional behavior, guarded undefined dates), and fixed several related compile errors.
 - Ran lint and `npx tsc --noEmit`; resolved compiler errors so the branch type-checks cleanly.
 
-Notes / Next steps:
-- Add `react-native-fs` to `package.json` and install native deps when ready: `npm i react-native-fs` and run platform installation steps (`pod install` for iOS, rebuild for Android).
-- Add unit tests that inject a mock `FSLike` into `LocalDocumentStorageEngine` to validate behavior without touching device storage.
+
+Date: 2026-02-11
+
+Branch: issue-31-invoice-repository
+
+Critical changes (concise):
+
+Date: 2026-02-11 (additional)
+
+Updates:
+- Implemented conditional uniqueness for invoices: `externalId` and `externalReference` are nullable and treated as a composite unique key only when both are present.
+- Made `externalId`/`externalReference` optional in the `Invoice` entity and normalized empty/blank values to `NULL` at persistence layer.
+- Added TDD coverage: integration tests verifying missing/empty external keys do not trigger uniqueness, while full keys still do.
+- Added migration `drizzle/migrations/0003_optional_invoice_external_keys.sql` and aligned bundled migrations so tests run reliably.
+- Adjusted `DrizzleInvoiceRepository` to normalize external keys and serialize/parse JSON fields explicitly.
+- Ran full test suite: all unit + integration tests pass locally (13 suites, 80 tests).
 

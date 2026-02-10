@@ -24,7 +24,7 @@ export class BulkUpdateProjectsUseCase {
     };
 
     if (opts?.transactional && typeof (this.repo as any).withTransaction === 'function') {
-      await (this.repo as any).withTransaction(async (txRepo: any) => {
+      await (this.repo as any).withTransaction(async (_txRepo: any) => {
         for (const id of ids) {
           await runUpdate(id);
         }
@@ -34,7 +34,7 @@ export class BulkUpdateProjectsUseCase {
         // run sequentially to keep tests deterministic
         // tests only check number of calls, not concurrency
         // so this is fine
-        // eslint-disable-next-line no-await-in-loop
+         
         await runUpdate(id);
       }
     }

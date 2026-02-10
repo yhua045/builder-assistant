@@ -15,6 +15,20 @@
       "when": 1770608567002,
       "tag": "0001_cultured_the_anarchist",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770677064775,
+      "tag": "0002_faithful_molecule_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1770855200000,
+      "tag": "0003_optional_invoice_external_keys",
+      "breakpoints": true
     }
   ]
 }

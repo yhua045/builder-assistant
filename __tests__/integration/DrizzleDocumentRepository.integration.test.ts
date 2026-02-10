@@ -75,9 +75,7 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzleDocumentRepository } from '../../src/infrastructure/repositories/DrizzleDocumentRepository';
 import { DocumentEntity } from '../../src/domain/entities/Document';
-import { drizzle } from 'drizzle-orm/sqlite-proxy';
-import { initDatabase, getDatabase } from '../../src/infrastructure/database/connection';
-import { migrate } from 'drizzle-orm/sqlite-proxy/migrator';
+import { getDatabase } from '../../src/infrastructure/database/connection';
 
 // We need to verify if migrations run.
 // If `initDatabase` runs migrations, great.

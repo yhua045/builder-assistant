@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // Projects Table
 export const projects = sqliteTable('projects', {
@@ -165,22 +165,48 @@ export const documents = sqliteTable('documents', {
 export const invoices = sqliteTable('invoices', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
-  projectId: text('project_id').notNull(),
-  vendorId: text('vendor_id'),
-  invoiceNumber: text('invoice_number'),
-  issuedDate: integer('issued_date'), // Unix timestamp
-  dueDate: integer('due_date'), // Unix timestamp
-  amount: real('amount'),
-  currency: text('currency'),
-  status: text('status', { 
-    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'] 
-  }),
-  paymentTerms: text('payment_terms'),
+  projectId: text('project_id'), // Optional
+  
+  // External Keys
+  externalId: text('external_id'),
+  externalReference: text('external_reference'),
+  
+  // Participant Info
+  issuerName: text('issuer_name'),
+  issuerAddress: text('issuer_address'),
+  issuerTaxId: text('issuer_tax_id'),
+  recipientName: text('recipient_name'),
+  recipientId: text('recipient_id'),
+  
+  // Financials
+  total: real('total').notNull(),
+  subtotal: real('subtotal'),
+  tax: real('tax'),
+  currency: text('currency').notNull().default('USD'),
+
+  // Dates
+  dateIssued: integer('date_issued'), 
+  dateDue: integer('date_due'),
+  paymentDate: integer('payment_date'),
+
+  // Status
+  status: text('status').notNull().default('draft'),
+  paymentStatus: text('payment_status').default('unpaid'),
+
+  // Content
+  documentId: text('document_id'),
+  lineItems: text('line_items'),
+  tags: text('tags'),
   notes: text('notes'),
-  createdAt: integer('created_at'),
-  updatedAt: integer('updated_at'),
+  metadata: text('metadata'),
+
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  deletedAt: integer('deleted_at'),
 }, (table) => ({
   projectIdx: index('idx_invoices_project').on(table.projectId),
+  externalKeyIdx: uniqueIndex('idx_invoices_external_key').on(table.externalId, table.externalReference),
+  statusIdx: index('idx_invoices_status').on(table.status),
 }));
 
 // Payments Table
