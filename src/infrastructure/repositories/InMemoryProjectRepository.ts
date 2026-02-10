@@ -1,5 +1,5 @@
-import { Project } from '../../../domain/entities/Project';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { Project } from '../../domain/entities/Project';
+import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 
 export class InMemoryProjectRepository implements ProjectRepository {
   private items: Project[] = [];
@@ -22,7 +22,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
     return null;
   }
 
-  async list(filters: any = {}, options: any = {}): Promise<{ items: Project[]; total: number }> {
+  async list(filters: any = {}, options: any = {}): Promise<{ items: Project[]; meta: { total: number; nextCursor?: string } }> {
     let results = this.items.slice();
     if (filters.status) {
       results = results.filter(r => r.status === filters.status);
@@ -30,12 +30,12 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const total = results.length;
     if (options.offset) results = results.slice(options.offset);
     if (options.limit) results = results.slice(0, options.limit);
-    return { items: results.map(r => ({ ...r })), total };
+    return { items: results.map(r => ({ ...r })), meta: { total } };
   }
 
   async count(filters: any = {}): Promise<number> {
     const listed = await this.list(filters);
-    return listed.total;
+    return listed.meta.total;
   }
 
   async findByStatus(status: string): Promise<Project[]> {

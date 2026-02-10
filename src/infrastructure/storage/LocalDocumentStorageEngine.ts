@@ -12,8 +12,7 @@ type FSLike = {
   DocumentDirectoryPath?: string;
 };
 
-function createNodeFSWrapper(nodeFs: any, nodePath: any): FSLike {
-  const p = nodePath;
+function createNodeFSWrapper(nodeFs: any, _nodePath: any): FSLike {
   return {
     async exists(pth: string) {
       return nodeFs.existsSync(pth);
@@ -54,7 +53,7 @@ export class LocalDocumentStorageEngine implements DocumentStorageEngine {
 
     if (typeof require !== 'undefined') {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const RNFS = require('react-native-fs');
         this.fs = {
           exists: (pth: string) => RNFS.exists(pth),
@@ -74,9 +73,9 @@ export class LocalDocumentStorageEngine implements DocumentStorageEngine {
 
       if (!this.fs) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
+           
           const nodeFs = require('fs');
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
+           
           const nodePath = require('path');
           this.fs = createNodeFSWrapper(nodeFs, nodePath);
           this.pathModule = nodePath;

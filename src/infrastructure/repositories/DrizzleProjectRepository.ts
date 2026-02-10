@@ -1,10 +1,7 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
-import SQLite from 'react-native-sqlite-storage';
-import { eq } from 'drizzle-orm';
 import { Project, Material, ProjectPhase } from '../../domain/entities/Project';
 import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 import { initDatabase, getDatabase } from '../database/connection';
-import * as schema from '../database/schema';
 
 /**
  * Drizzle-based SQLite Project Repository
@@ -201,68 +198,55 @@ export class DrizzleProjectRepository implements ProjectRepository {
     if (!this.drizzle) await this.init();
     const { db } = getDatabase();
 
-    // Use a Promise to wrap the transaction callbacks so we can return T
-    return new Promise<T>((resolve, reject) => {
-      db.transaction(async (tx: any) => {
-        // Create a minimal fake repository that implements save() within the transaction
-        // Cast to ProjectRepository to satisfy interface
-        const txRepo = {
-          save: async (project: Project) => {
-            await tx.executeSql(
-              `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET
-               property_id=excluded.property_id,
-               owner_id=excluded.owner_id,
-               name=excluded.name,
-               description=excluded.description,
-               status=excluded.status,
-               start_date=excluded.start_date,
-               expected_end_date=excluded.expected_end_date,
-               budget=excluded.budget,
-               currency=excluded.currency,
-               meta=excluded.meta,
-               updated_at=excluded.updated_at`,
-              [
-                project.id,
-                project.propertyId || null,
-                project.ownerId || null,
-                project.name,
-                project.description || null,
-                project.status,
-                project.startDate ? project.startDate.getTime() : null,
-                project.expectedEndDate ? project.expectedEndDate.getTime() : null,
-                project.budget,
-                project.currency,
-                JSON.stringify(project.meta),
-                project.createdAt?.getTime() || Date.now(),
-                project.updatedAt?.getTime() || Date.now()
-              ]
-            );
-          },
-          // Other methods aren't implemented in this transaction context yet
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          findById: async (_id: string) => null,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          findByExternalId: async (_id: string) => null,
-          list: async () => ({ items: [], meta: { total: 0 } }),
-          count: async () => 0,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          findByStatus: async (_s: string) => [],
-        } as unknown as ProjectRepository;
+    return db.transaction(async (tx: any) => {
+      // Create a minimal fake repository that implements save() within the transaction
+      // Cast to ProjectRepository to satisfy interface
+      const txRepo = {
+        save: async (project: Project) => {
+          await tx.executeSql(
+            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+             property_id=excluded.property_id,
+             owner_id=excluded.owner_id,
+             name=excluded.name,
+             description=excluded.description,
+             status=excluded.status,
+             start_date=excluded.start_date,
+             expected_end_date=excluded.expected_end_date,
+             budget=excluded.budget,
+             currency=excluded.currency,
+             meta=excluded.meta,
+             updated_at=excluded.updated_at`,
+            [
+              project.id,
+              project.propertyId || null,
+              project.ownerId || null,
+              project.name,
+              project.description || null,
+              project.status,
+              project.startDate ? project.startDate.getTime() : null,
+              project.expectedEndDate ? project.expectedEndDate.getTime() : null,
+              project.budget,
+              project.currency,
+              project.meta ? JSON.stringify(project.meta) : null,
+              project.createdAt?.getTime() || Date.now(),
+              project.updatedAt?.getTime() || Date.now()
+            ]
+          );
+        },
+        // Other methods aren't implemented in this transaction context yet
+        
+        findById: async (_id: string) => null,
+        
+        findByExternalId: async (_id: string) => null,
+        list: async () => ({ items: [], meta: { total: 0 } }),
+        count: async () => 0,
+        
+        findByStatus: async (_s: string) => [],
+      } as unknown as ProjectRepository;
 
-        try {
-          const result = await fn(txRepo);
-          resolve(result);
-        } catch (e) {
-          // Returning false or throwing ensures rollback in some sqlite libs, 
-          // usually just throwing inside the callback is enough.
-          reject(e);
-          throw e; 
-        }
-      }, (err: any) => {
-        reject(err);
-      });
+      return await fn(txRepo);
     });
   }
 
@@ -308,13 +292,13 @@ export class DrizzleProjectRepository implements ProjectRepository {
     return projects;
   }
 
-  async findByPhaseDateRange(startDate?: string, endDate?: string): Promise<Project[]> {
+  async findByPhaseDateRange(_startDate?: string, _endDate?: string): Promise<Project[]> {
     // TODO: Implement with JOIN on project_phases table
     if (!this.drizzle) throw new Error('Database not initialized');
     return [];
   }
 
-  async findWithUpcomingPhases(untilDate: string): Promise<Project[]> {
+  async findWithUpcomingPhases(_untilDate: string): Promise<Project[]> {
     // TODO: Implement with JOIN on project_phases table
     if (!this.drizzle) throw new Error('Database not initialized');
     return [];

@@ -5,27 +5,15 @@
  * The app separates domain logic, application use cases, and UI components.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StatusBar,
-  StyleSheet,
   useColorScheme as rnUseColorScheme,
   View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  TextStyle,
-  ViewStyle,
 } from 'react-native';
 import {
   SafeAreaProvider,
-  useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-
-// Import clean architecture components
-import { ProjectList } from './src/components/ProjectList';
-import { useProjects } from './src/hooks/useProjects';
-import { Project } from './src/domain/entities/Project';
 
 // Navigation Imports
 import { NavigationContainer } from '@react-navigation/native';

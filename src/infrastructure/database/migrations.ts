@@ -247,12 +247,56 @@ CREATE TABLE \`work_variations\` (
 CREATE UNIQUE INDEX \`work_variations_id_unique\` ON \`work_variations\` (\`id\`);--> statement-breakpoint
 CREATE INDEX \`idx_work_variations_project\` ON \`work_variations\` (\`project_id\`);`;
 
+const rawMigration0001 = `DROP TABLE IF EXISTS \`invoices\`;--> statement-breakpoint
+CREATE TABLE \`invoices\` (
+\t\`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+\t\`id\` text NOT NULL,
+\t\`project_id\` text,
+\t\`external_id\` text NOT NULL,
+\t\`external_reference\` text NOT NULL,
+\t\`issuer_name\` text,
+\t\`issuer_address\` text,
+\t\`issuer_tax_id\` text,
+\t\`recipient_name\` text,
+\t\`recipient_id\` text,
+\t\`total\` real NOT NULL,
+\t\`subtotal\` real,
+\t\`tax\` real,
+\t\`currency\` text DEFAULT 'USD' NOT NULL,
+\t\`date_issued\` integer,
+\t\`date_due\` integer,
+\t\`payment_date\` integer,
+\t\`status\` text DEFAULT 'draft' NOT NULL,
+\t\`payment_status\` text DEFAULT 'unpaid',
+\t\`document_id\` text,
+\t\`line_items\` text,
+\t\`tags\` text,
+\t\`notes\` text,
+\t\`metadata\` text,
+\t\`created_at\` integer NOT NULL,
+\t\`updated_at\` integer NOT NULL,
+\t\`deleted_at\` integer
+);--> statement-breakpoint
+CREATE UNIQUE INDEX \`invoices_id_unique\` ON \`invoices\` (\`id\`);--> statement-breakpoint
+CREATE INDEX \`idx_invoices_project\` ON \`invoices\` (\`project_id\`);--> statement-breakpoint
+CREATE UNIQUE INDEX \`idx_invoices_external_key\` ON \`invoices\` (\`external_id\`,\`external_reference\`);--> statement-breakpoint
+CREATE INDEX \`idx_invoices_status\` ON \`invoices\` (\`status\`);`;
+
 const migrations: RNMigration[] = [
   {
     tag: '0000_slow_drax',
     hash: '0000_slow_drax',
     folderMillis: 1770083691891,
     sql: rawMigration0000
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean),
+  },
+  {
+    tag: '0001_perpetual_jamie_braddock',
+    hash: '0001_perpetual_jamie_braddock',
+    folderMillis: 1770608660040,
+    sql: rawMigration0001
       .split('--> statement-breakpoint')
       .map((statement) => statement.trim())
       .filter(Boolean),

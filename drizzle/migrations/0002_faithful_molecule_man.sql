@@ -1,0 +1,39 @@
+PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE `__new_invoices` (
+	`local_id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`id` text NOT NULL,
+	`project_id` text,
+	`external_id` text NOT NULL,
+	`external_reference` text NOT NULL,
+	`issuer_name` text,
+	`issuer_address` text,
+	`issuer_tax_id` text,
+	`recipient_name` text,
+	`recipient_id` text,
+	`total` real NOT NULL,
+	`subtotal` real,
+	`tax` real,
+	`currency` text DEFAULT 'USD' NOT NULL,
+	`date_issued` integer,
+	`date_due` integer,
+	`payment_date` integer,
+	`status` text DEFAULT 'draft' NOT NULL,
+	`payment_status` text DEFAULT 'unpaid',
+	`document_id` text,
+	`line_items` text,
+	`tags` text,
+	`notes` text,
+	`metadata` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`deleted_at` integer
+);
+--> statement-breakpoint
+INSERT INTO `__new_invoices`("local_id", "id", "project_id", "external_id", "external_reference", "issuer_name", "issuer_address", "issuer_tax_id", "recipient_name", "recipient_id", "total", "subtotal", "tax", "currency", "date_issued", "date_due", "payment_date", "status", "payment_status", "document_id", "line_items", "tags", "notes", "metadata", "created_at", "updated_at", "deleted_at") SELECT "local_id", "id", "project_id", "external_id", "external_reference", "issuer_name", "issuer_address", "issuer_tax_id", "recipient_name", "recipient_id", "total", "subtotal", "tax", "currency", "date_issued", "date_due", "payment_date", "status", "payment_status", "document_id", "line_items", "tags", "notes", "metadata", "created_at", "updated_at", "deleted_at" FROM `invoices`;--> statement-breakpoint
+DROP TABLE `invoices`;--> statement-breakpoint
+ALTER TABLE `__new_invoices` RENAME TO `invoices`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;--> statement-breakpoint
+CREATE UNIQUE INDEX `invoices_id_unique` ON `invoices` (`id`);--> statement-breakpoint
+CREATE INDEX `idx_invoices_project` ON `invoices` (`project_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `idx_invoices_external_key` ON `invoices` (`external_id`,`external_reference`);--> statement-breakpoint
+CREATE INDEX `idx_invoices_status` ON `invoices` (`status`);

@@ -1,11 +1,7 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
-import { eq, and } from 'drizzle-orm';
-import { Document, DocumentEntity } from '../../domain/entities/Document';
+import { Document } from '../../domain/entities/Document';
 import { DocumentRepository } from '../../domain/repositories/DocumentRepository';
 import { initDatabase, getDatabase } from '../database/connection';
-import { documents } from '../database/schema';
-
-type DocumentSchema = typeof documents.$inferSelect;
 
 export class DrizzleDocumentRepository implements DocumentRepository {
   private drizzle: ReturnType<typeof drizzle> | null = null;

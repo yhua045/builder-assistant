@@ -27,7 +27,6 @@ describe('CreateProjectUseCase integration (InMemoryRepo)', () => {
 
   it('supports withTransaction semantics', async () => {
     const repo = new InMemoryProjectRepository();
-    const uc = new CreateProjectUseCase(repo as any);
 
     await repo.withTransaction(async (txRepo) => {
       await txRepo.save({

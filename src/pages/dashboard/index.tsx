@@ -7,19 +7,12 @@ import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
 import { 
-  AlertCircle, 
   DollarSign, 
-  Calendar, 
-  Clock,
   Plus,
   Camera,
   FileText,
-  ClipboardList,
   Wrench,
-  X,
-  Upload,
-  Edit3,
-  Lightbulb
+  X
 } from 'lucide-react-native';
 
 // Mock data
@@ -116,8 +109,6 @@ const quickActions = [
 
 export default function DashboardScreen() {
   const [showQuickActions, setShowQuickActions] = useState(false);
-
-  const totalPaymentsThisWeek = paymentsThisWeek.reduce((sum, payment) => sum + payment.amount, 0);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
