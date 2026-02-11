@@ -80,4 +80,31 @@ Next
 
 PR: https://github.com/yhua045/builder-assistant/pull/36 (branch `issue-32-projects-page-wt`)
  
+Date: 2026-02-12
+
+Branch: issue-38
+
+Summary (concise)
+- Refactored `ProjectCard` to use a dedicated `ProjectCardDto` for UI-only fields (owner, address, contact, tasks).
+- Updated `ProjectsPage` and `ProjectList` to map domain `Project` entities to `ProjectCardDto` for rendering.
+- Removed unused imports, helpers and styles from `ProjectCard` and made the component leaner.
+- Fixed Jest transform config to include nativewind and related native modules so unit tests run under the RN environment.
+- Added a small `ManualProjectEntryButton` component and updated dashboard usage.
+
+Completed
+- Implemented `src/application/dtos/ProjectCardDto.ts` and refactored `src/components/ProjectCard.tsx` to use it.
+- Updated `src/pages/projects/ProjectsPage.tsx` and `src/components/ProjectList.tsx` to pass DTOs to the card component.
+- Fixed type errors, cleaned unused code, and ran the full test suite locally.
+- Updated `jest.config.js` to transform nativewind and related native modules so tests parse correctly.
+
+Test status
+- Ran `npm test`: all test suites pass locally (17 suites, 87 tests).
+
+Notes
+- Followed project workflow guidance in `CLAUDE.md` before implementing changes.
+- This PR focuses on UI-layer DTOs and type-safety; no domain model changes were made. Mapping uses lightweight placeholders for fields absent from the domain model (address/contact) — these will be replaced when the domain is extended or when the on-device ML extraction is integrated.
+
+Next
+- Open PR for review on branch `issue-38`. Request review from core maintainers for integration with Projects page UI.
+
 

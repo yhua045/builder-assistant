@@ -29,7 +29,7 @@ describe('useProjects hook', () => {
       const state = useProjects();
       useEffect(() => {
         latest = state;
-      }, [state.projects, state.loading, state.error]);
+      }, [state]);
       return null;
     }
 
@@ -37,7 +37,7 @@ describe('useProjects hook', () => {
       renderer.create(<TestHarness />);
       for (let i = 0; i < 20; i++) {
         if (latest && latest.loading === false) break;
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
       }
     });
 
@@ -56,7 +56,7 @@ describe('useProjects hook', () => {
       const state = useProjects();
       useEffect(() => {
         latest = state;
-      }, [state.projects, state.loading, state.error]);
+      }, [state]);
       return null;
     }
 
@@ -64,7 +64,7 @@ describe('useProjects hook', () => {
       renderer.create(<TestHarness />);
       for (let i = 0; i < 20; i++) {
         if (latest && latest.loading === false) break;
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
       }
     });
 
@@ -88,7 +88,7 @@ describe('useProjects hook', () => {
       const state = useProjects();
       useEffect(() => {
         latest = state;
-      }, [state.projects, state.loading, state.error]);
+      }, [state]);
       return null;
     }
 
@@ -96,7 +96,7 @@ describe('useProjects hook', () => {
       renderer.create(<TestHarness />);
       for (let i = 0; i < 20; i++) {
         if (latest && latest.loading === false) break;
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
       }
     });
 
