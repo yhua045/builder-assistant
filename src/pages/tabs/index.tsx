@@ -6,7 +6,7 @@ import { cssInterop } from 'nativewind';
 import DashboardScreen from '../dashboard';
 import PaymentsScreen from '../payments';
 import TasksScreen from '../tasks';
-import ProfileScreen from '../profile';
+import ProjectsPage from '../projects/ProjectsPage';
 
 // Enable className styling for icons
 cssInterop(Home, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -63,10 +63,10 @@ export default function TabsLayout() {
         }}
       />
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="Projects"
+        component={ProjectsPage}
         options={{
-          title: 'Profile',
+          title: 'Projects',
           tabBarIcon: ({ color }) => (
             <User color={color} size={24} />
           ),
