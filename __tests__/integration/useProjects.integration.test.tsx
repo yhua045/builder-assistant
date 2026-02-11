@@ -50,7 +50,8 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { renderHook } from '@testing-library/react-hooks';
+import renderer, { act } from 'react-test-renderer';
+import React, { useEffect } from 'react';
 import { useProjects } from '../../src/hooks/useProjects';
 import { DrizzleProjectRepository } from '../../src/infrastructure/repositories/DrizzleProjectRepository';
 import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
@@ -71,12 +72,29 @@ describe('useProjects integration', () => {
 
     await repo.save(p.data);
 
-    const { result, waitForNextUpdate } = renderHook(() => useProjects());
-    await waitForNextUpdate();
+    let latest: any = null;
 
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(result.current.projects.some(pr => pr.id === 'int-hook-1')).toBe(true);
+    function TestHarness() {
+      const state = useProjects();
+      useEffect(() => {
+        latest = state;
+      }, [state.projects, state.loading, state.error]);
+      return null;
+    }
+
+    await act(async () => {
+      renderer.create(<TestHarness />);
+      // wait for hook to perform initial load
+      for (let i = 0; i < 20; i++) {
+        if (latest && latest.loading === false) break;
+        await new Promise(res => setTimeout(res, 50));
+      }
+    });
+
+    expect(latest).not.toBeNull();
+    expect(latest.loading).toBe(false);
+    expect(latest.error).toBeNull();
+    expect(latest.projects.some((pr: any) => pr.id === 'int-hook-1')).toBe(true);
 
     await repo.delete('int-hook-1');
     await closeDatabase();
