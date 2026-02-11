@@ -21,6 +21,10 @@ interface ProjectCardProps {
   project: Project;
   onPress?: (project: Project) => void;
   style?: ViewStyle;
+  onArchive?: (projectId: string) => void;
+  onUnarchive?: (projectId: string) => void;
+  onToggleFavorite?: (projectId: string) => void;
+  onChangeStatus?: (projectId: string, newStatus: ProjectStatus) => void;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -112,9 +116,28 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       )}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          {project.materials.length} materials • {project.phases.length} phases
-        </Text>
+            <Text style={styles.footerText}>
+              {project.materials.length} materials • {project.phases.length} phases
+            </Text>
+            <View style={styles.actions}>
+              {((project as any).archived) ? (
+                <TouchableOpacity testID="unarchive-button" onPress={() => onUnarchive?.(project.id)}>
+                  <Text style={styles.actionText}>Unarchive</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity testID="archive-button" onPress={() => onArchive?.(project.id)}>
+                  <Text style={styles.actionText}>Archive</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity testID="favorite-button" onPress={() => onToggleFavorite?.(project.id)}>
+                <Text style={styles.actionText}>★</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity testID="status-button" onPress={() => onChangeStatus?.(project.id, ProjectStatus.COMPLETED)}>
+                <Text style={styles.actionText}>Set Completed</Text>
+              </TouchableOpacity>
+            </View>
       </View>
     </TouchableOpacity>
   );
@@ -228,5 +251,16 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: '#999999',
+  } as TextStyle,
+  actions: {
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 12,
+  } as ViewStyle,
+
+  actionText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
   } as TextStyle,
 });
