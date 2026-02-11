@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, Button, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView } from 'react-native';
+import DatePickerInput from './inputs/DatePickerInput';
+import ContactSelector from './inputs/ContactSelector';
+import TeamSelector from './inputs/TeamSelector';
 
 interface Props {
   visible: boolean;
@@ -19,10 +22,10 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [address, setAddress] = React.useState('');
-  const [projectOwner, setProjectOwner] = React.useState('');
-  const [team, setTeam] = React.useState('');
-  const [startDate, setStartDate] = React.useState('');
-  const [endDate, setEndDate] = React.useState('');
+  const [projectOwner, setProjectOwner] = React.useState<string | null>(null);
+  const [team, setTeam] = React.useState<string | null>(null);
+  const [startDate, setStartDate] = React.useState<Date | null>(null);
+  const [endDate, setEndDate] = React.useState<Date | null>(null);
   const [budget, setBudget] = React.useState('');
   const [priority, setPriority] = React.useState('Low');
   const [notes, setNotes] = React.useState('');
@@ -41,9 +44,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
 
     // Validate dates if both present
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (start >= end) {
+      if (startDate >= endDate) {
         newErrors.dates = 'End date must be after start date';
       }
     }
@@ -59,11 +60,11 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
       name: name.trim(),
       description: description.trim() || undefined,
       address: address.trim() || undefined,
-      projectOwner: projectOwner.trim() || undefined,
-      team: team.trim() || undefined,
+      projectOwner: projectOwner ? projectOwner : undefined,
+      team: team ? team : undefined,
       visibility: 'Public' as const,
-      startDate: startDate ? new Date(startDate) : undefined,
-      expectedEndDate: endDate ? new Date(endDate) : undefined,
+      startDate: startDate ? startDate : undefined,
+      expectedEndDate: endDate ? endDate : undefined,
       budget: budget ? parseFloat(budget) : undefined,
       priority: priority as 'Low' | 'Medium' | 'High',
       notes: notes.trim() || undefined
@@ -116,46 +117,42 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
       {/* Project Owner */}
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">Project Owner</Text>
-        <TextInput
+        <ContactSelector
+          label="Project Owner"
           value={projectOwner}
-          onChangeText={setProjectOwner}
-          placeholder="Owner name or ID"
-          className="border border-border rounded p-2 bg-card text-foreground"
+          onChange={setProjectOwner}
         />
       </View>
 
       {/* Team */}
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">Team</Text>
-        <TextInput
+        <TeamSelector
+          label="Team"
           value={team}
-          onChangeText={setTeam}
-          placeholder="Team members"
-          className="border border-border rounded p-2 bg-card text-foreground"
+          onChange={setTeam}
         />
       </View>
 
       {/* Start Date */}
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">Start Date</Text>
-        <TextInput
+        <DatePickerInput
+          label="Start Date"
           value={startDate}
-          onChangeText={setStartDate}
-          placeholder="YYYY-MM-DD"
-          className="border border-border rounded p-2 bg-card text-foreground"
+          onChange={setStartDate}
         />
       </View>
 
       {/* End Date */}
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">End Date</Text>
-        <TextInput
+        <DatePickerInput
+          label="End Date"
           value={endDate}
-          onChangeText={setEndDate}
-          placeholder="YYYY-MM-DD"
-          className="border border-border rounded p-2 bg-card text-foreground"
+          onChange={setEndDate}
+          error={errors.dates}
         />
-        {errors.dates && <Text className="text-red-500 text-sm mt-1">{errors.dates}</Text>}
       </View>
 
       {/* Budget */}

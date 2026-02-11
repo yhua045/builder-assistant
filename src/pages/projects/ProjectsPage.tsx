@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
-import { ManualProjectEntryButton } from '../../components/ManualProjectEntryButton';
+import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Layers } from 'lucide-react-native';
@@ -57,7 +57,7 @@ const ProjectsPage: React.FC = () => {
       {!loading && !error && projectDtos.length === 0 && (
           <View className="px-6 gap-4">
             <Text testID="projects-empty" style={{ marginBottom: 20 }}>No projects yet</Text>
-            <ManualProjectEntryButton />
+              <ManualProjectEntry />
           </View>
       )}
   

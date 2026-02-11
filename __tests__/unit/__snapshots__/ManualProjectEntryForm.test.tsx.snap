@@ -65,12 +65,16 @@ exports[`ManualProjectEntryForm renders form when visible 1`] = `
       >
         Project Owner
       </Text>
-      <TextInput
-        className="border border-border rounded p-2 bg-card text-foreground"
-        onChangeText={[Function]}
-        placeholder="Owner name or ID"
-        value=""
-      />
+      <View>
+        <Text>
+          Project Owner
+        </Text>
+        <TextInput
+          onChangeText={[Function]}
+          placeholder="Search contacts"
+          value=""
+        />
+      </View>
     </View>
     <View
       className="mb-4"
@@ -80,12 +84,16 @@ exports[`ManualProjectEntryForm renders form when visible 1`] = `
       >
         Team
       </Text>
-      <TextInput
-        className="border border-border rounded p-2 bg-card text-foreground"
-        onChangeText={[Function]}
-        placeholder="Team members"
-        value=""
-      />
+      <View>
+        <Text>
+          Team
+        </Text>
+        <TextInput
+          onChangeText={[Function]}
+          placeholder="Search teams"
+          value=""
+        />
+      </View>
     </View>
     <View
       className="mb-4"
@@ -95,12 +103,16 @@ exports[`ManualProjectEntryForm renders form when visible 1`] = `
       >
         Start Date
       </Text>
-      <TextInput
-        className="border border-border rounded p-2 bg-card text-foreground"
-        onChangeText={[Function]}
-        placeholder="YYYY-MM-DD"
-        value=""
-      />
+      <View>
+        <Text>
+          Start Date
+        </Text>
+        <TextInput
+          onChangeText={[Function]}
+          placeholder="YYYY-MM-DD"
+          value=""
+        />
+      </View>
     </View>
     <View
       className="mb-4"
@@ -110,12 +122,16 @@ exports[`ManualProjectEntryForm renders form when visible 1`] = `
       >
         End Date
       </Text>
-      <TextInput
-        className="border border-border rounded p-2 bg-card text-foreground"
-        onChangeText={[Function]}
-        placeholder="YYYY-MM-DD"
-        value=""
-      />
+      <View>
+        <Text>
+          End Date
+        </Text>
+        <TextInput
+          onChangeText={[Function]}
+          placeholder="YYYY-MM-DD"
+          value=""
+        />
+      </View>
     </View>
     <View
       className="mb-4"

@@ -150,7 +150,43 @@ Completed
 - Added `ProjectMapper` to map prefixed SQL rows into `Contact` and `Property` domain objects.
 
 
+Date: 2026-02-12
 
+Branch: issue-43
+
+Summary (concise)
+ - Finish Manual Project Entry: wired manual entry into navigation, improved form inputs (date picker stub + contact/team selectors), implemented TDD tests for new inputs and integration wiring.
+
+Current Milestone: Finish Manual Project Entry UX controls and navigation wiring
+
+Completed
+ - Created design doc: [design/#43-finish-manual-project-entry.md](design/#43-finish-manual-project-entry.md)
+ - Implemented `src/components/inputs/DatePickerInput.tsx` (minimal cross-platform stub)
+ - Implemented `src/components/inputs/ContactSelector.tsx` and `src/components/inputs/TeamSelector.tsx` with debounced search UI
+ - Added lightweight hooks `src/hooks/useContacts.ts` and `src/hooks/useTeams.ts` (in-memory test stubs)
+ - Updated `src/components/ManualProjectEntryForm.tsx` to use the new inputs and date objects
+ - Added `src/components/ManualProjectEntry.tsx` container (button + form) and wired it into the Projects page and Dashboard hero (`src/pages/projects/ProjectsPage.tsx`, `src/pages/dashboard/components/HeroSection.tsx`)
+ - Added unit tests for new inputs and updated form tests: `__tests__/unit/{DatePickerInput,ContactSelector,TeamSelector,ManualProjectEntryForm}.test.tsx`
+ - Ensured full test run passes locally and TypeScript checks succeed
+
+Test status
+ - All tests pass locally: 24 suites, 101 tests (unit + integration) — `npx jest --runInBand` and `npx tsc --noEmit` both succeed on this branch.
+
+Files changed (high level)
+ - Added: `src/components/inputs/DatePickerInput.tsx`, `src/components/inputs/ContactSelector.tsx`, `src/components/inputs/TeamSelector.tsx`
+ - Added: `src/hooks/useContacts.ts`, `src/hooks/useTeams.ts`
+ - Added/Updated tests: `__tests__/unit/*` for selectors and date input
+ - Modified: `src/components/ManualProjectEntryForm.tsx`, `src/components/ManualProjectEntry.tsx`, `src/pages/projects/ProjectsPage.tsx`, `src/pages/dashboard/components/HeroSection.tsx`
+
+Next
+ - Replace `DatePickerInput` stub with native-picker integration (`@react-native-community/datetimepicker`) and add platform-specific behavior
+ - Replace in-memory hooks with Drizzle-backed repositories (`DrizzleContactRepository` / `DrizzleTeamRepository`) and add integration tests (requires schema verification/migration)
+ - Add accessibility attributes and polish selector UI (ARIA/labels, keyboard navigation)
+ - Open PR and request review; link this design doc and acceptance criteria
+
+PR: will open from `issue-43` → `master` with this progress summary and link to the design doc.
+
+````
 
 
 
