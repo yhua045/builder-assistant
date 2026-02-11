@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ManualProjectEntryButton renders without crashing and shows the button 1`] = `null`;

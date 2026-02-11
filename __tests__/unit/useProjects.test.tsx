@@ -74,11 +74,11 @@ describe('useProjects hook', () => {
   });
 
   it('createProject refreshes list on success', async () => {
-    // Sequence: initial load -> create use-case list check -> refresh list
+    // Sequence: initial load -> refresh list
+    // (no uniqueness check because request has no address/projectOwner)
     mockRepo.list
       .mockResolvedValueOnce({ items: [], meta: {} }) // initial
-      .mockResolvedValueOnce({ items: [], meta: {} }) // create use-case check
-      .mockResolvedValueOnce({ items: [{ id: 'p2', name: 'New', materials: [], phases: [], status: 'planning' }], meta: {} }); // refreshed
+      .mockResolvedValue({ items: [{ id: 'p2', name: 'New', materials: [], phases: [], status: 'planning' }], meta: {} }); // refreshed and any subsequent
 
     mockRepo.save.mockResolvedValueOnce(undefined);
 
@@ -109,11 +109,17 @@ describe('useProjects hook', () => {
         expectedEndDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 40),
       } as any);
       expect(res.success).toBe(true);
+      
+      // Wait for state to update after refresh
+      for (let i = 0; i < 20; i++) {
+        if (latest.projects.find((p: any) => p.id === 'p2')) break;
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
+      }
     });
 
     // After createProject completes, refresh should have run
-    expect(latest.projects.find((p: any) => p.id === 'p2')).toBeTruthy();
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
-    expect(mockRepo.list).toHaveBeenCalledTimes(3);
+    expect(mockRepo.list.mock.calls.length).toBeGreaterThanOrEqual(2); // initial + refresh
+    expect(latest.projects.find((p: any) => p.id === 'p2')).toBeTruthy();
   });
 });

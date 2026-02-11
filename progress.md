@@ -98,13 +98,42 @@ Completed
 - Updated `jest.config.js` to transform nativewind and related native modules so tests parse correctly.
 
 Test status
-- Ran `npm test`: all test suites pass locally (17 suites, 87 tests).
+- All tests pass (17 suites, 87 tests).
 
-Notes
-- Followed project workflow guidance in `CLAUDE.md` before implementing changes.
-- This PR focuses on UI-layer DTOs and type-safety; no domain model changes were made. Mapping uses lightweight placeholders for fields absent from the domain model (address/contact) — these will be replaced when the domain is extended or when the on-device ML extraction is integrated.
+---
+
+Date: 2026-02-12
+
+Branch: issue-39
+
+Summary (concise)
+- Implemented full Project creation form (`ManualProjectEntryForm`) accessible via `ManualProjectEntry` button following TDD workflow.
+- Extended `CreateProjectUseCase` to accept all required fields from issue #39 (address, owner, team, visibility, priority, notes) with comprehensive validation (required fields, date range, owner+address uniqueness).
+- Updated domain model to use `Project.propertyId` (address) and `Project.ownerId` (project owner), with additional metadata stored in `Project.meta`.
+
+Design doc: [design/#39-add-project-form.md](design/#39-add-project-form.md)
+
+Completed (following TDD workflow per CLAUDE.md)
+3. **Implementation**: 
+   - Implemented `src/components/ManualProjectEntryForm.tsx` with all fields (name*, address*, description, owner, team, dates, budget, priority, notes).
+   - Added inline validation for required fields (name, address) and date range validation (end date > start date).
+   - Created `src/components/ManualProjectEntry.tsx` container to wire button → form → `useProjects().createProject()`.
+   - Extended `CreateProjectRequest` interface with new fields (address, projectOwner, team, visibility, priority, notes).
+   - Updated `CreateProjectUseCase` to validate and map additional fields to `Project` entity (propertyId, ownerId, meta).
+   - Implemented owner+address uniqueness validation (skipped if either is null).
+
+Test status
+- All tests pass (20 suites, 96 tests).
+- Type check (`npx tsc --noEmit`) passes.
 
 Next
-- Open PR for review on branch `issue-38`. Request review from core maintainers for integration with Projects page UI.
+- Wire the form into the app navigation (e.g., from Projects page or dashboard).
+- Consider adding date picker components for better UX (currently text input).
+- Add user/team selection dropdowns (currently free text).
+- Open PR and link to issue #39.
+
+
+
+
 
 
