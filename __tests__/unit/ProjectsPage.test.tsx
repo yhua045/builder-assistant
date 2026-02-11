@@ -1,5 +1,5 @@
 import React from 'react';
-import renderer from 'react-test-renderer';
+import renderer, { act } from 'react-test-renderer';
 import ProjectsPage from '../../src/pages/projects/ProjectsPage';
 import { useProjects } from '../../src/hooks/useProjects';
 import { ProjectStatus } from '../../src/domain/entities/Project';
@@ -13,7 +13,7 @@ describe('ProjectsPage', () => {
     mockedUseProjects.mockReset();
   });
 
-  it('renders loading state', () => {
+  it('renders loading state', async () => {
     mockedUseProjects.mockReturnValue({
       projects: [],
       loading: true,
@@ -23,11 +23,20 @@ describe('ProjectsPage', () => {
       refreshProjects: async () => {},
     } as any);
 
-    const tree = renderer.create(<ProjectsPage />).toJSON();
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+
+    await act(async () => {
+      testRenderer = renderer.create(<ProjectsPage />);
+    });
+
+    const tree = testRenderer!.toJSON();
+    act(() => {
+      testRenderer!.unmount();
+    });
     expect(tree).toMatchSnapshot();
   });
 
-  it('renders list of projects', () => {
+  it('renders list of projects', async () => {
     mockedUseProjects.mockReturnValue({
       projects: [
         {
@@ -46,7 +55,16 @@ describe('ProjectsPage', () => {
       refreshProjects: async () => {},
     } as any);
 
-    const tree = renderer.create(<ProjectsPage />).toJSON();
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+
+    await act(async () => {
+      testRenderer = renderer.create(<ProjectsPage />);
+    });
+
+    const tree = testRenderer!.toJSON();
+    act(() => {
+      testRenderer!.unmount();
+    });
     expect(tree).toMatchSnapshot();
   });
 });

@@ -4,23 +4,37 @@ import ManualProjectEntryForm from '../../src/components/ManualProjectEntryForm'
 import { TextInput, Button } from 'react-native';
 
 describe('ManualProjectEntryForm', () => {
-  it('renders form when visible', () => {
+  it('renders form when visible', async () => {
     const onSave = jest.fn();
     const onCancel = jest.fn();
 
-    const tree = renderer
-      .create(<ManualProjectEntryForm visible={true} onSave={onSave} onCancel={onCancel} />)
-      .toJSON();
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+
+    await act(async () => {
+      testRenderer = renderer.create(<ManualProjectEntryForm visible={true} onSave={onSave} onCancel={onCancel} />);
+    });
+
+    const tree = testRenderer!.toJSON();
+    act(() => {
+      testRenderer!.unmount();
+    });
     expect(tree).toMatchSnapshot();
   });
 
-  it('does not render when not visible', () => {
+  it('does not render when not visible', async () => {
     const onSave = jest.fn();
     const onCancel = jest.fn();
 
-    const tree = renderer
-      .create(<ManualProjectEntryForm visible={false} onSave={onSave} onCancel={onCancel} />)
-      .toJSON();
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+
+    await act(async () => {
+      testRenderer = renderer.create(<ManualProjectEntryForm visible={false} onSave={onSave} onCancel={onCancel} />);
+    });
+
+    const tree = testRenderer!.toJSON();
+    act(() => {
+      testRenderer!.unmount();
+    });
     expect(tree).toBeNull();
   });
 

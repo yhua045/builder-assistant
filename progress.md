@@ -143,20 +143,12 @@ Summary (concise)
 - Repository contract: added `findDetailsById` and `listDetails` to `src/domain/repositories/ProjectRepository.ts`.
 - Infrastructure: added `src/infrastructure/mappers/ProjectMapper.ts`, extended `DrizzleProjectRepository` and `InMemoryProjectRepository` to return hydrated `ProjectDetails`.
 - Tests & TDD: added `__tests__/unit/GetProjectDetailsUseCase.test.ts` and integration coverage under `__tests__/integration/DrizzleProjectRepository.integration.test.ts` following TDD; updated component tests to avoid async `act()` warnings.
-- Test stability: added manual Jest mocks for NativeWind and `react-native-safe-area-context`, and updated `jest.setup.js` to stabilize test runtime.
 
 Completed
-- Created design doc: [design/#41-create-project-domain-entities.md](design/#41-create-project-domain-entities.md)
 - Implemented `ProjectDetails` domain type and use-case `GetProjectDetailsUseCase` (`src/application/usecases/project/GetProjectDetailsUseCase.ts`).
 - Updated repository interface to include read/hydrated methods and implemented them in both Drizzle and in-memory adapters.
 - Added `ProjectMapper` to map prefixed SQL rows into `Contact` and `Property` domain objects.
-- Added and fixed unit & integration tests; ran full test suite locally — all tests pass.
-- Stabilized Jest by adding manual mocks under `__mocks__/` and adjusting tests to wrap renders/unmounts in `act()`.
 
-Next
-- Commit and push branch `issue-41` (this PR).
-- Open PR for review (created by this task); include this summary and link to the design doc and tests.
-- Optional follow-up: silence or fix non-failing SQLite unique-constraint noise during migrations in integration logs.
 
 
 

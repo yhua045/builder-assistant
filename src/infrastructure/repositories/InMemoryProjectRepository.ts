@@ -1,8 +1,20 @@
 import { Project } from '../../domain/entities/Project';
+import { ProjectDetails } from '../../domain/entities/ProjectDetails';
 import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 
 export class InMemoryProjectRepository implements ProjectRepository {
   private items: Project[] = [];
+
+  private toDetails(project: Project): ProjectDetails {
+    return {
+      ...project,
+      owner: {
+        id: project.ownerId ?? 'unknown',
+        name: 'Unknown',
+      },
+      property: undefined,
+    };
+  }
 
   async save(project: Project): Promise<void> {
     const idx = this.items.findIndex(p => p.id === project.id);
@@ -49,6 +61,19 @@ export class InMemoryProjectRepository implements ProjectRepository {
 
   async delete(id: string): Promise<void> {
     this.items = this.items.filter(i => i.id !== id);
+  }
+
+  async findDetailsById(id: string): Promise<ProjectDetails | null> {
+    const project = await this.findById(id);
+    return project ? this.toDetails(project) : null;
+  }
+
+  async listDetails(filters: any = {}, options: any = {}): Promise<{ items: ProjectDetails[]; meta: { total: number; nextCursor?: string } }> {
+    const listed = await this.list(filters, options);
+    return {
+      items: listed.items.map((project) => this.toDetails(project)),
+      meta: listed.meta,
+    };
   }
 
   async withTransaction<T>(work: (repo: ProjectRepository) => Promise<T>): Promise<T> {
