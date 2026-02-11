@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Upload, Lightbulb } from 'lucide-react-native';
-import { ManualProjectEntryButton } from '../../../components/ManualProjectEntryButton';
+import ManualProjectEntry from '../../../components/ManualProjectEntry';
 
 export default function HeroSection() {
   return (
@@ -25,7 +25,7 @@ export default function HeroSection() {
           <Text className="text-white/90 text-base ml-11">AI will extract address, owner, and dates</Text>
         </Pressable>
 
-        <ManualProjectEntryButton />
+        <ManualProjectEntry />
 
         <View className="bg-chart-3/10 border border-chart-3/30 rounded-xl p-4 flex-row items-start">
           <Lightbulb className="text-chart-3 mr-3 mt-0.5" size={20} />
