@@ -72,7 +72,12 @@ See [DRIZZLE_SETUP.md](DRIZZLE_SETUP.md) and [docs/DATABASE_MIGRATIONS.md](docs/
 
 ### Test-Driven Development (TDD) Workflow for Implementations
 
-When implementing features (not during planning), follow a strict TDD flow to ensure correctness and maintainability:
+Follow this TDD flow to ensure correctness, traceability, and easy handover.
+
+0. Planning session — capture design and acceptance criteria
+	- Before writing tests, hold a short planning session to agree the scope and acceptance criteria.
+	- Record the proposed implementation details and design in `design/[ticket-reference-and-description]` (for example, [design/#32-create-project-page.md](design/#32-create-project-page.md)).
+	- Include: user story, UI mockups or component sketches, API/contracts, migration notes, and explicit test acceptance criteria.
 
 1. Design the abstraction (interface/port) first
 	- Define repository/use-case interfaces in `src/domain/repositories` or `src/application` as appropriate.
@@ -85,18 +90,19 @@ When implementing features (not during planning), follow a strict TDD flow to en
 
 3. Implement the smallest change to make tests pass
 	- Implement a concrete adapter or use-case implementation in `src/infrastructure` or `src/application`.
-	- Prefer simple, well-scoped commits that make a single test pass.
+	- Prefer small, well-scoped commits that make a single test pass.
 
 4. Refactor with confidence
 	- Once tests are green, refactor code to improve clarity or remove duplication while keeping tests passing.
 	- Update or add tests if behaviours change.
 
 5. PR and review
-	- Push the branch and open a PR. The PR description should reference failing test(s) and the implemented change.
+	- Push the branch and open a PR. The PR description should reference failing test(s) and the implemented change and link the design doc.
 	- Request at least one reviewer; wait for approval before merging.
 
-6. Merge and iterate
-	- After merge, create follow-up tasks for remaining work (UI, docs, migrations).
+6. Merge and end-of-cycle summary
+	- After merge, summarise the key changes, decisions, and trade-offs made during the task in `progress.md` (see [progress.md](progress.md)).
+	- The summary should refer to ## Progress.md template section (in this document).
 
 Notes
 - Keep tests fast and deterministic. Use in-memory DBs or mocks for unit tests.
@@ -115,3 +121,128 @@ Notes
 - TypeScript 5.8+ (strict)
 - Drizzle ORM + SQLite (react-native-sqlite-storage)
 - Jest for testing
+- State Management:
+- Local Storage:
+
+
+
+## Progress.md file template
+# Project Progress
+Last Updated: YYYY-MM-DD
+Current Milestone: <Short, single-line goal>
+---
+
+
+---
+## 2. Confirmed Architectural Decisions (Non-Negotiable)
+
+- Use <architecture pattern> (e.g., MVVM / Clean Architecture / Feature-based)
+- Navigation handled via <library>
+- State is managed only via <pattern>
+- API layer must go through <network abstraction>
+- No business logic inside UI layer
+- All async operations handled via <approach>
+- Error handling follows unified pattern
+
+(Only add decisions that affect implementation direction.)
+---
+
+## 3. Core Domain Model Snapshot (Source of Truth)
+
+### User
+- id:
+- email:
+- role:
+- createdAt:
+
+### <Other Core Entity>
+- field:
+- field:
+
+(Keep concise. No explanation text.)
+
+---
+
+## 5. App Structure Overview (Current)
+
+Feature Modules:
+- Auth
+- Home
+- Profile
+- <etc>
+
+Shared Modules:
+- Networking
+- Storage
+- Theme
+- Components
+- Utils
+
+Folder Convention:
+<Brief description of structure style>
+
+---
+
+## 6. Current Milestone Breakdown
+
+Goal:
+<Clear statement of what is being built>
+
+Scope:
+- Included:
+- Not Included:
+
+Success Criteria:
+- [ ] Condition 1
+- [ ] Condition 2
+- [ ] Condition 3
+
+---
+
+## 7. Task Ledger
+
+### Completed
+- 
+- 
+
+### In Progress
+- 
+
+### Next
+- 
+
+---
+
+## 8. Critical Invariants (Must Never Break)
+
+- A logged-out user cannot access protected routes.
+- Tokens must be stored securely.
+- API calls must be cancellable.
+- All screens must handle loading and error states.
+- Offline-safe operations must queue properly.
+
+(Add invariants as system matures.)
+
+---
+
+## 9. Known Constraints
+
+Performance:
+- 
+
+Security:
+- 
+
+Platform Limitations:
+- 
+
+Business Constraints:
+- 
+
+---
+
+## 10. Open Questions (Do Not Guess)
+
+- 
+- 
+- 
