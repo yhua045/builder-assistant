@@ -78,7 +78,7 @@ describe('useProjects integration', () => {
       const state = useProjects();
       useEffect(() => {
         latest = state;
-      }, [state.projects, state.loading, state.error]);
+      }, [state]);
       return null;
     }
 
@@ -87,7 +87,7 @@ describe('useProjects integration', () => {
       // wait for hook to perform initial load
       for (let i = 0; i < 20; i++) {
         if (latest && latest.loading === false) break;
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
       }
     });
 

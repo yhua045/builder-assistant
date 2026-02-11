@@ -15,6 +15,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { Project } from '../domain/entities/Project';
+import { ProjectCardDto } from '../application/dtos/ProjectCardDto';
 import { ProjectCard } from './ProjectCard';
 
 interface ProjectListProps {
@@ -62,12 +63,27 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     );
   }
 
-  const renderProject = ({ item }: { item: Project }) => (
-    <ProjectCard
-      project={item}
-      onPress={onProjectPress}
-    />
-  );
+  const renderProject = ({ item }: { item: Project }) => {
+    const projectDto: ProjectCardDto = {
+      id: item.id,
+      owner: item.name,
+      address: item.description || 'No Address',
+      status: item.status,
+      contact: 'Unknown',
+      lastCompletedTask: {
+        title: 'Initial Setup',
+        completedDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-',
+      },
+      upcomingTasks: [],
+    };
+
+    return (
+      <ProjectCard
+        project={projectDto}
+        onPress={() => onProjectPress?.(item)}
+      />
+    );
+  };
 
   return (
     <FlatList

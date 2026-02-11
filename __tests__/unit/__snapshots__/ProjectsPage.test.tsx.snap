@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ProjectsPage renders list of projects 1`] = `null`;
+
+exports[`ProjectsPage renders loading state 1`] = `null`;

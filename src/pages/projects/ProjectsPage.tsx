@@ -1,80 +1,80 @@
-import React from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
-import { container } from 'tsyringe';
-import { ArchiveProjectUseCase } from '../../application/usecases/project/ArchiveProjectUseCase';
-import { UnarchiveProjectUseCase } from '../../application/usecases/project/UnarchiveProjectUseCase';
-import { UpdateProjectStatusUseCase } from '../../application/usecases/project/UpdateProjectStatusUseCase';
-import { ProjectValidationService } from '../../domain/services/ProjectValidationService';
+import { ManualProjectEntryButton } from '../../components/ManualProjectEntryButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { Layers } from 'lucide-react-native';
+import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
+import { Project } from '../../domain/entities/Project';
 
 const ProjectsPage: React.FC = () => {
   const { projects, loading, error } = useProjects();
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator testID="projects-loading" />
-      </View>
-    );
-  }
+  const projectDtos = useMemo((): ProjectCardDto[] => {
+    if (!projects) return [];
+    
+    return projects.map((project: Project): ProjectCardDto => ({
+      id: project.id,
+      owner: project.name, // Using Name as owner placeholder
+      address: project.description || 'No Address',
+      status: project.status,
+      contact: 'Unknown',
+      lastCompletedTask: {
+        title: 'Initial Setup',
+        completedDate: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-' 
+      },
+      upcomingTasks: [],
+      // Ensure all fields from DTO are covered.
+    }));
+  }, [projects]);
 
-  if (error) {
-    return (
-      <View style={styles.padded}>
-        <Text testID="projects-error">{error}</Text>
-      </View>
-    );
-  }
-
-  if (!projects || projects.length === 0) {
-    return (
-      <View style={styles.padded}>
-        <Text testID="projects-empty">No projects yet</Text>
-      </View>
-    );
-  }
 
   return (
-    <FlatList
-      testID="projects-list"
-      data={projects}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <ProjectCard
-          project={item}
-          onPress={() => { /* navigate to details if needed */ }}
-          onArchive={async (id) => {
-            const repo = container.resolve<any>('ProjectRepository');
-            const uc = new ArchiveProjectUseCase(repo);
-            await uc.execute(id);
-            await refreshProjects();
-          }}
-          onUnarchive={async (id) => {
-            const repo = container.resolve<any>('ProjectRepository');
-            const uc = new UnarchiveProjectUseCase(repo);
-            await uc.execute(id);
-            await refreshProjects();
-          }}
-          onToggleFavorite={async (_id) => {
-            // favorites are not implemented in domain yet — placeholder
-          }}
-          onChangeStatus={async (id, newStatus) => {
-            const repo = container.resolve<any>('ProjectRepository');
-            const validation = new ProjectValidationService();
-            const uc = new UpdateProjectStatusUseCase(repo, validation);
-            const res = await uc.execute({ projectId: id, newStatus });
-            if (res.success) await refreshProjects();
-          }}
-        />
+    <SafeAreaView className="flex-1 bg-background">
+      {/* Header */}
+      <View className="px-6 py-4 flex-row items-center justify-between">
+        <View className="flex-row items-center">
+          <Layers className="text-primary mr-3" size={24} />
+          <Text className="text-2xl font-bold text-foreground">Projects</Text>
+        </View>
+        <ThemeToggle />
+      </View>
+
+      {loading && (
+        <View className="px-6 gap-4">
+          <ActivityIndicator testID="projects-loading" size="large" />
+        </View>
       )}
-    />
+
+      {error && (
+        <View className="px-6 gap-4">
+          <Text testID="projects-error" className="text-destructive">{error}</Text>
+        </View>
+      )}
+
+      {!loading && !error && projectDtos.length === 0 && (
+          <View className="px-6 gap-4">
+            <Text testID="projects-empty" style={{ marginBottom: 20 }}>No projects yet</Text>
+            <ManualProjectEntryButton />
+          </View>
+      )}
+  
+      {!loading && !error && projectDtos.length > 0 && (
+        <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
+          {/* Projects List */}
+          <View className="px-6 gap-4">
+            {projectDtos.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </View>
+        </ScrollView>
+      )}
+    </SafeAreaView>
   );
 };
 
+
 export default ProjectsPage;
 
-const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  padded: { padding: 16 },
-});
