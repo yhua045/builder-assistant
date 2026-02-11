@@ -56,21 +56,5 @@ Updates:
 - Added migration `drizzle/migrations/0003_optional_invoice_external_keys.sql` and aligned bundled migrations so tests run reliably.
 - Adjusted `DrizzleInvoiceRepository` to normalize external keys and serialize/parse JSON fields explicitly.
 - Ran full test suite: all unit + integration tests pass locally (13 suites, 80 tests).
-
-
-Date: 2026-02-11
-
-Branch: issue-32-projects-page-wt
-
-Status: In progress (planning)
-
-Summary (concise)
-- Created `design/#32-create-project-page.md` to capture implementation details, acceptance criteria, test plan, and files to change for Issue #32.
-- Planning session recorded in the design doc; next step is implementing `ProjectsPage` and unit/integration tests following TDD steps from `CLAUDE.md`.
-
-Completed
-- Added design doc: [design/#32-create-project-page.md](design/#32-create-project-page.md)
-
-Next
-- Implement `ProjectsPage` container and `ProjectsList` components; open a feature PR for implementation work.
+ 
 
