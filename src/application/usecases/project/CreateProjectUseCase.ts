@@ -10,10 +10,16 @@ import { ProjectRepository } from '../../../domain/repositories/ProjectRepositor
 
 export interface CreateProjectRequest {
   name: string;
-  description: string;
-  budget: number;
-  startDate: Date;
-  expectedEndDate: Date;
+  description?: string;
+  address?: string; // propertyId
+  projectOwner?: string; // ownerId
+  team?: string;
+  visibility?: 'Public' | 'Private';
+  startDate?: Date;
+  expectedEndDate?: Date;
+  budget?: number;
+  priority?: 'Low' | 'Medium' | 'High';
+  notes?: string;
 }
 
 export interface CreateProjectResponse {
@@ -28,32 +34,60 @@ export class CreateProjectUseCase {
 
   async execute(request: CreateProjectRequest): Promise<CreateProjectResponse> {
     try {
+      // Validate required fields
+      if (!request.name || request.name.trim().length === 0) {
+        return {
+          success: false,
+          errors: ['Project name is required']
+        };
+      }
+
+      // Validate date range if both provided
+      if (request.startDate && request.expectedEndDate) {
+        if (request.startDate >= request.expectedEndDate) {
+          return {
+            success: false,
+            errors: ['End date must be after start date']
+          };
+        }
+      }
+
+      // Check uniqueness: address + projectOwner
+      if (request.address && request.projectOwner) {
+        const existingProjects = (await this.projectRepository.list()).items;
+        const duplicateExists = existingProjects.some((p: Project) => 
+          p.propertyId === request.address && p.ownerId === request.projectOwner
+        );
+
+        if (duplicateExists) {
+          return {
+            success: false,
+            errors: ['A project for this owner and address already exists']
+          };
+        }
+      }
+
       // Create project entity with domain validation
       const projectEntity = ProjectEntity.create({
         name: request.name,
-        description: request.description,
+        description: request.description || request.notes || '',
+        propertyId: request.address,
+        ownerId: request.projectOwner,
         status: ProjectStatus.PLANNING,
         startDate: request.startDate,
         expectedEndDate: request.expectedEndDate,
         budget: request.budget,
+        meta: {
+          team: request.team,
+          visibility: request.visibility || 'Public',
+          priority: request.priority || 'Low',
+          notes: request.notes
+        },
         materials: [],
         phases: []
       });
 
       const project = projectEntity.data;
-
-      // Check if project with same name already exists
-      const existingProjects = (await this.projectRepository.list()).items;
-      const nameExists = existingProjects.some((p: Project) => 
-        p.name.toLowerCase() === project.name.toLowerCase()
-      );
-
-      if (nameExists) {
-        return {
-          success: false,
-          errors: ['A project with this name already exists']
-        };
-      }
 
       // Save the project
       await this.projectRepository.save(project);
