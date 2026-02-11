@@ -56,5 +56,28 @@ Updates:
 - Added migration `drizzle/migrations/0003_optional_invoice_external_keys.sql` and aligned bundled migrations so tests run reliably.
 - Adjusted `DrizzleInvoiceRepository` to normalize external keys and serialize/parse JSON fields explicitly.
 - Ran full test suite: all unit + integration tests pass locally (13 suites, 80 tests).
+
+Date: 2026-02-11
+
+Branch: issue-32-projects-page-wt
+
+Summary (concise)
+- Implemented Projects page (`src/pages/projects/ProjectsPage.tsx`) and updated `ProjectCard` to expose archive/unarchive/favorite/status actions.
+- Added unit and integration tests for `useProjects` hook and wired the UI to application use-cases (`ArchiveProjectUseCase`, `UnarchiveProjectUseCase`, `UpdateProjectStatusUseCase`).
+- Updated `CLAUDE.md` and added `design/#32-create-project-page.md` documenting the design and TDD approach for this ticket.
+
+Completed
+- Added `ProjectsPage` and wired it into the tabs navigation (replaced Profile tab with Projects).
+- Extended `ProjectCard` with action callbacks and fixed related TypeScript errors.
+- Added unit + integration tests for `useProjects` (react-test-renderer harness) and fixed test typings.
+- Fixed `DrizzleProjectRepository` transaction typing and other TypeScript issues discovered during tsc/lint runs.
+- Ran `npx tsc --noEmit` (passes) and `npm run lint` (26 warnings, 0 errors) locally.
+- Ran full test suite: all tests pass (16 suites, 85 tests).
+
+Next
+- Resolve remaining ESLint warnings incrementally (mostly inline-style warnings across RN components).
+- Add integration tests for archive/unarchive/status flows and implement favorites navigation polish.
+
+PR: https://github.com/yhua045/builder-assistant/pull/36 (branch `issue-32-projects-page-wt`)
  
 
