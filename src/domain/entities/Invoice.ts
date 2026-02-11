@@ -79,8 +79,42 @@ export class InvoiceEntity {
       paymentStatus: payload.paymentStatus || 'unpaid',
       currency: payload.currency || 'USD'
     } as Invoice;
-    
-    return new InvoiceEntity(inv);
+      // Domain validations
+      // 1. total must be non-negative
+      if (inv.total == null || typeof inv.total !== 'number' || inv.total < 0) {
+        throw new Error('Invoice total must be a non-negative number');
+      }
+
+      // 2. If line items are provided, their sum should match subtotal/total if present
+      if (inv.lineItems && inv.lineItems.length > 0) {
+        const sum = inv.lineItems.reduce((acc, it) => {
+          const qty = typeof it.quantity === 'number' ? it.quantity : 1;
+          const unit = typeof it.unitCost === 'number' ? it.unitCost : 0;
+          const itemTotal = typeof it.total === 'number' ? it.total : qty * unit;
+          const tax = typeof it.tax === 'number' ? it.tax : 0;
+          return acc + itemTotal + tax;
+        }, 0);
+        // allow small floating point tolerance
+        const tol = 0.0001;
+        if (inv.subtotal && Math.abs(inv.subtotal - sum) > tol) {
+          throw new Error('Invoice subtotal does not match sum of line items');
+        }
+        // if subtotal missing, check against total (after tax)
+        if (!inv.subtotal && Math.abs(inv.total - sum) > tol) {
+          throw new Error('Invoice total does not match sum of line items');
+        }
+      }
+
+      // 3. Dates: if both provided, due date must be same or after issue date
+      if (inv.dateIssued && inv.dateDue) {
+        const issued = new Date(inv.dateIssued).getTime();
+        const due = new Date(inv.dateDue).getTime();
+        if (Number.isFinite(issued) && Number.isFinite(due) && due < issued) {
+          throw new Error('Invoice due date must be on or after issue date');
+        }
+      }
+
+      return new InvoiceEntity(inv);
   }
 
   data(): Invoice { return { ...this._data }; }

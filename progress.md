@@ -1,3 +1,118 @@
+# Project Progress
+Last Updated: 2026-02-12
+Current Milestone: Implement Invoice aggregate (repository, use cases, payments)
+---
+
+## 2. Confirmed Architectural Decisions (Non-Negotiable)
+
+- Use Clean Architecture (UI → Hooks → Use Cases → Domain → Infrastructure)
+- Persistence via Drizzle ORM over SQLite (react-native-sqlite-storage)
+- Repositories: domain interfaces in `src/domain/repositories`, Drizzle implementations in `src/infrastructure/repositories`
+- Business logic and invariants live in domain entities/use-cases; no business logic in UI
+- Tests: fast unit tests with mocks; integration tests use an in-memory SQLite shim
+
+---
+
+## 3. Core Domain Model Snapshot (Source of Truth)
+
+### Invoice
+- id: string
+- projectId?: string
+- externalId?: string | null
+- externalReference?: string | null
+- total: number
+- subtotal?: number
+- tax?: number
+- currency: string
+- status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled'
+- paymentStatus: 'unpaid' | 'partial' | 'paid' | 'failed'
+- dateIssued?: string
+- dateDue?: string
+- paymentDate?: string
+- lineItems?: InvoiceLineItem[]
+- createdAt: string
+- updatedAt: string
+
+### Payment
+- id: string
+- projectId: string
+- invoiceId?: string
+- amount: number
+- currency?: string
+- date?: string
+- method?: 'bank' | 'cash' | 'check' | 'other'
+- reference?: string
+- notes?: string
+- createdAt?: string
+- updatedAt?: string
+
+---
+
+## 5. App Structure Overview (Current)
+
+Feature Modules:
+- Projects
+- Invoices (new)
+- Payments (new)
+
+Shared Modules:
+- Infrastructure (Drizzle DB, migrations)
+- Domain (entities, repositories)
+- Application (use cases)
+- Components, Hooks, Utils
+
+---
+
+## Summary of Changes (Issue #44)
+
+- Added domain validation rules to `InvoiceEntity.create`:
+  - Non-negative `total`
+  - Line-item sum must match `subtotal` or `total` (tolerance applied)
+  - `dateDue` must be >= `dateIssued`
+
+- Introduced repository interfaces and implementations:
+  - Confirmed `InvoiceRepository` interface at `src/domain/repositories/InvoiceRepository.ts`
+  - `DrizzleInvoiceRepository` at `src/infrastructure/repositories/DrizzleInvoiceRepository.ts` (uses `initDatabase()` and `invoices` schema)
+  - `DrizzlePaymentRepository` at `src/infrastructure/repositories/DrizzlePaymentRepository.ts`
+
+- Implemented core use cases in `src/application/usecases/invoice/`:
+  - `CreateInvoiceUseCase`, `GetInvoiceByIdUseCase`, `ListInvoicesUseCase`, `UpdateInvoiceUseCase`, `DeleteInvoiceUseCase`
+
+- Implemented payment use case:
+  - `RecordPaymentUseCase` updates `Payment` and recalculates invoice `paymentStatus` (and marks invoice as `paid` when fully paid)
+
+- Tests added (TDD style):
+  - Unit tests for use cases: `__tests__/unit/*` (Create/Get/Update/List Invoice, RecordPayment)
+  - Domain validation tests: `__tests__/unit/InvoiceEntity.validation.test.ts`
+  - Integration tests for repositories and payment workflows: `__tests__/integration/InvoiceRepository.integration.test.ts`, `__tests__/integration/Payment.integration.test.ts` (use in-memory SQLite shim)
+
+- Migration: added a documented no-op migration `drizzle/migrations/0004_invoice_module_noop.sql` (schema already compatible)
+
+References:
+- Design & plan: `design/#44-plan.md`
+- Tests demonstrate behavior and served as TDD acceptance criteria; see `__tests__/unit` and `__tests__/integration`
+
+---
+
+## Testing
+
+- Run unit tests:
+```bash
+npx jest __tests__/unit --runInBand
+```
+- Run integration tests (they use an in-memory SQLite shim):
+```bash
+npx jest __tests__/integration --runInBand
+```
+
+---
+
+## Next Steps
+
+- Review `DrizzleInvoiceRepository` and `DrizzlePaymentRepository` for performance/SQL tuning
+- Add UI screens for Invoice list/detail and payment entry, wiring to use cases via hooks
+- Add audit fields and domain events if required by downstream systems
+- If desired, replace the no-op migration with explicit schema changes and new migration tests
 Date: 2026-02-06
 
 Summary (concise)
