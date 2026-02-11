@@ -134,6 +134,24 @@ Next
 
 
 
+Date: 2026-02-12
+
+Branch: issue-41
+
+Summary (concise)
+- Domain refactor: added a read-model `ProjectDetails` (hydrated `owner: Contact` + optional `property: Property`) and split read/write responsibilities across the repository contract.
+- Repository contract: added `findDetailsById` and `listDetails` to `src/domain/repositories/ProjectRepository.ts`.
+- Infrastructure: added `src/infrastructure/mappers/ProjectMapper.ts`, extended `DrizzleProjectRepository` and `InMemoryProjectRepository` to return hydrated `ProjectDetails`.
+- Tests & TDD: added `__tests__/unit/GetProjectDetailsUseCase.test.ts` and integration coverage under `__tests__/integration/DrizzleProjectRepository.integration.test.ts` following TDD; updated component tests to avoid async `act()` warnings.
+
+Completed
+- Implemented `ProjectDetails` domain type and use-case `GetProjectDetailsUseCase` (`src/application/usecases/project/GetProjectDetailsUseCase.ts`).
+- Updated repository interface to include read/hydrated methods and implemented them in both Drizzle and in-memory adapters.
+- Added `ProjectMapper` to map prefixed SQL rows into `Contact` and `Property` domain objects.
+
+
+
+
 
 
 

@@ -7,6 +7,7 @@
  */
 
 import { Project } from '../entities/Project';
+import { ProjectDetails } from '../entities/ProjectDetails';
 
 export type ProjectFilters = {
   status?: string | string[];
@@ -52,6 +53,10 @@ export interface ProjectRepository {
 
   // Hard delete (use with caution)
   delete(id: string): Promise<void>;
+
+  // Read-specific, hydrated domain entities (ProjectDetails)
+  findDetailsById(id: string): Promise<ProjectDetails | null>;
+  listDetails(filters?: ProjectFilters, options?: { limit?: number; offset?: number; cursor?: string; sort?: string }): Promise<{ items: ProjectDetails[]; meta: { total: number; nextCursor?: string } }>;
 
 
   // Provide a transaction-scoped execution wrapper if supported by the adapter

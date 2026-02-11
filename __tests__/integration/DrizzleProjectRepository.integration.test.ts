@@ -56,7 +56,7 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzleProjectRepository } from '../../src/infrastructure/repositories/DrizzleProjectRepository';
 import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
-import { closeDatabase } from '../../src/infrastructure/database/connection';
+import { closeDatabase, getDatabase } from '../../src/infrastructure/database/connection';
 
 describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () => {
   it('runs real SQL via Drizzle: create, read, update, delete', async () => {
@@ -148,6 +148,53 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
 
     // cleanup
     await repo.delete?.('int-project-2');
+    await closeDatabase();
+  }, 15000);
+
+  it('returns hydrated project details for owner and property', async () => {
+    const repo = new DrizzleProjectRepository();
+    await repo.init();
+
+    const { db } = getDatabase();
+
+    await db.executeSql(
+      `INSERT INTO contacts (id, name, roles, email, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      ['contact-1', 'Owner Person', JSON.stringify(['OWNER']), 'owner@example.com', Date.now(), Date.now()]
+    );
+
+    await db.executeSql(
+      `INSERT INTO properties (id, address, owner_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['prop-1', '123 Main St', 'contact-1', Date.now(), Date.now()]
+    );
+
+    const projectEntity = ProjectEntity.create({
+      id: 'details-project-1',
+      name: 'Details Project',
+      status: ProjectStatus.IN_PROGRESS,
+      ownerId: 'contact-1',
+      propertyId: 'prop-1',
+      materials: [],
+      phases: [],
+    });
+
+    await repo.save(projectEntity.data);
+
+    const details = await repo.findDetailsById('details-project-1');
+    expect(details).not.toBeNull();
+    expect(details!.owner.id).toBe('contact-1');
+    expect(details!.owner.name).toBe('Owner Person');
+    expect(details!.property?.id).toBe('prop-1');
+    expect(details!.property?.address).toBe('123 Main St');
+
+    const listDetails = await repo.listDetails({}, { limit: 10 });
+    const listed = listDetails.items.find((item) => item.id === 'details-project-1');
+    expect(listed).toBeDefined();
+    expect(listed!.owner.id).toBe('contact-1');
+    expect(listed!.property?.id).toBe('prop-1');
+
+    await repo.delete('details-project-1');
     await closeDatabase();
   }, 15000);
 

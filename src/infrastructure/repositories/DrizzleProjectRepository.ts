@@ -1,7 +1,9 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { Project, Material, ProjectPhase } from '../../domain/entities/Project';
+import { ProjectDetails } from '../../domain/entities/ProjectDetails';
 import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 import { initDatabase, getDatabase } from '../database/connection';
+import { mapContactFromRow, mapPropertyFromRow } from '../mappers/ProjectMapper';
 
 /**
  * Drizzle-based SQLite Project Repository
@@ -41,6 +43,53 @@ export class DrizzleProjectRepository implements ProjectRepository {
     if (result.rows.length === 0) return null;
     const row = result.rows.item(0);
     return await this.mapRowToProject(row);
+  }
+
+  async findDetailsById(id: string): Promise<ProjectDetails | null> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const [result] = await db.executeSql(
+      `SELECT p.*,
+        c.local_id AS owner_local_id,
+        c.id AS owner_id,
+        c.name AS owner_name,
+        c.roles AS owner_roles,
+        c.trade AS owner_trade,
+        c.phone AS owner_phone,
+        c.email AS owner_email,
+        c.address AS owner_address,
+        c.rate AS owner_rate,
+        c.notes AS owner_notes,
+        c.created_at AS owner_created_at,
+        c.updated_at AS owner_updated_at,
+        pr.local_id AS property_local_id,
+        pr.id AS property_id,
+        pr.street AS property_street,
+        pr.city AS property_city,
+        pr.state AS property_state,
+        pr.postal_code AS property_postal_code,
+        pr.country AS property_country,
+        pr.address AS property_address,
+        pr.property_type AS property_property_type,
+        pr.lot_size AS property_lot_size,
+        pr.lot_size_unit AS property_lot_size_unit,
+        pr.year_built AS property_year_built,
+        pr.owner_id AS property_owner_id,
+        pr.meta AS property_meta,
+        pr.created_at AS property_created_at,
+        pr.updated_at AS property_updated_at
+      FROM projects p
+      LEFT JOIN contacts c ON c.id = p.owner_id
+      LEFT JOIN properties pr ON pr.id = p.property_id
+      WHERE p.id = ?`,
+      [id]
+    );
+
+    if (result.rows.length === 0) return null;
+    const row = result.rows.item(0);
+    const project = await this.mapRowToProject(row);
+    return this.buildProjectDetails(project, row);
   }
 
   async save(project: Project): Promise<void> {
@@ -175,6 +224,71 @@ export class DrizzleProjectRepository implements ProjectRepository {
     return { items, meta: { total } };
   }
 
+  async listDetails(filters: any = {}, options: { limit?: number; offset?: number; cursor?: string; sort?: string } = {}): Promise<{ items: ProjectDetails[]; meta: { total: number; nextCursor?: string } }> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+
+    const where: string[] = [];
+    const params: any[] = [];
+    if (filters.status) {
+      where.push('p.status = ?');
+      params.push(filters.status);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const limitSql = options.limit ? `LIMIT ${options.limit}` : '';
+    const offsetSql = options.offset ? `OFFSET ${options.offset}` : '';
+
+    const [rows] = await db.executeSql(
+      `SELECT p.*,
+        c.local_id AS owner_local_id,
+        c.id AS owner_id,
+        c.name AS owner_name,
+        c.roles AS owner_roles,
+        c.trade AS owner_trade,
+        c.phone AS owner_phone,
+        c.email AS owner_email,
+        c.address AS owner_address,
+        c.rate AS owner_rate,
+        c.notes AS owner_notes,
+        c.created_at AS owner_created_at,
+        c.updated_at AS owner_updated_at,
+        pr.local_id AS property_local_id,
+        pr.id AS property_id,
+        pr.street AS property_street,
+        pr.city AS property_city,
+        pr.state AS property_state,
+        pr.postal_code AS property_postal_code,
+        pr.country AS property_country,
+        pr.address AS property_address,
+        pr.property_type AS property_property_type,
+        pr.lot_size AS property_lot_size,
+        pr.lot_size_unit AS property_lot_size_unit,
+        pr.year_built AS property_year_built,
+        pr.owner_id AS property_owner_id,
+        pr.meta AS property_meta,
+        pr.created_at AS property_created_at,
+        pr.updated_at AS property_updated_at
+      FROM projects p
+      LEFT JOIN contacts c ON c.id = p.owner_id
+      LEFT JOIN properties pr ON pr.id = p.property_id
+      ${whereSql} ${limitSql} ${offsetSql}`,
+      params
+    );
+
+    const items: ProjectDetails[] = [];
+    for (let i = 0; i < rows.rows.length; i++) {
+      const row = rows.rows.item(i);
+      const project = await this.mapRowToProject(row);
+      items.push(this.buildProjectDetails(project, row));
+    }
+
+    const [countRows] = await db.executeSql(`SELECT COUNT(*) as cnt FROM projects p ${whereSql}`, params);
+    const total = countRows.rows.length ? countRows.rows.item(0).cnt : 0;
+
+    return { items, meta: { total } };
+  }
+
   async count(filters: any = {}): Promise<number> {
     if (!this.drizzle) await this.init();
     const { db } = getDatabase();
@@ -238,9 +352,11 @@ export class DrizzleProjectRepository implements ProjectRepository {
         // Other methods aren't implemented in this transaction context yet
         
         findById: async (_id: string) => null,
+        findDetailsById: async (_id: string) => null,
         
         findByExternalId: async (_id: string) => null,
         list: async () => ({ items: [], meta: { total: 0 } }),
+        listDetails: async () => ({ items: [], meta: { total: 0 } }),
         count: async () => 0,
         
         findByStatus: async (_s: string) => [],
@@ -378,6 +494,17 @@ export class DrizzleProjectRepository implements ProjectRepository {
   async exists(id: string): Promise<boolean> {
     const project = await this.findById(id);
     return project !== null;
+  }
+
+  private buildProjectDetails(project: Project, row: any): ProjectDetails {
+    const owner = mapContactFromRow(row, 'owner_');
+    const property = mapPropertyFromRow(row, 'property_');
+
+    return {
+      ...project,
+      owner: owner ?? { id: project.ownerId ?? 'unknown', name: 'Unknown' },
+      property: property ?? undefined,
+    };
   }
   private async mapRowToProject(row: any): Promise<Project> {
     if (!this.drizzle) await this.init();

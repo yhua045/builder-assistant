@@ -21,3 +21,7 @@ jest.mock('react-native', () => {
   
   return RN;
 });
+
+// Use manual mocks to avoid NativeWind and SafeAreaContext async effects in Jest
+jest.mock('nativewind');
+jest.mock('react-native-safe-area-context');
