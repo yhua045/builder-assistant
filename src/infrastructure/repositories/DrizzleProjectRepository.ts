@@ -198,7 +198,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
     if (!this.drizzle) await this.init();
     const { db } = getDatabase();
 
-    return db.transaction(async (tx: any) => {
+    return (db.transaction(async (tx: any) => {
       // Create a minimal fake repository that implements save() within the transaction
       // Cast to ProjectRepository to satisfy interface
       const txRepo = {
@@ -247,7 +247,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       } as unknown as ProjectRepository;
 
       return await fn(txRepo);
-    });
+    }) as unknown) as Promise<T>;
   }
 
   async delete(id: string): Promise<void> {

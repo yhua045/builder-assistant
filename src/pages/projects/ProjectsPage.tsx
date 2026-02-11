@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
 
@@ -8,7 +8,7 @@ const ProjectsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.centered}>
         <ActivityIndicator testID="projects-loading" />
       </View>
     );
@@ -16,7 +16,7 @@ const ProjectsPage: React.FC = () => {
 
   if (error) {
     return (
-      <View style={{ padding: 16 }}>
+      <View style={styles.padded}>
         <Text testID="projects-error">{error}</Text>
       </View>
     );
@@ -24,7 +24,7 @@ const ProjectsPage: React.FC = () => {
 
   if (!projects || projects.length === 0) {
     return (
-      <View style={{ padding: 16 }}>
+      <View style={styles.padded}>
         <Text testID="projects-empty">No projects yet</Text>
       </View>
     );
@@ -41,3 +41,8 @@ const ProjectsPage: React.FC = () => {
 };
 
 export default ProjectsPage;
+
+const styles = StyleSheet.create({
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  padded: { padding: 16 },
+});
