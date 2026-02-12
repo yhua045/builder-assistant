@@ -304,5 +304,43 @@ PR: will open from `issue-43` → `master` with this progress summary and link t
 ````
 
 
+---
+
+Date: 2026-02-12
+
+Branch: issue-48
+
+Summary of work completed (this session):
+- Implemented Snap Receipt quick action: `SnapReceiptUseCase`, `ReceiptForm`, `SnapReceiptScreen`, and `useSnapReceipt` hook.
+- Updated `Payment` entity and DB schema to allow `card` method and nullable `project_id` (migration added).
+- Fixed multiple test and lint issues: removed conditional hooks, stabilized selector tests, avoided timer leaks in tests, and updated one snapshot.
+- Validation: ran `npx tsc --noEmit` (passes), `npm run lint` (0 errors, 32 warnings), and full `npm test` (all tests green).
+
+Files touched (high level):
+- `src/application/usecases/receipt/SnapReceiptUseCase.ts`
+- `src/components/receipts/ReceiptForm.tsx`, `src/pages/receipts/SnapReceiptScreen.tsx`
+- `src/hooks/useSnapReceipt.ts`
+- `src/components/inputs/ContactSelector.tsx`, `TeamSelector.tsx`
+- `src/components/ManualProjectEntryForm.tsx`
+- `drizzle/migrations/0004_motionless_harpoon.sql`
+- `progress.md` (this file)
+
+Next steps:
+- Open PR from `issue-48` → `master` referencing #48 and this progress summary.
+- Address remaining ESLint warnings (inline-style rules) before final review.
 
 
+
+
+## Summary of Changes (Issue #48: Snap Receipt)
+
+- **Feature**: Implemented "Snap Receipt" quick action to capture expenses instantly.
+- **Domain**: Updated `Payment` entity to allow `card` method and optional `projectId`.
+- **Infrastructure**: Updated `payments` schema/migration to allow nullable `project_id`.
+- **Application**: Added `SnapReceiptUseCase` to handle atomic creation of Invoice (paid) and Payment.
+- **UI**: 
+    - Added `ReceiptForm` component with validation and NativeWind styling.
+    - Added `SnapReceiptScreen` (as Modal content).
+    - Added "Snap Receipt" entry point in Dashboard (HeroSection and QuickActions).
+- **Tests**: Added unit tests for `SnapReceiptUseCase`.
+- **Hooks**: Added `useSnapReceipt` hook for integration.

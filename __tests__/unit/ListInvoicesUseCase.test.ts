@@ -29,4 +29,21 @@ describe('ListInvoicesUseCase', () => {
     expect(result.items).toHaveLength(1);
     expect(result.total).toBe(1);
   });
+
+  it('passes status filter to repository', async () => {
+    const mockRepo: InvoiceRepository = {
+      listInvoices: jest.fn().mockResolvedValue({ items: [], total: 0 }),
+    } as unknown as InvoiceRepository;
+
+    const uc = new ListInvoicesUseCase(mockRepo);
+    const statuses: Invoice['status'][] = ['paid', 'overdue'];
+    
+    await uc.execute({ status: statuses });
+
+    expect(mockRepo.listInvoices).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: statuses
+      })
+    );
+  });
 });

@@ -31,6 +31,8 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
   const [notes, setNotes] = React.useState('');
   const [errors, setErrors] = React.useState<FormErrors>({});
 
+  if (!visible) return null;
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 

@@ -1,9 +1,13 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Upload, Lightbulb } from 'lucide-react-native';
+import { Upload, Lightbulb, Camera } from 'lucide-react-native';
 import ManualProjectEntry from '../../../components/ManualProjectEntry';
 
-export default function HeroSection() {
+interface Props {
+  onSnapReceipt: () => void;
+}
+
+export default function HeroSection({ onSnapReceipt }: Props) {
   return (
     <View className="px-6 mb-8">
       <View className="bg-gradient-to-br from-primary/10 to-chart-1/10 border-2 border-primary/20 rounded-2xl p-6">
@@ -23,6 +27,19 @@ export default function HeroSection() {
             <Text className="text-white font-bold text-xl flex-1">Upload Signed Contract</Text>
           </View>
           <Text className="text-white/90 text-base ml-11">AI will extract address, owner, and dates</Text>
+        </Pressable>
+
+        <Pressable
+             className="bg-secondary rounded-xl p-5 mb-3 active:opacity-80 flex-row items-center border border-border"
+             onPress={onSnapReceipt}
+        >
+            <View className="bg-primary/20 p-2 rounded-lg mr-3">
+                 <Camera className="text-primary" size={24} />
+            </View>
+            <View>
+                <Text className="text-foreground font-bold text-xl">Snap Receipt</Text>
+                <Text className="text-muted-foreground text-sm">Capture expense & payment</Text>
+            </View>
         </Pressable>
 
         <ManualProjectEntry />

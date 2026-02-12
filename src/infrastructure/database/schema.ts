@@ -213,7 +213,7 @@ export const invoices = sqliteTable('invoices', {
 export const payments = sqliteTable('payments', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
-  projectId: text('project_id').notNull(),
+  projectId: text('project_id'),
   invoiceId: text('invoice_id'),
   amount: real('amount').notNull(),
   currency: text('currency'),

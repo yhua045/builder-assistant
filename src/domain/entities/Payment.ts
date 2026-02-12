@@ -1,7 +1,7 @@
 export interface Payment {
   id: string;
   localId?: number; // SQLite INTEGER PRIMARY KEY
-  projectId: string;
+  projectId?: string;
   invoiceId?: string;
   expenseId?: string;
   contactId?: string; // optional link to Contact (payee/vendor)
@@ -9,7 +9,7 @@ export interface Payment {
   date?: string;
   currency?: string;
   notes?: string;
-  method?: 'bank' | 'cash' | 'check' | 'other';
+  method?: 'bank' | 'cash' | 'check' | 'card' | 'other';
   status?: 'pending' | 'settled';
   reference?: string;
   createdAt?: string;
