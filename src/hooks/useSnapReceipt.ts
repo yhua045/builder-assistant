@@ -1,17 +1,15 @@
 import { useMemo, useState } from 'react';
 import { container } from 'tsyringe';
 import { SnapReceiptUseCase, SnapReceiptDTO } from '../application/usecases/receipt/SnapReceiptUseCase';
-import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../domain/repositories/PaymentRepository';
+import { ReceiptRepository } from '../domain/repositories/ReceiptRepository';
 import '../infrastructure/di/registerServices';
 
 export const useSnapReceipt = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const invoiceRepo = useMemo(() => container.resolve<InvoiceRepository>('InvoiceRepository'), []);
-    const paymentRepo = useMemo(() => container.resolve<PaymentRepository>('PaymentRepository'), []);
-    const useCase = useMemo(() => new SnapReceiptUseCase(invoiceRepo, paymentRepo), [invoiceRepo, paymentRepo]);
+    const receiptRepo = useMemo(() => container.resolve<ReceiptRepository>('ReceiptRepository'), []);
+    const useCase = useMemo(() => new SnapReceiptUseCase(receiptRepo), [receiptRepo]);
 
     const saveReceipt = async (data: SnapReceiptDTO) => {
         setLoading(true);

@@ -1,7 +1,6 @@
 import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
 import { Payment, PaymentEntity } from '../../../domain/entities/Payment';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { ReceiptRepository } from '../../../domain/repositories/ReceiptRepository';
 
 export interface SnapReceiptDTO {
   vendor: string;
@@ -16,8 +15,7 @@ export interface SnapReceiptDTO {
 
 export class SnapReceiptUseCase {
   constructor(
-    private readonly invoiceRepo: InvoiceRepository,
-    private readonly paymentRepo: PaymentRepository
+    private readonly receiptRepo: ReceiptRepository
   ) {}
 
   async execute(input: SnapReceiptDTO): Promise<{ invoice: Invoice; payment: Payment }> {
@@ -52,13 +50,7 @@ export class SnapReceiptUseCase {
     const paymentEntity = PaymentEntity.create({
       amount: input.amount,
       date: input.date,
-      projectId: input.projectId || '', // Payment usually needs a project logic, check PaymentRepository/Entity rules.
-      // If projectId is optional in input but required in Payment, we typically assign to invoice first. 
-      // But Payment.projectId is string (maybe required?). Let's check Payment.ts.
-      // Payment.ts: projectId: string;
-      // If user didn't select project, we might need a "General" project or leave it empty if allowed.
-      // Drizzle schema usually dictates. If empty string is allowed?
-      
+      projectId: input.projectId,
       invoiceId: invoice.id,
       method: input.paymentMethod,
       currency: input.currency || 'USD',
@@ -75,26 +67,11 @@ export class SnapReceiptUseCase {
         // Payment interface validation is what matters.
     }
 
-    // 3. Persist
-    // Ideal: await this.uow.transaction(async () => { ... })
-    // Current: sequential
-    
-    // Create Invoice first
-    const savedInvoice = await this.invoiceRepo.createInvoice(invoice);
-    
-    // Create Payment
-    let savedPayment: Payment;
+    // 3. Persist atomically
     try {
-      await this.paymentRepo.save(payment);
-      // attempt to read back payment linked to invoice if repository supports it
-      const payments = await this.paymentRepo.findByInvoice(savedInvoice.id);
-      savedPayment = payments && payments.length > 0 ? payments[0] : payment;
-    } catch (err) {
-      // Rollback invoice on failure
-      await this.invoiceRepo.deleteInvoice(savedInvoice.id);
-      throw err;
+      return await this.receiptRepo.createReceipt(invoice, payment);
+    } catch (error) {
+      throw new Error('Failed to save receipt');
     }
-
-    return { invoice: savedInvoice, payment: savedPayment };
   }
 }

@@ -1,34 +1,17 @@
 import { SnapReceiptUseCase, SnapReceiptDTO } from '../../src/application/usecases/receipt/SnapReceiptUseCase';
-import { InvoiceRepository } from '../../src/domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
+import { ReceiptRepository } from '../../src/domain/repositories/ReceiptRepository';
 // removed unused entity imports
 
 describe('SnapReceiptUseCase', () => {
-    let mockInvoiceRepo: InvoiceRepository;
-    let mockPaymentRepo: PaymentRepository;
+    let mockReceiptRepo: ReceiptRepository;
     let useCase: SnapReceiptUseCase;
 
     beforeEach(() => {
-        mockInvoiceRepo = {
-            createInvoice: jest.fn().mockImplementation(async (inv) => inv),
-            assignProject: jest.fn(),
-            getInvoice: jest.fn(),
-            updateInvoice: jest.fn(),
-            deleteInvoice: jest.fn(),
-            findByExternalKey: jest.fn(),
-            listInvoices: jest.fn(),
-        } as unknown as InvoiceRepository;
+        mockReceiptRepo = {
+            createReceipt: jest.fn().mockImplementation(async (inv, pay) => ({ invoice: inv, payment: pay })),
+        } as unknown as ReceiptRepository;
 
-        mockPaymentRepo = {
-            save: jest.fn().mockImplementation(async (_pay) => undefined),
-            getPayment: jest.fn(),
-            updatePayment: jest.fn(),
-            deletePayment: jest.fn(),
-            listPayments: jest.fn(),
-            findByInvoice: jest.fn().mockResolvedValue([]),
-        } as unknown as PaymentRepository;
-
-        useCase = new SnapReceiptUseCase(mockInvoiceRepo, mockPaymentRepo);
+        useCase = new SnapReceiptUseCase(mockReceiptRepo);
     });
 
     it('creates an invoice and payment from valid receipt data', async () => {
@@ -66,8 +49,7 @@ describe('SnapReceiptUseCase', () => {
         expect(result.payment.date).toBe(validInput.date);
         
         // Repo calls
-        expect(mockInvoiceRepo.createInvoice).toHaveBeenCalledTimes(1);
-        expect(mockPaymentRepo.save).toHaveBeenCalledTimes(1);
+        expect(mockReceiptRepo.createReceipt).toHaveBeenCalledTimes(1);
     });
 
     it('throws error if amount is invalid', async () => {
