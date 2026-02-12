@@ -9,7 +9,7 @@ interface Props {
   error?: string;
 }
 
-const ContactSelector: React.FC<Props> = ({ label, value: _value, onChange, error }) => {
+const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
   const { search } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);

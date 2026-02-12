@@ -10,7 +10,7 @@ interface Props {
   error?: string;
 }
 
-const TeamSelector: React.FC<Props> = ({ label, value: _value, onChange, error }) => {
+const TeamSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
   const { search } = useTeams();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);
