@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { AlertCircle, Calendar, DollarSign, Filter, CheckCircle, Clock } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
+import { usePayments } from '../../hooks/usePayments';
+import type { Payment as PaymentEntity } from '../../domain/entities/Payment';
 
 cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -26,84 +28,39 @@ type Payment = {
   description: string;
 };
 
-const MOCK_PAYMENTS: Payment[] = [
-  {
-    id: 'p1',
-    vendor: 'ABC Construction Co.',
+// Helper to map PaymentEntity to UI Payment format
+const mapPaymentEntityToUI = (entity: PaymentEntity, status: PaymentStatus): Payment => {
+  return {
+    id: entity.id,
+    vendor: entity.contactId || 'Unknown Vendor',
     vendorImage: 'https://images.unsplash.com/photo-1600249324369-cf81f82f441b?w=900&auto=format&fit=crop&q=60',
-    project: 'Downtown Plaza',
-    amount: 15750,
-    dueDate: '2024-01-18',
-    status: 'overdue',
-    invoiceNumber: 'INV-2024-001',
-    description: 'Phase 2 Construction Materials',
-  },
-  {
-    id: 'p2',
-    vendor: 'Elite Electrical Services',
-    vendorImage: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=60',
-    project: 'Riverside Complex',
-    amount: 8200,
-    dueDate: '2024-01-22',
-    status: 'upcoming',
-    invoiceNumber: 'INV-2024-002',
-    description: 'Electrical Wiring & Installation',
-  },
-  {
-    id: 'p3',
-    vendor: 'ProPlumbing Solutions',
-    vendorImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop&q=60',
-    project: 'Sunset Apartments',
-    amount: 12500,
-    dueDate: '2024-01-25',
-    status: 'upcoming',
-    invoiceNumber: 'INV-2024-003',
-    description: 'Plumbing System Upgrade',
-  },
-  {
-    id: 'p4',
-    vendor: 'GreenScape Landscaping',
-    vendorImage: 'https://images.unsplash.com/photo-1600249324369-cf81f82f441b?w=900&auto=format&fit=crop&q=60',
-    project: 'Downtown Plaza',
-    amount: 5600,
-    dueDate: '2024-01-15',
-    status: 'paid',
-    invoiceNumber: 'INV-2024-004',
-    description: 'Landscaping & Garden Design',
-  },
-  {
-    id: 'p5',
-    vendor: 'TechSecurity Systems',
-    vendorImage: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=60',
-    project: 'Riverside Complex',
-    amount: 9800,
-    dueDate: '2024-01-28',
-    status: 'upcoming',
-    invoiceNumber: 'INV-2024-005',
-    description: 'Security System Installation',
-  },
-  {
-    id: 'p6',
-    vendor: 'Premium Paint Co.',
-    vendorImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop&q=60',
-    project: 'Sunset Apartments',
-    amount: 4200,
-    dueDate: '2024-01-12',
-    status: 'paid',
-    invoiceNumber: 'INV-2024-006',
-    description: 'Interior & Exterior Painting',
-  },
-];
+    project: entity.projectId || 'Unassigned',
+    amount: entity.amount,
+    dueDate: entity.dueDate || entity.date || new Date().toISOString(),
+    status,
+    invoiceNumber: entity.invoiceId || 'N/A',
+    description: `Payment for ${entity.invoiceId || 'invoice'}`,
+  };
+};
 
 export default function PaymentsScreen() {
   const [activeFilter, setActiveFilter] = useState<PaymentStatus | 'all'>('all');
 
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  
+  const { overdue, upcoming, paid, metrics, loading, refresh } = usePayments();
+
+  // Combine all payments with their status
+  const allPayments = useMemo(() => [
+    ...overdue.map(p => mapPaymentEntityToUI(p, 'overdue')),
+    ...upcoming.map(p => mapPaymentEntityToUI(p, 'upcoming')),
+    ...paid.map(p => mapPaymentEntityToUI(p, 'paid')),
+  ], [overdue, upcoming, paid]);
 
   const filteredPayments = activeFilter === 'all' 
-    ? MOCK_PAYMENTS 
-    : MOCK_PAYMENTS.filter(p => p.status === activeFilter);
+    ? allPayments 
+    : allPayments.filter(p => p.status === activeFilter);
 
   const getStatusConfig = (status: PaymentStatus) => {
     switch (status) {
@@ -147,11 +104,8 @@ export default function PaymentsScreen() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const totalPending = MOCK_PAYMENTS
-    .filter(p => p.status !== 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const overdueCount = MOCK_PAYMENTS.filter(p => p.status === 'overdue').length;
+  const totalPending = metrics.pendingTotalNext7Days || 0;
+  const overdueCount = metrics.overdueCount || 0;
 
   return (
     <SafeAreaView
@@ -213,13 +167,36 @@ export default function PaymentsScreen() {
       </View>
 
       {/* Payments List */}
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 128, gap: 12, paddingTop: 16 }}>
-        {filteredPayments.length === 0 ? (
+      <ScrollView 
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 128, gap: 12, paddingTop: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refresh}
+            tintColor={isDark ? '#fff' : '#000'}
+          />
+        }
+      >
+        {loading && allPayments.length === 0 ? (
+          <View className="items-center py-16">
+            <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} />
+            <Text className="text-muted-foreground mt-4">Loading payments...</Text>
+          </View>
+        ) : filteredPayments.length === 0 ? (
           <View className="items-center py-12">
             <Filter className="text-muted-foreground mb-3" size={48} />
-            <Text className="text-lg font-semibold text-foreground">No payments found</Text>
+            <Text className="text-lg font-semibold text-foreground">
+              {activeFilter === 'all' ? 'No payments yet' : `No ${activeFilter} payments`}
+            </Text>
             <Text className="text-muted-foreground text-center mt-1">
-              Try adjusting your filter selection
+              {activeFilter === 'all' 
+                ? 'Payments will appear here when added'
+                : activeFilter === 'overdue'
+                ? 'No overdue payments at the moment'
+                : activeFilter === 'upcoming'
+                ? 'No upcoming payments scheduled'
+                : 'No paid payments in the last 7 days'
+              }
             </Text>
           </View>
         ) : (

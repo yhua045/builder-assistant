@@ -7,6 +7,7 @@ export interface Payment {
   contactId?: string; // optional link to Contact (payee/vendor)
   amount: number;
   date?: string;
+  dueDate?: string;
   currency?: string;
   notes?: string;
   method?: 'bank' | 'cash' | 'check' | 'card' | 'other';
