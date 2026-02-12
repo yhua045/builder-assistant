@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import ManualProjectEntryForm from '../../src/components/ManualProjectEntryForm';
-import { TextInput, Button } from 'react-native';
+import { Button } from 'react-native';
 
 describe('ManualProjectEntryForm', () => {
   it('renders form when visible', async () => {

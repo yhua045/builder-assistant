@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, Button, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, Modal, Pressable } from 'react-native';
+import { X } from 'lucide-react-native';
 import DatePickerInput from './inputs/DatePickerInput';
 import ContactSelector from './inputs/ContactSelector';
 import TeamSelector from './inputs/TeamSelector';
@@ -17,7 +18,6 @@ interface FormErrors {
 }
 
 const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) => {
-  if (!visible) return null;
 
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -74,8 +74,22 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
   };
 
   return (
-    <ScrollView className="flex-1 p-4 bg-background">
-      <Text className="text-2xl font-bold mb-6 text-foreground">New Project</Text>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onCancel}
+    >
+      <View className="flex-1 bg-background">
+        {/* Modal Header */}
+        <View className="px-6 py-4 flex-row items-center justify-between border-b border-border">
+          <Text className="text-2xl font-bold text-foreground">New Project</Text>
+          <Pressable onPress={onCancel} className="p-2">
+            <X className="text-foreground" size={24} />
+          </Pressable>
+        </View>
+
+        <ScrollView className="flex-1 p-6">
       
       {/* Name - Required */}
       <View className="mb-4">
@@ -205,7 +219,9 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
           disabled={!name.trim() || !address.trim()}
         />
       </View>
-    </ScrollView>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 };
 

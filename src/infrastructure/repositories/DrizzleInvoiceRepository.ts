@@ -25,8 +25,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     
     private async getDb() {
         if (!this.db) {
-            const { drizzle } = await initDatabase();
-            this.db = drizzle;
+            const { drizzle: dbDrizzle } = await initDatabase();
+            this.db = dbDrizzle;
         }
         return this.db!;
     }
