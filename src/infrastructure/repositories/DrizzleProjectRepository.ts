@@ -190,7 +190,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       if (result.rows.length === 0) return null;
       return await this.mapRowToProject(result.rows.item(0));
     } catch (e) {
-      const [result] = await db.executeSql('SELECT * FROM projects WHERE meta LIKE ?', [`%\"externalId\":\"${externalId}\"%`]);
+      const [result] = await db.executeSql('SELECT * FROM projects WHERE meta LIKE ?', [`%"externalId":"${externalId}"%`]);
       if (result.rows.length === 0) return null;
       return await this.mapRowToProject(result.rows.item(0));
     }
