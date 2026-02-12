@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SnapReceiptDTO } from '../../application/usecases/receipt/SnapReceiptUseCase';
+import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
+import { CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react-native';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
+  normalizedData?: NormalizedReceipt;  // OCR-extracted data with confidence
   onSubmit: (data: SnapReceiptDTO) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  isProcessing?: boolean;  // OCR is running
 }
 
 const PAYMENT_METHODS = [
@@ -17,7 +21,14 @@ const PAYMENT_METHODS = [
   { label: 'Other', value: 'other' },
 ];
 
-export const ReceiptForm: React.FC<ReceiptFormProps> = ({ initialValues, onSubmit, onCancel, isLoading }) => {
+export const ReceiptForm: React.FC<ReceiptFormProps> = ({ 
+  initialValues, 
+  normalizedData, 
+  onSubmit, 
+  onCancel, 
+  isLoading,
+  isProcessing 
+}) => {
   const [vendor, setVendor] = useState(initialValues?.vendor || '');
   const [amount, setAmount] = useState(initialValues?.amount?.toString() || '');
   const [date, setDate] = useState<Date | null>(initialValues?.date ? new Date(initialValues.date) : new Date());
@@ -25,6 +36,37 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({ initialValues, onSubmi
   const [notes, setNotes] = useState(initialValues?.notes || '');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form when normalized data arrives from OCR
+  useEffect(() => {
+    if (normalizedData) {
+      if (normalizedData.vendor) setVendor(normalizedData.vendor);
+      if (normalizedData.total) setAmount(normalizedData.total.toString());
+      if (normalizedData.date) setDate(normalizedData.date);
+      if (normalizedData.suggestedCorrections.length > 0) {
+        setNotes(prev => {
+          const corrections = `OCR Notes: ${normalizedData.suggestedCorrections.join(', ')}`;
+          return prev ? `${corrections}\n${prev}` : corrections;
+        });
+      }
+    }
+  }, [normalizedData]);
+
+  const getConfidenceIcon = (confidence: number) => {
+    if (confidence >= 0.8) {
+      return <CheckCircle size={16} color="#10b981" />;
+    } else if (confidence >= 0.5) {
+      return <AlertTriangle size={16} color="#f59e0b" />;
+    } else {
+      return <AlertCircle size={16} color="#ef4444" />;
+    }
+  };
+
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 0.8) return 'border-green-500';
+    if (confidence >= 0.5) return 'border-yellow-500';
+    return 'border-red-500';
+  };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -48,14 +90,46 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({ initialValues, onSubmi
     }
   };
 
+  if (isProcessing) {
+    return (
+      <View className="flex-1 bg-background p-4 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-lg text-foreground mt-4">Extracting receipt details...</Text>
+        <Text className="text-sm text-muted-foreground mt-2">This may take a few seconds</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView className="flex-1 bg-background p-4">
       <Text className="text-2xl font-bold mb-6 text-foreground">Snap Receipt</Text>
       
+      {normalizedData && normalizedData.suggestedCorrections.length > 0 && (
+        <View className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
+          <Text className="text-yellow-800 font-medium mb-1">Please Review</Text>
+          {normalizedData.suggestedCorrections.map((correction, idx) => (
+            <Text key={idx} className="text-yellow-700 text-sm">• {correction}</Text>
+          ))}
+        </View>
+      )}
+      
       <View className="mb-4">
-        <Text className="mb-2 font-medium text-foreground">Vendor*</Text>
+        <View className="flex-row items-center mb-2">
+          <Text className="font-medium text-foreground">Vendor*</Text>
+          {normalizedData && (
+            <View className="ml-2">
+              {getConfidenceIcon(normalizedData.confidence.vendor)}
+            </View>
+          )}
+        </View>
         <TextInput
-          className={`border rounded-xl p-4 text-base bg-card text-foreground ${errors.vendor ? 'border-destructive' : 'border-input'}`}
+          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
+            errors.vendor 
+              ? 'border-destructive' 
+              : normalizedData 
+                ? getConfidenceColor(normalizedData.confidence.vendor)
+                : 'border-input'
+          }`}
           value={vendor}
           onChangeText={setVendor}
           placeholder="Who did you pay?"
@@ -65,9 +139,22 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({ initialValues, onSubmi
       </View>
 
       <View className="mb-4">
-        <Text className="mb-2 font-medium text-foreground">Total Amount*</Text>
+        <View className="flex-row items-center mb-2">
+          <Text className="font-medium text-foreground">Total Amount*</Text>
+          {normalizedData && (
+            <View className="ml-2">
+              {getConfidenceIcon(normalizedData.confidence.total)}
+            </View>
+          )}
+        </View>
         <TextInput
-          className={`border rounded-xl p-4 text-base bg-card text-foreground ${errors.amount ? 'border-destructive' : 'border-input'}`}
+          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
+            errors.amount 
+              ? 'border-destructive' 
+              : normalizedData 
+                ? getConfidenceColor(normalizedData.confidence.total)
+                : 'border-input'
+          }`}
           value={amount}
           onChangeText={setAmount}
           placeholder="0.00"
@@ -78,8 +165,16 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({ initialValues, onSubmi
       </View>
 
       <View className="mb-4">
+        <View className="flex-row items-center mb-2">
+          <Text className="font-medium text-foreground">Date*</Text>
+          {normalizedData && (
+            <View className="ml-2">
+              {getConfidenceIcon(normalizedData.confidence.date)}
+            </View>
+          )}
+        </View>
         <DatePickerInput
-          label="Date*"
+          label=""
           value={date}
           onChange={setDate}
           error={errors.date}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Upload, Lightbulb, Camera } from 'lucide-react-native';
+import { Upload, Lightbulb } from 'lucide-react-native';
 import ManualProjectEntry from '../../../components/ManualProjectEntry';
 
 

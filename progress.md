@@ -22,97 +22,7 @@ Current Milestone: Implement Invoice aggregate (repository, use cases, payments)
 - externalReference?: string | null
 - total: number
 - subtotal?: number
-- tax?: number
-- currency: string
-- status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled'
-- paymentStatus: 'unpaid' | 'partial' | 'paid' | 'failed'
-- dateIssued?: string
-- dateDue?: string
-- paymentDate?: string
-- lineItems?: InvoiceLineItem[]
-- createdAt: string
-- updatedAt: string
 
-### Payment
-- id: string
-- projectId: string
-- invoiceId?: string
-- amount: number
-- currency?: string
-- date?: string
-- method?: 'bank' | 'cash' | 'check' | 'other'
-- reference?: string
-- notes?: string
-- createdAt?: string
-- updatedAt?: string
-
----
-
-## 5. App Structure Overview (Current)
-
-Feature Modules:
-- Projects
-- Invoices (new)
-- Payments (new)
-
-Shared Modules:
-- Infrastructure (Drizzle DB, migrations)
-- Domain (entities, repositories)
-- Application (use cases)
-- Components, Hooks, Utils
-
----
-
-## Summary of Changes (Issue #44)
-
-- Added domain validation rules to `InvoiceEntity.create`:
-  - Non-negative `total`
-  - Line-item sum must match `subtotal` or `total` (tolerance applied)
-  - `dateDue` must be >= `dateIssued`
-
-- Introduced repository interfaces and implementations:
-  - Confirmed `InvoiceRepository` interface at `src/domain/repositories/InvoiceRepository.ts`
-  - `DrizzleInvoiceRepository` at `src/infrastructure/repositories/DrizzleInvoiceRepository.ts` (uses `initDatabase()` and `invoices` schema)
-  - `DrizzlePaymentRepository` at `src/infrastructure/repositories/DrizzlePaymentRepository.ts`
-
-- Implemented core use cases in `src/application/usecases/invoice/`:
-  - `CreateInvoiceUseCase`, `GetInvoiceByIdUseCase`, `ListInvoicesUseCase`, `UpdateInvoiceUseCase`, `DeleteInvoiceUseCase`
-
-- Implemented payment use case:
-  - `RecordPaymentUseCase` updates `Payment` and recalculates invoice `paymentStatus` (and marks invoice as `paid` when fully paid)
-
-- Tests added (TDD style):
-  - Unit tests for use cases: `__tests__/unit/*` (Create/Get/Update/List Invoice, RecordPayment)
-  - Domain validation tests: `__tests__/unit/InvoiceEntity.validation.test.ts`
-  - Integration tests for repositories and payment workflows: `__tests__/integration/InvoiceRepository.integration.test.ts`, `__tests__/integration/Payment.integration.test.ts` (use in-memory SQLite shim)
-
-- Migration: added a documented no-op migration `drizzle/migrations/0004_invoice_module_noop.sql` (schema already compatible)
-
-References:
-- Design & plan: `design/#44-plan.md`
-- Tests demonstrate behavior and served as TDD acceptance criteria; see `__tests__/unit` and `__tests__/integration`
-
----
-
-## Testing
-
-- Run unit tests:
-```bash
-npx jest __tests__/unit --runInBand
-```
-- Run integration tests (they use an in-memory SQLite shim):
-```bash
-npx jest __tests__/integration --runInBand
-```
-
----
-
-## Next Steps
-
-- Review `DrizzleInvoiceRepository` and `DrizzlePaymentRepository` for performance/SQL tuning
-- Add UI screens for Invoice list/detail and payment entry, wiring to use cases via hooks
-- Add audit fields and domain events if required by downstream systems
-- If desired, replace the no-op migration with explicit schema changes and new migration tests
 Date: 2026-02-06
 
 Summary (concise)
@@ -344,3 +254,114 @@ Next steps:
     - Added "Snap Receipt" entry point in Dashboard (HeroSection and QuickActions).
 - **Tests**: Added unit tests for `SnapReceiptUseCase`.
 - **Hooks**: Added `useSnapReceipt` hook for integration.
+
+
+---
+
+Date: 2026-02-12
+
+Branch: issue-48
+
+Summary of work completed (this session):
+- Implemented Snap Receipt quick action: `SnapReceiptUseCase`, `ReceiptForm`, `SnapReceiptScreen`, and `useSnapReceipt` hook.
+- Updated `Payment` entity and DB schema to allow `card` method and nullable `project_id` (migration added).
+- Fixed multiple test and lint issues: removed conditional hooks, stabilized selector tests, avoided timer leaks in tests, and updated one snapshot.
+- Validation: ran `npx tsc --noEmit` (passes), `npm run lint` (0 errors, 32 warnings), and full `npm test` (all tests green).
+
+Files touched (high level):
+- `src/application/usecases/receipt/SnapReceiptUseCase.ts`
+- `src/components/receipts/ReceiptForm.tsx`, `src/pages/receipts/SnapReceiptScreen.tsx`
+- `src/hooks/useSnapReceipt.ts`
+- `src/components/inputs/ContactSelector.tsx`, `TeamSelector.tsx`
+- `src/components/ManualProjectEntryForm.tsx`
+- `drizzle/migrations/0004_motionless_harpoon.sql`
+- `progress.md` (this file)
+
+Next steps:
+- Open PR from `issue-48` → `master` referencing #48 and this progress summary.
+- Address remaining ESLint warnings (inline-style rules) before final review.
+
+
+
+## Summary of Changes (Issue #48: Snap Receipt)
+
+- **Feature**: Implemented "Snap Receipt" quick action to capture expenses instantly.
+- **Domain**: Updated `Payment` entity to allow `card` method and optional `projectId`.
+- **Infrastructure**: Updated `payments` schema/migration to allow nullable `project_id`.
+- **Application**: Added `SnapReceiptUseCase` to handle atomic creation of Invoice (paid) and Payment.
+- **UI**: 
+    - Added `ReceiptForm` component with validation and NativeWind styling.
+    - Added `SnapReceiptScreen` (as Modal content).
+    - Added "Snap Receipt" entry point in Dashboard (HeroSection and QuickActions).
+- **Tests**: Added unit tests for `SnapReceiptUseCase`.
+- **Hooks**: Added `useSnapReceipt` hook for integration.
+
+`````
+
+---
+
+Date: 2026-02-13
+
+Branch: issue-54
+
+Summary (concise)
+- Implemented Snap Receipt OCR pipeline improvements and deterministic normalizer (Issue #54).
+- Verified full test suite, TypeScript typecheck, and fixed lint errors.
+
+Completed This Session
+- Implemented/updated code:
+  - `src/application/receipt/DeterministicReceiptNormalizer.ts` (production rules-based normalizer)
+  - `src/infrastructure/ai/TfLiteReceiptNormalizer.ts` (TFLite template + docs)
+  - `src/application/receipt/NoOpReceiptNormalizer.ts` (unused param cleanup)
+  - `src/pages/receipts/SnapReceiptScreen.tsx` (effect deps and processing flow cleanup)
+  - `src/pages/dashboard/components/HeroSection.tsx` (remove unused import)
+  - `docs/RECEIPT_NORMALIZERS.md` (new documentation for normalizer selection)
+
+Notes
+- The `TfLiteReceiptNormalizer` is a template that falls back to the deterministic normalizer until a trained `.tflite` model and bindings are available.
+- Confidence scoring, suggestions, and feature-flag hooks are integrated and covered by unit tests.
+
+Next Steps
+- Prepare PR from `issue-54` → `master` with this progress summary and link to `design/#54-snap-receipt-ocr-ai-plan.md`.
+- Add camera integration and test fixtures (sample receipt images) for end-to-end integration tests.
+- (Optional) Begin TFLite model training and wiring when dataset and mobile bindings are ready.
+
+References
+- Design doc: `design/#54-snap-receipt-ocr-ai-plan.md`
+- Normalizer docs: `docs/RECEIPT_NORMALIZERS.md`
+
+## Summary of Changes (Issue #44)
+
+- Added domain validation rules to `InvoiceEntity.create`:
+  - Non-negative `total`
+  - Line-item sum must match `subtotal` or `total` (tolerance applied)
+  - `dateDue` must be >= `dateIssued`
+
+- Introduced repository interfaces and implementations:
+  - Confirmed `InvoiceRepository` interface at `src/domain/repositories/InvoiceRepository.ts`
+  - `DrizzleInvoiceRepository` at `src/infrastructure/repositories/DrizzleInvoiceRepository.ts` (uses `initDatabase()` and `invoices` schema)
+  - `DrizzlePaymentRepository` at `src/infrastructure/repositories/DrizzlePaymentRepository.ts`
+
+- Implemented core use cases in `src/application/usecases/invoice/`:
+  - `CreateInvoiceUseCase`, `GetInvoiceByIdUseCase`, `ListInvoicesUseCase`, `UpdateInvoiceUseCase`, `DeleteInvoiceUseCase`
+
+- Implemented payment use case:
+  - `RecordPaymentUseCase` updates `Payment` and recalculates invoice `paymentStatus` (and marks invoice as `paid` when fully paid)
+
+- Tests added (TDD style):
+  - Unit tests for use cases: `__tests__/unit/*` (Create/Get/Update/List Invoice, RecordPayment)
+  - Domain validation tests: `__tests__/unit/InvoiceEntity.validation.test.ts`
+  - Integration tests for repositories and payment workflows: `__tests__/integration/InvoiceRepository.integration.test.ts`, `__tests__/integration/Payment.integration.test.ts` (use in-memory SQLite shim)
+
+- Migration: added a documented no-op migration `drizzle/migrations/0004_invoice_module_noop.sql` (schema already compatible)
+
+References:
+- Design & plan: `design/#44-plan.md`
+---
+
+## Next Steps
+
+- Review `DrizzleInvoiceRepository` and `DrizzlePaymentRepository` for performance/SQL tuning
+- Add UI screens for Invoice list/detail and payment entry, wiring to use cases via hooks
+- Add audit fields and domain events if required by downstream systems
+- If desired, replace the no-op migration with explicit schema changes and new migration tests
