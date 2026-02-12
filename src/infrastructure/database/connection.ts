@@ -60,7 +60,7 @@ export async function initDatabase() {
  * Run all pending migrations
  */
 async function runMigrations(
-  drizzle: ReturnType<typeof import('drizzle-orm/sqlite-proxy').drizzle>,
+  dbDrizzle: ReturnType<typeof import('drizzle-orm/sqlite-proxy').drizzle>,
   db: SQLite.SQLiteDatabase
 ) {
   try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // Minimal hook stub that returns a simple in-memory list and a search API.
 export function useContacts() {
