@@ -133,7 +133,7 @@ export default function DashboardScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Hero Section - Show when no projects exist */}
-        {!hasProjects && <HeroSection onSnapReceipt={() => setShowSnapReceipt(true)} />}
+        {!hasProjects && <HeroSection />}
         {hasProjects && (
           <>
             <UrgentAlerts alerts={urgentAlerts} />
