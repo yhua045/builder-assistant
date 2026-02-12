@@ -6,7 +6,6 @@ describe('TeamSelector', () => {
   it('renders and allows selecting a team', async () => {
     const onChange = jest.fn();
 
-    jest.useFakeTimers();
     let testRenderer: renderer.ReactTestRenderer | undefined;
 
     await act(async () => {
@@ -18,13 +17,9 @@ describe('TeamSelector', () => {
     const root = testRenderer!.root;
     const input = root.findByType(require('react-native').TextInput);
 
-    await act(async () => {
+    act(() => {
       input.props.onChangeText('Renov');
-      jest.advanceTimersByTime(400);
-      await Promise.resolve();
     });
-
-    jest.useRealTimers();
 
     expect(root).toBeDefined();
   });

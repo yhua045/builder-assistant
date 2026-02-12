@@ -186,6 +186,16 @@ describe('DrizzleInvoiceRepository', () => {
     expect(drafts.items.length).toBe(2);
     expect(drafts.total).toBe(2);
 
+    // Test multiple status filter
+    const draftsAndPaid = await repo.listInvoices({ status: ['draft', 'paid'] });
+    expect(draftsAndPaid.items.length).toBe(3);
+    expect(draftsAndPaid.total).toBe(3);
+
+    // Test non-matching status filter
+    const overdue = await repo.listInvoices({ status: ['overdue'] });
+    expect(overdue.items.length).toBe(0);
+    expect(overdue.total).toBe(0);
+
     // Soft delete inv3
     await repo.deleteInvoice(inv3.id);
 

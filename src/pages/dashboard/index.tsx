@@ -6,6 +6,7 @@ import HeroSection from './components/HeroSection';
 import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
+import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { 
   DollarSign, 
   Plus,
@@ -109,6 +110,15 @@ const quickActions = [
 
 export default function DashboardScreen() {
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showSnapReceipt, setShowSnapReceipt] = useState(false);
+
+  const handleQuickAction = (actionId: string) => {
+    setShowQuickActions(false);
+    if (actionId === '1') { // Snap Receipt
+      setShowSnapReceipt(true);
+    }
+    // Handle other actions...
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -123,7 +133,7 @@ export default function DashboardScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Hero Section - Show when no projects exist */}
-        {!hasProjects && <HeroSection />}
+        {!hasProjects && <HeroSection onSnapReceipt={() => setShowSnapReceipt(true)} />}
         {hasProjects && (
           <>
             <UrgentAlerts alerts={urgentAlerts} />
@@ -177,10 +187,7 @@ export default function DashboardScreen() {
                 return (
                   <Pressable
                     key={action.id}
-                    onPress={() => {
-                      setShowQuickActions(false);
-                      // Handle action
-                    }}
+                    onPress={() => handleQuickAction(action.id)}
                     className="bg-card border border-border rounded-xl p-4 flex-row items-center active:opacity-70"
                   >
                     <View className={`${action.color}/10 p-3 rounded-lg mr-4`}>
@@ -195,6 +202,16 @@ export default function DashboardScreen() {
             <View className="h-8" />
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Snap Receipt Modal */}
+      <Modal
+        visible={showSnapReceipt}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowSnapReceipt(false)}
+      >
+        <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} />
       </Modal>
     </SafeAreaView>
   );

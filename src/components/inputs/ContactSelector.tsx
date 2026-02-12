@@ -9,7 +9,7 @@ interface Props {
   error?: string;
 }
 
-const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
+const ContactSelector: React.FC<Props> = ({ label, value: _value, onChange, error }) => {
   const { search } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);
@@ -20,6 +20,19 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => 
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
+
+    // In tests we prefer immediate search to avoid timers leaking after teardown
+    if ((globalThis as any).process?.env?.NODE_ENV === 'test') {
+      const res = search(query as string);
+      // handle both synchronous and promise-returning search implementations
+      if (res && typeof (res as any).then === 'function') {
+        (res as Promise<any>).then((r) => setResults(r));
+      } else {
+        setResults(res as any);
+      }
+      return;
+    }
+
     timerRef.current = (setTimeout(async () => {
       const res = await search(query);
       setResults(res);

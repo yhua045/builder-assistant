@@ -17,8 +17,6 @@ interface FormErrors {
 }
 
 const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) => {
-  if (!visible) return null;
-
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [address, setAddress] = React.useState('');
@@ -30,6 +28,8 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
   const [priority, setPriority] = React.useState('Low');
   const [notes, setNotes] = React.useState('');
   const [errors, setErrors] = React.useState<FormErrors>({});
+
+  if (!visible) return null;
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
