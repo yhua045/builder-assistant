@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import HeroSection from './components/HeroSection';
 import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
+import { ReceiptForm } from '../../components/receipts/ReceiptForm';
+import { useSnapReceipt } from '../../hooks/useSnapReceipt';
 import { 
   DollarSign, 
   Plus,
@@ -111,11 +112,15 @@ const quickActions = [
 export default function DashboardScreen() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
+  const [showReceiptForm, setShowReceiptForm] = useState(false);
+
+  const { saveReceipt, loading: saving, error } = useSnapReceipt();
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
     if (actionId === '1') { // Snap Receipt
-      setShowSnapReceipt(true);
+      // Open the receipt form directly from quick actions
+      setShowReceiptForm(true);
     }
     // Handle other actions...
   };
@@ -132,8 +137,6 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
-        {/* Hero Section - Show when no projects exist */}
-        {!hasProjects && <HeroSection onSnapReceipt={() => setShowSnapReceipt(true)} />}
         {hasProjects && (
           <>
             <UrgentAlerts alerts={urgentAlerts} />
@@ -204,7 +207,7 @@ export default function DashboardScreen() {
         </Pressable>
       </Modal>
 
-      {/* Snap Receipt Modal */}
+      {/* Snap Receipt Modal (camera / snap flow) */}
       <Modal
         visible={showSnapReceipt}
         animationType="slide"
@@ -212,6 +215,24 @@ export default function DashboardScreen() {
         onRequestClose={() => setShowSnapReceipt(false)}
       >
         <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} />
+      </Modal>
+
+      {/* Receipt Form Modal (opened from Quick Actions) */}
+      <Modal
+        visible={showReceiptForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowReceiptForm(false)}
+      >
+        <ReceiptForm
+          onSubmit={async (data) => {
+            const success = await saveReceipt(data as any);
+            if (success) setShowReceiptForm(false);
+            else Alert.alert('Error', error || 'Failed to save receipt');
+          }}
+          onCancel={() => setShowReceiptForm(false)}
+          isLoading={saving}
+        />
       </Modal>
     </SafeAreaView>
   );

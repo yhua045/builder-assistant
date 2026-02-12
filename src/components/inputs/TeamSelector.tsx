@@ -10,7 +10,8 @@ interface Props {
   error?: string;
 }
 
-const TeamSelector: React.FC<Props> = ({ label, value: _value, onChange, error }) => {
+const TeamSelector: React.FC<Props> = (props) => {
+  const { label, value, onChange, error } = props;
   const { search } = useTeams();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);
@@ -44,10 +45,10 @@ const TeamSelector: React.FC<Props> = ({ label, value: _value, onChange, error }
   }, [query, search]);
 
   useEffect(() => {
-    if (value) {
-      setQuery(String(value));
+    if (props.value) {
+      setQuery(String(props.value));
     }
-  }, [value]);
+  }, [props.value]);
 
   return (
     <View style={styles.container}>

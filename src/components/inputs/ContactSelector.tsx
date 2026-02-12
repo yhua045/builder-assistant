@@ -9,7 +9,8 @@ interface Props {
   error?: string;
 }
 
-const ContactSelector: React.FC<Props> = ({ label, value: _value, onChange, error }) => {
+const ContactSelector: React.FC<Props> = (props) => {
+  const { label, value, onChange, error } = props;
   const { search } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);
@@ -45,11 +46,11 @@ const ContactSelector: React.FC<Props> = ({ label, value: _value, onChange, erro
   }, [query, search]);
 
   useEffect(() => {
-    if (value) {
+    if (props.value) {
       // If parent supplies an initial value (id), show it as query temporarily.
-      setQuery(String(value));
+      setQuery(String(props.value));
     }
-  }, [value]);
+  }, [props.value]);
 
   return (
     <View style={styles.container}>
