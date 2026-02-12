@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from 'react-native';
 import useContacts from '../../hooks/useContacts';
 
 interface Props {
@@ -51,11 +51,10 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => 
       />
       {isFocused && results.length > 0 && (
         <View style={styles.dropdown}>
-          <FlatList
-            data={results}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+          <ScrollView style={styles.list} nestedScrollEnabled>
+            {results.map((item) => (
               <Pressable 
+                key={item.id}
                 onPress={() => { 
                   onChange(item.id); 
                   setQuery(item.name); 
@@ -66,9 +65,8 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => 
               >
                 <Text className="text-foreground">{item.name} — {item.title}</Text>
               </Pressable>
-            )}
-            style={styles.list}
-          />
+            ))}
+          </ScrollView>
         </View>
       )}
       {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
