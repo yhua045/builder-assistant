@@ -56,7 +56,7 @@ import { DrizzlePaymentRepository } from '../../src/infrastructure/repositories/
 import { InvoiceEntity } from '../../src/domain/entities/Invoice';
 import { PaymentEntity } from '../../src/domain/entities/Payment';
 import { RecordPaymentUseCase } from '../../src/application/usecases/payment/RecordPaymentUseCase';
-import { closeDatabase } from '../../src/infrastructure/database/connection';
+import { closeDatabase, initDatabase } from '../../src/infrastructure/database/connection';
 
 describe('RecordPaymentUseCase integration', () => {
   let invoiceRepo: DrizzleInvoiceRepository;
@@ -68,6 +68,27 @@ describe('RecordPaymentUseCase integration', () => {
     invoiceRepo = new DrizzleInvoiceRepository();
     paymentRepo = new DrizzlePaymentRepository();
     uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
+    // Ensure payments table exists with due_date and status for this test
+    const { db } = await initDatabase();
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        project_id TEXT,
+        invoice_id TEXT,
+        amount REAL,
+        currency TEXT,
+        payment_date INTEGER,
+        due_date INTEGER,
+        status TEXT,
+        payment_method TEXT,
+        reference TEXT,
+        notes TEXT,
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    `);
+    try { await db.executeSql('ALTER TABLE payments ADD COLUMN due_date INTEGER'); } catch(_) {}
+    try { await db.executeSql('ALTER TABLE payments ADD COLUMN status TEXT'); } catch(_) {}
   });
 
   afterEach(async () => {
