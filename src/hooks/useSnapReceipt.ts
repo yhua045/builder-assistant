@@ -14,14 +14,19 @@ export const useSnapReceipt = () => {
     const saveReceipt = async (data: SnapReceiptDTO) => {
         setLoading(true);
         setError(null);
+        console.log('[useSnapReceipt] saveReceipt - start', { vendor: data.vendor, amount: data.amount, date: data.date });
         try {
             await useCase.execute(data);
-            return true;
+            console.log('[useSnapReceipt] saveReceipt - success');
+            return { success: true } as const;
         } catch (e: any) {
-            setError(e.message || 'Failed to save receipt');
-            return false;
+            const msg = e?.message || 'Failed to save receipt';
+            console.warn('[useSnapReceipt] saveReceipt - error', msg, e);
+            setError(msg);
+            return { success: false, error: msg } as const;
         } finally {
             setLoading(false);
+            console.log('[useSnapReceipt] saveReceipt - end');
         }
     };
 

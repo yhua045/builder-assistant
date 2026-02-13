@@ -11,12 +11,17 @@ export const SnapReceiptScreen = ({ onClose }: Props) => {
     const { saveReceipt, loading, error } = useSnapReceipt();
 
     const handleSave = async (data: any) => {
-        const success = await saveReceipt(data);
-        if (success) {
+        console.log('[SnapReceiptScreen] handleSave - start', { vendor: data.vendor, amount: data.amount, date: data.date });
+        const result = await saveReceipt(data);
+        console.log('[SnapReceiptScreen] handleSave - result', result);
+
+        if (result.success) {
+            console.log('[SnapReceiptScreen] Save succeeded, closing screen');
             Alert.alert('Success', 'Receipt saved successfully');
             onClose();
         } else {
-            Alert.alert('Error', error || 'Failed to save');
+            console.warn('[SnapReceiptScreen] Save failed', result.error);
+            Alert.alert('Error', result.error || 'Failed to save');
         }
     };
 
