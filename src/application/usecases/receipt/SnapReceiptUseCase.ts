@@ -1,6 +1,9 @@
 import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
 import { Payment, PaymentEntity } from '../../../domain/entities/Payment';
 import { ReceiptRepository } from '../../../domain/repositories/ReceiptRepository';
+import { IOcrAdapter } from '../../services/IOcrAdapter';
+import { ReceiptFieldParser } from '../../receipt/ReceiptFieldParser';
+import { IReceiptNormalizer, NormalizedReceipt } from '../../receipt/IReceiptNormalizer';
 
 export interface SnapReceiptDTO {
   vendor: string;
@@ -15,7 +18,10 @@ export interface SnapReceiptDTO {
 
 export class SnapReceiptUseCase {
   constructor(
-    private readonly receiptRepo: ReceiptRepository
+    private readonly receiptRepo: ReceiptRepository,
+    private readonly ocrAdapter?: IOcrAdapter,
+    private readonly fieldParser?: ReceiptFieldParser,
+    private readonly normalizer?: IReceiptNormalizer
   ) {}
 
   async execute(input: SnapReceiptDTO): Promise<{ invoice: Invoice; payment: Payment }> {
@@ -73,5 +79,61 @@ export class SnapReceiptUseCase {
     } catch (error) {
       throw new Error('Failed to save receipt');
     }
+  }
+
+  /**
+   * Process receipt image through OCR pipeline
+   * @param imageUri - Local file URI or base64 image
+   * @returns Normalized receipt data for review
+   * @throws Error if OCR pipeline is not configured or processing fails
+   */
+  async processReceipt(imageUri: string): Promise<NormalizedReceipt> {
+    if (!this.ocrAdapter || !this.fieldParser || !this.normalizer) {
+      throw new Error('OCR pipeline not configured. Please provide ocrAdapter, fieldParser, and normalizer in constructor.');
+    }
+
+    try {
+      // Step 1: Extract text via OCR
+      const ocrResult = await this.ocrAdapter.extractText(imageUri);
+      
+      // Step 2: Parse candidates from OCR text
+      const candidates = this.fieldParser.parse(ocrResult);
+      
+      // Step 3: Normalize candidates into structured receipt
+      const normalized = await this.normalizer.normalize(candidates, ocrResult);
+      
+      return normalized;
+    } catch (error) {
+      throw new Error(`Failed to process receipt: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Save normalized receipt as invoice + payment
+   * @param normalizedReceipt - Normalized receipt from processReceipt()
+   * @param paymentMethod - Payment method to use
+   * @param projectId - Optional project to associate with
+   * @returns Created invoice and payment
+   */
+  async saveReceipt(
+    normalizedReceipt: NormalizedReceipt,
+    paymentMethod: Payment['method'],
+    projectId?: string
+  ): Promise<{ invoice: Invoice; payment: Payment }> {
+    // Convert NormalizedReceipt to SnapReceiptDTO
+    const dto: SnapReceiptDTO = {
+      vendor: normalizedReceipt.vendor || 'Unknown Vendor',
+      amount: normalizedReceipt.total || 0,
+      date: normalizedReceipt.date?.toISOString() || new Date().toISOString(),
+      paymentMethod,
+      projectId,
+      currency: normalizedReceipt.currency,
+      notes: normalizedReceipt.suggestedCorrections.length > 0 
+        ? `OCR Suggestions: ${normalizedReceipt.suggestedCorrections.join(', ')}` 
+        : undefined
+    };
+
+    // Reuse existing execute logic
+    return this.execute(dto);
   }
 }
