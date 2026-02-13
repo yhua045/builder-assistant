@@ -12,22 +12,153 @@ npx drizzle-kit generate
 
 This will create a new SQL migration file in this directory.
 
-### 2. Apply migrations
+### 2. **CRITICAL: Bundle the migration into the app**
+
+⚠️ **After generating a migration, it MUST be bundled into the app code.** The migration won't run in the app until you complete these steps:
+
+#### Required file updates (all three must be done):
+
+1. **Update `drizzle/migrations/migrations.js`**
+   - Add an import for the new migration SQL file
+   - Add it to the migrations object export
+   
+   Example:
+   ```javascript
+   import m0005 from './0005_add_payments_due_date_status.sql';
+   
+   export default {
+     journal,
+     migrations: {
+       m0000,
+       m0001,
+       // ... existing migrations
+       m0005  // Add your new migration
+     }
+   }
+   ```
+
+2. **Update `drizzle/migrations/meta/_journal.json`**
+   - Add a new entry with the correct idx, version, timestamp, tag, and breakpoints
+   
+   Example:
+   ```json
+   {
+     "idx": 5,
+     "version": "6",
+     "when": 1770945000000,
+     "tag": "0005_add_payments_due_date_status",
+     "breakpoints": true
+   }
+   ```
+
+3. **Update `src/infrastructure/database/migrations.ts`**
+   - Add a `rawMigrationXXXX` constant with the SQL content (using template literals with escaped backticks)
+   - Add an entry to the `migrations` array
+   
+   Example:
+   ```typescript
+   const rawMigration0005 = `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+   CREATE TABLE \`__new_payments\` (
+     \`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+     // ... rest of SQL (note: backticks must be escaped as \`)
+   );\n`;
+   
+   const migrations: RNMigration[] = [
+     // ... existing migrations
+     {
+       tag: '0005_add_payments_due_date_status',
+       hash: '0005_add_payments_due_date_status',
+       folderMillis: 1770945000000,
+       sql: rawMigration0005
+         .split('--> statement-breakpoint')
+         .map((statement) => statement.trim())
+         .filter(Boolean),
+     },
+   ];
+   ```
+
+#### Verification steps:
+
+1. **Run TypeScript type check:**
+   ```bash
+   npx tsc --noEmit
+   ```
+   This will catch any syntax errors in `migrations.ts` (especially template literal issues).
+
+2. **Check that all migrations are present:**
+   ```bash
+   grep "^const rawMigration" src/infrastructure/database/migrations.ts
+   ```
+   You should see entries for all migration files (0000, 0001, etc.).
+
+3. **Run tests:**
+   ```bash
+   npm test
+   ```
+   Note: Tests may pass even if migrations aren't bundled correctly because they use fresh in-memory databases.
+
+4. **Verify in the app:**
+   - Clean build or reinstall the app
+   - Check logs for "Migrations completed successfully"
+   - Query the runtime database to verify schema changes were applied
+
+#### Common pitfalls:
+
+- ❌ **Forgetting to bundle migrations** - The SQL file exists but the app doesn't include it, so migrations never run
+- ❌ **Template literal syntax errors** - Incorrectly escaping backticks in `migrations.ts` causes TypeScript compilation failures
+- ❌ **Tests pass but app fails** - Integration tests use fresh in-memory DB with bundled schemas, while the app uses persistent DB that needs migrations
+- ❌ **Schema mismatch** - Code expects new columns but database wasn't migrated because migration wasn't bundled
+
+### 3. Apply migrations
 Migrations are automatically applied when the app starts via `initDatabase()` in `connection.ts`.
 
-### 3. View current schema
+### 4. View current schema
 To see the current database schema:
 ```bash
 npx drizzle-kit introspect
 ```
 
-### 4. Push changes directly (development only)
+### 5. Push changes directly (development only)
 To push schema changes directly without generating migrations:
 ```bash
 npx drizzle-kit push
 ```
 
 ⚠️ **Warning**: This should only be used in development. Use migrations for production.
+
+## Troubleshooting
+
+### Migration exists but doesn't run in the app
+
+**Symptom:** You generated a migration, tests pass, but the schema changes aren't applied in the running app.
+
+**Cause:** Migration SQL file was created but not bundled into the app code.
+
+**Solution:** Follow **step 2** above to update all three files (`migrations.js`, `_journal.json`, and `migrations.ts`).
+
+### TypeScript compilation errors in migrations.ts
+
+**Symptom:** Errors like "TS1127: Invalid character" or "TS1160: Unterminated template literal" after adding a migration.
+
+**Cause:** Template literal delimiters in `migrations.ts` must use plain backticks (`` ` ``), and backticks within the SQL string must be escaped as `\``.
+
+**Solution:**
+- Use plain backticks to start/end the template literal: `` const rawMigration0005 = `...`; ``
+- Escape backticks in SQL: `` CREATE TABLE \`table_name\` ``
+- Do NOT use `\`` (backslash-backtick) for the template literal delimiters
+
+### Runtime DB schema differs from code expectations
+
+**Symptom:** App crashes with "column not found" errors, or data isn't displaying correctly.
+
+**Cause:** The persistent database in the simulator/device hasn't been updated with the new migration.
+
+**Solution:**
+1. Ensure migration is bundled (see step 2 above)
+2. Clean build the app (Xcode: Product > Clean Build Folder)
+3. OR uninstall and reinstall the app to get a fresh database
+4. Check app logs for "Migrations completed successfully"
+5. Verify schema: Query `PRAGMA table_info(your_table)` to confirm columns exist
 
 ## Migration files
 
