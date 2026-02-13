@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import container from '../infrastructure/di/registerServices';
 import { PaymentRepository } from '../domain/repositories/PaymentRepository';
 import { ListPaymentsUseCase } from '../application/usecases/payment/ListPaymentsUseCase';
@@ -6,8 +6,8 @@ import { GetPaymentMetricsUseCase } from '../application/usecases/payment/GetPay
 
 export function usePayments(projectId?: string, repoOverride?: PaymentRepository) {
   const repo = repoOverride ?? container.resolve<PaymentRepository>('PaymentRepository' as any);
-  const listUc = new ListPaymentsUseCase(repo);
-  const metricsUc = new GetPaymentMetricsUseCase(repo);
+  const listUc = useMemo(() => new ListPaymentsUseCase(repo), [repo]);
+  const metricsUc = useMemo(() => new GetPaymentMetricsUseCase(repo), [repo]);
 
   const [overdue, setOverdue] = useState<any[]>([]);
   const [upcoming, setUpcoming] = useState<any[]>([]);
