@@ -392,7 +392,91 @@ CREATE UNIQUE INDEX \`invoices_id_unique\` ON \`invoices\` (\`id\`);--> statemen
 CREATE INDEX \`idx_invoices_project\` ON \`invoices\` (\`project_id\`);--> statement-breakpoint
 CREATE UNIQUE INDEX \`idx_invoices_external_key\` ON \`invoices\` (\`external_id\`,\`external_reference\`);--> statement-breakpoint
 CREATE INDEX \`idx_invoices_status\` ON \`invoices\` (\`status\`);`;
+const rawMigration0004 = `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE \`__new_invoices\` (
+	\`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	\`id\` text NOT NULL,
+	\`project_id\` text,
+	\`external_id\` text,
+	\`external_reference\` text,
+	\`issuer_name\` text,
+	\`issuer_address\` text,
+	\`issuer_tax_id\` text,
+	\`recipient_name\` text,
+	\`recipient_id\` text,
+	\`total\` real NOT NULL,
+	\`subtotal\` real,
+	\`tax\` real,
+	\`currency\` text DEFAULT 'USD' NOT NULL,
+	\`date_issued\` integer,
+	\`date_due\` integer,
+	\`payment_date\` integer,
+	\`status\` text DEFAULT 'draft' NOT NULL,
+	\`payment_status\` text DEFAULT 'unpaid',
+	\`document_id\` text,
+	\`line_items\` text,
+	\`tags\` text,
+	\`notes\` text,
+	\`metadata\` text,
+	\`created_at\` integer NOT NULL,
+	\`updated_at\` integer NOT NULL,
+	\`deleted_at\` integer
+);
+--> statement-breakpoint
+INSERT INTO \`__new_invoices\`("local_id", "id", "project_id", "external_id", "external_reference", "issuer_name", "issuer_address", "issuer_tax_id", "recipient_name", "recipient_id", "total", "subtotal", "tax", "currency", "date_issued", "date_due", "payment_date", "status", "payment_status", "document_id", "line_items", "tags", "notes", "metadata", "created_at", "updated_at", "deleted_at") SELECT "local_id", "id", "project_id", "external_id", "external_reference", "issuer_name", "issuer_address", "issuer_tax_id", "recipient_name", "recipient_id", "total", "subtotal", "tax", "currency", "date_issued", "date_due", "payment_date", "status", "payment_status", "document_id", "line_items", "tags", "notes", "metadata", "created_at", "updated_at", "deleted_at" FROM \`invoices\`;--> statement-breakpoint
+DROP TABLE \`invoices\`;--> statement-breakpoint
+ALTER TABLE \`__new_invoices\` RENAME TO \`invoices\`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;--> statement-breakpoint
+CREATE UNIQUE INDEX \`invoices_id_unique\` ON \`invoices\` (\`id\`);--> statement-breakpoint
+CREATE INDEX \`idx_invoices_project\` ON \`invoices\` (\`project_id\`);--> statement-breakpoint
+CREATE UNIQUE INDEX \`idx_invoices_external_key\` ON \`invoices\` (\`external_id\`,\`external_reference\`);--> statement-breakpoint
+CREATE INDEX \`idx_invoices_status\` ON \`invoices\` (\`status\`);--> statement-breakpoint
+CREATE TABLE \`__new_payments\` (
+	\`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	\`id\` text NOT NULL,
+	\`project_id\` text,
+	\`invoice_id\` text,
+	\`amount\` real NOT NULL,
+	\`currency\` text,
+	\`payment_date\` integer,
+	\`payment_method\` text,
+	\`reference\` text,
+	\`notes\` text,
+	\`created_at\` integer,
+	\`updated_at\` integer
+);
+--> statement-breakpoint
+INSERT INTO \`__new_payments\`("local_id", "id", "project_id", "invoice_id", "amount", "currency", "payment_date", "payment_method", "reference", "notes", "created_at", "updated_at") SELECT "local_id", "id", "project_id", "invoice_id", "amount", "currency", "payment_date", "payment_method", "reference", "notes", "created_at", "updated_at" FROM \`payments\`;--> statement-breakpoint
+DROP TABLE \`payments\`;--> statement-breakpoint
+ALTER TABLE \`__new_payments\` RENAME TO \`payments\`;--> statement-breakpoint
+CREATE UNIQUE INDEX \`payments_id_unique\` ON \`payments\` (\`id\`);--> statement-breakpoint
+CREATE INDEX \`idx_payments_project\` ON \`payments\` (\`project_id\`);`;
 
+const rawMigration0005 = `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE \`__new_payments\` (
+	\`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	\`id\` text NOT NULL,
+	\`project_id\` text,
+	\`invoice_id\` text,
+	\`amount\` real NOT NULL,
+	\`currency\` text,
+	\`payment_date\` integer,
+	\`due_date\` integer,
+	\`status\` text,
+	\`payment_method\` text,
+	\`reference\` text,
+	\`notes\` text,
+	\`created_at\` integer,
+	\`updated_at\` integer
+);
+--> statement-breakpoint
+INSERT INTO \`__new_payments\`("local_id", "id", "project_id", "invoice_id", "amount", "currency", "payment_date", "due_date", "status", "payment_method", "reference", "notes", "created_at", "updated_at") SELECT "local_id", "id", "project_id", "invoice_id", "amount", "currency", "payment_date", NULL as "due_date", NULL as "status", "payment_method", "reference", "notes", "created_at", "updated_at" FROM \`payments\`;--> statement-breakpoint
+DROP TABLE \`payments\`;--> statement-breakpoint
+ALTER TABLE \`__new_payments\` RENAME TO \`payments\`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;--> statement-breakpoint
+CREATE UNIQUE INDEX \`payments_id_unique\` ON \`payments\` (\`id\`);--> statement-breakpoint
+CREATE INDEX \`idx_payments_project\` ON \`payments\` (\`project_id\`);
+`;
 const migrations: RNMigration[] = [
   {
     tag: '0000_slow_drax',
@@ -426,6 +510,24 @@ const migrations: RNMigration[] = [
     hash: '0003_optional_invoice_external_keys',
     folderMillis: 1770855200000,
     sql: rawMigration0003
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean),
+  },
+  {
+    tag: '0004_motionless_harpoon',
+    hash: '0004_motionless_harpoon',
+    folderMillis: 1770858703009,
+    sql: rawMigration0004
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean),
+  },
+  {
+    tag: '0005_add_payments_due_date_status',
+    hash: '0005_add_payments_due_date_status',
+    folderMillis: 1770945000000,
+    sql: rawMigration0005
       .split('--> statement-breakpoint')
       .map((statement) => statement.trim())
       .filter(Boolean),
