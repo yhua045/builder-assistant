@@ -12,13 +12,9 @@ jest.mock('react-native-sqlite-storage', () => {
         }
 
         if (params && params.length > 0) {
-          try {
-            const prepared = db.prepare(stmt);
-            prepared.run(...params);
-            return [ { rows: { length: 0, item: (_: number) => undefined } } ];
-          } catch (e) {
-            // fallthrough to exec
-          }
+          const prepared = db.prepare(stmt);
+          prepared.run(...params);
+          return [ { rows: { length: 0, item: (_: number) => undefined } } ];
         }
 
         if (stmt) db.exec(stmt);
@@ -87,5 +83,38 @@ describe('DrizzleReceiptRepository transaction behavior', () => {
     const [payRes] = await db.executeSql('SELECT COUNT(*) as c FROM payments WHERE invoice_id = ?', [invoice.id]);
     const payCount = payRes.rows.item(0).c;
     expect(payCount).toBe(0);
+  });
+
+  test('createReceipt succeeds and persists invoice and payment', async () => {
+    const repo = new DrizzleReceiptRepository();
+
+    const invoice = InvoiceEntity.create({
+      total: 200,
+      externalReference: 'happy-path-1',
+      metadata: {},
+    }).data();
+
+    const payment = PaymentEntity.create({
+      id: `testpay_${Date.now()}`,
+      projectId: 'proj_test_1',
+      amount: 200,
+      invoiceId: invoice.id,
+    }).data();
+
+    let res: any;
+    res = await repo.createReceipt(invoice, payment);
+
+    expect(res).toBeDefined();
+    expect(res.invoice && res.invoice.id).toBeDefined();
+    expect(res.payment && res.payment.id).toBeDefined();
+
+    const { db } = getDatabase();
+    const [invRes] = await db.executeSql('SELECT COUNT(*) as c FROM invoices WHERE external_reference = ?', [invoice.externalReference]);
+    const invCount = invRes.rows.item(0).c;
+    expect(invCount).toBeGreaterThanOrEqual(1);
+
+    const [payRes] = await db.executeSql('SELECT COUNT(*) as c FROM payments WHERE invoice_id = ?', [invoice.id]);
+    const payCount = payRes.rows.item(0).c;
+    expect(payCount).toBeGreaterThanOrEqual(1);
   });
 });
