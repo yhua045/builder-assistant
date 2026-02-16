@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
-import { View, Alert, Text, Pressable, TextInput } from 'react-native';
+import { View, Alert, Text, Pressable, ActivityIndicator } from 'react-native';
 import { ReceiptForm } from '../../components/receipts/ReceiptForm';
 import { useSnapReceipt } from '../../hooks/useSnapReceipt';
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import { Camera } from 'lucide-react-native';
+import { ICameraAdapter } from '../../infrastructure/camera/ICameraAdapter';
+import { MobileCameraAdapter } from '../../infrastructure/camera/MobileCameraAdapter';
 
 interface Props {
     onClose: () => void;
     enableOcr?: boolean;  // Feature flag for OCR
     imageUri?: string;    // Pre-captured image URI (for camera integration)
+    cameraAdapter?: ICameraAdapter; // Optional camera adapter for dependency injection (testing)
 }
 
-export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri }: Props) => {
+export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri, cameraAdapter }: Props) => {
     const { saveReceipt, processReceipt, loading, processing, error } = useSnapReceipt(enableOcr);
     const [normalizedData, setNormalizedData] = useState<NormalizedReceipt | null>(null);
-    const [testImageUri, setTestImageUri] = useState('');
     const [hasProcessed, setHasProcessed] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(false);
+    
+    // Use provided camera adapter or create default instance
+    const camera = cameraAdapter || new MobileCameraAdapter();
 
     // Process image URI when provided (from camera/gallery)
     React.useEffect(() => {
@@ -32,12 +38,43 @@ export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri }: Prop
         }
     }, [imageUri, enableOcr, hasProcessed, processReceipt, error]);
 
-    const handleProcessImage = async (uri: string) => {
-        const result = await processReceipt(uri);
-        if (result) {
-            setNormalizedData(result);
-        } else {
-            Alert.alert('OCR Error', error || 'Could not extract receipt data. Please enter manually.');
+    const handleCameraCapture = async () => {
+        try {
+            setIsCapturing(true);
+            const result = await camera.capturePhoto();
+            
+            // User cancelled
+            if (result.cancelled) {
+                setIsCapturing(false);
+                return;
+            }
+            
+            // Process the captured image with OCR
+            const normalizedResult = await processReceipt(result.uri);
+            if (normalizedResult) {
+                setNormalizedData(normalizedResult);
+            } else {
+                Alert.alert('OCR Error', error || 'Could not extract receipt data. Please enter manually.');
+            }
+        } catch (err: any) {
+            const errorMessage = err?.message || 'Camera error occurred';
+            
+            // Provide user-friendly error messages
+            if (errorMessage.toLowerCase().includes('permission')) {
+                Alert.alert(
+                    'Camera Error',
+                    'Camera access is required to scan receipts. Please enable camera permissions in your device settings.'
+                );
+            } else if (errorMessage.toLowerCase().includes('not available')) {
+                Alert.alert(
+                    'Camera Error',
+                    'Camera is not available on this device. Please enter receipt details manually.'
+                );
+            } else {
+                Alert.alert('Camera Error', errorMessage);
+            }
+        } finally {
+            setIsCapturing(false);
         }
     };
 
@@ -56,33 +93,31 @@ export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri }: Prop
         }
     };
 
-    // Show OCR testing UI if enabled but no image provided yet
+    // Show camera capture UI if enabled but no image provided yet
     if (enableOcr && !imageUri && !normalizedData) {
         return (
             <View className="flex-1 bg-background p-4 pt-8">
-                <Text className="text-2xl font-bold mb-4 text-foreground">Snap Receipt (OCR Enabled)</Text>
+                <Text className="text-2xl font-bold mb-4 text-foreground">Snap Receipt</Text>
                 
-                {/* Mock image URI input for testing - will be replaced with camera */}
+                {/* Camera capture button */}
                 <View className="mb-4">
-                    <Text className="text-sm text-muted-foreground mb-2">
-                        OCR Testing: Enter image URI or use camera button
+                    <Text className="text-sm text-muted-foreground mb-4">
+                        Capture a photo of your receipt to automatically extract details
                     </Text>
-                    <TextInput
-                        className="border border-input rounded-xl p-4 bg-card text-foreground mb-4"
-                        value={testImageUri}
-                        onChangeText={setTestImageUri}
-                        placeholder="file:///path/to/image.jpg"
-                        placeholderTextColor="#9ca3af"
-                    />
                     
                     <Pressable
-                        onPress={() => testImageUri && handleProcessImage(testImageUri)}
-                        disabled={!testImageUri || processing}
-                        className="bg-primary p-4 rounded-xl items-center flex-row justify-center active:opacity-80"
+                        testID="camera-button"
+                        onPress={handleCameraCapture}
+                        disabled={isCapturing || processing}
+                        className="bg-primary p-4 rounded-xl items-center flex-row justify-center active:opacity-80 mb-6"
                     >
-                        <Camera size={20} color="white" />
-                        <Text className="text-primary-foreground font-bold ml-2">
-                            {processing ? 'Processing...' : 'Process Receipt'}
+                        {isCapturing ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <Camera size={24} color="white" />
+                        )}
+                        <Text className="text-primary-foreground font-bold ml-2 text-lg">
+                            {isCapturing ? 'Opening Camera...' : processing ? 'Processing...' : 'Open Camera'}
                         </Text>
                     </Pressable>
                 </View>

@@ -216,7 +216,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
   }
 
   async getMetrics(projectId?: string): Promise<{ pendingTotalNext7Days: number; overdueCount: number }> {
-    // Minimal implementation: compute metrics via DB queries.
+    // Minimal implementation: compute from database queries.
     const now = Date.now();
     const in7d = now + 7 * 24 * 60 * 60 * 1000;
 

@@ -367,41 +367,27 @@ References:
 - Add audit fields and domain events if required by downstream systems
 - If desired, replace the no-op migration with explicit schema changes and new migration tests
 
-## Latest Update: 2026-02-16 — Quotation Module (#64)
+---
 
-**One-line summary**
-Implemented Quotation CRUD (domain, repository, migrations, use-cases) following the project's TDD + Clean Architecture workflow.
+Date: 2026-02-16
 
-**Completed (high level)**
-- Design: `design/issue-64-quotation-module.md` created before implementation.
-- Domain: `Quotation` entity with comprehensive validation (reference, dates, totals, line-items consistency).
-- Application: 5 use cases (`Create`, `Get`, `List`, `Update`, `Delete`).
-- Infrastructure: `DrizzleQuotationRepository` (Drizzle ORM mapping, JSON line-items, timestamp conversions).
-- Database: `quotations` table added, indexes created; migration bundled (0006).
-- Tests: unit + integration coverage added for entity, repository, and use-cases.
+Branch: issue-63
 
-**QA & readiness (pre-PR)**
-- Type checking: `npx tsc --noEmit` — OK (no type errors).
-- Tests: Quotation-related unit & integration tests pass locally; full test suite executed locally (unit + integration) — suites pass. Some tests emit non-failing `act()` warnings or console logs.
-- Lint: ESLint shows 0 errors and 13 warnings after targeted fixes. I applied targeted per-file fixes to prioritized components (`ContactSelector`, `TeamSelector`, `DatePickerInput`, `ProjectsList`, `ManualProjectEntryForm`, `App`, `tabs`, `profile`). Remaining warnings are low-priority inline-style usages in a few page components and will be addressed during the refinement stage.
+**Issue #63 — Snap Receipt Camera Integration**
 
-**Implementation details (concise)**
-- Line items persisted as JSON in a text column for simplicity and compatibility.
-- Soft-delete implemented via `deletedAt` timestamp.
-- Domain uses ISO date strings; DB stores Unix milliseconds.
-- Status enum: `draft | sent | accepted | declined`.
-- Repository filtering supports project, vendor, status, date range, and pagination.
+Key decisions:
+- Add an `ICameraAdapter` abstraction and provide `MobileCameraAdapter` (wraps `react-native-image-picker`).
+- Use dependency injection so production and test adapters are swappable; provide `MockCameraAdapter` for tests.
+- Wire `SnapReceiptScreen` to open camera → pass image URI to `useSnapReceipt.processReceipt(uri)` → show `ReceiptForm`.
+- Add iOS permission strings and a Jest manual mock for the native image picker; install picker with `--legacy-peer-deps` when necessary.
 
-**Files created/modified**
-- Domain: `src/domain/entities/Quotation.ts`, `src/domain/repositories/QuotationRepository.ts`
-- Infrastructure: `src/infrastructure/repositories/DrizzleQuotationRepository.ts`, `src/infrastructure/database/schema.ts`, `src/infrastructure/database/migrations.ts`
-- Application: `src/application/usecases/quotation/*UseCase.ts` (5 files)
-- Tests: `__tests__/unit/*Quotation*.test.ts`, `__tests__/integration/DrizzleQuotationRepository.integration.test.ts`
-- Design: `design/issue-64-quotation-module.md`
-- Migration SQL: `drizzle/migrations/0006_overrated_jack_flag.sql`
+Completed:
+- Implemented `ICameraAdapter`, `MobileCameraAdapter`, and `MockCameraAdapter`.
+- Updated `SnapReceiptScreen` and hooked camera flow into `useSnapReceipt` and `ReceiptForm`.
+- Added unit tests and a Jest mock for `react-native-image-picker`; unit tests for camera logic pass locally.
+- Committed changes on branch `issue-63` (commit 7688e43).
 
-**Next steps (before/after PR)**
-- Before merge: optionally address remaining ESLint inline-style warnings (refinement).
-- After merge (Phase 2): add UI: `QuotationForm`, `QuotationList`, `QuotationDetails`, `useQuotations` hook, and navigation wiring.
-
+Pending:
+- Stabilize integration tests (adjust timeouts and mocks to match domain interfaces).
+- Address remaining ESLint warnings (~29 `react-native/no-inline-styles`) across UI components.
 
