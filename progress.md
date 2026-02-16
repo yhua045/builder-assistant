@@ -365,3 +365,28 @@ References:
 - Add UI screens for Invoice list/detail and payment entry, wiring to use cases via hooks
 - Add audit fields and domain events if required by downstream systems
 - If desired, replace the no-op migration with explicit schema changes and new migration tests
+
+---
+
+Date: 2026-02-16
+
+Branch: issue-63
+
+**Issue #63 — Snap Receipt Camera Integration**
+
+Key decisions:
+- Add an `ICameraAdapter` abstraction and provide `MobileCameraAdapter` (wraps `react-native-image-picker`).
+- Use dependency injection so production and test adapters are swappable; provide `MockCameraAdapter` for tests.
+- Wire `SnapReceiptScreen` to open camera → pass image URI to `useSnapReceipt.processReceipt(uri)` → show `ReceiptForm`.
+- Add iOS permission strings and a Jest manual mock for the native image picker; install picker with `--legacy-peer-deps` when necessary.
+
+Completed:
+- Implemented `ICameraAdapter`, `MobileCameraAdapter`, and `MockCameraAdapter`.
+- Updated `SnapReceiptScreen` and hooked camera flow into `useSnapReceipt` and `ReceiptForm`.
+- Added unit tests and a Jest mock for `react-native-image-picker`; unit tests for camera logic pass locally.
+- Committed changes on branch `issue-63` (commit 7688e43).
+
+Pending:
+- Stabilize integration tests (adjust timeouts and mocks to match domain interfaces).
+- Address remaining ESLint warnings (~29 `react-native/no-inline-styles`) across UI components.
+

@@ -12,7 +12,7 @@ import { MockCameraAdapter } from '../../src/infrastructure/camera/MockCameraAda
 // Mock dependencies
 jest.mock('../../src/hooks/useSnapReceipt');
 jest.mock('../../src/components/receipts/ReceiptForm', () => ({
-  ReceiptForm: ({ onSubmit, onCancel, normalizedData, isProcessing }: any) => {
+  ReceiptForm: ({ onSubmit, _onCancel, normalizedData, isProcessing }: any) => {
     const { Text, Pressable, View, ActivityIndicator } = require('react-native');
     
     if (isProcessing) {
@@ -169,7 +169,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
 
       mockProcessReceipt.mockResolvedValue(normalizedData);
 
-      const { getByTestId, getByText } = render(
+      const { getByTestId } = render(
         <SnapReceiptScreen 
           onClose={mockOnClose} 
           enableOcr={true}
@@ -277,7 +277,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         error: 'OCR failed',
       });
 
-      const { getByTestId } = render(
+      render(
         <SnapReceiptScreen 
           onClose={mockOnClose} 
           enableOcr={true}
