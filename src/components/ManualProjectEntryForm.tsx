@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, Button, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 import DatePickerInput from './inputs/DatePickerInput';
 import ContactSelector from './inputs/ContactSelector';
@@ -214,7 +214,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
       {/* Actions */}
       <View className="flex-row justify-end mt-6 mb-4">
         <Button title="Cancel" onPress={onCancel} color="#8E8E93" />
-        <View style={{ width: 12 }} />
+        <View style={styles.spacer} />
         <Button
           title="Save"
           onPress={handleSave}
@@ -228,3 +228,9 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
 };
 
 export default ManualProjectEntryForm;
+
+const styles = StyleSheet.create({
+  spacer: {
+    width: 12,
+  },
+});

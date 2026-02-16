@@ -51,7 +51,7 @@ const TeamSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={{ marginBottom: 6 }}>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
       <TextInput
         value={query}
         onChangeText={(text) => setQuery(text)}
@@ -80,7 +80,7 @@ const TeamSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
           </ScrollView>
         </View>
       )}
-      {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 };
@@ -109,6 +109,12 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 0,
+  },
+  label: {
+    marginBottom: 6,
+  },
+  error: {
+    color: 'red',
   },
 });
 

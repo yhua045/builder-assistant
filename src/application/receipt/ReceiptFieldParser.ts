@@ -110,10 +110,10 @@ export class ReceiptFieldParser {
 
     // 4. Extract Receipt Number
     // Keywords: "Receipt #", "Invoice #", "Order #"
-    const receiptNumRegex = /(?:Receipt|Invoice|Order)\s*[#|No\.?]?\s*([A-Za-z0-9-]+)/i;
+    const receiptNumRegex = /(?:Receipt|Invoice|Order)\s*(?:#|No\.? )?\s*([A-Za-z0-9-]+)/i;
     const receiptMatch = ocrResult.fullText.match(receiptNumRegex);
     if (receiptMatch && receiptMatch[1]) {
-        candidates.receiptNumbers.push(receiptMatch[1]);
+      candidates.receiptNumbers.push(receiptMatch[1]);
     }
 
     // 5. Extract Line Items
