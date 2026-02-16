@@ -323,3 +323,48 @@ export const workVariations = sqliteTable('work_variations', {
 }, (table) => ({
   projectIdx: index('idx_work_variations_project').on(table.projectId),
 }));
+
+// Quotations Table
+export const quotations = sqliteTable('quotations', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  reference: text('reference').notNull(),
+  
+  // Relations
+  projectId: text('project_id'),
+  vendorId: text('vendor_id'),
+  
+  // Metadata
+  vendorName: text('vendor_name'),
+  vendorAddress: text('vendor_address'),
+  vendorEmail: text('vendor_email'),
+  
+  // Dates
+  date: integer('date').notNull(), // Unix timestamp (milliseconds)
+  expiryDate: integer('expiry_date'), // Unix timestamp (milliseconds)
+  
+  // Financials
+  currency: text('currency').notNull().default('USD'),
+  subtotal: real('subtotal'),
+  taxTotal: real('tax_total'),
+  total: real('total').notNull(),
+  
+  // Content
+  lineItems: text('line_items'), // JSON array
+  notes: text('notes'),
+  
+  // Status
+  status: text('status', {
+    enum: ['draft', 'sent', 'accepted', 'declined']
+  }).notNull().default('draft'),
+  
+  // Audit
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  deletedAt: integer('deleted_at'),
+}, (table) => ({
+  projectIdx: index('idx_quotations_project').on(table.projectId),
+  vendorIdx: index('idx_quotations_vendor').on(table.vendorId),
+  statusIdx: index('idx_quotations_status').on(table.status),
+  dateIdx: index('idx_quotations_date').on(table.date),
+}));

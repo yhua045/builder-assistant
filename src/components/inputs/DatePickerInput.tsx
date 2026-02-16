@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 
 interface Props {
   label: string;
@@ -16,15 +16,24 @@ const DatePickerInput: React.FC<Props> = ({ label, value, onChange, error }) => 
 
   return (
     <View>
-      <Text>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
       <TextInput
         value={display}
         onChangeText={(text) => onChange(text ? new Date(text) : null)}
         placeholder="YYYY-MM-DD"
       />
-      {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 };
 
 export default DatePickerInput;
+
+const styles = StyleSheet.create({
+  label: {
+    marginBottom: 4,
+  },
+  error: {
+    color: 'red',
+  },
+});

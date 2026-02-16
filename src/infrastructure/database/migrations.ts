@@ -477,6 +477,37 @@ PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX \`payments_id_unique\` ON \`payments\` (\`id\`);--> statement-breakpoint
 CREATE INDEX \`idx_payments_project\` ON \`payments\` (\`project_id\`);
 `;
+
+const rawMigration0006 = `CREATE TABLE \`quotations\` (
+	\`local_id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	\`id\` text NOT NULL,
+	\`reference\` text NOT NULL,
+	\`project_id\` text,
+	\`vendor_id\` text,
+	\`vendor_name\` text,
+	\`vendor_address\` text,
+	\`vendor_email\` text,
+	\`date\` integer NOT NULL,
+	\`expiry_date\` integer,
+	\`currency\` text DEFAULT 'USD' NOT NULL,
+	\`subtotal\` real,
+	\`tax_total\` real,
+	\`total\` real NOT NULL,
+	\`line_items\` text,
+	\`notes\` text,
+	\`status\` text DEFAULT 'draft' NOT NULL,
+	\`created_at\` integer NOT NULL,
+	\`updated_at\` integer NOT NULL,
+	\`deleted_at\` integer
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX \`quotations_id_unique\` ON \`quotations\` (\`id\`);--> statement-breakpoint
+CREATE INDEX \`idx_quotations_project\` ON \`quotations\` (\`project_id\`);--> statement-breakpoint
+CREATE INDEX \`idx_quotations_vendor\` ON \`quotations\` (\`vendor_id\`);--> statement-breakpoint
+CREATE INDEX \`idx_quotations_status\` ON \`quotations\` (\`status\`);--> statement-breakpoint
+CREATE INDEX \`idx_quotations_date\` ON \`quotations\` (\`date\`);
+`;
+
 const migrations: RNMigration[] = [
   {
     tag: '0000_slow_drax',
@@ -528,6 +559,15 @@ const migrations: RNMigration[] = [
     hash: '0005_add_payments_due_date_status',
     folderMillis: 1770945000000,
     sql: rawMigration0005
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean),
+  },
+  {
+    tag: '0006_overrated_jack_flag',
+    hash: '0006_overrated_jack_flag',
+    folderMillis: 1771200644354,
+    sql: rawMigration0006
       .split('--> statement-breakpoint')
       .map((statement) => statement.trim())
       .filter(Boolean),
