@@ -10,6 +10,7 @@ import {
   StatusBar,
   useColorScheme as rnUseColorScheme,
   View,
+  StyleSheet,
 } from 'react-native';
 import {
   SafeAreaProvider,
@@ -32,17 +33,15 @@ function App() {
 
   const nwColor = nwUseColorScheme();
   const isDark = nwColor.colorScheme === 'dark' || isDarkMode;
+  const backgroundColor = isDark ? 'rgb(15,23,42)' : 'rgb(250,251,252)';
+
+  const containerStyle = [isDark ? darkTheme : lightTheme, styles.container, { backgroundColor }];
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <NavigationContainer>
-        <View
-          style={[
-            isDark ? darkTheme : lightTheme,
-            { flex: 1, backgroundColor: isDark ? 'rgb(15,23,42)' : 'rgb(250,251,252)' },
-          ]}
-        >
+        <View style={containerStyle}>
           <TabsLayout />
         </View>
       </NavigationContainer>
@@ -51,3 +50,9 @@ function App() {
 }
 
 export default App;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

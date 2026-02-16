@@ -15,31 +15,34 @@ cssInterop(CheckSquare, { className: { target: 'style', nativeStyleToProp: { col
 cssInterop(User, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 const Tab = createBottomTabNavigator();
+const DashboardIcon = ({ color }: { color: string }) => <Home color={color} size={24} />;
+const FinancesIcon = ({ color }: { color: string }) => <CreditCard color={color} size={24} />;
+const WorkIcon = ({ color }: { color: string }) => <CheckSquare color={color} size={24} />;
+const ProjectsIcon = ({ color }: { color: string }) => <User color={color} size={24} />;
 
 export default function TabsLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  const tabBarStyle = isDark
+    ? { backgroundColor: '#171717', borderTopColor: '#262626' }
+    : { backgroundColor: '#ffffff', borderTopColor: '#e4e4e7' };
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: isDark ? '#171717' : '#ffffff',
-          borderTopColor: isDark ? '#262626' : '#e4e4e7',
-        },
+        tabBarStyle,
         tabBarActiveTintColor: isDark ? '#3b82f6' : '#2563eb',
         tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#71717a',
       }}
-      >
+    >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => (
-            <Home color={color} size={24} />
-          ),
+          tabBarIcon: DashboardIcon,
         }}
       />
       <Tab.Screen
@@ -47,9 +50,7 @@ export default function TabsLayout() {
         component={PaymentsScreen}
         options={{
           title: 'Finances',
-          tabBarIcon: ({ color }) => (
-            <CreditCard color={color} size={24} />
-          ),
+          tabBarIcon: FinancesIcon,
         }}
       />
       <Tab.Screen
@@ -57,9 +58,7 @@ export default function TabsLayout() {
         component={TasksScreen}
         options={{
           title: 'Work',
-          tabBarIcon: ({ color }) => (
-            <CheckSquare color={color} size={24} />
-          ),
+          tabBarIcon: WorkIcon,
         }}
       />
       <Tab.Screen
@@ -67,9 +66,7 @@ export default function TabsLayout() {
         component={ProjectsPage}
         options={{
           title: 'Projects',
-          tabBarIcon: ({ color }) => (
-            <User color={color} size={24} />
-          ),
+          tabBarIcon: ProjectsIcon,
         }}
       />
     </Tab.Navigator>

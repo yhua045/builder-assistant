@@ -1,7 +1,8 @@
 # Project Progress
-Last Updated: 2026-02-12
-Current Milestone: Implement Invoice aggregate (repository, use cases, payments)
+Last Updated: 2026-02-16
+Current Milestone: Implement Quotation module CRUD (domain, repository, use cases)
 ---
+
 
 ## 2. Confirmed Architectural Decisions (Non-Negotiable)
 

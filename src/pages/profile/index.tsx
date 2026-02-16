@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { cssInterop, useColorScheme } from 'nativewind';
+import { cssInterop } from 'nativewind';
 import { User, Mail, Phone, Briefcase, Building2, MapPin, 
   Settings, Bell, Lock, CreditCard, HelpCircle, 
   LogOut, ChevronRight, Edit 
@@ -23,37 +23,16 @@ cssInterop(LogOut, { className: { target: 'style', nativeStyleToProp: { color: t
 cssInterop(ChevronRight, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
-export default function ProfileScreen() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const user = {
-    name: 'Sarah Mitchell',
-    email: 'sarah.mitchell@constructco.com',
-    phone: '+1 (555) 123-4567',
-    role: 'Project Manager',
-    company: 'ConstructCo Inc.',
-    location: 'San Francisco, CA',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YXZhdGFyfGVufDB8fDB8fHww',
-    stats: {
-      activeProjects: 3,
-      totalExpenses: '$127,450',
-      pendingPayments: 4,
-    }
-  };
+type MenuItemProps = {
+  icon: any;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+};
 
-  const MenuItem = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    onPress, 
-    showChevron = true 
-  }: { 
-    icon: any; 
-    label: string; 
-    value?: string; 
-    onPress?: () => void; 
-    showChevron?: boolean;
-  }) => (
+function MenuItem({ icon: Icon, label, value, onPress, showChevron = true }: MenuItemProps) {
+  return (
     <TouchableOpacity 
       onPress={onPress}
       className="bg-card rounded-xl p-4 flex-row items-center justify-between mb-3"
@@ -74,18 +53,33 @@ export default function ProfileScreen() {
       )}
     </TouchableOpacity>
   );
+}
+
+export default function ProfileScreen() {
+  const user = {
+    name: 'Sarah Mitchell',
+    email: 'sarah.mitchell@constructco.com',
+    phone: '+1 (555) 123-4567',
+    role: 'Project Manager',
+    company: 'ConstructCo Inc.',
+    location: 'San Francisco, CA',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YXZhdGFyfGVufDB8fDB8fHww',
+    stats: {
+      activeProjects: 3,
+      totalExpenses: '$127,450',
+      pendingPayments: 4,
+    }
+  };
+
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background"
-      style={{ backgroundColor: isDark ? '#0f172a' : '#fafbfc' }}
-    >
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-6 py-4">
         <Text className="text-2xl font-bold text-foreground">Profile</Text>
         <ThemeToggle />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 128 }}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
         {/* Profile Card */}
         <View className="bg-card rounded-2xl p-6 mb-6">
           <View className="items-center">
@@ -160,3 +154,10 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 128,
+  },
+});

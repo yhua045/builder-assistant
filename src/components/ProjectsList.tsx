@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, Pressable } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, StyleSheet } from 'react-native';
 
 export type Project = {
   id: string;
@@ -20,10 +20,10 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}
+        contentContainerStyle={styles.scrollContent}
       >
         {projects.map((project) => (
-          <Pressable key={project.id}>
+          <Pressable key={project.id} style={styles.projectWrapper}>
             <View className="bg-card border border-border rounded-2xl overflow-hidden w-72">
               <Image
                 source={{ uri: project.image }}
@@ -46,7 +46,8 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
                     <Text className="text-foreground text-xs font-medium">{project.completion}%</Text>
                   </View>
                   <View className="bg-muted h-2 rounded-full overflow-hidden">
-                    <View className="bg-primary h-full rounded-full" style={{ width: `${project.completion}%` }} />
+                    {/** compute width style per project */}
+                    <View className="bg-primary h-full rounded-full" style={[styles.progressFill, { width: `${project.completion}%` }]} />
                   </View>
                 </View>
               </View>
@@ -57,3 +58,17 @@ export default function ProjectsList({ projects }: { projects: Project[] }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    // gap handled via item wrapper margin
+  },
+  projectWrapper: {
+    marginRight: 16,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+});

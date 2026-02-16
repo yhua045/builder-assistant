@@ -7,6 +7,7 @@ import m0002 from './0002_faithful_molecule_man.sql';
 import m0003 from './0003_optional_invoice_external_keys.sql';
 import m0004 from './0004_motionless_harpoon.sql';
 import m0005 from './0005_add_payments_due_date_status.sql';
+import m0006 from './0006_overrated_jack_flag.sql';
 
   export default {
     journal,
@@ -16,7 +17,8 @@ m0001,
 m0002,
 m0003,
 m0004,
-m0005
+m0005,
+m0006
     }
   }
   
