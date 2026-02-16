@@ -211,7 +211,7 @@ export default function DashboardScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowSnapReceipt(false)}
       >
-        <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} />
+        <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} enableOcr={true} />
       </Modal>
     </SafeAreaView>
   );
