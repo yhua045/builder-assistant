@@ -26,11 +26,10 @@ export default function InvoiceDetailPage() {
 
   const { getInvoiceById, updateInvoice, deleteInvoice } = useInvoices();
 
-  useEffect(() => {
-    loadInvoice();
-  }, [invoiceId]);
-
-  const loadInvoice = async () => {
+  // loadInvoice intentionally omitted from deps to avoid recreating the
+  // function on every render; invoiceId is the primary driver.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadInvoice = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await getInvoiceById(invoiceId);
@@ -38,7 +37,11 @@ export default function InvoiceDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [invoiceId, getInvoiceById]);
+
+  useEffect(() => {
+    loadInvoice();
+  }, [loadInvoice]);
 
   const handleUpdate = async (updatedInvoice: Partial<Invoice>) => {
     const result = await updateInvoice({ ...invoice, ...updatedInvoice } as Invoice);

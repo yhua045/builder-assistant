@@ -44,8 +44,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [currency, setCurrency] = useState(initialValues?.currency || 'USD');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
   const [tax, setTax] = useState(initialValues?.tax?.toString() || '');
-  const [status, setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
-  const [paymentStatus, setPaymentStatus] = useState<Invoice['paymentStatus']>(
+  const [status, _setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
+  const [paymentStatus, _setPaymentStatus] = useState<Invoice['paymentStatus']>(
     initialValues?.paymentStatus || 'unpaid'
   );
   const [dateIssued, setDateIssued] = useState<Date | null>(
@@ -55,7 +55,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     initialValues?.dateDue ? new Date(initialValues.dateDue) : null
   );
   const [notes, setNotes] = useState(initialValues?.notes || '');
-  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(
+  const [lineItems, _setLineItems] = useState<InvoiceLineItem[]>(
     initialValues?.lineItems || []
   );
 

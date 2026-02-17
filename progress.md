@@ -390,13 +390,70 @@ Pending:
 
 
 Last Updated: 2026-02-17
-Current Milestone: Implement Quotation UI module (Issue #65)
+Current Milestone: Invoice Module Phase 2 - File Upload & OCR (Issue #70)
 ---
 
 ## Latest Session Summary
 
 **Date**: 2026-02-17  
-**Branch**: issue-65  
+**Branch**: issue-70  
+**Scope**: Invoice Module Phase 2 - File Upload & OCR (Issue #70)
+
+**Key Decisions**:
+- Adapted existing Receipt OCR patterns for Invoice domain (IInvoiceNormalizer interface)
+- Rules-based normalization approach (vendor cleanup, date selection, amount validation, currency detection)
+- Confidence scoring with color-coded indicators (green/yellow/red) for user review
+- Inline editing support for extracted fields before acceptance
+- Minimum confidence threshold (30%) for Accept action
+
+**Completed This Session** (Following TDD workflow):
+- ✅ Created `IInvoiceNormalizer` interface and `InvoiceNormalizer` implementation
+  - Vendor name cleanup (removes legal suffixes)
+  - Smart date selection (prefers recent dates within valid range)
+  - Total validation against line items
+  - Tax validation (< total, < 30%)
+  - Currency detection (USD, EUR, GBP, JPY, etc.)
+  - Due date validation (must be >= invoice date)
+- ✅ `InvoiceUploadSection` component (file picker, preview, upload progress)
+  - PDF and image support (.pdf, .jpg, .png)
+  - File size formatting
+  - Error handling
+- ✅ `ExtractionResultsPanel` component
+  - Confidence indicators with color coding
+  - Editable fields (vendor, invoice number, total)
+  - Display fields (dates, subtotal, tax, currency)
+  - Line items display
+  - Suggested corrections panel
+  - Accept & Save / Retry actions
+- ✅ Unit tests: 37 tests passing (3 suites: InvoiceNormalizer, InvoiceUploadSection, ExtractionResultsPanel)
+- ✅ All components follow Clean Architecture and existing patterns from CLAUDE.md
+
+**Files Added**:
+- `src/application/ai/IInvoiceNormalizer.ts` (interface)
+- `src/application/ai/InvoiceNormalizer.ts` (implementation)
+- `src/components/invoices/InvoiceUploadSection.tsx`
+- `src/components/invoices/ExtractionResultsPanel.tsx`
+- `__tests__/unit/InvoiceNormalizer.test.ts` (10 tests)
+- `__tests__/unit/InvoiceUploadSection.test.tsx` (11 tests)
+- `__tests__/unit/ExtractionResultsPanel.test.tsx` (16 tests)
+
+**Pending** (Issue #70 remaining tasks):
+- Integration tests for end-to-end upload → OCR → extract → save flow
+- Document storage integration (link uploaded files to Document entity)
+- OCR text extraction and metadata storage in Document.metadata
+- Async extraction status tracking and retry mechanism
+- Wire components into InvoiceForm (Phase 1 from Issue #67)
+
+**Next Steps**:
+- Create integration test for full upload workflow
+- Implement Document storage adapter integration
+- Wire upload/extraction flow into existing InvoiceForm
+- Test complete flow: Upload → OCR → Extract → Review → Save
+
+---
+
+**Date**: 2026-02-17  
+**Branch**: issue-65 (COMPLETED)  
 **Scope**: Quotation Form UI & Dashboard Integration (Issue #65)
 
 **Completed This Session**:
