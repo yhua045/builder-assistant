@@ -5,6 +5,9 @@ export interface InvoiceLineItem {
   unitCost?: number;
   total?: number;
   tax?: number;
+  // Backwards-compatible aliases
+  unitPrice?: number;
+  amount?: number;
 }
 
 export interface Invoice {
@@ -14,6 +17,9 @@ export interface Invoice {
   // External Uniqueness
   externalId?: string | null;         // Issuer/Source system ID
   externalReference?: string | null;  // Invoice number from issuer
+  // Backwards-compatible aliases
+  invoiceNumber?: string;
+  vendor?: string;
   
   // Metadata
   issuerName?: string;
@@ -36,6 +42,9 @@ export interface Invoice {
   dateIssued?: string;
   dateDue?: string;
   paymentDate?: string;
+  // Backwards-compatible aliases
+  issueDate?: string;
+  dueDate?: string;
   
   // Content & Audit
   documentId?: string;        // Link to PDF/Scan via Document storage

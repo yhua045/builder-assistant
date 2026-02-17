@@ -404,12 +404,13 @@ describe('useInvoices hook', () => {
       let fetchedInvoice: Invoice | null = null;
 
       await act(async () => {
-        fetchedInvoice = await latest.getInvoiceById('inv_1');
+        fetchedInvoice = (await latest.getInvoiceById('inv_1')) as Invoice | null;
       });
 
       expect(fetchedInvoice).not.toBeNull();
-      expect(fetchedInvoice?.id).toBe('inv_1');
-      expect(fetchedInvoice?.total).toBe(1000);
+      expect(fetchedInvoice).toEqual(
+        expect.objectContaining({ id: 'inv_1', total: 1000 })
+      );
       expect(mockRepo.getInvoice).toHaveBeenCalledWith('inv_1');
     });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import renderer, { act } from 'react-test-renderer';
+import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import InvoiceListPage from '../../src/pages/invoices/InvoiceListPage';
 import { useInvoices } from '../../src/hooks/useInvoices';
 import { Invoice } from '../../src/domain/entities/Invoice';
@@ -140,7 +140,7 @@ describe('InvoiceListPage', () => {
       const root = tree.root;
 
       // Should format as currency
-      const amounts = root.findAll((node) => {
+      const amounts = root.findAll((node: ReactTestInstance) => {
         return (
           typeof node.props.children === 'string' &&
           (node.props.children.includes('$1,000') || 
@@ -217,7 +217,7 @@ describe('InvoiceListPage', () => {
       });
       const root = tree.root;
 
-      const invoiceItems = root.findAll((node) => 
+      const invoiceItems = root.findAll((node: ReactTestInstance) => 
         node.props.testID && node.props.testID.startsWith('invoice-item-')
       );
       expect(invoiceItems.length).toBe(0);
@@ -233,13 +233,13 @@ describe('InvoiceListPage', () => {
       const root = tree.root;
 
       // Check for status badge elements
-      const draftBadge = root.findAll((node) => 
+      const draftBadge = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-draft'
       );
-      const issuedBadge = root.findAll((node) => 
+      const issuedBadge = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-issued'
       );
-      const paidBadge = root.findAll((node) => 
+      const paidBadge = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-paid'
       );
 
@@ -255,7 +255,7 @@ describe('InvoiceListPage', () => {
       });
       const root = tree.root;
 
-      const draftBadges = root.findAll((node) => 
+      const draftBadges = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-draft'
       );
 
@@ -271,7 +271,7 @@ describe('InvoiceListPage', () => {
       });
       const root = tree.root;
 
-      const issuedBadges = root.findAll((node) => 
+      const issuedBadges = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-issued'
       );
 
@@ -287,7 +287,7 @@ describe('InvoiceListPage', () => {
       });
       const root = tree.root;
 
-      const paidBadges = root.findAll((node) => 
+      const paidBadges = root.findAll((node: ReactTestInstance) => 
         node.props.testID === 'status-badge-paid'
       );
 
@@ -415,7 +415,7 @@ describe('InvoiceListPage', () => {
       const root = tree.root;
 
       // Should show count of 3
-      const countElements = root.findAll((node) => 
+      const countElements = root.findAll((node: ReactTestInstance) => 
         node.props.children === 3 || node.props.children === '3'
       );
 
@@ -430,7 +430,7 @@ describe('InvoiceListPage', () => {
       const root = tree.root;
 
       // Total unpaid = 1000 + 2500 = 3500
-      const amountElements = root.findAll((node) => 
+      const amountElements = root.findAll((node: ReactTestInstance) => 
         typeof node.props.children === 'string' && 
         node.props.children.includes('$3,500')
       );
@@ -454,7 +454,7 @@ describe('InvoiceListPage', () => {
       const root = tree.root;
 
       // Find the component with refreshControl prop
-      const scrollView = root.findAll((node) => node.props.refreshControl);
+      const scrollView = root.findAll((node: ReactTestInstance) => node.props.refreshControl);
       expect(scrollView.length).toBeGreaterThan(0);
       
       const refreshControl = scrollView[0].props.refreshControl;
@@ -462,7 +462,7 @@ describe('InvoiceListPage', () => {
       await act(async () => {
         refreshControl.props.onRefresh();
         // Wait a bit for async operation
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
 
       expect(refreshInvoices).toHaveBeenCalled();

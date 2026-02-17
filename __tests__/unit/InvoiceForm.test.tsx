@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { TextInput } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import InvoiceForm from '../../src/components/invoices/InvoiceForm';
 import { Invoice } from '../../src/domain/entities/Invoice';
 
@@ -253,7 +253,7 @@ describe('InvoiceForm', () => {
       // Should display error messages (Text components with error testIDs or red styling)
       const errorTexts = root.findAll(node => 
         node.props.testID?.includes('error') ||
-        (node.type === 'Text' && node.props.style && 
+        (node.type === Text && node.props.style && 
          JSON.stringify(node.props.style).includes('red'))
       );
 

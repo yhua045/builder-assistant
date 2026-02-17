@@ -1,5 +1,5 @@
 import React from 'react';
-import renderer, { act } from 'react-test-renderer';
+import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import InvoiceDetailPage from '../../src/pages/invoices/InvoiceDetailPage';
 import { Invoice } from '../../src/domain/entities/Invoice';
 import { useInvoices } from '../../src/hooks/useInvoices';
@@ -24,16 +24,21 @@ jest.mock('nativewind', () => ({
 jest.mock('../../src/components/ThemeToggle', () => ({
   ThemeToggle: () => 'ThemeToggle',
 }));
-jest.mock('../../src/components/invoices/InvoiceForm', () => ({
-  InvoiceForm: ({ mode, initialValues, onUpdate, onCancel }: any) => (
-    <mock-invoice-form
-      testID="invoice-form"
-      mode={mode}
-      onUpdate={() => onUpdate({ ...initialValues, total: 9999 })}
-      onCancel={onCancel}
-    />
-  ),
-}));
+jest.mock('../../src/components/invoices/InvoiceForm', () => {
+  const MockInvoiceForm = (_props: any) => null;
+
+  return {
+    __esModule: true,
+    default: ({ mode, initialValues, onUpdate, onCancel }: any) => (
+      <MockInvoiceForm
+        testID="invoice-form"
+        mode={mode}
+        onUpdate={() => onUpdate({ ...initialValues, total: 9999 })}
+        onCancel={onCancel}
+      />
+    ),
+  };
+});
 
 const mockUseInvoices = useInvoices as jest.MockedFunction<typeof useInvoices>;
 const mockNavigate = jest.fn();
@@ -104,7 +109,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -119,7 +124,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -131,11 +136,11 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
-      const amounts = root.findAll((node) => 
+      const amounts = root.findAll((node: ReactTestInstance) => 
         typeof node.props.children === 'string' && 
         (node.props.children.includes('$1,000') || 
          node.props.children.includes('$900') ||
@@ -149,11 +154,11 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
-      const dates = root.findAll((node) => 
+      const dates = root.findAll((node: ReactTestInstance) => 
         typeof node.props.children === 'string' && 
         (node.props.children.includes('Jan') || node.props.children.includes('Feb'))
       );
@@ -165,7 +170,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -180,7 +185,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -192,7 +197,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -209,7 +214,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -228,7 +233,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -253,7 +258,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -267,7 +272,7 @@ describe('InvoiceDetailPage', () => {
 
       await act(async () => {
         invoiceForm.props.onUpdate({ ...mockInvoice, total: 9999 });
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
 
       expect(updateInvoice).toHaveBeenCalled();
@@ -288,7 +293,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -302,7 +307,7 @@ describe('InvoiceDetailPage', () => {
 
       await act(async () => {
         invoiceForm.props.onUpdate({ ...mockInvoice, total: 9999 });
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 20));
       });
 
       // Should show view mode again (no form after update)
@@ -314,7 +319,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -347,7 +352,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -355,7 +360,7 @@ describe('InvoiceDetailPage', () => {
 
       await act(async () => {
         deleteButton.props.onPress();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
 
       expect(deleteInvoice).toHaveBeenCalledWith('inv_123');
@@ -365,7 +370,7 @@ describe('InvoiceDetailPage', () => {
 
   describe('Loading and error states', () => {
     it('shows loading indicator while fetching invoice', async () => {
-      const getInvoiceById = jest.fn(() => new Promise(() => {})); // Never resolves
+      const getInvoiceById = jest.fn(() => new Promise<Invoice | null>(() => {})); // Never resolves
       mockUseInvoices.mockReturnValue({
         ...defaultHookReturn,
         getInvoiceById,
@@ -391,7 +396,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 
@@ -405,7 +410,7 @@ describe('InvoiceDetailPage', () => {
       let tree: any;
       await act(async () => {
         tree = renderer.create(<InvoiceDetailPage />);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
       });
       const root = tree.root;
 

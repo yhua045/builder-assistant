@@ -5,7 +5,7 @@ import { ArrowLeft, Edit, Trash2 } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useInvoices } from '../../hooks/useInvoices';
-import { InvoiceForm } from '../../components/invoices/InvoiceForm';
+import InvoiceForm from '../../components/invoices/InvoiceForm';
 import type { Invoice } from '../../domain/entities/Invoice';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -246,21 +246,28 @@ export default function InvoiceDetailPage() {
               <Text className="text-sm font-medium text-muted-foreground mb-3">Line Items</Text>
               
               <View className="gap-3">
-                {invoice.lineItems.map((item, index) => (
-                  <View key={index} className="pb-2 border-b border-border last:border-b-0 last:pb-0">
-                    <Text className="text-sm font-medium text-foreground mb-1">
-                      {item.description}
-                    </Text>
-                    <View className="flex-row justify-between">
-                      <Text className="text-xs text-muted-foreground">
-                        {item.quantity} × {formatCurrency(item.unitPrice || 0, invoice.currency)}
+                {invoice.lineItems.map((item, index) => {
+                  const lineTotal =
+                    item.amount ??
+                    item.total ??
+                    (item.unitPrice ?? item.unitCost ?? 0) * (item.quantity ?? 1);
+
+                  return (
+                    <View key={index} className="pb-2 border-b border-border last:border-b-0 last:pb-0">
+                      <Text className="text-sm font-medium text-foreground mb-1">
+                        {item.description}
                       </Text>
-                      <Text className="text-sm font-medium text-foreground">
-                        {formatCurrency(item.amount, invoice.currency)}
-                      </Text>
+                      <View className="flex-row justify-between">
+                        <Text className="text-xs text-muted-foreground">
+                          {item.quantity} × {formatCurrency(item.unitPrice || 0, invoice.currency)}
+                        </Text>
+                        <Text className="text-sm font-medium text-foreground">
+                          {formatCurrency(lineTotal, invoice.currency)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             </View>
           )}

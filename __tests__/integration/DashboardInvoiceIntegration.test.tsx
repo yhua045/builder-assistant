@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import renderer, { act } from 'react-test-renderer';
+import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import DashboardScreen from '../../src/pages/dashboard';
 import { useInvoices } from '../../src/hooks/useInvoices';
 
@@ -41,49 +41,66 @@ jest.mock('../../src/components/ThemeToggle', () => ({
   ThemeToggle: () => 'ThemeToggle',
 }));
 
-jest.mock('../../src/pages/receipts/SnapReceiptScreen', () => ({
-  SnapReceiptScreen: ({ onClose }: any) => (
-    <mock-snap-receipt onClose={onClose} />
-  ),
-}));
+jest.mock('../../src/pages/receipts/SnapReceiptScreen', () => {
+  const MockSnapReceipt = (_props: any) => null;
 
-jest.mock('../../src/components/invoices/InvoiceForm', () => ({
-  InvoiceForm: ({ mode, onCreate, onCancel }: any) => (
-    <mock-invoice-form
-      testID="invoice-form-in-modal"
-      mode={mode}
-      onCreate={() => onCreate({ 
-        vendor: 'Test Vendor',
-        total: 1000,
-        currency: 'USD',
-        status: 'draft',
-        paymentStatus: 'unpaid'
-      })}
-      onCancel={onCancel}
-    />
-  ),
-}));
+  return {
+    SnapReceiptScreen: (props: any) => <MockSnapReceipt {...props} />,
+  };
+});
+
+jest.mock('../../src/components/invoices/InvoiceForm', () => {
+  const MockInvoiceForm = (_props: any) => null;
+
+  return {
+    __esModule: true,
+    default: ({ mode, onCreate, onCancel }: any) => (
+      <MockInvoiceForm
+        testID="invoice-form-in-modal"
+        mode={mode}
+        onCreate={onCreate}
+        onCancel={onCancel}
+      />
+    ),
+  };
+});
 
 // Mock the dashboard components to simplify testing
-jest.mock('../../src/pages/dashboard/components/HeroSection', () => ({
-  __esModule: true,
-  default: () => <mock-hero-section />,
-}));
+jest.mock('../../src/pages/dashboard/components/HeroSection', () => {
+  const MockHeroSection = () => null;
 
-jest.mock('../../src/pages/dashboard/components/CashOutflow', () => ({
-  __esModule: true,
-  default: () => <mock-cash-outflow />,
-}));
+  return {
+    __esModule: true,
+    default: MockHeroSection,
+  };
+});
 
-jest.mock('../../src/pages/dashboard/components/ActiveTasks', () => ({
-  __esModule: true,
-  default: () => <mock-active-tasks />,
-}));
+jest.mock('../../src/pages/dashboard/components/CashOutflow', () => {
+  const MockCashOutflow = () => null;
 
-jest.mock('../../src/pages/dashboard/components/UrgentAlerts', () => ({
-  __esModule: true,
-  default: () => <mock-urgent-alerts />,
-}));
+  return {
+    __esModule: true,
+    default: MockCashOutflow,
+  };
+});
+
+jest.mock('../../src/pages/dashboard/components/ActiveTasks', () => {
+  const MockActiveTasks = () => null;
+
+  return {
+    __esModule: true,
+    default: MockActiveTasks,
+  };
+});
+
+jest.mock('../../src/pages/dashboard/components/UrgentAlerts', () => {
+  const MockUrgentAlerts = () => null;
+
+  return {
+    __esModule: true,
+    default: MockUrgentAlerts,
+  };
+});
 
 const mockUseInvoices = useInvoices as jest.MockedFunction<typeof useInvoices>;
 
@@ -114,7 +131,7 @@ describe('Dashboard Invoice Integration', () => {
     const root = tree.root;
 
     // 2. Find and click the FAB (floating action button)
-    const fab = root.findAll((node) => 
+    const fab = root.findAll((node: ReactTestInstance) => 
       node.props.onPress && 
       node.props.className && 
       node.props.className.includes('bg-primary') &&
@@ -132,7 +149,7 @@ describe('Dashboard Invoice Integration', () => {
     expect(quickActionsTitle.length).toBeGreaterThan(0);
 
     // 4. Find and click "Add Invoice" action
-    const addInvoiceAction = root.findAll((node) =>
+    const addInvoiceAction = root.findAll((node: ReactTestInstance) =>
       node.props.children === 'Add Invoice'
     );
 
@@ -167,7 +184,7 @@ describe('Dashboard Invoice Integration', () => {
         status: 'draft',
         paymentStatus: 'unpaid',
       });
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
     });
 
     // 8. Verify createInvoice was called
@@ -193,7 +210,7 @@ describe('Dashboard Invoice Integration', () => {
     const root = tree.root;
 
     // Click FAB to open quick actions
-    const fab = root.findAll((node) => 
+    const fab = root.findAll((node: ReactTestInstance) => 
       node.props.onPress && 
       node.props.className && 
       node.props.className.includes('bg-primary') &&
@@ -205,7 +222,7 @@ describe('Dashboard Invoice Integration', () => {
     });
 
     // Verify "Add Invoice" is in the quick actions
-    const addInvoiceText = root.findAll((node) => 
+    const addInvoiceText = root.findAll((node: ReactTestInstance) => 
       node.props.children === 'Add Invoice'
     );
 
@@ -221,7 +238,7 @@ describe('Dashboard Invoice Integration', () => {
     const root = tree.root;
 
     // Open quick actions and click "Add Invoice"
-    const fab = root.findAll((node) => 
+    const fab = root.findAll((node: ReactTestInstance) => 
       node.props.onPress && 
       node.props.className && 
       node.props.className.includes('bg-primary') &&
@@ -232,7 +249,7 @@ describe('Dashboard Invoice Integration', () => {
       fab[0].props.onPress();
     });
 
-    const addInvoiceAction = root.findAll((node) =>
+    const addInvoiceAction = root.findAll((node: ReactTestInstance) =>
       node.props.children === 'Add Invoice'
     );
     
@@ -279,7 +296,7 @@ describe('Dashboard Invoice Integration', () => {
     const root = tree.root;
 
     // Navigate to invoice form
-    const fab = root.findAll((node) => 
+    const fab = root.findAll((node: ReactTestInstance) => 
       node.props.onPress && 
       node.props.className && 
       node.props.className.includes('bg-primary') &&
@@ -290,7 +307,7 @@ describe('Dashboard Invoice Integration', () => {
       fab[0].props.onPress();
     });
 
-    const addInvoiceAction = root.findAll((node) =>
+    const addInvoiceAction = root.findAll((node: ReactTestInstance) =>
       node.props.children === 'Add Invoice'
     );
     
@@ -312,7 +329,7 @@ describe('Dashboard Invoice Integration', () => {
         total: 1000,
         currency: 'USD',
       });
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
     });
 
     // createInvoice was called
