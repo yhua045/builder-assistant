@@ -122,7 +122,7 @@ export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri, camera
                     </Pressable>
                 </View>
                 
-                <View className="border-t border-border pt-4 mt-4">
+                <View className="flex-1 border-t border-border pt-4 mt-4">
                     <Text className="text-muted-foreground text-center mb-4">Or enter manually</Text>
                     <ReceiptForm 
                         onSubmit={handleSave} 

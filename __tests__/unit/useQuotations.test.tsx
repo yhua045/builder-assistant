@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useQuotations } from '../../src/hooks/useQuotations';
 
 // Mock the use cases
@@ -7,6 +7,24 @@ jest.mock('../../src/application/usecases/quotation/ListQuotationsUseCase');
 jest.mock('../../src/application/usecases/quotation/GetQuotationByIdUseCase');
 jest.mock('../../src/application/usecases/quotation/UpdateQuotationUseCase');
 jest.mock('../../src/application/usecases/quotation/DeleteQuotationUseCase');
+
+// Provide concrete mock implementations for the use case execute methods
+import { CreateQuotationUseCase } from '../../src/application/usecases/quotation/CreateQuotationUseCase';
+import { ListQuotationsUseCase } from '../../src/application/usecases/quotation/ListQuotationsUseCase';
+
+const mockCreatedQuotation = {
+  id: 'q-1',
+  reference: 'QT-2026-001',
+  date: '2026-02-15',
+  total: 1000,
+  vendorName: 'Test Vendor',
+  createdAt: '2026-02-15T00:00:00Z',
+  updatedAt: '2026-02-15T00:00:00Z',
+};
+
+// Ensure the mocked constructors have an execute implementation
+(CreateQuotationUseCase as any).prototype.execute = jest.fn().mockResolvedValue(mockCreatedQuotation);
+(ListQuotationsUseCase as any).prototype.execute = jest.fn().mockResolvedValue({ items: [mockCreatedQuotation], total: 1 });
 
 describe('useQuotations', () => {
   beforeEach(() => {

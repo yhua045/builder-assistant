@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 
 import { SnapReceiptDTO } from '../../application/usecases/receipt/SnapReceiptUseCase';
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
-import { CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react-native';
+import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react-native';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
@@ -102,7 +102,18 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
 
   return (
     <ScrollView className="flex-1 bg-background p-4">
-      <Text className="text-2xl font-bold mb-6 text-foreground">Snap Receipt</Text>
+      <View className="flex-row items-center justify-between mb-6">
+        <Text className="text-2xl font-bold text-foreground">Snap Receipt</Text>
+        <Pressable
+          accessibilityLabel="Close receipt form"
+          accessibilityRole="button"
+          onPress={onCancel}
+          className="p-2 rounded-md"
+          testID="receiptform-close"
+        >
+          <X size={20} color="#374151" />
+        </Pressable>
+      </View>
       
       {normalizedData && normalizedData.suggestedCorrections.length > 0 && (
         <View className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
