@@ -19,7 +19,9 @@ export class RecordPaymentUseCase {
 
       const newPaymentStatus = paid >= invoice.total ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
       const updates: any = { paymentStatus: newPaymentStatus };
-      if (newPaymentStatus === 'paid') {
+      
+      // Only change status to 'paid' if invoice is issued or overdue
+      if (newPaymentStatus === 'paid' && (invoice.status === 'issued' || invoice.status === 'overdue')) {
         updates.status = 'paid';
         updates.paymentDate = new Date().toISOString();
       }

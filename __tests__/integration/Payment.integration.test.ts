@@ -96,7 +96,7 @@ describe('RecordPaymentUseCase integration', () => {
   });
 
   it('marks invoice as paid when payments equal total', async () => {
-    const inv = InvoiceEntity.create({ total: 200 }).data();
+    const inv = InvoiceEntity.create({ total: 200, status: 'issued' }).data();
     await invoiceRepo.createInvoice(inv);
 
     const p = PaymentEntity.create({ projectId: inv.projectId ?? 'p', invoiceId: inv.id, amount: 200 }).data();

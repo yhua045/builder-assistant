@@ -436,3 +436,62 @@ Current Milestone: Implement Quotation UI module (Issue #65)
 - Add voice input in future iteration
 
 ---
+
+**Date**: 2026-02-17  
+**Branch**: issue-71  
+**Scope**: Invoice Module Phase 3 — Lifecycle Operations (Issue #71)
+
+**Key Decisions**:
+- Use `Invoice.metadata.statusHistory` array for audit trail (lightweight, no separate table for MVP)
+- Lifecycle transitions: only `issued`/`overdue` → `paid`; prevent cancelling `paid` invoices
+- Payment integration: auto-update `paymentStatus` on payment records; transition to `paid` only for `issued`/`overdue` invoices (not `draft`)
+
+**Completed This Session**:
+- ✅ Implemented `MarkInvoiceAsPaidUseCase` with validation and audit trail
+  - Validates allowed transitions (`issued`/`overdue` → `paid`)
+  - Records timestamp, optional actor, and reason in `metadata.statusHistory`
+  - Unit tests (10/10 passing)
+- ✅ Implemented `CancelInvoiceUseCase` with cancellation rules
+  - Prevents cancelling `paid` invoices (MVP business rule)
+  - Stores cancellation reason and audit trail
+  - Unit tests (12/12 passing)
+- ✅ Implemented `InvoiceLifecycleActions` UI component
+  - Context-aware buttons based on invoice status
+  - Confirmation dialogs for destructive actions
+  - Loading states with disabled buttons
+  - Unit tests (12/12 passing)
+- ✅ Enhanced payment integration
+  - Updated `RecordPaymentUseCase` to only transition `issued`/`overdue` invoices to `paid` status
+  - Auto-calculation of `paymentStatus` (`unpaid`/`partial`/`paid`)
+  - Integration tests (10/10 passing)
+- ✅ Audit trail implementation
+  - Status change history with `{ from, to, timestamp, actor, reason }`
+  - Preserves existing metadata, appends to history array
+  - Fully tested in use case tests
+
+**Files Added**:
+- `src/application/usecases/invoice/MarkInvoiceAsPaidUseCase.ts`
+- `src/application/usecases/invoice/CancelInvoiceUseCase.ts`
+- `src/components/invoices/InvoiceLifecycleActions.tsx`
+- `__tests__/unit/MarkInvoiceAsPaidUseCase.test.ts`
+- `__tests__/unit/CancelInvoiceUseCase.test.ts`
+- `__tests__/unit/InvoiceLifecycleActions.test.tsx`
+- `__tests__/integration/InvoicePayment.integration.test.tsx`
+
+**Files Modified**:
+- `src/application/usecases/payment/RecordPaymentUseCase.ts` (enhanced payment status logic)
+- `__tests__/integration/Payment.integration.test.ts` (updated test fixture)
+
+**Test Status**:
+- All tests passing: 44 tests (4 test suites)
+- TypeScript check: ✅ passes (`npx tsc --noEmit`)
+- TDD workflow followed: tests written before implementation for all features
+
+**Pending Tasks**: None (all Phase 3 acceptance criteria met)
+
+**Next Steps**:
+- Open PR from `issue-71` → `master` with reference to design doc ([design/issue-67-invoice-module.md](design/issue-67-invoice-module.md) Phase 3)
+- Consider adding `InvoiceDetailPage` to display audit trail timeline
+- Wire lifecycle actions into invoice list/detail views when UI is implemented
+
+---

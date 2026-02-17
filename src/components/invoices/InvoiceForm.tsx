@@ -44,8 +44,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [currency, setCurrency] = useState(initialValues?.currency || 'USD');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
   const [tax, setTax] = useState(initialValues?.tax?.toString() || '');
-  const [status, setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
-  const [paymentStatus, setPaymentStatus] = useState<Invoice['paymentStatus']>(
+  const [status, _setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
+  const [paymentStatus, _setPaymentStatus] = useState<Invoice['paymentStatus']>(
     initialValues?.paymentStatus || 'unpaid'
   );
   const [dateIssued, setDateIssued] = useState<Date | null>(
@@ -55,7 +55,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     initialValues?.dateDue ? new Date(initialValues.dateDue) : null
   );
   const [notes, setNotes] = useState(initialValues?.notes || '');
-  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(
+  const [lineItems, _setLineItems] = useState<InvoiceLineItem[]>(
     initialValues?.lineItems || []
   );
 
@@ -107,7 +107,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       }, 0);
 
       const subtotalNum = subtotal ? parseFloat(subtotal) : 0;
-      const totalNum = parseFloat(total);
       const taxNum = tax ? parseFloat(tax) : 0;
       
       const tolerance = 0.01;
@@ -118,6 +117,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       }
       
       // Check if total matches subtotal + tax, OR matches line items sum if no separate subtotal
+      const totalNum = parseFloat(total);
       const expectedTotal = subtotal ? subtotalNum + taxNum : calculatedSubtotal + taxNum;
       if (!isNaN(totalNum) && Math.abs(totalNum - expectedTotal) > tolerance) {
         newErrors.total = newErrors.total || 'Total does not match line items and tax';
