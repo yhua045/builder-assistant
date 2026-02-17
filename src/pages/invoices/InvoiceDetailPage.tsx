@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react-native';
@@ -26,10 +26,7 @@ export default function InvoiceDetailPage() {
 
   const { getInvoiceById, updateInvoice, deleteInvoice } = useInvoices();
 
-  // loadInvoice intentionally omitted from deps to avoid recreating the
-  // function on every render; invoiceId is the primary driver.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const loadInvoice = React.useCallback(async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getInvoiceById(invoiceId);

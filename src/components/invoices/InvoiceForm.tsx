@@ -107,7 +107,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       }, 0);
 
       const subtotalNum = subtotal ? parseFloat(subtotal) : 0;
-      const totalNum = parseFloat(total);
       const taxNum = tax ? parseFloat(tax) : 0;
       
       const tolerance = 0.01;
@@ -118,6 +117,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       }
       
       // Check if total matches subtotal + tax, OR matches line items sum if no separate subtotal
+      const totalNum = parseFloat(total);
       const expectedTotal = subtotal ? subtotalNum + taxNum : calculatedSubtotal + taxNum;
       if (!isNaN(totalNum) && Math.abs(totalNum - expectedTotal) > tolerance) {
         newErrors.total = newErrors.total || 'Total does not match line items and tax';
