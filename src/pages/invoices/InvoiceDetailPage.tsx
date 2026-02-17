@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react-native';
@@ -26,11 +26,7 @@ export default function InvoiceDetailPage() {
 
   const { getInvoiceById, updateInvoice, deleteInvoice } = useInvoices();
 
-  useEffect(() => {
-    loadInvoice();
-  }, [invoiceId]);
-
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getInvoiceById(invoiceId);
@@ -38,7 +34,11 @@ export default function InvoiceDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [invoiceId, getInvoiceById]);
+
+  useEffect(() => {
+    loadInvoice();
+  }, [loadInvoice]);
 
   const handleUpdate = async (updatedInvoice: Partial<Invoice>) => {
     const result = await updateInvoice({ ...invoice, ...updatedInvoice } as Invoice);
