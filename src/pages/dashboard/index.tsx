@@ -7,12 +7,15 @@ import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
+import { InvoiceForm } from '../../components/invoices/InvoiceForm';
+import { useInvoices } from '../../hooks/useInvoices';
 import { 
   DollarSign, 
   Plus,
   Camera,
   FileText,
   Wrench,
+  Receipt,
   X
 } from 'lucide-react-native';
 
@@ -103,21 +106,34 @@ const nextUpTasks = [
 
 const quickActions = [
   { id: '1', title: 'Snap Receipt', icon: Camera, color: 'bg-chart-1' },
-  { id: '2', title: 'Log Payment', icon: DollarSign, color: 'bg-chart-2' },
-  { id: '3', title: 'Add Quote', icon: FileText, color: 'bg-chart-3' },
-  { id: '4', title: 'Ad Hoc Task', icon: Wrench, color: 'bg-chart-4' }
+  { id: '2', title: 'Add Invoice', icon: Receipt, color: 'bg-chart-5' },
+  { id: '3', title: 'Log Payment', icon: DollarSign, color: 'bg-chart-2' },
+  { id: '4', title: 'Add Quote', icon: FileText, color: 'bg-chart-3' },
+  { id: '5', title: 'Ad Hoc Task', icon: Wrench, color: 'bg-chart-4' }
 ];
 
 export default function DashboardScreen() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
+  const [showAddInvoice, setShowAddInvoice] = useState(false);
+  
+  const { createInvoice } = useInvoices();
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
     if (actionId === '1') { // Snap Receipt
       setShowSnapReceipt(true);
+    } else if (actionId === '2') { // Add Invoice
+      setShowAddInvoice(true);
     }
     // Handle other actions...
+  };
+
+  const handleCreateInvoice = async (invoice: any) => {
+    const result = await createInvoice(invoice);
+    if (result.success) {
+      setShowAddInvoice(false);
+    }
   };
 
   return (
@@ -212,6 +228,24 @@ export default function DashboardScreen() {
         onRequestClose={() => setShowSnapReceipt(false)}
       >
         <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} enableOcr={true} />
+      </Modal>
+
+      {/* Add Invoice Modal */}
+      <Modal
+        visible={showAddInvoice}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddInvoice(false)}
+        testID="add-invoice-modal"
+      >
+        <SafeAreaView className="flex-1 bg-background">
+          <InvoiceForm
+            mode="create"
+            onCreate={handleCreateInvoice}
+            onCancel={() => setShowAddInvoice(false)}
+            isLoading={false}
+          />
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
