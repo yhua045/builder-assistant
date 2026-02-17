@@ -9,6 +9,7 @@ import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import InvoiceForm from '../../components/invoices/InvoiceForm';
 import { useInvoices } from '../../hooks/useInvoices';
+import { QuotationScreen } from '../quotations/QuotationScreen';
 import { 
   DollarSign, 
   Plus,
@@ -118,6 +119,7 @@ export default function DashboardScreen() {
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   
   const { createInvoice } = useInvoices();
+  const [showQuotation, setShowQuotation] = useState(false);
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
@@ -125,6 +127,8 @@ export default function DashboardScreen() {
       setShowSnapReceipt(true);
     } else if (actionId === '2') { // Add Invoice
       setShowAddInvoice(true);
+    } else if (actionId === '3') { // Add Quote
+      setShowQuotation(true);
     }
     // Handle other actions...
   };
@@ -247,6 +251,15 @@ export default function DashboardScreen() {
           />
         </SafeAreaView>
       </Modal>
+      {/* Quotation Modal */}
+      <QuotationScreen
+        visible={showQuotation}
+        onClose={() => setShowQuotation(false)}
+        onSuccess={() => {
+          // Optionally refresh quotation list here when that component exists
+          console.log('Quotation created successfully');
+        }}
+      />
     </SafeAreaView>
   );
 }

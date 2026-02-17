@@ -1,0 +1,426 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { Quotation, QuotationLineItem, QuotationEntity } from '../../domain/entities/Quotation';
+import DatePickerInput from '../inputs/DatePickerInput';
+import { Plus, X } from 'lucide-react-native';
+
+interface QuotationFormProps {
+  initialValues?: Partial<Quotation>;
+  onSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+const STATUS_OPTIONS = [
+  { label: 'Draft', value: 'draft' },
+  { label: 'Sent', value: 'sent' },
+  { label: 'Accepted', value: 'accepted' },
+  { label: 'Declined', value: 'declined' },
+] as const;
+
+export const QuotationForm: React.FC<QuotationFormProps> = ({ 
+  initialValues, 
+  onSubmit, 
+  onCancel, 
+  isLoading 
+}) => {
+  const [reference, setReference] = useState(initialValues?.reference || '');
+  const [vendorName, setVendorName] = useState(initialValues?.vendorName || '');
+  const [vendorEmail, setVendorEmail] = useState(initialValues?.vendorEmail || '');
+  const [vendorAddress, setVendorAddress] = useState(initialValues?.vendorAddress || '');
+  const [date, setDate] = useState<Date | null>(
+    initialValues?.date ? new Date(initialValues.date) : new Date()
+  );
+  const [expiryDate, setExpiryDate] = useState<Date | null>(
+    initialValues?.expiryDate ? new Date(initialValues.expiryDate) : null
+  );
+  const [total, setTotal] = useState(initialValues?.total?.toString() || '');
+  const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
+  const [taxTotal, setTaxTotal] = useState(initialValues?.taxTotal?.toString() || '');
+  const [currency, setCurrency] = useState(initialValues?.currency || 'USD');
+  const [status, setStatus] = useState<Quotation['status']>(initialValues?.status || 'draft');
+  const [notes, setNotes] = useState(initialValues?.notes || '');
+  
+  const [lineItems, setLineItems] = useState<QuotationLineItem[]>(
+    initialValues?.lineItems || []
+  );
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!reference.trim()) newErrors.reference = 'Reference is required';
+    if (!date) newErrors.date = 'Date is required';
+    if (!total || isNaN(parseFloat(total)) || parseFloat(total) < 0) {
+      newErrors.total = 'Valid total amount is required';
+    }
+    
+    // Validate expiry date is after issue date
+    if (expiryDate && date && expiryDate < date) {
+      newErrors.expiryDate = 'Expiry date must be on or after issue date';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      try {
+        const quotationData = {
+          reference,
+          vendorName: vendorName || undefined,
+          vendorEmail: vendorEmail || undefined,
+          vendorAddress: vendorAddress || undefined,
+          date: date!.toISOString(),
+          expiryDate: expiryDate?.toISOString(),
+          total: parseFloat(total),
+          subtotal: subtotal ? parseFloat(subtotal) : undefined,
+          taxTotal: taxTotal ? parseFloat(taxTotal) : undefined,
+          currency,
+          status,
+          notes: notes || undefined,
+          lineItems: lineItems.length > 0 ? lineItems : undefined,
+        };
+
+        // Validate with domain entity
+        QuotationEntity.create(quotationData as any);
+        
+        onSubmit(quotationData as any);
+      } catch (error) {
+        setErrors({ form: error instanceof Error ? error.message : 'Validation failed' });
+      }
+    }
+  };
+
+  const addLineItem = () => {
+    setLineItems([
+      ...lineItems,
+      {
+        id: `line_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        total: 0,
+      },
+    ]);
+  };
+
+  const removeLineItem = (index: number) => {
+    setLineItems(lineItems.filter((_, i) => i !== index));
+  };
+
+  const updateLineItem = (index: number, field: keyof QuotationLineItem, value: any) => {
+    const updated = [...lineItems];
+    updated[index] = { ...updated[index], [field]: value };
+    
+    // Auto-calculate total if quantity or unitPrice changes
+    if (field === 'quantity' || field === 'unitPrice') {
+      const qty = field === 'quantity' ? parseFloat(value) || 0 : updated[index].quantity || 0;
+      const price = field === 'unitPrice' ? parseFloat(value) || 0 : updated[index].unitPrice || 0;
+      updated[index].total = qty * price;
+    }
+    
+    setLineItems(updated);
+    
+    // Auto-update subtotal
+    const newSubtotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
+    setSubtotal(newSubtotal.toFixed(2));
+    
+    // Auto-update total if no tax
+    if (!taxTotal || parseFloat(taxTotal) === 0) {
+      setTotal(newSubtotal.toFixed(2));
+    }
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-background p-4">
+      <Text className="text-2xl font-bold mb-6 text-foreground">New Quotation</Text>
+      
+      {errors.form && (
+        <View className="bg-destructive/10 border border-destructive rounded-xl p-3 mb-4">
+          <Text className="text-destructive text-sm">{errors.form}</Text>
+        </View>
+      )}
+      
+      {/* Reference */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Reference*</Text>
+        <TextInput
+          testID="quotation-reference-input"
+          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
+            errors.reference ? 'border-destructive' : 'border-input'
+          }`}
+          value={reference}
+          onChangeText={setReference}
+          placeholder="QT-2026-001"
+          placeholderTextColor="#9ca3af"
+        />
+        {errors.reference && <Text className="text-destructive text-sm mt-1">{errors.reference}</Text>}
+      </View>
+
+      {/* Vendor Name */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Client / Vendor</Text>
+        <TextInput
+          testID="quotation-vendor-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
+          value={vendorName}
+          onChangeText={setVendorName}
+          placeholder="Vendor name"
+          placeholderTextColor="#9ca3af"
+        />
+      </View>
+
+      {/* Vendor Email */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Vendor Email</Text>
+        <TextInput
+          testID="quotation-vendor-email-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
+          value={vendorEmail}
+          onChangeText={setVendorEmail}
+          placeholder="vendor@example.com"
+          placeholderTextColor="#9ca3af"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+
+      {/* Vendor Address */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Vendor Address</Text>
+        <TextInput
+          testID="quotation-vendor-address-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground min-h-[80px]"
+          value={vendorAddress}
+          onChangeText={setVendorAddress}
+          placeholder="123 Main St"
+          placeholderTextColor="#9ca3af"
+          multiline
+          numberOfLines={2}
+          textAlignVertical="top"
+        />
+      </View>
+
+      {/* Date */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Issue Date*</Text>
+        <DatePickerInput
+          label=""
+          value={date}
+          onChange={setDate}
+          error={errors.date}
+        />
+      </View>
+
+      {/* Expiry Date */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Expiry Date</Text>
+        <DatePickerInput
+          label=""
+          value={expiryDate}
+          onChange={setExpiryDate}
+          error={errors.expiryDate}
+        />
+      </View>
+
+      {/* Line Items */}
+      <View className="mb-4">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="font-medium text-foreground">Line Items</Text>
+          <Pressable 
+            testID="quotation-add-line-item"
+            onPress={addLineItem}
+            className="flex-row items-center bg-primary px-3 py-2 rounded-lg active:opacity-80"
+          >
+            <Plus size={16} color="#fff" />
+            <Text className="text-primary-foreground ml-1 font-medium">Add Item</Text>
+          </Pressable>
+        </View>
+        
+        {lineItems.map((item, index) => (
+          <View 
+            key={item.id || index} 
+            testID={`quotation-line-item-${index}`}
+            className="bg-card border border-input rounded-xl p-4 mb-3"
+          >
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="font-medium text-foreground">Item {index + 1}</Text>
+              <Pressable onPress={() => removeLineItem(index)}>
+                <X size={20} color="#ef4444" />
+              </Pressable>
+            </View>
+            
+            <TextInput
+              className="border border-input rounded-lg p-2 mb-2 bg-background text-foreground"
+              value={item.description}
+              onChangeText={(val) => updateLineItem(index, 'description', val)}
+              placeholder="Description"
+              placeholderTextColor="#9ca3af"
+            />
+            
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Qty</Text>
+                <TextInput
+                  className="border border-input rounded-lg p-2 bg-background text-foreground"
+                  value={item.quantity?.toString() || '1'}
+                  onChangeText={(val) => updateLineItem(index, 'quantity', val)}
+                  keyboardType="numeric"
+                  placeholder="1"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+              
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Unit Price</Text>
+                <TextInput
+                  className="border border-input rounded-lg p-2 bg-background text-foreground"
+                  value={item.unitPrice?.toString() || '0'}
+                  onChangeText={(val) => updateLineItem(index, 'unitPrice', val)}
+                  keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+              
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Total</Text>
+                <Text className="border border-input rounded-lg p-2 bg-muted text-foreground">
+                  {item.total?.toFixed(2) || '0.00'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Financials */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Subtotal</Text>
+        <TextInput
+          testID="quotation-subtotal-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
+          value={subtotal}
+          onChangeText={setSubtotal}
+          placeholder="0.00"
+          placeholderTextColor="#9ca3af"
+          keyboardType="numeric"
+        />
+      </View>
+
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Tax</Text>
+        <TextInput
+          testID="quotation-tax-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
+          value={taxTotal}
+          onChangeText={(val) => {
+            setTaxTotal(val);
+            // Auto-update total
+            const sub = parseFloat(subtotal) || 0;
+            const tax = parseFloat(val) || 0;
+            setTotal((sub + tax).toFixed(2));
+          }}
+          placeholder="0.00"
+          placeholderTextColor="#9ca3af"
+          keyboardType="numeric"
+        />
+      </View>
+
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Total*</Text>
+        <TextInput
+          testID="quotation-total-input"
+          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
+            errors.total ? 'border-destructive' : 'border-input'
+          }`}
+          value={total}
+          onChangeText={setTotal}
+          placeholder="0.00"
+          placeholderTextColor="#9ca3af"
+          keyboardType="numeric"
+        />
+        {errors.total && <Text className="text-destructive text-sm mt-1">{errors.total}</Text>}
+      </View>
+
+      {/* Currency */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Currency</Text>
+        <TextInput
+          testID="quotation-currency-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
+          value={currency}
+          onChangeText={setCurrency}
+          placeholder="USD"
+          placeholderTextColor="#9ca3af"
+        />
+      </View>
+
+      {/* Status */}
+      <View className="mb-6">
+        <Text className="mb-2 font-medium text-foreground">Status</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {STATUS_OPTIONS.map((option) => (
+            <Pressable
+              key={option.value}
+              className={`px-4 py-2 rounded-full border ${
+                status === option.value 
+                  ? 'bg-primary border-primary' 
+                  : 'bg-card border-input'
+              }`}
+              onPress={() => setStatus(option.value)}
+            >
+              <Text className={`${
+                status === option.value ? 'text-primary-foreground font-medium' : 'text-foreground'
+              }`}>{option.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Notes */}
+      <View className="mb-8">
+        <Text className="mb-2 font-medium text-foreground">Notes</Text>
+        <TextInput
+          testID="quotation-notes-input"
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground min-h-[100px]"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          numberOfLines={3}
+          placeholder="Additional notes or terms..."
+          placeholderTextColor="#9ca3af"
+          textAlignVertical="top"
+        />
+      </View>
+
+      {/* Action Buttons */}
+      <View className="flex-row gap-4 mb-8">
+        <Pressable 
+          testID="quotation-cancel-button"
+          onPress={onCancel} 
+          disabled={isLoading}
+          className="flex-1 bg-secondary p-4 rounded-xl items-center active:opacity-80"
+        >
+          <Text className="text-secondary-foreground font-semibold text-lg">Cancel</Text>
+        </Pressable>
+        
+        <Pressable 
+          testID="quotation-save-button"
+          onPress={handleSubmit} 
+          disabled={isLoading}
+          className="flex-1 bg-primary p-4 rounded-xl items-center active:opacity-80"
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-primary-foreground font-bold text-lg">Save Quotation</Text>
+          )}
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+};
