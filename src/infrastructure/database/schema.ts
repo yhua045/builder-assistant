@@ -249,23 +249,34 @@ export const milestones = sqliteTable('milestones', {
 export const tasks = sqliteTable('tasks', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
-  projectId: text('project_id').notNull(),
+  projectId: text('project_id'), // Made optional for ad-hoc tasks
   phaseId: text('phase_id'),
   title: text('title').notNull(),
   description: text('description'),
+  notes: text('notes'),
+  
+  // Scheduling
+  isScheduled: integer('is_scheduled', { mode: 'boolean' }).default(false),
+  scheduledAt: integer('scheduled_at'), // Unix timestamp
+  dueDate: integer('due_date'), // Unix timestamp
+
   assignedTo: text('assigned_to'),
+  
   status: text('status', { 
-    enum: ['pending', 'in_progress', 'completed', 'blocked'] 
-  }),
+    enum: ['pending', 'in_progress', 'completed', 'blocked', 'cancelled'] 
+  }).default('pending'),
+  
   priority: text('priority', { 
     enum: ['low', 'medium', 'high', 'urgent'] 
   }),
-  dueDate: integer('due_date'), // Unix timestamp
+  
   completedDate: integer('completed_date'), // Unix timestamp
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
   projectIdx: index('idx_tasks_project').on(table.projectId),
+  scheduledIdx: index('idx_tasks_scheduled').on(table.scheduledAt),
+  statusIdx: index('idx_tasks_status').on(table.status),
 }));
 
 // Inspections Table

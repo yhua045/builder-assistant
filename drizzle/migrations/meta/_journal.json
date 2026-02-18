@@ -50,6 +50,20 @@
       "when": 1771200644354,
       "tag": "0006_overrated_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771300649583,
+      "tag": "0007_cloudy_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1771300670794,
+      "tag": "0008_good_mattie_franklin",
+      "breakpoints": true
     }
   ]
 }
