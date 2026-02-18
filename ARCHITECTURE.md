@@ -1,522 +1,349 @@
-# Builder Assistant - Clean Architecture Guide
+# Builder Assistant — Architecture Guide
 
-## 📋 Overview
+## Overview
 
-This React Native construction project management app implements **Clean Architecture** with Test-Driven Development (TDD). The architecture separates business logic from UI and platform-specific code, ensuring maintainability, testability, and scalability.
+Builder Assistant is a React Native construction project management app for owner-builders. It follows **Clean Architecture** with strict layer separation and a **Test-Driven Development (TDD)** approach. All production code lives in TypeScript; the test suite runs entirely on-device or in-process with no server required.
 
-**Key Technologies:**
-- React Native 0.81.1 + React 19.1.0
-- TypeScript 5.8+ (strict mode)
-- Drizzle ORM + SQLite (react-native-sqlite-storage)
-- Jest for testing
-- NativeWind (Tailwind) for styling
+### Technology Stack
 
-## 🏗️ Architecture Structure
+| Concern | Technology |
+|---|---|
+| Framework | React Native 0.81.1 + React 19.1.0 |
+| Language | TypeScript 5.8+ (strict mode) |
+| Styling | NativeWind v4 (Tailwind CSS) + `lucide-react-native` icons |
+| Navigation | React Navigation v7 (Bottom Tabs + Native Stack) |
+| Persistence | Drizzle ORM v0.45 over `react-native-sqlite-storage` (SQLite) |
+| File Storage | `react-native-fs` (abstracted via `LocalDocumentStorageEngine`) |
+| Camera / File Pick | `react-native-image-picker`, `react-native-document-picker` |
+| ML / OCR | `@react-native-ml-kit/text-recognition` + deterministic normalizer |
+| DI Container | Lightweight custom registry (`src/infrastructure/di/container.ts`) + `tsyringe` (decorator pattern) |
+| Testing | Jest 29 + React Test Renderer + `@testing-library/react-native` |
+| Integration DB | `better-sqlite3` in-memory (test-only, shims native SQLite) |
+| Node requirement | ≥ 20 |
+
+---
+
+## Source Code Structure
 
 ```
-/builder-assistant
-│
-├── /android                    # Android-specific code & configuration
-├── /ios                       # iOS-specific code & configuration
-├── /src                       # Shared application source code
-│   ├── /domain                # 🔵 Domain Layer (Business Logic)
-│   │   ├── /entities          # Business entities (Project, Invoice, Quotation, etc.)
-│   │   ├── /repositories      # Data access interfaces (repository contracts)
-│   │   └── /services          # Domain services & validation
-│   ├── /application           # 🟢 Application Layer (Use Cases)
-│   │   └── /usecases          # Feature-based use cases (project/, invoice/, quotation/)
-│   ├── /infrastructure        # 🔴 Infrastructure Layer
-│   │   ├── /database          # Drizzle ORM schema, migrations, connection
-│   │   └── /repositories      # Drizzle repository implementations
-│   ├── /components            # 🟡 UI Components
-│   ├── /hooks                 # React hooks (UI-to-application connectors)
-│   ├── /pages                 # Screen-level components
-│   └── /utils                 # Pure utility functions
-├── /assets                    # Static assets (images, fonts)
-├── App.tsx                    # Main application entry point
-└── package.json               # Dependencies and scripts
+/
+├── App.tsx                        # Application entry point, navigation root
+├── index.js                       # React Native entry (registers App)
+├── android/                       # Android native project
+├── ios/                           # iOS native project + CocoaPods
+├── assets/                        # Static assets (images, fonts)
+├── drizzle/migrations/            # Generated SQL migration files
+├── design/                        # Per-issue design docs (planning artefacts)
+├── docs/                          # Supplementary documentation
+└── src/
+    ├── domain/                    # 🔵 Domain Layer — pure business logic
+    │   ├── entities/              # Business entities (see list below)
+    │   ├── repositories/          # Repository interfaces (contracts only)
+    │   └── services/              # Domain services (e.g. ProjectWorkflowService)
+    ├── application/               # 🟢 Application Layer — use case orchestration
+    │   ├── usecases/              # Grouped by domain (project/, invoice/, quotation/, …)
+    │   ├── ai/                    # Normalizer interfaces & implementations (invoice OCR)
+    │   ├── receipt/               # Receipt normalizer logic
+    │   ├── dtos/                  # Data-transfer objects (e.g. ProjectCardDto)
+    │   └── services/              # Application services
+    ├── infrastructure/            # 🔴 Infrastructure Layer — I/O implementations
+    │   ├── database/              # Drizzle schema, migrations bundle, connection
+    │   ├── repositories/          # Drizzle repository implementations
+    │   ├── mappers/               # Row → domain entity mappers
+    │   ├── camera/                # ICameraAdapter, MobileCameraAdapter, MockCameraAdapter
+    │   ├── files/                 # IFilePickerAdapter, IFileSystemAdapter and mobile impls
+    │   ├── storage/               # LocalDocumentStorageEngine (react-native-fs wrapper)
+    │   ├── ocr/                   # MobileOcrAdapter (ML Kit text recognition)
+    │   ├── ai/                    # TfLiteReceiptNormalizer (template, falls back to deterministic)
+    │   └── di/                    # DI container (container.ts, registerServices.ts)
+    ├── components/                # 🟡 Reusable UI components
+    │   ├── inputs/                # DatePickerInput, ContactSelector, TeamSelector
+    │   ├── invoices/              # InvoiceForm, InvoiceUploadSection, ExtractionResultsPanel, …
+    │   ├── quotations/            # QuotationForm
+    │   ├── receipts/              # ReceiptForm
+    │   └── tasks/                 # Task-related components
+    ├── hooks/                     # React hooks — UI-to-application connectors
+    ├── pages/                     # Screen-level components (one folder per feature)
+    │   ├── dashboard/             # Dashboard with Quick Actions & financial stats
+    │   ├── projects/              # ProjectsPage (list, create, archive)
+    │   ├── invoices/              # Invoice list, detail, upload screens
+    │   ├── payments/              # Payments screen
+    │   ├── quotations/            # QuotationScreen
+    │   ├── receipts/              # SnapReceiptScreen
+    │   └── tasks/                 # TasksScreen
+    ├── shims/                     # Browser/Node shims for Metro bundler compatibility
+    ├── types/                     # Shared TypeScript type declarations
+    └── utils/                     # Pure utility functions (no side-effects)
 ```
 
-## 🎯 Architecture Layers
- - framework-agnostic**
+---
 
-#### Entities (`/entities`)
-Core business objects with validation and immutable factory patterns:
-- `Project.ts` - Status management, budget validation, workflow transitions
-- `Invoice.ts` - Line items, totals validation, payment tracking
-- `Quotation.ts` - Vendor quotes, expiry dates, line item consistency
-- `Payment.ts` - Invoice linkage, settlement tracking
-- `Contact.ts` - Roles (owner, contractor, vendor, etc.)
-- `Property.ts` - Project site information
-- `Document.ts` - File metadata, OCR text, cloud sync status
-- `Expense.ts` - Receipt capture, AI validation
-- Plus: `Milestone`, `Task`, `Inspection`, `ChangeOrder`, `WorkVariation`
+## Architecture Layers
 
-#### Repositories (`/repositories`)
-Data access interfaces (contracts only - no implementation):
-- `ProjectRepository.ts`, `InvoiceRepository.ts`, `QuotationRepository.ts`
-- `PaymentRepository.ts`, `DocumentRepository.ts`, `ContactRepository.ts`
-- Each defines CRUD + domain-specific query methods
-- implements application-specific business flows**
+### Dependency Rule
 
-#### Use Cases (`/usecases`)
-Organized by feature domain:
-- **project/** - `CreateProjectUseCase`, `ArchiveProjectUseCase`, `UpdateProjectStatusUseCase`, etc.
-- **invoice/** - `CreateInvoiceUseCase`, `GetInvoiceByIdUseCase`, `ListInvoicesUseCase`, etc.
-- **quotation/** - `CreateQuotationUseCase`, `UpdateQuotationUseCase`, `DeleteQuotationUseCase`, etc.
-- **payment/** - `RecordPaymentUseCase`, `ListPaymentsUseCase`, etc.
+> Inner layers must never import from outer layers.
 
-Each use case:
-1. Accepts repository dependencies (via constructor injection)
-2. Validates inputs using domain entities
-3. Coordinates persistence via repository interfaces
-4. Returns domain entities or DTOs
-
-**Key Principles:**
-- ✅ Thin orchestration layer (business logic stays in domain)
-- ✅ Depends only on domain layer (interfaces)
-- ✅ Use cases are pure functions (testable with mocks)
-- ✅ No direct database/framework dependenciesly
-- ✅ No imports from outer layers (application/infrastructure/UI)I, and external dependencies
-- ✅ Contains business rules and validation logic
-- ✅ No imports from outer layers
-
-### 🟢 Application Layer (`/src/application`)
-**Orchestrates use cases and coordinates between domain and UI**
-infrastructure`)pages`, `/src/hooks`)
-**React Native presentation layer**
-
-#### Components (`/components`)
-Reusable UI building blocks (NativeWind/Tailwind styled):
-- `ProjectCard.tsx`, `ProjectList.tsx`
-- `InvoiceForm.tsx`, `InvoiceList.tsx`
-- `QuickStats.tsx`, `TasksList.tsx`, `TotalExpenseCard.tsx`
-- Plus common form inputs, modals, etc.
-
-#### Pages (`/pages`)
-Screen-level components:
-- `DashboardPage.tsx` - Overview + quick stats
-- `ProjectsPage.tsx` - Project list with filters
-- `expenses/`, `invoices/`, `payments/` - Feature screens
-
-#### Hooks (`/hooks`)
-**UI-to-application connectors** - manage React state + call use cases:
-- `useProjects.ts` - Project CRUD + listing
-- `useInvoices.ts` - Invoice operations
-- `usePayments.ts` - Payment tracking
-- Each hook instantiates use cases with repository implementations
-
-**Key Principles:**
-- ✅ No business logic (delegates to use cases)
-- ✅ Hooks encapsulate state management + use case wiring
-- ✅ Components are presentational (receive data via props)
-- ✅ NativeWind for consistent styling
-┌─────────────────┐
-│  UI Component   │  Presentational (NativeWind)
-└────────┬────────┘
-         │ props/callbacks
-         ▼
-┌─────────────────┐
-│   React Hook    │  State management + use case wiring
-└────────┬────────┘
-         │ execute()
-         ▼
-┌─────────────────┐
-│    Use Case     │  Application orchestration
-└────────┬────────┘
-         │ domain methods
-         ▼
-┌─────────────────┐
-│ Domain Entity   │  Business logic & validation
-│  (via .create()) │
-└────────┬────────┘
-         │ persist/query
-         ▼
-┌─────────────────┐
-│   Repository    │  Interface (domain)
-│   Interface     │
-└────────┬────────┘
-         │ implements
-         ▼
-┌─────────────────┐
-│ Drizzle Repo    │  Infrastructure implementation
-│ Implementation  │
-└────────┬────────┘
-         │ SQL via Drizzle ORM
-         ▼
-┌─────────────────┐
-│  SQLite DB      │  On-device persistence
-└─────────────────┘
+```
+UI (components / pages / hooks)
+       ↓ calls
+Application (use cases)
+       ↓ uses interfaces from
+Domain (entities / repository interfaces / services)
+       ↑ implemented by
+Infrastructure (Drizzle repos, adapters, DI)
 ```
 
-**Dependency Rule**: Inner layers know nothing about outer layers
-- Domain → No dependencies
-- Application → Depends on Domain only
-- Infrastructure → Implements Domain interfaces
-- UI → Depends on Application + Domain
-- ✅ **Drizzle ORM required** - no raw SQLite in app code
-- ✅ Implements domain repository interfaces
-- ✅ Maps between domain and persistence models
-- ✅ Handles platform-specific concerns (file storage, native modules)
+### 🔵 Domain Layer (`src/domain/`)
 
-### 🟡 UI Layer (`/src (TDD Workflow)
+Pure TypeScript — no React, no Drizzle, no I/O of any kind.
 
-### Test-Driven Development
-**Required workflow** (see [CLAUDE.md](CLAUDE.md) - TDD section):
-1. **Design first** - Create design doc in `design/` before coding
-2. **Write failing tests** - Unit tests with mocks
-3. **Implement** - Make tests pass
-4. **Integration tests** - Drizzle repos with in-memory SQLite (better-sqlite3)
-5. **Refactor** - Keep tests green
+**Entities** (`src/domain/entities/`) — immutable factory pattern via `.create()`:
 
-### Test Structure
+| Entity | Enforced Invariants |
+|---|---|
+| `Project` | Status transitions via `ProjectWorkflowService`, budget ≥ 0 |
+| `Invoice` | `total` ≥ 0, line-item sum = total, `dateDue` ≥ `dateIssued` |
+| `Payment` | Linked to invoice, amount > 0 |
+| `Quotation` | `expiryDate` ≥ `date`, total ≥ 0, line items sum to total |
+| `Contact` | Has a `RoleType` (owner, contractor, vendor, …) |
+| `Property` | Project site address |
+| `Document` | File metadata, OCR text, cloud-sync status |
+| `Expense` | Receipt capture, optional AI-validated fields |
+| Others | `Milestone`, `Task`, `Inspection`, `ChangeOrder`, `WorkVariation`, `Quote` |
+
+**Repository interfaces** (`src/domain/repositories/`) — declare CRUD and domain-specific query methods; zero implementation code.
+
+**Domain services** (`src/domain/services/`) — stateless business rules that span multiple entities (e.g. `ProjectWorkflowService` enforces the allowed status-transition graph).
+
+### 🟢 Application Layer (`src/application/`)
+
+Thin orchestration — no database access, no UI.
+
+**Use Cases** (`src/application/usecases/<domain>/`) — receive repository interfaces via constructor injection, validate input via entity factories, coordinate persistence:
+
+| Domain | Use Cases |
+|---|---|
+| project/ | `CreateProjectUseCase`, `ArchiveProjectUseCase`, `UnarchiveProjectUseCase`, `UpdateProjectStatusUseCase`, `GetProjectDetailsUseCase`, `GetProjectAnalysisUseCase`, `BulkUpdateProjectsUseCase`, `MergeProjectsUseCase` |
+| invoice/ | `CreateInvoiceUseCase`, `GetInvoiceByIdUseCase`, `ListInvoicesUseCase`, `UpdateInvoiceUseCase`, `DeleteInvoiceUseCase`, `MarkInvoiceAsPaidUseCase`, `CancelInvoiceUseCase`, `ProcessInvoiceUploadUseCase` |
+| payment/ | `RecordPaymentUseCase`, `ListPaymentsUseCase` |
+| quotation/ | `CreateQuotationUseCase`, `GetQuotationByIdUseCase`, `ListQuotationsUseCase`, `UpdateQuotationUseCase`, `DeleteQuotationUseCase` |
+| receipt/ | `SnapReceiptUseCase` |
+| task/ | task use cases |
+
+**Normalizers / AI** (`src/application/receipt/`, `src/application/ai/`) — rules-based field extraction for receipt and invoice OCR; `IReceiptNormalizer` and `IInvoiceNormalizer` are the interfaces; `DeterministicReceiptNormalizer` / `InvoiceNormalizer` are the live implementations.
+
+**DTOs** (`src/application/dtos/`) — UI-only data shapes (e.g. `ProjectCardDto`). Never used in domain or infrastructure.
+
+### 🔴 Infrastructure Layer (`src/infrastructure/`)
+
+All I/O and platform concerns live here. Implements domain interfaces; nothing in domain/ or application/ should import from here.
+
+**Database** (`src/infrastructure/database/`):
+- `schema.ts` — Drizzle table definitions (single source of truth for DB shape)
+- `migrations.ts` — bundled SQL migration strings, applied automatically on app start
+- `connection.ts` — initialises and returns the Drizzle database instance
+
+**Repositories** (`src/infrastructure/repositories/`):
+- `DrizzleProjectRepository`, `DrizzleInvoiceRepository`, `DrizzlePaymentRepository`, `DrizzleQuotationRepository`, `DrizzleDocumentRepository`, `DrizzleReceiptRepository`, `DrizzleTaskRepository`
+- `InMemoryProjectRepository` — in-process stub used in unit tests (not production)
+- Mappers live in `src/infrastructure/mappers/` (e.g. `ProjectMapper` assembles hydrated `ProjectDetails` from JOIN rows)
+
+**Adapters** — all platform-specific modules are behind interfaces:
+- Camera: `ICameraAdapter` → `MobileCameraAdapter` (wraps `react-native-image-picker`); swap with `MockCameraAdapter` in tests
+- File Pick: `IFilePickerAdapter` → `MobileFilePickerAdapter`
+- File System: `IFileSystemAdapter` → `MobileFileSystemAdapter` (wraps `react-native-fs`)
+- OCR: `MobileOcrAdapter` (wraps ML Kit text recognition)
+
+**DI Container** (`src/infrastructure/di/`):
+- Lightweight key-based registry (`container.ts`): `registerInstance`, `registerFactory`, `resolve`, `clearContainer`
+- `registerServices.ts` wires production bindings on app start
+- In tests: call `clearContainer()` in `beforeEach` to reset state
+
+### 🟡 UI Layer (`src/components/`, `src/pages/`, `src/hooks/`)
+
+**Hooks** (`src/hooks/`) — instantiate use cases with Drizzle repositories and expose plain async functions + loading/error state. No business logic here.
+
+| Hook | Responsibility |
+|---|---|
+| `useProjects` | Project CRUD + list |
+| `useInvoices` | Invoice CRUD + lifecycle |
+| `usePayments` | Payment recording + list |
+| `useQuotations` | Quotation CRUD |
+| `useSnapReceipt` | Camera → OCR → ReceiptForm flow |
+| `useContacts` / `useTeams` | Selector data (in-memory stubs; Drizzle-backed repos pending) |
+
+**Components** (`src/components/`) — purely presentational; receive data and callbacks via props. All styling via NativeWind Tailwind classes (avoid inline `style` props).
+
+**Pages** (`src/pages/`) — screen-level components composed from hooks and components; handle navigation and modal state.
+
+---
+
+## Data Flow (End to End)
+
+```
+Page / Component
+     │  user action
+     ▼
+React Hook (useXxx)
+     │  calls useCase.execute(input)
+     ▼
+Use Case
+     │  validates via Entity.create()
+     │  calls repo interface method
+     ▼
+Domain Repository Interface
+     │  implemented by
+     ▼
+DrizzleXxxRepository
+     │  SQL via Drizzle ORM
+     ▼
+SQLite (on-device)
+```
+
+---
+
+## Running the Project
+
+### Prerequisites
+- **Node.js ≥ 20**
+- macOS with Xcode for iOS development
+- Android Studio / JDK for Android development
+
+### Install
+
+```bash
+npm install
+
+# iOS only — install native pods
+cd ios && pod install && cd ..
+```
+
+### Start & Run
+
+```bash
+npm start            # Start Metro bundler (keep running in one terminal)
+
+npm run ios          # Launch on iOS simulator (separate terminal)
+npm run android      # Launch on Android emulator (separate terminal)
+```
+
+### Type Check & Lint
+
+```bash
+npx tsc --noEmit     # Must pass before every commit
+npm run lint         # ESLint — target 0 errors (warnings acceptable)
+```
+
+---
+
+## Testing
+
+### Test Layout
+
 ```
 __tests__/
-├── unit/                          # Fast, isolated tests
-│   ├── QuotationEntity.validation.test.ts    # Domain validation
-│   ├── CreateQuotationUseCase.test.ts        # Use cases with mocks
+├── unit/            # Fast, isolated — no I/O
+│   ├── *Entity.validation.test.ts    # Domain entity business rules
+│   ├── *UseCase.test.ts              # Use cases with jest.fn() repo mocks
+│   ├── *.test.tsx                    # React component/hook tests (react-test-renderer)
 │   └── ...
-└── integration/                   # Real DB/infrastructure
-    ├── DrizzleQuotationRepository.integration.test.ts
+└── integration/     # Slower — real Drizzle queries against in-memory SQLite
+    ├── Drizzle*.integration.test.ts  # Repository CRUD + constraint tests
+    ├── *.integration.test.tsx        # Full screen interaction tests
     └── ...
 ```
 
-### Test Patterns
+### How Integration Tests Work
 
-**Domain Entity Tests** - Validation rules:
-```typescript
-it('throws when total is negative', () => {
-  expect(() => QuotationEntity.create({ total: -5, ... }))
-    .toThrow('total must be non-negative');
-});
-```
+Integration tests import `better-sqlite3` as an in-memory engine via the `__mocks__/react-native-sqlite-storage.js` Jest manual mock. The Drizzle schema and migration bundle are applied to this in-memory DB, so tests run fast and without a simulator.
 
-**Use Case Tests** - Mocked repositories:
-```typescript
-const mockRepo = { createQuotation: jest.fn().mockResolvedValue(...) };
-const useCase = new CreateQuotationUseCase(mockRepo);
-const result = await useCase.execute(quotation);
-expect(mockRepo.createQuotation).toHaveBeenCalledWith(quotation);
-```
+### Run Tests
 
-**Repository Integration Tests** - In-memory SQLite:
-```typescript
-// Uses better-sqlite3 :memory: via mocked react-native-sqlite-storage
-const repo = new DrizzleQuotationRepository();
-await repo.createQuotation(quotation);
-const retrieved = await repo.getQuotation(quotation.id);
-expect(retrieved).toEqual(quotation);
-```
-
-### Test Commands
 ```bash
-npm test                (TDD Workflow)
+npm test                      # All suites
+npm test -- --watch           # Watch mode
+npm test -- --runInBand       # Serial (useful when debugging DB state)
+npm test -- path/to/test.ts   # Single file
+```
 
-**ALWAYS follow this process** (from [CLAUDE.md](CLAUDE.md)):
+### Gotcha — Manual Mocks
 
-#### Phase 0: Planning
-1. Create design doc: `design/issue-N-feature-name.md`
-   - Data model, validation rules, test acceptance criteria
-   - Reference existing patterns (e.g., "Follow Invoice module")
+Module mocks live in `__mocks__/` at the project root. Jest resolves them automatically for modules like `react-native-sqlite-storage`, `react-native-fs`, `react-native-image-picker`, and `nativewind`. If you add a new native module, add a corresponding mock here.
 
-#### Phase 1: Domain Layer (Test-First)
-2. Define domain entity in `src/domain/entities/`
-3. Write **failing** entity validation tests in `__tests__/unit/`
-4. Implement entity to make tests pass
-5. Define repository interface in `src/domain/repositories/`
+---
 
-#### Phase 2: Infrastructure (Integration Tests)
-6. Write **failing** integration tests for repository (in-memory DB)
-7. Implement Drizzle repository in `src/infrastructure/repositories/`
-8. Update `schema.ts` + generate migration (`npm run db:generate`)
-9. Add migration to bundled migrations in `migrations.ts`
+## Database Migrations
 
-#### Phase 3: Application Layer (Use Cases)
-10. Write **failing** use case tests (mocked repos)
-11. Implement use cases in `src/application/usecases/[feature]/`
-12. Wire up hooks in `src/hooks/` (if needed for UI)
+### Workflow
 
-#### Phase 4: Verification
-13. Run `npm test` - all tests must pass ✅
-14. Run `npx tsc --noEmit` - no type errors ✅
-15. Update `progress.md` with summary
-16. Create PR referencing design doc
-
-**Key Principle**: Write tests BEFORE implementation (Red → Green → Refactor)
-
-### Database Migration Workflow
 ```bash
-# 1. Edit schema.ts
+# 1. Edit the Drizzle schema
 vim src/infrastructure/database/schema.ts
 
-# 2. Generate migration
+# 2. Generate the SQL migration file
 npm run db:generate
-Code Examples
+# → writes drizzle/migrations/<timestamp>_<name>.sql
 
-### Domain Entity (with Validation)
-```typescript
-// Domain validates business rules
-const quotationEntity = QuotationEntity.create({
-  reference: 'QT-2026-001',
-  date: '2026-01-15',
-  expiryDate: '2026-02-15',  // Must be >= date
-  total: 1500,                // Must be non-negative
-  lineItems: [                // Sum must match total
-    { description: 'Labor', quantity: 1, unitPrice: 1000 },
-    { description: 'Materials', quantity: 1, unitPrice: 500 },
-  ],
-});
+# 3. Bundle the migration into the app
+#    Copy the SQL into migrations.ts and add to the migrations array
+vim src/infrastructure/database/migrations.ts
 
-const quotation = quotationEntity.data(); // Get immutable data
-```
-
-### Use Case (with Repository)
-```typescript
-// Use case orchestrates domain logic
-class CreateQuotationUseCase {
-  constructor(private readonly repo: QuotationRepository) {}
-  
-  async execute(quotation: Quotation): Promise<Quotation> {
-    // Validation happens in entity factory
-    const entity = QuotationEntity.create(quotation);
-    return this.repo.createQuotation(entity.data());
-  }
-}
-
-// Usage in hook
-const repo = new DrizzleQuotationRepository();
-const createUseCase = new CreateQuotationUseCase(repo);
-const created = await createUseCase.execute(newQuotation);
-```
-
-### React Hook (UI Connector)
-```typescript
-// Hook wires UI to application layer
-export function useQuotations() {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const repo = useMemo(() => new DrizzleQuotationRepository(), []);
-  
-  const createQuotation = useCallback(async (data: Quotation) => {
-    const useCase = new CreateQuotationUseCase(repo);
-    const created = await useCase.execute(data);
-    setQuotations(prev => [...prev, created]);
-    return created;
-  }, [repo]);
-  
-  return { quotations, createQuotation };
-}
-```
-
-### Component (Presentation)
-```tsx
-// Component is purely presentational
-function QuotationCard({ quotation, onEdit, onDelete }: Props) {
-  return (
-    <View className="p-4 bg-white rounded-lg">
-      <Text className="text-lg font-bold">{quotation.reference}</Text>
-      <Text className="text-gray-600">${quotation.total}</Text>
-      <Button onPress={() => onEdit(quotation.id)}>Edit</Button>
-    </View>
-  );
-}
-```
-
----
-
-## 📚 Project Documentation
-
-### Essential Reading (in order)
-1. **[CLAUDE.md](CLAUDE.md)** - Development workflow, TDD process, conventions
-2. **[ARCHITECTURE.md](ARCHITECTURE.md)** (this file) - Architecture overview
-3. **[progress.md](progress.md)** - Recent changes and current milestone
-4. **[DRIZZLE_SETUP.md](DRIZZLE_SETUP.md)** - Database setup and migration workflow
-5. **[docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md)** - Migration details
-6. **[docs/WORKFLOWS.md](docs/WORKFLOWS.md)** - Project status transition rules
-7. **[.github/coding-workflow-shortcuts.md](.github/coding-workflow-shortcuts.md)** - Quick prompts for AI agents
-
-### Design Documents
-Feature designs live in `design/` folder:
-- `design/issue-64-quotation-module.md` - Quotation CRUD (latest example)
-- `design/issue-32-create-project-page.md` - Projects page implementation
-- `design/issue-54-snap-receipt-ocr-ai-plan.md` - OCR/ML workflow
-
-### External Resources
-- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) - Robert C. Martin
-- [Drizzle ORM Docs](https://orm.drizzle.team/docs/overview) - TypeScript ORM
-- [React Native Docs](https://reactnative.dev/docs/getting-started)
-- [NativeWind Docs](https://www.nativewind.dev/) - Tailwind for React Native
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- React Native development environment
-- iOS Simulator or Android Emulator
-
-### Installation
-```bash
-# Install dependencies
-npm install
-
-# iOS setup (macOS only)
-cd ios && pod install && cd ..
-
-# Start Metro bundler
+# 4. Restart the app — migrations are applied automatically on startup
 npm start
-
-# Run on iOS (separate terminal)
-npm run ios
-
-# Run on Android (separate terminal)
-npm run android
-
-# Type checking
-npx tsc --noEmit
-
-# Run tests
-npm test
-
-# Generate database migration (after schema changes)
-npm run db:generate
 ```
 
-### Database Setup
-The database auto-migrates on app startup. Migrations are bundled in [src/infrastructure/database/migrations.ts](src/infrastructure/database/migrations.ts).
+> ⚠️ **Gotcha**: `npm run db:generate` only creates the SQL file. You must manually copy the SQL into `migrations.ts`. The app will not pick up a new migration file from `drizzle/migrations/` at runtime — only the bundled strings in `migrations.ts` are executed. See [DRIZZLE_SETUP.md](DRIZZLE_SETUP.md) and [docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md) for the exact bundling steps.
 
-**Important**: After running `npm run db:generate`, you must bundle the migration:
-1. Copy SQL from `drizzle/<migration-name>.sql`
-2. Add to `rawMigration000X` constant in `migrations.ts`
-3. Add entry to `migrations` array
+### Development helpers
 
-See [DRIZZLE_SETUP.md](DRIZZLE_SETUP.md) and [docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md) for details.
-
-## 🧪 Testing Strategy
-
-### Unit Tests
-- **Domain Layer**: Test business rules and validation logic
-- **Application Layer**: Test use case orchestration
-- **UI Layer**: Test component rendering and user interactions
-
-### Integration Tests
-- Test complete workflows from UI to data persistence
-- Test repository implementations
-
-### Example Test Structure
-```typescript
-// Domain entity test
-describe('ProjectEntity', () => {
-  it('should validate project data correctly', () => {
-    // Test business rules
-  });
-});
-
-// Use case test
-describe('CreateProjectUseCase', () => {
-  it('should create project successfully', async () => {
-    // Test use case execution
-  });
-});
+```bash
+npm run db:push     # Directly push schema to a dev DB (skip migration file — dev only)
+npm run db:studio   # Open Drizzle Studio (visual DB browser)
+npm run db:check    # Validate migration consistency
 ```
 
-## 📝 Development Guidelines
+---
 
-### Adding New Features
+## Adding a New Feature (Where Things Go)
 
-1. **Start with Domain**: Define entities and business rules
-2. **Create Use Cases**: Implement application logic
-3. **Build UI**: Create components and hooks
-4. **Implement Infrastructure**: Add external dependencies
+| What you're adding | Where it lives |
+|---|---|
+| New business rule | `src/domain/entities/<Entity>.ts` |
+| New status transition rule | `src/domain/services/ProjectWorkflowService.ts` (or new domain service) |
+| New data access contract | `src/domain/repositories/<Entity>Repository.ts` |
+| New DB table / column | `src/infrastructure/database/schema.ts` → generate migration → bundle |
+| New repository impl | `src/infrastructure/repositories/Drizzle<Entity>Repository.ts` |
+| New use case | `src/application/usecases/<domain>/<Name>UseCase.ts` |
+| New UI form / component | `src/components/<domain>/` |
+| New screen | `src/pages/<domain>/` + wire into navigator in `src/pages/tabs/` |
+| New hook | `src/hooks/use<Feature>.ts` |
+| New native adapter | Interface in `src/infrastructure/<concern>/I<Name>Adapter.ts`, mobile impl alongside, mock impl for tests |
 
-### Dependency Rules
-- ✅ Domain layer has no dependencies on outer layers
-- ✅ Application layer depends only on domain layer
-- ✅ UI layer depends on application and domain layers
-- ✅ Infrastructure layer implements domain interfaces
+---
 
-### Best Practices
-- Keep domain entities pure and testable
-- Use dependency injection for repositories
-- Implement interfaces before concrete classes
-- Separate platform-specific code in `/android` and `/ios`
-- Use TypeScript for type safety throughout
+## Key Gotchas & Conventions
 
-## 🔧 Configuration
+- **No raw SQL in application or domain code.** Use Drizzle ORM in `src/infrastructure/` only. For ad-hoc queries, add a helper to `src/infrastructure/database/`.
+- **No business logic in hooks or components.** Hooks call use cases; use cases call domain entities. If a rule is spreading across multiple files outside domain/, move it back.
+- **Entity factories throw on invalid input.** Wrap `Entity.create()` calls in try/catch at the use case boundary; don't swallow errors silently.
+- **`clearContainer()` in tests.** Always call `clearContainer()` in `beforeEach` when your test registers DI bindings, otherwise state leaks between test files.
+- **NativeWind class names only.** Avoid inline `style={{}}` props in components — ESLint rule `react-native/no-inline-styles` will flag them.
+- **Migrations are additive.** Never edit an already-committed SQL migration. Add a new migration for corrections.
+- **`externalId` / `externalReference` on Invoice** — nullable, treated as a composite unique key only when *both* are non-null. This is normalised at the repository layer, not in the entity.
+- **`project_id` on payments is nullable** — a payment may exist without a linked project (e.g. direct expenses captured via Snap Receipt).
+- **TfLiteReceiptNormalizer is a placeholder** — it falls back to `DeterministicReceiptNormalizer` until a trained `.tflite` model is wired in.
 
-### TypeScript Configuration
-The project uses TypeScript with strict type checking enabled. See `tsconfig.json` for configuration details.
+---
 
-### ESLint & Prettier
-Code formatting and linting rules are configured in `.eslintrc.js` and `.prettierrc.js`.
+## Essential Reading Order
 
-### Metro Configuration
-React Native bundler configuration in `metro.config.js`.
+1. [CLAUDE.md](CLAUDE.md) — Development workflow, TDD steps, quick commands
+2. [ARCHITECTURE.md](ARCHITECTURE.md) — This file
+3. [progress.md](progress.md) — Current milestone and pending tasks
+4. [DRIZZLE_SETUP.md](DRIZZLE_SETUP.md) — Database setup details
+5. [docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md) — Migration bundling guide
+6. [docs/WORKFLOWS.md](docs/WORKFLOWS.md) — Project status transition rules
+7. [docs/DI-container.md](docs/DI-container.md) — DI container usage
 
-## 📱 Platform-Specific Code
-
-### iOS (`/ios`)
-- Native iOS configuration and dependencies
-- Platform-specific implementations when needed
-
-### Android (`/android`)  
-- Native Android configuration and dependencies
-- Platform-specific implementations when needed
-
-## 🔍 Example Usage
-
-### Creating a New Project
-```typescript
-const { createProject } = useProjects();
-
-const newProject = {
-  name: 'New Construction Project',
-  description: 'Modern residential building',
-  budget: 500000,
-  startDate: new Date(),
-  expectedEndDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
-};
-
-const result = await createProject(newProject);
-```
-
-### Analyzing a Project
-```typescript
-const { getProjectAnalysis } = useProjects();
-
-const analysis = await getProjectAnalysis(projectId);
-if (analysis.success) {
-  console.log('Project Analysis:', analysis.analysis);
-}
-```
-
-## 🤝 Contributing
-
-### Before You Start
-1. **Read** [CLAUDE.md](CLAUDE.md) - Required reading for development workflow
-2. **Read** [.github/coding-workflow-shortcuts.md](.github/coding-workflow-shortcuts.md) - Quick prompts
-3. **Follow TDD** - Tests before implementation (always)
-
-### Pull Request Checklist
-- [ ] Design doc created/updated in `design/`
-- [ ] Tests written before implementation (TDD workflow)
-- [ ] All tests passing (`npm test`)
-- [ ] Type checking passes (`npx tsc --noEmit`)
-- [ ] Database migrations bundled (if schema changed)
-- [ ] `progress.md` updated with summary
-- [ ] Code follows Clean Architecture patterns
-- [ ] No business logic in UI layer
-- [ ] Repository implementations use Drizzle ORM only
-
-### Common Workflows
-**Add new entity**: See [.github/coding-workflow-shortcuts.md](.github/coding-workflow-shortcuts.md#combined-full-feature-implementation)
-
-**Database change**: Update `schema.ts` → `npm run db:generate` → bundle migration
-
-**Bug fix**: Write failing test → fix → verify test passes
-
-## 📚 Further Reading
-
-- [Clean Architecture by Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+Design documents for each feature live in `design/issue-<N>-<name>.md`.
