@@ -16,8 +16,10 @@ describe('ContactSelector', () => {
     const root = testRenderer!.root;
     const input = root.findByType(require('react-native').TextInput);
 
-    act(() => {
+    await act(async () => {
       input.props.onChangeText('Alex');
+      // Wait for the synchronous promise resolution in test mode
+      await Promise.resolve();
     });
 
     expect(root).toBeDefined();

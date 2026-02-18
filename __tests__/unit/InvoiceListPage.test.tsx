@@ -6,9 +6,6 @@ import { Invoice } from '../../src/domain/entities/Invoice';
 
 // Mock dependencies
 jest.mock('../../src/hooks/useInvoices');
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }: any) => children,
-}));
 jest.mock('lucide-react-native', () => ({
   FileText: 'FileText',
   Filter: 'Filter',

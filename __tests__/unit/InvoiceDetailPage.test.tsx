@@ -6,9 +6,6 @@ import { useInvoices } from '../../src/hooks/useInvoices';
 
 // Mock dependencies
 jest.mock('../../src/hooks/useInvoices');
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }: any) => children,
-}));
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: 'ArrowLeft',
   FileText: 'FileText',
@@ -26,17 +23,22 @@ jest.mock('../../src/components/ThemeToggle', () => ({
 }));
 jest.mock('../../src/components/invoices/InvoiceForm', () => {
   const MockInvoiceForm = (_props: any) => null;
+  MockInvoiceForm.displayName = 'MockInvoiceForm';
+
+  const MockComponent = ({ mode, initialValues, onUpdate, onCancel }: any) => (
+    <MockInvoiceForm
+      testID="invoice-form"
+      mode={mode}
+      onUpdate={() => onUpdate({ ...initialValues, total: 9999 })}
+      onCancel={onCancel}
+    />
+  );
+  MockComponent.displayName = 'InvoiceForm';
 
   return {
     __esModule: true,
-    default: ({ mode, initialValues, onUpdate, onCancel }: any) => (
-      <MockInvoiceForm
-        testID="invoice-form"
-        mode={mode}
-        onUpdate={() => onUpdate({ ...initialValues, total: 9999 })}
-        onCancel={onCancel}
-      />
-    ),
+    default: MockComponent,
+    InvoiceForm: MockComponent,
   };
 });
 

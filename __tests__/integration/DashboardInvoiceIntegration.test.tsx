@@ -13,10 +13,6 @@ jest.mock('../../src/hooks/useInvoices');
 jest.mock('../../src/hooks/useProjects');
 jest.mock('../../src/hooks/usePayments');
 
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }: any) => children,
-}));
-
 jest.mock('lucide-react-native', () => ({
   DollarSign: 'DollarSign',
   Plus: 'Plus',
@@ -51,17 +47,22 @@ jest.mock('../../src/pages/receipts/SnapReceiptScreen', () => {
 
 jest.mock('../../src/components/invoices/InvoiceForm', () => {
   const MockInvoiceForm = (_props: any) => null;
+  MockInvoiceForm.displayName = 'MockInvoiceForm';
+
+  const MockComponent = ({ mode, onCreate, onCancel }: any) => (
+    <MockInvoiceForm
+      testID="invoice-form-in-modal"
+      mode={mode}
+      onCreate={onCreate}
+      onCancel={onCancel}
+    />
+  );
+  MockComponent.displayName = 'InvoiceForm';
 
   return {
     __esModule: true,
-    default: ({ mode, onCreate, onCancel }: any) => (
-      <MockInvoiceForm
-        testID="invoice-form-in-modal"
-        mode={mode}
-        onCreate={onCreate}
-        onCancel={onCancel}
-      />
-    ),
+    default: MockComponent,
+    InvoiceForm: MockComponent,
   };
 });
 
