@@ -5,7 +5,7 @@ import { useColorScheme } from 'nativewind';
 import { cssInterop } from 'nativewind';
 import DashboardScreen from '../dashboard';
 import PaymentsScreen from '../payments';
-import TasksScreen from '../tasks';
+import TasksNavigator from '../tasks/TasksNavigator';
 import ProjectsPage from '../projects/ProjectsPage';
 
 // Enable className styling for icons
@@ -55,7 +55,7 @@ export default function TabsLayout() {
       />
       <Tab.Screen
         name="Work"
-        component={TasksScreen}
+        component={TasksNavigator}
         options={{
           title: 'Work',
           tabBarIcon: WorkIcon,
