@@ -552,3 +552,26 @@ Current Milestone: Invoice Module Phase 2 - File Upload & OCR (Issue #70)
 - Wire lifecycle actions into invoice list/detail views when UI is implemented
 
 ---
+**Date**: 2026-02-18  
+**Branch**: issue-81  
+**Scope**: Consolidate Tasks list UI (Issue #81)
+
+**Key Decisions**:
+- Consolidate task list into a single authoritative screen: `src/pages/tasks/index.tsx`.
+- Keep `useTasks()` hook as the canonical data source; wire filters, refresh and navigation there.
+- Remove duplicate `TasksListPage.tsx` and update `TasksNavigator.tsx` to point at the consolidated screen.
+- Follow TDD-first workflow: write tests first, implement minimal changes, refactor.
+
+**Completed This Session**:
+- ✅ Created design doc: `design/issue-81-tasks-consolidation.md` (approach & acceptance criteria).
+- ✅ Added unit tests (TDD) for the consolidated Tasks screen (`__tests__/unit/TasksScreen.test.tsx`).
+- ✅ Implemented consolidated screen: `src/pages/tasks/index.tsx` (filters, summary counts, pull-to-refresh, navigation handlers).
+- ✅ Updated `src/pages/tasks/TasksNavigator.tsx` and deleted `src/pages/tasks/TasksListPage.tsx`.
+- ✅ All tests pass locally and `npx tsc --noEmit` reports no type errors.
+
+**Pending / Next Steps**:
+- Open a PR from `issue-81` → `master` for code review.
+- Manual smoke test on device/emulator to validate runtime navigation and pull-to-refresh UX.
+- Optional: small UX polish (filter pill styles, accessibility attributes) before final review.
+
+---
