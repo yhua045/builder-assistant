@@ -57,7 +57,16 @@ import renderer, { act } from 'react-test-renderer';
 import { InvoiceScreen } from '../../src/pages/invoices/InvoiceScreen';
 import { IFilePickerAdapter, FilePickerResult } from '../../src/infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
+import { IOcrAdapter, OcrResult } from '../../src/application/services/IOcrAdapter';
+import {
+  IInvoiceNormalizer,
+  InvoiceCandidates,
+  NormalizedInvoice,
+} from '../../src/application/ai/IInvoiceNormalizer';
 import { initDatabase } from '../../src/infrastructure/database/connection';
+
+/** Flush all pending microtasks so that sequential `await` chains settle. */
+const flushPromises = () => new Promise<void>(resolve => setImmediate(resolve));
 
 describe('InvoiceScreen integration', () => {
   let mockFilePicker: jest.Mocked<IFilePickerAdapter>;
@@ -192,26 +201,323 @@ describe('InvoiceScreen integration', () => {
     expect(fileExists).toBe(true);
   });
 
-  // NOTE: The following tests are commented out because they require
-  // use case implementations that don't exist yet. They should be
-  // implemented when we wire up CreateInvoiceUseCase and handle the
-  // atomic Document+Invoice save flow.
-  
-  /*
-  it('InvoiceForm with pdfFile creates Document with localPath and Invoice with documentId atomically', async () => {
-    // TODO: Implement when CreateInvoiceUseCase is wired up with atomic save
+  // NOTE: The following tests (InvoiceForm atomic save) require the InvoiceForm
+  // to be rendered in integration with a real DB — deferred to a future ticket
+  // because InvoiceForm render relies on native navigation/modal patterns.
+});
+
+// ── OCR pipeline integration tests ───────────────────────────────────────
+
+const makeOcrResult = (text = 'Acme Corp\nINV-001\nTotal $500.00'): OcrResult => ({
+  fullText: text,
+  tokens: [],
+  imageUri: 'file:///app/invoice.jpg',
+});
+
+const makeNormalizedInvoice = (overrides: Partial<NormalizedInvoice> = {}): NormalizedInvoice => ({
+  vendor: 'Acme Corp',
+  invoiceNumber: 'INV-001',
+  invoiceDate: new Date('2026-01-15'),
+  dueDate: new Date('2026-02-15'),
+  subtotal: 450,
+  tax: 50,
+  total: 500,
+  currency: 'USD',
+  lineItems: [],
+  confidence: { overall: 0.9, vendor: 0.9, invoiceNumber: 0.9, invoiceDate: 0.8, total: 0.95 },
+  suggestedCorrections: [],
+  ...overrides,
+});
+
+function makeMockOcrAdapter(result?: OcrResult, error?: Error): jest.Mocked<IOcrAdapter> {
+  return {
+    extractText: error
+      ? jest.fn().mockRejectedValue(error)
+      : jest.fn().mockResolvedValue(result ?? makeOcrResult()),
+  };
+}
+
+function makeMockNormalizerAdapter(
+  normalized?: NormalizedInvoice,
+  error?: Error,
+): jest.Mocked<IInvoiceNormalizer> {
+  const empty: InvoiceCandidates = {
+    vendors: [], invoiceNumbers: [], dates: [], dueDates: [],
+    amounts: [], subtotals: [], taxAmounts: [], lineItems: [],
+  };
+  return {
+    extractCandidates: jest.fn().mockReturnValue(empty),
+    normalize: error
+      ? jest.fn().mockRejectedValue(error)
+      : jest.fn().mockResolvedValue(normalized ?? makeNormalizedInvoice()),
+  };
+}
+
+describe('InvoiceScreen integration — OCR pipeline', () => {
+  let mockFilePicker: jest.Mocked<IFilePickerAdapter>;
+  let mockFileSystem: jest.Mocked<IFileSystemAdapter>;
+  const mockFileStorage = new Map<string, string>();
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    mockFileStorage.clear();
+    await initDatabase();
+
+    mockFilePicker = { pickDocument: jest.fn() };
+    mockFileSystem = {
+      copyToAppStorage: jest.fn(async (_src: string, destFilename: string) => {
+        const destUri = `/app/documents/${destFilename}`;
+        mockFileStorage.set(destUri, 'mock-content');
+        return destUri;
+      }),
+      getDocumentsDirectory: jest.fn(async () => '/app/documents'),
+      exists: jest.fn(async (p: string) => mockFileStorage.has(p)),
+    };
   });
 
-  it('user cancels InvoiceForm after PDF upload → no DB records created, file remains', async () => {
-    // TODO: Implement when InvoiceForm cancel flow is wired up
+  it('happy path: image upload → OCR → normalize → shows review panel', async () => {
+    const pickerResult: FilePickerResult = {
+      cancelled: false,
+      uri: 'file:///original/invoice.jpg',
+      name: 'invoice.jpg',
+      size: 512000,
+      type: 'image/jpeg',
+    };
+    mockFilePicker.pickDocument.mockResolvedValue(pickerResult);
+    const mockOcr = makeMockOcrAdapter(makeOcrResult());
+    const mockNormalizer = makeMockNormalizerAdapter(makeNormalizedInvoice());
+    const mockNavigate = jest.fn();
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <InvoiceScreen
+          onClose={jest.fn()}
+          onNavigateToForm={mockNavigate}
+          filePickerAdapter={mockFilePicker}
+          fileSystemAdapter={mockFileSystem}
+          ocrAdapter={mockOcr}
+          invoiceNormalizer={mockNormalizer}
+        />,
+      );
+    });
+
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'upload-pdf-button' }).props.onPress();
+    });
+    await act(flushPromises);
+
+    // OCR was called with the app-storage URI
+    expect(mockOcr.extractText).toHaveBeenCalledWith(
+      expect.stringContaining('/app/documents/invoice_'),
+    );
+    expect(mockNormalizer.normalize).toHaveBeenCalled();
+
+    // Review panel is visible
+    const texts = testRenderer!.root
+      .findAllByType(require('react-native').Text)
+      .map((t: any) => t.props.children)
+      .flat()
+      .join(' ');
+    expect(texts).toContain('Review Extraction');
+
+    // Navigate was NOT called yet (user hasn't accepted)
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('manual entry flow creates Invoice without documentId', async () => {
-    // TODO: Implement when CreateInvoiceUseCase exists
+  it('happy path: accept extraction navigates to form with prefilled initialValues', async () => {
+    const pickerResult: FilePickerResult = {
+      cancelled: false,
+      uri: 'file:///original/inv.jpg',
+      name: 'inv.jpg',
+      size: 100000,
+      type: 'image/jpeg',
+    };
+    mockFilePicker.pickDocument.mockResolvedValue(pickerResult);
+    const normalized = makeNormalizedInvoice();
+    const mockOcr = makeMockOcrAdapter();
+    const mockNormalizer = makeMockNormalizerAdapter(normalized);
+    const mockNavigate = jest.fn();
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <InvoiceScreen
+          onClose={jest.fn()}
+          onNavigateToForm={mockNavigate}
+          filePickerAdapter={mockFilePicker}
+          fileSystemAdapter={mockFileSystem}
+          ocrAdapter={mockOcr}
+          invoiceNormalizer={mockNormalizer}
+        />,
+      );
+    });
+
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'upload-pdf-button' }).props.onPress();
+    });
+    await act(flushPromises);
+
+    // Press Accept on ExtractionResultsPanel
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'accept-button' }).props.onPress();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'create',
+        initialValues: expect.objectContaining({
+          issuerName: 'Acme Corp',
+          externalReference: 'INV-001',
+          total: 500,
+          currency: 'USD',
+        }),
+      }),
+    );
   });
 
-  it('Document-Invoice link is valid after atomic save', async () => {
-    // TODO: Implement when atomic save use case exists
+  it('OCR failure → error state → retry succeeds → review panel', async () => {
+    const pickerResult: FilePickerResult = {
+      cancelled: false,
+      uri: 'file:///original/inv.jpg',
+      name: 'inv.jpg',
+      size: 100000,
+      type: 'image/jpeg',
+    };
+    mockFilePicker.pickDocument.mockResolvedValue(pickerResult);
+
+    // First call fails; second call succeeds
+    const mockOcr: jest.Mocked<IOcrAdapter> = {
+      extractText: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('Timeout'))
+        .mockResolvedValueOnce(makeOcrResult()),
+    };
+    const mockNormalizer = makeMockNormalizerAdapter();
+    const mockNavigate = jest.fn();
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <InvoiceScreen
+          onClose={jest.fn()}
+          onNavigateToForm={mockNavigate}
+          filePickerAdapter={mockFilePicker}
+          fileSystemAdapter={mockFileSystem}
+          ocrAdapter={mockOcr}
+          invoiceNormalizer={mockNormalizer}
+        />,
+      );
+    });
+
+    // First attempt — should fail
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'upload-pdf-button' }).props.onPress();
+    });
+    await act(flushPromises);
+    expect(testRenderer!.root.findByProps({ testID: 'retry-ocr-button' })).toBeTruthy();
+
+    // Retry — should succeed
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'retry-ocr-button' }).props.onPress();
+    });
+    await act(flushPromises);
+
+    const texts = testRenderer!.root
+      .findAllByType(require('react-native').Text)
+      .map((t: any) => t.props.children)
+      .flat()
+      .join(' ');
+    expect(texts).toContain('Review Extraction');
   });
-  */
+
+  it('OCR failure → fallback to manual entry includes cached pdfFile', async () => {
+    const pickerResult: FilePickerResult = {
+      cancelled: false,
+      uri: 'file:///original/inv.jpg',
+      name: 'inv.jpg',
+      size: 100000,
+      type: 'image/jpeg',
+    };
+    mockFilePicker.pickDocument.mockResolvedValue(pickerResult);
+    const mockOcr = makeMockOcrAdapter(undefined, new Error('OCR failed'));
+    const mockNormalizer = makeMockNormalizerAdapter();
+    const mockNavigate = jest.fn();
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <InvoiceScreen
+          onClose={jest.fn()}
+          onNavigateToForm={mockNavigate}
+          filePickerAdapter={mockFilePicker}
+          fileSystemAdapter={mockFileSystem}
+          ocrAdapter={mockOcr}
+          invoiceNormalizer={mockNormalizer}
+        />,
+      );
+    });
+
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'upload-pdf-button' }).props.onPress();
+    });
+    await act(flushPromises);
+
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'fallback-manual-button' }).props.onPress();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'create',
+        pdfFile: expect.objectContaining({ name: 'inv.jpg' }),
+      }),
+    );
+    const call = mockNavigate.mock.calls[0][0];
+    expect(call.initialValues).toBeUndefined();
+  });
+
+  it('PDF upload skips OCR and shows review panel with empty data', async () => {
+    const pickerResult: FilePickerResult = {
+      cancelled: false,
+      uri: 'file:///original/invoice.pdf',
+      name: 'invoice.pdf',
+      size: 200000,
+      type: 'application/pdf',
+    };
+    mockFilePicker.pickDocument.mockResolvedValue(pickerResult);
+    const mockOcr = makeMockOcrAdapter();
+    const mockNormalizer = makeMockNormalizerAdapter();
+    const mockNavigate = jest.fn();
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <InvoiceScreen
+          onClose={jest.fn()}
+          onNavigateToForm={mockNavigate}
+          filePickerAdapter={mockFilePicker}
+          fileSystemAdapter={mockFileSystem}
+          ocrAdapter={mockOcr}
+          invoiceNormalizer={mockNormalizer}
+        />,
+      );
+    });
+
+    await act(async () => {
+      testRenderer!.root.findByProps({ testID: 'upload-pdf-button' }).props.onPress();
+    });
+    await act(flushPromises);
+
+    // OCR should NOT have been called
+    expect(mockOcr.extractText).not.toHaveBeenCalled();
+
+    // Review panel should be shown
+    const texts = testRenderer!.root
+      .findAllByType(require('react-native').Text)
+      .map((t: any) => t.props.children)
+      .flat()
+      .join(' ');
+    expect(texts).toContain('Review Extraction');
+  });
 });

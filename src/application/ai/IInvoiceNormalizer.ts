@@ -49,6 +49,14 @@ export interface NormalizedInvoice {
 
 export interface IInvoiceNormalizer {
   /**
+   * Extract structured invoice field candidates from raw OCR text.
+   * This is a lightweight pre-processing step before normalization.
+   * @param text - Raw OCR full text
+   * @returns Structured candidates for further normalization
+   */
+  extractCandidates(text: string): InvoiceCandidates;
+
+  /**
    * Normalize and improve OCR-extracted invoice candidates
    * @param candidates - Parsed invoice field candidates
    * @param ocrResult - Raw OCR result for context

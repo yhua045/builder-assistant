@@ -638,3 +638,50 @@ Date: 2026-02-18
 - Optional: small UX polish (filter pill styles, accessibility attributes) before final review.
 
 ---
+**Date**: 2026-02-19  
+**Branch**: issue-79  
+**Scope**: Wire OCR Pipeline into InvoiceScreen (Issue #79)
+
+**Key Decisions**:
+- `ProcessInvoiceUploadUseCase` orchestrates: file → OCR (`IOcrAdapter`) → extract candidates (`IInvoiceNormalizer.extractCandidates`) → normalize → return `NormalizedInvoice`
+- PDFs bypass OCR entirely (they are not rasterised images); the use-case short-circuits and returns an `emptyNormalizedInvoice()` with a suggestedCorrection about manual entry
+- `InvoiceScreen` drives a `ProcessingStep` state machine: `'idle' → 'copying' → 'ocr' → 'normalizing' → 'review' | 'error'`
+- `ExtractionResultsPanel` (existing) is rendered during `'review'` state; accepting it calls `normalizedInvoiceToFormValues` and navigates to `InvoiceForm` with `initialValues` prefilled
+- Backward compatible: when `ocrAdapter`/`invoiceNormalizer` props are absent, InvoiceScreen skips the pipeline and navigates directly to the form (pre-issue-79 behaviour)
+- File validation updated to accept images (JPEG, PNG, HEIC, etc.) in addition to PDFs
+
+**Completed This Session** (Following TDD workflow):
+- ✅ Extended `IInvoiceNormalizer` with `extractCandidates(text: string): InvoiceCandidates`
+- ✅ Implemented `InvoiceNormalizer.extractCandidates` with 8 private regex extraction methods (vendors, invoice numbers, dates, due dates, amounts, subtotals, tax amounts, line items)
+- ✅ Created `ProcessInvoiceUploadUseCase` (`src/application/usecases/invoice/ProcessInvoiceUploadUseCase.ts`)
+- ✅ Created `normalizedInvoiceToFormValues` utility (`src/utils/normalizedInvoiceToFormValues.ts`)
+- ✅ Updated `InvoiceScreen` with full OCR pipeline + error/retry/fallback UX
+- ✅ Updated `fileValidation.ts` to accept images (JPEG, PNG, HEIC, etc.) as well as PDFs
+- ✅ Unit tests: `ProcessInvoiceUploadUseCase.test.ts` (20/20) + `normalizedInvoiceToFormValues.test.ts` (25/25) + `InvoiceScreen.test.tsx` (updated — all pass)
+- ✅ Integration tests: `InvoiceScreen.integration.test.tsx` (5 new OCR pipeline tests — all pass)
+
+**Files Added**:
+- `src/application/usecases/invoice/ProcessInvoiceUploadUseCase.ts`
+- `src/utils/normalizedInvoiceToFormValues.ts`
+- `__tests__/unit/ProcessInvoiceUploadUseCase.test.ts`
+- `__tests__/unit/normalizedInvoiceToFormValues.test.ts`
+- `design/issue-79-plan.md`
+
+**Files Modified**:
+- `src/application/ai/IInvoiceNormalizer.ts` — added `extractCandidates`
+- `src/application/ai/InvoiceNormalizer.ts` — implemented `extractCandidates` + 8 extraction helpers
+- `src/pages/invoices/InvoiceScreen.tsx` — full OCR pipeline, state machine, retry/fallback UX
+- `src/utils/fileValidation.ts` — accept images in addition to PDFs
+- `__tests__/unit/InvoiceScreen.test.tsx` — updated + 7 new OCR pipeline tests
+- `__tests__/integration/InvoiceScreen.integration.test.tsx` — 5 new OCR pipeline integration tests
+
+**Test Status**:
+- All 69 test suites pass: 418 passed, 5 skipped, 0 failures
+- TypeScript check: ✅ passes (`npx tsc --noEmit`)
+- TDD workflow followed throughout
+
+**Next Steps**:
+- Open PR from `issue-79` → `master` referencing issue #79
+- Wire `MobileOcrAdapter` and `InvoiceNormalizer` into the DI container / navigation so they're injected into `InvoiceScreen` in production
+
+---
