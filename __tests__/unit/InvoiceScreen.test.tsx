@@ -214,16 +214,9 @@ describe('InvoiceScreen', () => {
       mockPickerResult.uri,
       expect.stringContaining('invoice_')
     );
-    expect(mockOnNavigateToForm).toHaveBeenCalledWith({
-      mode: 'create',
-      pdfFile: {
-        uri: appStorageUri,
-        originalUri: mockPickerResult.uri,
-        name: mockPickerResult.name,
-        size: mockPickerResult.size,
-        mimeType: mockPickerResult.type,
-      },
-    });
+    // Embedded form should be displayed inline with pdf context; no navigation
+    expect(mockOnNavigateToForm).not.toHaveBeenCalled();
+    expect(root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('shows error state UI when file copy fails', async () => {
@@ -319,10 +312,10 @@ describe('InvoiceScreen', () => {
       await manualEntryButton.props.onPress();
     });
 
-    expect(mockOnNavigateToForm).toHaveBeenCalledWith({
-      mode: 'create',
-    });
+    // The form should now be shown inline instead of navigating
+    expect(mockOnNavigateToForm).not.toHaveBeenCalled();
     expect(mockFilePicker.pickDocument).not.toHaveBeenCalled();
+    expect(root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('calls onClose when Cancel button is pressed', async () => {
@@ -575,12 +568,9 @@ describe('InvoiceScreen — OCR pipeline', () => {
       testRenderer!.root.findByProps({ testID: 'fallback-manual-button' }).props.onPress();
     });
 
-    expect(mockOnNavigateToForm).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'create', pdfFile: expect.objectContaining({ name: 'invoice.jpg' }) }),
-    );
-    // No initialValues should be passed in the fallback
-    const call = mockOnNavigateToForm.mock.calls[0][0];
-    expect(call.initialValues).toBeUndefined();
+    // Embedded form should be shown with cached pdfFile; no navigation
+    expect(mockOnNavigateToForm).not.toHaveBeenCalled();
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('skips OCR for PDF files, still shows review panel (empty extraction)', async () => {
@@ -640,9 +630,9 @@ describe('InvoiceScreen — OCR pipeline', () => {
     });
     await act(flushPromises);
 
-    expect(mockOnNavigateToForm).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'create', pdfFile: expect.objectContaining({ name: 'invoice.jpg' }) }),
-    );
+    // Embedded form should be shown inline when no OCR adapters are provided
+    expect(mockOnNavigateToForm).not.toHaveBeenCalled();
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 });
 
