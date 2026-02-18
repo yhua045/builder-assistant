@@ -1,4 +1,4 @@
-import { IInvoiceNormalizer, InvoiceCandidates, NormalizedInvoice, NormalizedInvoiceLineItem } from './IInvoiceNormalizer';
+import { IInvoiceNormalizer, InvoiceCandidates, InvoiceLineItemCandidate, NormalizedInvoice, NormalizedInvoiceLineItem } from './IInvoiceNormalizer';
 import { OcrResult } from '../services/IOcrAdapter';
 
 /**
@@ -16,6 +16,194 @@ import { OcrResult } from '../services/IOcrAdapter';
  * Adapted from DeterministicReceiptNormalizer for invoice-specific fields.
  */
 export class InvoiceNormalizer implements IInvoiceNormalizer {
+  /**
+   * Extract structured invoice field candidates from raw OCR text.
+   * Uses lightweight regex patterns to identify potential field values.
+   */
+  extractCandidates(text: string): InvoiceCandidates {
+    return {
+      vendors: this.extractVendors(text),
+      invoiceNumbers: this.extractInvoiceNumbers(text),
+      dates: this.extractDates(text),
+      dueDates: this.extractDueDates(text),
+      amounts: this.extractAmounts(text),
+      subtotals: this.extractSubtotals(text),
+      taxAmounts: this.extractTaxAmounts(text),
+      lineItems: this.extractLineItems(text),
+    };
+  }
+
+  private extractVendors(text: string): string[] {
+    const vendors: string[] = [];
+    const lines = text.split('\n');
+
+    // Heuristic: vendor name is often on the first 1-3 non-empty lines
+    const candidates = lines.slice(0, 5).filter(l => l.trim().length > 2);
+    for (const line of candidates) {
+      const trimmed = line.trim();
+      // Skip lines that are obviously not vendor names (all digits, URLs, email, etc.)
+      if (
+        /^\d/.test(trimmed) ||
+        /^(invoice|bill|receipt|date|total|tax|due|subtotal)/i.test(trimmed) ||
+        /@/.test(trimmed) ||
+        /^https?:\/\//i.test(trimmed)
+      ) {
+        continue;
+      }
+      vendors.push(trimmed);
+    }
+
+    return [...new Set(vendors)];
+  }
+
+  private extractInvoiceNumbers(text: string): string[] {
+    const numbers: string[] = [];
+
+    // Common patterns: INV-001, Invoice #123, #INV2024-001, etc.
+    const patterns = [
+      /invoice\s*(?:no\.?|number|#)\s*([A-Z0-9][A-Z0-9\-_\/]{2,20})/gi,
+      /inv(?:oice)?\s*[-#:]?\s*([A-Z0-9][A-Z0-9\-_\/]{2,20})/gi,
+      /#\s*([A-Z0-9][A-Z0-9\-_\/]{2,20})/gi,
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(text)) !== null) {
+        if (match[1]) numbers.push(match[1].toUpperCase());
+      }
+    }
+
+    return [...new Set(numbers)];
+  }
+
+  private extractDates(text: string): Date[] {
+    const dates: Date[] = [];
+
+    // Common date formats: MM/DD/YYYY, DD-MM-YYYY, Month DD YYYY, YYYY-MM-DD
+    const patterns = [
+      /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/g,
+      /\b(\d{4})-(\d{2})-(\d{2})\b/g,
+      /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{4})\b/gi,
+    ];
+
+    // Avoid parsing due dates as plain dates
+    const dueDateLine = /due\s*(?:date|by|on)?[:\s]+(.+)/gi;
+    const dueDateMatches = new Set<string>();
+    let m;
+    while ((m = dueDateLine.exec(text)) !== null) {
+      dueDateMatches.add(m[1].trim());
+    }
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(text)) !== null) {
+        try {
+          const dateStr = match[0];
+          // Skip if this text is part of a "due date" line
+          const isInDueLine = [...dueDateMatches].some(d => d.includes(dateStr));
+          if (isInDueLine) continue;
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) dates.push(d);
+        } catch (_) {
+          // ignore parse errors
+        }
+      }
+    }
+
+    return dates;
+  }
+
+  private extractDueDates(text: string): Date[] {
+    const dueDates: Date[] = [];
+
+    // Look for lines that mention "due" near a date
+    const dueDatePattern = /due\s*(?:date|by|on)?[:\s]+([^\n]+)/gi;
+    let match;
+    while ((match = dueDatePattern.exec(text)) !== null) {
+      const segment = match[1];
+      // Try to parse a date from the segment
+      const datePatterns = [
+        /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/,
+        /\b(\d{4})-(\d{2})-(\d{2})\b/,
+        /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{4})\b/i,
+      ];
+      for (const pat of datePatterns) {
+        const dm = pat.exec(segment);
+        if (dm) {
+          try {
+            const d = new Date(dm[0]);
+            if (!isNaN(d.getTime())) dueDates.push(d);
+          } catch (_) { /* ignore */ }
+        }
+      }
+    }
+
+    return dueDates;
+  }
+
+  private extractAmounts(text: string): number[] {
+    const amounts: number[] = [];
+
+    // Look for currency amounts near "total" keywords
+    const totalPattern = /(?:total|amount\s+due|balance\s+due)[:\s]*\$?\s*([\d,]+\.?\d*)/gi;
+    let match;
+    while ((match = totalPattern.exec(text)) !== null) {
+      const v = parseFloat(match[1].replace(/,/g, ''));
+      if (!isNaN(v) && v > 0) amounts.push(v);
+    }
+
+    // Also find all standalone dollar amounts
+    const amountPattern = /\$\s*([\d,]+\.?\d{2})\b/g;
+    while ((match = amountPattern.exec(text)) !== null) {
+      const v = parseFloat(match[1].replace(/,/g, ''));
+      if (!isNaN(v) && v > 0) amounts.push(v);
+    }
+
+    return [...new Set(amounts)];
+  }
+
+  private extractSubtotals(text: string): number[] {
+    const subtotals: number[] = [];
+    const pattern = /subtotal[:\s]*\$?\s*([\d,]+\.?\d*)/gi;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const v = parseFloat(match[1].replace(/,/g, ''));
+      if (!isNaN(v) && v > 0) subtotals.push(v);
+    }
+    return subtotals;
+  }
+
+  private extractTaxAmounts(text: string): number[] {
+    const taxAmounts: number[] = [];
+    const pattern = /(?:tax|gst|vat|hst)[:\s]*\$?\s*([\d,]+\.?\d*)/gi;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const v = parseFloat(match[1].replace(/,/g, ''));
+      if (!isNaN(v) && v > 0) taxAmounts.push(v);
+    }
+    return taxAmounts;
+  }
+
+  private extractLineItems(text: string): InvoiceLineItemCandidate[] {
+    const lineItems: InvoiceLineItemCandidate[] = [];
+    const lines = text.split('\n');
+
+    // Heuristic: lines with a description followed by a dollar amount
+    for (const line of lines) {
+      const m = /^(.+?)\s+(\d+)\s*x\s*\$?([\d,]+\.?\d+)\s*=?\s*\$?([\d,]+\.?\d+)?$/i.exec(line.trim());
+      if (m) {
+        lineItems.push({
+          description: m[1].trim(),
+          quantity: parseInt(m[2], 10),
+          unitPrice: parseFloat(m[3].replace(/,/g, '')),
+          total: m[4] ? parseFloat(m[4].replace(/,/g, '')) : undefined,
+        });
+      }
+    }
+
+    return lineItems;
+  }
+
   async normalize(
     candidates: InvoiceCandidates,
     ocrResult: OcrResult
