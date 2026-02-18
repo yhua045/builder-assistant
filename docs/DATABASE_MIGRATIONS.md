@@ -37,9 +37,30 @@ npm run db:generate
 
 This creates:
 - SQL migration file in `drizzle/migrations/` (e.g., `0001_add_column.sql`)
-- Updated `drizzle/migrations/migrations.js` for React Native bundling
+- Updated `drizzle/migrations/migrations.js` which imports the SQL files
 
-### 3. Migration Execution
+### 3. Update App Migrations
+
+**CRITICAL STEP**: The app uses a manual migration file because React Native Metro bundler doesn't support importing `.sql` files directly by default.
+
+Open `src/infrastructure/database/migrations.ts` and add the new migration manually:
+
+1. Copy the content of the generated `.sql` file in `drizzle/migrations/`
+2. Add a new entry to the `migrations` array:
+   ```typescript
+   {
+     tag: '000X_migration_name',
+     hash: '000X_migration_name', // Use the tag as hash for simplicity
+     folderMillis: Date.now(), // Use current timestamp
+     sql: [
+       // Paste SQL content here nicely formatted as strings
+       // Split by '--> statement-breakpoint' if needed
+     ],
+   }
+   ```
+3. Update imports if you prefer importing raw strings (optional but cleaner)
+
+### 4. Migration Execution
 
 **Automatic**: Migrations run automatically on app startup via `initDatabase()` in `src/infrastructure/database/connection.ts`
 
