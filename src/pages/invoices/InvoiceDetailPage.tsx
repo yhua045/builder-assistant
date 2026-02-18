@@ -5,7 +5,7 @@ import { ArrowLeft, Edit, Trash2 } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useInvoices } from '../../hooks/useInvoices';
-import InvoiceForm from '../../components/invoices/InvoiceForm';
+import { InvoiceForm } from '../../components/invoices/InvoiceForm';
 import type { Invoice } from '../../domain/entities/Invoice';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });

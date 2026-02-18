@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Text, TextInput } from 'react-native';
-import InvoiceForm from '../../src/components/invoices/InvoiceForm';
+import { InvoiceForm } from '../../src/components/invoices/InvoiceForm';
 import { Invoice } from '../../src/domain/entities/Invoice';
 
 describe('InvoiceForm', () => {

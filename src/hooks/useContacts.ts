@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 // Minimal hook stub that returns a simple in-memory list and a search API.
 export function useContacts() {
@@ -8,11 +8,11 @@ export function useContacts() {
     { id: '3', name: 'Jordan Lee', title: 'Contractor' },
   ]);
 
-  const search = async (query: string) => {
+  const search = useCallback(async (query: string) => {
     if (!query) return contacts;
     const q = query.toLowerCase();
     return contacts.filter((c) => c.name.toLowerCase().includes(q) || (c.title || '').toLowerCase().includes(q));
-  };
+  }, [contacts]);
 
   return { contacts, search };
 }

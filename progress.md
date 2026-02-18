@@ -552,3 +552,73 @@ Current Milestone: Invoice Module Phase 2 - File Upload & OCR (Issue #70)
 - Wire lifecycle actions into invoice list/detail views when UI is implemented
 
 ---
+
+**Date**: 2026-02-18  
+**Branch**: issue-78  
+**Scope**: InvoiceScreen Popup - Upload PDF or Manual Entry (Issue #78)
+
+**Key Decisions**:
+- **Cache-then-Save Pattern**: PDF metadata cached in memory; zero DB writes until user submits InvoiceForm (prevents ghost Document records)
+- **Immediate File Copy**: Files copied to app private storage immediately after selection (survives original file deletion)
+- **Dependency Injection**: File picker and file system adapters injectable via props for testability
+- **Interface-Based Design**: Created abstractions (IFilePickerAdapter, IFileSystemAdapter) for platform independence
+- **PDF Validation**: Type checking (application/pdf) and size limit (20MB) enforced at selection time
+- **testID-Based Testing**: Used testID props for reliable test targeting (avoids NativeWind className issues)
+
+**Completed This Session** (Following TDD workflow):
+- ✅ Created abstraction layer interfaces:
+  - `IFilePickerAdapter.ts` - Document picker interface
+  - `IFileSystemAdapter.ts` - File system operations interface
+  - `PdfFileMetadata.ts` - PDF metadata type definition
+  - `fileValidation.ts` - PDF validation utility (type & size < 20MB)
+
+- ✅ Implemented platform-specific adapters:
+  - `MobileFilePickerAdapter.ts` - React Native document picker (uses `react-native-document-picker`)
+  - `MobileFileSystemAdapter.ts` - File operations (uses `react-native-fs`)
+
+- ✅ Built UI components:
+  - `InvoiceScreen.tsx` - Main modal with two flows:
+    1. Upload PDF → validate → copy to app storage → cache metadata → navigate to InvoiceForm
+    2. Manual Entry → navigate to InvoiceForm without pdfFile
+  - Updated `InvoiceForm.tsx` - Added `pdfFile?: PdfFileMetadata` prop with visual PDF indicator
+
+**Test Status**:
+- All tests passing: **11 tests** (9 unit + 2 integration)
+- TypeScript check: ✅ passes (`npx tsc --noEmit`)
+- Test suites: 2 passed
+
+**Pending Tasks** (Issue #78 remaining work):
+1. **Implement atomic Document+Invoice save flow**:
+   - Wire up `CreateInvoiceUseCase` to handle Document creation
+   - Implement atomic transaction: Create Document → Create Invoice with documentId
+   - Uncomment and verify 4 deferred integration tests
+
+2. **Navigation wiring**:
+   - Add InvoiceScreen modal trigger to Dashboard (AFB "Add Invoice" button)
+   - Wire InvoiceListPage to open InvoiceScreen
+
+3. **Future enhancements** (optional):
+   - Background cleanup job for orphaned PDF files (files in app storage not linked to Documents)
+   - PDF preview/viewer within the app
+   - Multi-file upload support
+
+**Next Steps**:
+- Review design doc ([design/issue-78-invoice-screen-plan.md](design/issue-78-invoice-screen-plan.md))
+- Implement CreateInvoiceUseCase integration for atomic saves
+- Wire InvoiceScreen into Dashboard navigation
+- Open PR from `issue-78` → `master` with this progress summary
+
+**References**:
+- Design doc: `design/issue-78-invoice-screen-plan.md`
+- Related: Issue #67 (Invoice Module Phase 1), Issue #70 (Invoice OCR)
+
+---
+
+## Issue #78 — Quick Summary (appended)
+
+- **Scope:** Modal for Add Invoice — upload PDF or manual entry.
+- **Key decisions:** cache-then-save; immediate file copy to app storage; DI adapters for file picker & FS; PDF validation (MIME + 20MB); prefer `testID` for tests.
+- **Done:** interfaces + mobile adapters, `InvoiceScreen` UI, `InvoiceForm` updates, PDF validation, Jest mocks, 11 tests passing, tsc passes.
+- **Next:** wire atomic Document+Invoice save in `CreateInvoiceUseCase`, add navigation triggers, optional file cleanup/preview.
+
+Date: 2026-02-18

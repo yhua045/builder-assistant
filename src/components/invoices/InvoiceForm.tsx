@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Invoice, InvoiceLineItem } from '../../domain/entities/Invoice';
 import DatePickerInput from '../inputs/DatePickerInput';
+import { PdfFileMetadata } from '../../types/PdfFileMetadata';
 
 export interface InvoiceFormProps {
   mode: 'create' | 'edit';
@@ -18,6 +19,7 @@ export interface InvoiceFormProps {
   onUpdate?: (invoice: Invoice) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  pdfFile?: PdfFileMetadata; // Optional PDF file metadata (for upload flow)
 }
 
 interface FormErrors {
@@ -29,13 +31,14 @@ interface FormErrors {
   lineItems?: string;
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({
+export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   mode,
   initialValues,
   onCreate,
   onUpdate,
   onCancel,
   isLoading = false,
+  pdfFile,
 }) => {
   // Core fields
   const [invoiceNumber, setInvoiceNumber] = useState(initialValues?.externalReference || '');
@@ -162,6 +165,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   return (
     <ScrollView style={styles.container} testID="invoice-form">
+      {/* PDF File Indicator */}
+      {pdfFile && (
+        <View style={styles.pdfIndicator}>
+          <Text style={styles.pdfIndicatorTitle}>📄 PDF Attached</Text>
+          <Text style={styles.pdfIndicatorText}>{pdfFile.name}</Text>
+          <Text style={styles.pdfIndicatorSize}>
+            {(pdfFile.size / 1024).toFixed(1)} KB
+          </Text>
+        </View>
+      )}
+
       <View style={styles.formSection}>
         <Text style={styles.sectionTitle}>Invoice Details</Text>
 
@@ -333,6 +347,29 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  pdfIndicator: {
+    backgroundColor: '#e0f2fe',
+    borderWidth: 1,
+    borderColor: '#0ea5e9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  pdfIndicatorTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0369a1',
+    marginBottom: 4,
+  },
+  pdfIndicatorText: {
+    fontSize: 14,
+    color: '#075985',
+    marginBottom: 2,
+  },
+  pdfIndicatorSize: {
+    fontSize: 12,
+    color: '#0c4a6e',
+  },
   formSection: {
     marginBottom: 24,
   },
@@ -403,5 +440,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
 });
-
-export default InvoiceForm;

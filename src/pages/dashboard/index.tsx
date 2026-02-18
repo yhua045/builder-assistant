@@ -7,7 +7,7 @@ import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
-import InvoiceForm from '../../components/invoices/InvoiceForm';
+import { InvoiceForm } from '../../components/invoices/InvoiceForm';
 import { useInvoices } from '../../hooks/useInvoices';
 import { QuotationScreen } from '../quotations/QuotationScreen';
 import { 
