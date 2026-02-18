@@ -13,6 +13,8 @@ import {
   ProcessInvoiceUploadUseCase,
 } from '../../application/usecases/invoice/ProcessInvoiceUploadUseCase';
 import { ExtractionResultsPanel } from '../../components/invoices/ExtractionResultsPanel';
+import { InvoiceForm } from '../../components/invoices/InvoiceForm';
+import { useInvoices } from '../../hooks/useInvoices';
 import { normalizedInvoiceToFormValues } from '../../utils/normalizedInvoiceToFormValues';
 import { Invoice } from '../../domain/entities/Invoice';
 
@@ -21,7 +23,8 @@ type ProcessingStep = 'idle' | 'copying' | 'ocr' | 'normalizing' | 'review' | 'e
 
 interface InvoiceScreenProps {
   onClose: () => void;
-  onNavigateToForm: (options: {
+  /** @deprecated: prefer inline form via view state; kept for backward compat in tests */
+  onNavigateToForm?: (options: {
     mode: 'create';
     pdfFile?: PdfFileMetadata;
     initialValues?: Partial<Invoice>;
@@ -49,6 +52,12 @@ export const InvoiceScreen = ({
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [normalizedResult, setNormalizedResult] = useState<NormalizedInvoice | null>(null);
   const [cachedPdfFile, setCachedPdfFile] = useState<PdfFileMetadata | null>(null);
+  // View state for inline form embedding
+  const [view, setView] = useState<'upload' | 'form' | 'review' | 'error'>('upload');
+  const [formInitialValues, setFormInitialValues] = useState<Partial<Invoice> | undefined>(undefined);
+  const [formPdfFile, setFormPdfFile] = useState<PdfFileMetadata | undefined>(undefined);
+
+  const { createInvoice, updateInvoice, loading: invoicesLoading } = useInvoices();
 
   // Use provided adapters or create default instances
   const filePicker = filePickerAdapter ?? new MobileFilePickerAdapter();
@@ -66,7 +75,9 @@ export const InvoiceScreen = ({
     if (!useCase) {
       // No OCR adapters injected — skip to form directly
       setProcessingStep('idle');
-      onNavigateToForm({ mode: 'create', pdfFile });
+      setFormPdfFile(pdfFile);
+      setFormInitialValues(undefined);
+      setView('form');
       return;
     }
 
@@ -136,16 +147,16 @@ export const InvoiceScreen = ({
   };
 
   const handleManualEntry = () => {
-    onNavigateToForm({ mode: 'create' });
+    setFormInitialValues(undefined);
+    setFormPdfFile(undefined);
+    setView('form');
   };
 
   const handleAcceptExtraction = (result: NormalizedInvoice) => {
     const initialValues = normalizedInvoiceToFormValues(result);
-    onNavigateToForm({
-      mode: 'create',
-      pdfFile: cachedPdfFile ?? undefined,
-      initialValues,
-    });
+    setFormInitialValues(initialValues);
+    setFormPdfFile(cachedPdfFile ?? undefined);
+    setView('form');
   };
 
   const handleRetryExtraction = async () => {
@@ -161,11 +172,28 @@ export const InvoiceScreen = ({
   };
 
   const handleFallbackToManual = () => {
-    onNavigateToForm({ mode: 'create', pdfFile: cachedPdfFile ?? undefined });
+    setFormInitialValues(undefined);
+    setFormPdfFile(cachedPdfFile ?? undefined);
+    setView('form');
+  };
+
+  const handleFormSave = async (data: any) => {
+    // data is the invoice DTO from InvoiceForm
+    const result = await createInvoice(data);
+    if (result.success) {
+      onClose();
+    } else {
+      Alert.alert('Error', result.error || 'Failed to save invoice');
+    }
+  };
+
+  const handleFormCancel = () => {
+    // Return to upload view
+    setView('upload');
   };
 
   // ── Render: ExtractionResultsPanel (review state) ───────────────────────
-  if (processingStep === 'review' && normalizedResult) {
+  if (processingStep === 'review' && normalizedResult && view !== 'form') {
     return (
       <View className="flex-1 bg-background" testID="invoice-screen">
         <View className="px-4 pt-8 pb-2 flex-row items-center justify-between">
@@ -182,6 +210,29 @@ export const InvoiceScreen = ({
           onAccept={handleAcceptExtraction}
           onRetry={handleRetryExtraction}
           onEdit={() => {/* inline edits tracked inside ExtractionResultsPanel */}}
+        />
+      </View>
+    );
+  }
+
+  // Render inline form when view === 'form'
+  if (view === 'form') {
+    return (
+      <View className="flex-1 bg-background" testID="invoice-screen">
+        <View className="px-4 pt-4 pb-2 flex-row items-center">
+          <Pressable onPress={() => setView('upload')} testID="invoice-form-back">
+            <Text className="text-primary">← Back</Text>
+          </Pressable>
+          <Text className="text-2xl font-bold text-foreground ml-4">New Invoice</Text>
+        </View>
+        <InvoiceForm
+          mode="create"
+          initialValues={formInitialValues}
+          onCreate={handleFormSave}
+          onCancel={handleFormCancel}
+          isLoading={invoicesLoading}
+          pdfFile={formPdfFile}
+          embedded
         />
       </View>
     );

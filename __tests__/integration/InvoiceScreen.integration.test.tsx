@@ -147,17 +147,12 @@ describe('InvoiceScreen integration', () => {
       expect.stringContaining('invoice_')
     );
 
-    // Verify navigation was called with pdfFile metadata
-    expect(mockNavigate).toHaveBeenCalledWith({
-      mode: 'create',
-      pdfFile: expect.objectContaining({
-        uri: expect.stringContaining('/app/documents/invoice_'),
-        originalUri: mockPickerResult.uri,
-        name: mockPickerResult.name,
-        size: mockPickerResult.size,
-        mimeType: mockPickerResult.type,
-      }),
-    });
+    // Embedded form should be rendered inline with pdf context; no navigation
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
+    // Verify the mock storage received the copied file
+    const storageKeys = Array.from(mockFileStorage.keys());
+    expect(storageKeys.find(k => k.includes('/app/documents/invoice_'))).toBeDefined();
   });
 
   it('copied PDF file exists in app storage after upload', async () => {
@@ -192,9 +187,9 @@ describe('InvoiceScreen integration', () => {
       await uploadButton.props.onPress();
     });
 
-    // Get the app storage URI from the navigation call
-    const pdfFile = mockNavigate.mock.calls[0][0].pdfFile;
-    const appStorageUri = pdfFile.uri;
+    // Get the app storage URI from the mock storage created by the mock file system
+    const storageKeys = Array.from(mockFileStorage.keys());
+    const appStorageUri = storageKeys[0];
 
     // Verify file exists in mock storage
     const fileExists = await mockFileSystem.exists(appStorageUri);
@@ -363,17 +358,11 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
       testRenderer!.root.findByProps({ testID: 'accept-button' }).props.onPress();
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mode: 'create',
-        initialValues: expect.objectContaining({
-          issuerName: 'Acme Corp',
-          externalReference: 'INV-001',
-          total: 500,
-          currency: 'USD',
-        }),
-      }),
-    );
+    // The embedded form should be rendered with prefilled initial values
+    expect(mockNavigate).not.toHaveBeenCalled();
+    const form = testRenderer!.root.findByProps({ testID: 'invoice-form' });
+    const vendorInput = testRenderer!.root.findByProps({ testID: 'invoice-form-vendor-input' });
+    expect(vendorInput.props.value).toBe('Acme Corp');
   });
 
   it('OCR failure → error state → retry succeeds → review panel', async () => {
@@ -467,14 +456,15 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
       testRenderer!.root.findByProps({ testID: 'fallback-manual-button' }).props.onPress();
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mode: 'create',
-        pdfFile: expect.objectContaining({ name: 'inv.jpg' }),
-      }),
-    );
-    const call = mockNavigate.mock.calls[0][0];
-    expect(call.initialValues).toBeUndefined();
+    // Embedded form should be shown with cached pdfFile; no navigation
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
+    const texts = testRenderer!.root
+      .findAllByType(require('react-native').Text)
+      .map((t: any) => t.props.children)
+      .flat()
+      .join(' ');
+    expect(texts).toContain('inv.jpg');
   });
 
   it('PDF upload skips OCR and shows review panel with empty data', async () => {

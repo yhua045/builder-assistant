@@ -20,6 +20,8 @@ export interface InvoiceFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   pdfFile?: PdfFileMetadata; // Optional PDF file metadata (for upload flow)
+  /** When true the form is rendered embedded inside another screen and should use compact padding */
+  embedded?: boolean;
 }
 
 interface FormErrors {
@@ -39,6 +41,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   onCancel,
   isLoading = false,
   pdfFile,
+  embedded = false,
 }) => {
   // Core fields
   const [invoiceNumber, setInvoiceNumber] = useState(initialValues?.externalReference || '');
@@ -163,8 +166,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     }
   };
 
+  const containerStyle = embedded ? styles.containerEmbedded : styles.container;
+
   return (
-    <ScrollView style={styles.container} testID="invoice-form">
+    <ScrollView style={containerStyle} testID="invoice-form">
       {/* PDF File Indicator */}
       {pdfFile && (
         <View style={styles.pdfIndicator}>
@@ -346,6 +351,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  containerEmbedded: {
+    flex: 1,
+    paddingTop: 8,
+    paddingHorizontal: 12,
   },
   pdfIndicator: {
     backgroundColor: '#e0f2fe',
