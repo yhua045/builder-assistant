@@ -7,8 +7,7 @@ import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
 import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
-import { InvoiceForm } from '../../components/invoices/InvoiceForm';
-import { useInvoices } from '../../hooks/useInvoices';
+import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
 import { 
   DollarSign, 
@@ -118,7 +117,6 @@ export default function DashboardScreen() {
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   
-  const { createInvoice } = useInvoices();
   const [showQuotation, setShowQuotation] = useState(false);
 
   const handleQuickAction = (actionId: string) => {
@@ -133,12 +131,7 @@ export default function DashboardScreen() {
     // Handle other actions...
   };
 
-  const handleCreateInvoice = async (invoice: any) => {
-    const result = await createInvoice(invoice);
-    if (result.success) {
-      setShowAddInvoice(false);
-    }
-  };
+  // Invoice creation is handled inside InvoiceScreen; Dashboard only toggles modal visibility.
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -242,14 +235,7 @@ export default function DashboardScreen() {
         onRequestClose={() => setShowAddInvoice(false)}
         testID="add-invoice-modal"
       >
-        <SafeAreaView className="flex-1 bg-background">
-          <InvoiceForm
-            mode="create"
-            onCreate={handleCreateInvoice}
-            onCancel={() => setShowAddInvoice(false)}
-            isLoading={false}
-          />
-        </SafeAreaView>
+        <InvoiceScreen onClose={() => setShowAddInvoice(false)} />
       </Modal>
       {/* Quotation Modal */}
       <QuotationScreen
