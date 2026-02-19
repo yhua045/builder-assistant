@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Task } from '../../domain/entities/Task';
+import { TaskDraft } from '../../application/services/IVoiceParsingService';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { X, Save } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
@@ -9,19 +10,21 @@ cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true }
 cssInterop(Save, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 interface Props {
-  initialValues?: Partial<Task>;
+  initialValues?: Partial<Task> | TaskDraft;
   onSubmit: (data: Partial<Task>) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
 export function TaskForm({ initialValues, onSubmit, onCancel, isLoading }: Props) {
-  const [title, setTitle] = useState(initialValues?.title || '');
-  const [notes, setNotes] = useState(initialValues?.notes || '');
-  const [projectId, setProjectId] = useState(initialValues?.projectId || '');
-  const [dueDate, setDueDate] = useState<Date | null>(initialValues?.dueDate ? new Date(initialValues.dueDate) : null);
-  const [status, setStatus] = useState<Task['status']>(initialValues?.status || 'pending');
-  const [priority, setPriority] = useState<Task['priority']>(initialValues?.priority || 'medium');
+  // Accept values from TaskDraft (voice parsing) or Partial<Task>
+  const [title, setTitle] = useState((initialValues as any)?.title || '');
+  const [notes, setNotes] = useState((initialValues as any)?.notes || '');
+  const initialAsTask = initialValues as Partial<Task> | undefined;
+  const [projectId, setProjectId] = useState(initialAsTask?.projectId || '');
+  const [dueDate, setDueDate] = useState<Date | null>(initialAsTask?.dueDate ? new Date(initialAsTask.dueDate as string) : null);
+  const [status, setStatus] = useState<Task['status']>(initialAsTask?.status || 'pending');
+  const [priority, setPriority] = useState<Task['priority']>(initialAsTask?.priority || 'medium');
   
   const handleSubmit = async () => {
     if (!title.trim()) {

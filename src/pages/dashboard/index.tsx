@@ -119,6 +119,7 @@ export default function DashboardScreen() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
+  const [showAdHocTask, setShowAdHocTask] = useState(false);
   
   const [showQuotation, setShowQuotation] = useState(false);
 
@@ -132,6 +133,8 @@ export default function DashboardScreen() {
       setShowSnapReceipt(true);
     } else if (actionId === '2') { // Add Invoice
       setShowAddInvoice(true);
+    } else if (actionId === '5') { // Ad Hoc Task
+      setShowAdHocTask(true);
     } else if (actionId === '3') { // Add Quote
       setShowQuotation(true);
     }
@@ -249,6 +252,21 @@ export default function DashboardScreen() {
           pdfConverter={invoicePdfConverter}
         />
       </Modal>
+      {/* Ad Hoc Task Modal */}
+      {showAdHocTask && (
+        <Modal
+          visible={showAdHocTask}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowAdHocTask(false)}
+        >
+          {/* Lazy-load to avoid circular imports in tests; require inside render */}
+          {(() => {
+            const TaskScreen = require('../tasks/TaskScreen').default;
+            return <TaskScreen onClose={() => setShowAdHocTask(false)} />;
+          })()}
+        </Modal>
+      )}
       {/* Quotation Modal */}
       <QuotationScreen
         visible={showQuotation}
