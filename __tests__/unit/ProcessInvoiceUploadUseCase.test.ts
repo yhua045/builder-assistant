@@ -5,6 +5,8 @@ import {
   InvoiceCandidates,
   NormalizedInvoice,
 } from '../../src/application/ai/IInvoiceNormalizer';
+import { MockPdfConverter } from '../../__mocks__/MockPdfConverter';
+import { PdfConversionError, PdfPageImage } from '../../src/infrastructure/files/IPdfConverter';
 
 const makeOcrResult = (text = 'Acme Corp\nInvoice #INV-001\nTotal: $500.00'): OcrResult => ({
   fullText: text,
@@ -129,7 +131,7 @@ describe('ProcessInvoiceUploadUseCase', () => {
     });
   });
 
-  describe('PDF files (OCR skip)', () => {
+  describe('PDF files (OCR skip — no converter provided)', () => {
     it('skips OCR for PDF files and returns empty normalized invoice', async () => {
       const ocrAdapter = makeMockOcr();
       const normalizer = makeMockNormalizer();
@@ -246,6 +248,143 @@ describe('ProcessInvoiceUploadUseCase', () => {
         size: input.fileSize,
         mimeType: input.mimeType,
       });
+    });
+  });
+
+  // ─── PDF path WITH converter ───────────────────────────────────────────────
+
+  describe('PDF files (with IPdfConverter provided)', () => {
+    const pdfInput = {
+      fileUri: 'file:///app/documents/invoice.pdf',
+      filename: 'invoice.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 102400,
+    };
+
+    function makePageOcrResult(text: string, pageIndex: number): OcrResult {
+      return {
+        fullText: text,
+        tokens: [],
+        imageUri: `file:///tmp/pdf_mock_p${pageIndex}.jpg`,
+      };
+    }
+
+    it('calls pdfConverter.convertToImages with the PDF URI', async () => {
+      const pdfConverter = new MockPdfConverter();
+      const ocrAdapter = makeMockOcr(makePageOcrResult('Acme Corp\nTotal: $100', 0));
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await useCase.execute(pdfInput);
+
+      // Verify OCR was called with the converted image URI (not the PDF URI)
+      expect(ocrAdapter.extractText).toHaveBeenCalledWith('file:///tmp/pdf_mock_p0.jpg');
+      expect(ocrAdapter.extractText).not.toHaveBeenCalledWith(pdfInput.fileUri);
+    });
+
+    it('calls ocrAdapter.extractText once per page for a single-page PDF', async () => {
+      const pdfConverter = new MockPdfConverter([
+        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
+      ]);
+      const ocrAdapter = makeMockOcr(makePageOcrResult('Invoice text p0', 0));
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await useCase.execute(pdfInput);
+
+      expect(ocrAdapter.extractText).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls ocrAdapter.extractText once per page for a multi-page PDF', async () => {
+      const pdfConverter = new MockPdfConverter([
+        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
+        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
+        { uri: 'file:///tmp/p2.jpg', width: 1240, height: 1754, pageIndex: 2 },
+      ]);
+      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
+        extractText: jest.fn()
+          .mockResolvedValueOnce(makePageOcrResult('Page 0 text', 0))
+          .mockResolvedValueOnce(makePageOcrResult('Page 1 text', 1))
+          .mockResolvedValueOnce(makePageOcrResult('Page 2 text', 2)),
+      };
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await useCase.execute(pdfInput);
+
+      expect(ocrAdapter.extractText).toHaveBeenCalledTimes(3);
+    });
+
+    it('concatenates OCR text from all pages before normalization', async () => {
+      const pdfConverter = new MockPdfConverter([
+        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
+        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
+      ]);
+      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
+        extractText: jest.fn()
+          .mockResolvedValueOnce(makePageOcrResult('Page zero text', 0))
+          .mockResolvedValueOnce(makePageOcrResult('Page one text', 1)),
+      };
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await useCase.execute(pdfInput);
+
+      const combinedText: string = normalizer.extractCandidates.mock.calls[0][0];
+      expect(combinedText).toContain('Page zero text');
+      expect(combinedText).toContain('Page one text');
+    });
+
+    it('returns a NormalizedInvoice (not empty) for a PDF with converter', async () => {
+      const pdfConverter = new MockPdfConverter();
+      const ocrAdapter = makeMockOcr(makePageOcrResult('Acme Corp\nTotal: $500', 0));
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      const result = await useCase.execute(pdfInput);
+
+      expect(result.normalized.vendor).toBe('Acme Corp');
+      expect(result.normalized.total).toBe(500);
+    });
+
+    it('returns empty rawOcrText for a zero-page PDF', async () => {
+      const pdfConverter = new MockPdfConverter([]); // zero pages
+      const ocrAdapter = makeMockOcr();
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      const result = await useCase.execute(pdfInput);
+
+      expect(result.rawOcrText).toBe('');
+      expect(ocrAdapter.extractText).not.toHaveBeenCalled();
+    });
+
+    it('propagates PdfConversionError as Invoice processing failed', async () => {
+      const pdfConverter = new MockPdfConverter(
+        [{ uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 }],
+        true,
+        'INVALID_PDF',
+        'Corrupt PDF',
+      );
+      const ocrAdapter = makeMockOcr();
+      const normalizer = makeMockNormalizer();
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await expect(useCase.execute(pdfInput)).rejects.toThrow('Invoice processing failed');
+    });
+
+    it('includes the original PDF error message in the thrown error', async () => {
+      const pdfConverter = new MockPdfConverter(
+        [{ uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 }],
+        true,
+        'INVALID_PDF',
+        'Corrupt PDF file',
+      );
+      const ocrAdapter = makeMockOcr();
+      const normalizer = makeMockNormalizer();
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await expect(useCase.execute(pdfInput)).rejects.toThrow('Corrupt PDF file');
     });
   });
 });
