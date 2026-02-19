@@ -1,5 +1,6 @@
-import { IOcrAdapter } from '../../services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../../ai/IInvoiceNormalizer';
+import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 
 export interface ProcessInvoiceUploadInput {
   /** App-private URI to the file (already copied by InvoiceScreen) */
@@ -28,18 +29,23 @@ export interface ProcessInvoiceUploadOutput {
  *
  * Orchestrates the end-to-end pipeline after a file has been selected and
  * copied to app private storage:
- *   1. OCR → extract raw text from the image/file
- *   2. extractCandidates → convert raw text into structured field candidates
- *   3. normalize → apply business rules and return a NormalizedInvoice
- *   4. Return normalized result + a DocumentRef ready for atomic save
+ *   1. (PDF only) Convert PDF pages to images via IPdfConverter
+ *   2. OCR → extract raw text from the image(s)
+ *   3. extractCandidates → convert raw text into structured field candidates
+ *   4. normalize → apply business rules and return a NormalizedInvoice
+ *   5. Return normalized result + a DocumentRef ready for atomic save
  *
- * For PDF files, the OCR step is skipped (ML Kit only handles images) and an
- * empty NormalizedInvoice is returned so the user can fill the form manually.
+ * When `pdfConverter` is provided and the uploaded file is a PDF, each page is
+ * rendered to a raster image and fed through the OCR pipeline. If no
+ * `pdfConverter` is supplied, PDF uploads fall back to returning an empty
+ * NormalizedInvoice so the user can fill the form manually (backward-compatible
+ * behaviour).
  */
 export class ProcessInvoiceUploadUseCase {
   constructor(
     private readonly ocrAdapter: IOcrAdapter,
     private readonly normalizer: IInvoiceNormalizer,
+    private readonly pdfConverter?: IPdfConverter,
   ) {}
 
   async execute(input: ProcessInvoiceUploadInput): Promise<ProcessInvoiceUploadOutput> {
@@ -52,8 +58,56 @@ export class ProcessInvoiceUploadUseCase {
       mimeType,
     };
 
-    // PDF files cannot be processed by ML Kit OCR — return empty normalized data
+    // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
+      // If no converter is wired up, fall back to empty result (graceful degradation)
+      if (!this.pdfConverter) {
+        return {
+          normalized: this.emptyNormalizedInvoice(),
+          documentRef,
+          rawOcrText: '',
+        };
+      }
+
+      try {
+        return await this.processPdf(fileUri, documentRef);
+      } catch (err: any) {
+        throw new Error(
+          `Invoice processing failed: ${err?.message ?? 'Unknown error'}`,
+        );
+      }
+    }
+
+    // ── Image path ───────────────────────────────────────────────────────────
+    try {
+      const ocrResult = await this.ocrAdapter.extractText(fileUri);
+      const rawOcrText = ocrResult.fullText;
+
+      const candidates = this.normalizer.extractCandidates(rawOcrText);
+      const normalized = await this.normalizer.normalize(candidates, ocrResult);
+
+      return { normalized, documentRef, rawOcrText };
+    } catch (err: any) {
+      throw new Error(
+        `Invoice processing failed: ${err?.message ?? 'Unknown error'}`,
+      );
+    }
+  }
+
+  // ─── private helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Convert a PDF to images, run OCR on every page, merge the text, and
+   * pass the result through the normalizer pipeline.
+   */
+  private async processPdf(
+    pdfUri: string,
+    documentRef: DocumentRef,
+  ): Promise<ProcessInvoiceUploadOutput> {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const pages = await this.pdfConverter!.convertToImages(pdfUri);
+
+    if (pages.length === 0) {
       return {
         normalized: this.emptyNormalizedInvoice(),
         documentRef,
@@ -61,25 +115,31 @@ export class ProcessInvoiceUploadUseCase {
       };
     }
 
-    // Step 1: OCR
-    let rawOcrText = '';
-    try {
-      const ocrResult = await this.ocrAdapter.extractText(fileUri);
-      rawOcrText = ocrResult.fullText;
+    // Run OCR on each page sequentially to avoid memory pressure
+    const pageTexts: string[] = [];
+    let firstOcrResult: OcrResult | null = null;
 
-      // Step 2: Extract candidates from raw text
-      const candidates = this.normalizer.extractCandidates(rawOcrText);
-
-      // Step 3: Normalize candidates
-      const normalized = await this.normalizer.normalize(candidates, ocrResult);
-
-      return { normalized, documentRef, rawOcrText };
-    } catch (err: any) {
-      // Re-throw with a more descriptive message for the UI to handle
-      throw new Error(
-        `Invoice processing failed: ${err?.message ?? 'Unknown error'}`
-      );
+    for (const page of pages) {
+      const ocrResult = await this.ocrAdapter.extractText(page.uri);
+      pageTexts.push(ocrResult.fullText);
+      if (firstOcrResult === null) {
+        firstOcrResult = ocrResult;
+      }
     }
+
+    // Combine page texts with page separators
+    const rawOcrText =
+      pages.length === 1
+        ? pageTexts[0]
+        : pageTexts
+            .map((text, idx) => `--- Page ${idx + 1} ---\n${text}`)
+            .join('\n\n');
+
+    const candidates = this.normalizer.extractCandidates(rawOcrText);
+    // Use first page's OcrResult for layout context; pass combined text via candidates
+    const normalized = await this.normalizer.normalize(candidates, firstOcrResult!);
+
+    return { normalized, documentRef, rawOcrText };
   }
 
   private emptyNormalizedInvoice(): NormalizedInvoice {

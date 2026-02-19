@@ -12,6 +12,7 @@ import { IInvoiceNormalizer, NormalizedInvoice } from '../../application/ai/IInv
 import {
   ProcessInvoiceUploadUseCase,
 } from '../../application/usecases/invoice/ProcessInvoiceUploadUseCase';
+import { IPdfConverter } from '../../infrastructure/files/IPdfConverter';
 import { ExtractionResultsPanel } from '../../components/invoices/ExtractionResultsPanel';
 import { InvoiceForm } from '../../components/invoices/InvoiceForm';
 import { useInvoices } from '../../hooks/useInvoices';
@@ -35,6 +36,9 @@ interface InvoiceScreenProps {
   /** Optional OCR / AI adapters for dependency injection (testing) */
   ocrAdapter?: IOcrAdapter;
   invoiceNormalizer?: IInvoiceNormalizer;
+  /** Optional PDF converter for dependency injection. When provided, PDF uploads
+   * are converted to images before OCR. Defaults to no conversion (empty result). */
+  pdfConverter?: IPdfConverter;
   /** Feature flag — currently unused; reserved for future PDF OCR support */
   enablePdfParsing?: boolean;
 }
@@ -46,6 +50,7 @@ export const InvoiceScreen = ({
   fileSystemAdapter,
   ocrAdapter,
   invoiceNormalizer,
+  pdfConverter,
   enablePdfParsing = false,
 }: InvoiceScreenProps) => {
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
@@ -65,7 +70,7 @@ export const InvoiceScreen = ({
 
   const buildUseCase = (): ProcessInvoiceUploadUseCase | null => {
     if (ocrAdapter && invoiceNormalizer) {
-      return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer);
+      return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter);
     }
     return null;
   };
