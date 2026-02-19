@@ -45,24 +45,17 @@ jest.mock('../../src/pages/receipts/SnapReceiptScreen', () => {
   };
 });
 
-jest.mock('../../src/components/invoices/InvoiceForm', () => {
-  const MockInvoiceForm = (_props: any) => null;
-  MockInvoiceForm.displayName = 'MockInvoiceForm';
+jest.mock('../../src/pages/invoices/InvoiceScreen', () => {
+  const MockInvoiceScreen = (_props: any) => null;
 
-  const MockComponent = ({ mode, onCreate, onCancel }: any) => (
-    <MockInvoiceForm
-      testID="invoice-form-in-modal"
-      mode={mode}
-      onCreate={onCreate}
-      onCancel={onCancel}
-    />
+  const MockComponent = (props: any) => (
+    <MockInvoiceScreen testID="invoice-screen-in-modal" {...props} />
   );
-  MockComponent.displayName = 'InvoiceForm';
 
   return {
     __esModule: true,
     default: MockComponent,
-    InvoiceForm: MockComponent,
+    InvoiceScreen: MockComponent,
   };
 });
 
@@ -171,33 +164,16 @@ describe('Dashboard Invoice Integration', () => {
     expect(invoiceModal.length).toBeGreaterThan(0);
     expect(invoiceModal[0].props.visible).toBe(true);
 
-    // 6. Invoice form should be present with correct mode
-    const invoiceForm = root.findAllByProps({ testID: 'invoice-form-in-modal' });
-    expect(invoiceForm.length).toBeGreaterThan(0);
-    expect(invoiceForm[0].props.mode).toBe('create');
+    // 6. InvoiceScreen should be present in the modal
+    const invoiceScreen = root.findAllByProps({ testID: 'invoice-screen-in-modal' });
+    expect(invoiceScreen.length).toBeGreaterThan(0);
 
-    // 7. Submit the form
+    // 7. Simulate closing the InvoiceScreen after a successful save
     await act(async () => {
-      invoiceForm[0].props.onCreate({
-        vendor: 'Test Vendor',
-        total: 1000,
-        currency: 'USD',
-        status: 'draft',
-        paymentStatus: 'unpaid',
-      });
-      await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
+      invoiceScreen[0].props.onClose && invoiceScreen[0].props.onClose();
     });
 
-    // 8. Verify createInvoice was called
-    expect(defaultInvoiceHookReturn.createInvoice).toHaveBeenCalledWith({
-      vendor: 'Test Vendor',
-      total: 1000,
-      currency: 'USD',
-      status: 'draft',
-      paymentStatus: 'unpaid',
-    });
-
-    // 9. Modal should close after successful creation
+    // 8. Modal should close after InvoiceScreen calls onClose
     const modalsAfterCreate = root.findAllByProps({ testID: 'add-invoice-modal' });
     expect(modalsAfterCreate[0].props.visible).toBe(false);
   });
@@ -263,11 +239,12 @@ describe('Dashboard Invoice Integration', () => {
       addInvoiceButton.props.onPress();
     });
 
-    // Find and click cancel on form
-    const invoiceForm = root.findByProps({ testID: 'invoice-form-in-modal' });
+
+    // Find and call cancel on InvoiceScreen
+    const invoiceScreen = root.findByProps({ testID: 'invoice-screen-in-modal' });
 
     await act(async () => {
-      invoiceForm.props.onCancel();
+      invoiceScreen.props.onClose && invoiceScreen.props.onClose();
     });
 
     // Modal should close
@@ -321,23 +298,12 @@ describe('Dashboard Invoice Integration', () => {
       addInvoiceButton.props.onPress();
     });
 
-    const invoiceForm = root.findByProps({ testID: 'invoice-form-in-modal' });
+    // InvoiceScreen should be mounted when opening the modal
+    const invoiceScreen = root.findByProps({ testID: 'invoice-screen-in-modal' });
+    expect(invoiceScreen).toBeDefined();
 
-    // Submit form
-    await act(async () => {
-      invoiceForm.props.onCreate({
-        vendor: 'Test Vendor',
-        total: 1000,
-        currency: 'USD',
-      });
-      await new Promise<void>(resolve => setTimeout(() => resolve(), 10));
-    });
-
-    // createInvoice was called
-    expect(createInvoice).toHaveBeenCalled();
-
-    // Modal should stay open on error
-    const modalsAfterError = root.findAllByProps({ testID: 'add-invoice-modal' });
-    expect(modalsAfterError[0].props.visible).toBe(true);
+    // Since InvoiceScreen is mocked we cannot assert internal create behaviour here.
+    // Ensure createInvoice mock has not been invoked by Dashboard directly.
+    expect(createInvoice).not.toHaveBeenCalled();
   });
 });
