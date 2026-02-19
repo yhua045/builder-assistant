@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Invoice } from '../domain/entities/Invoice';
+import { Invoice, InvoiceEntity } from '../domain/entities/Invoice';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
@@ -85,7 +85,9 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
   const createInvoice = useCallback(
     async (invoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) => {
       try {
-        await createInvoiceUseCase.execute(invoice as Invoice);
+        // Ensure domain entity generates required defaults (id, timestamps, status, currency)
+        const entity = InvoiceEntity.create(invoice as any);
+        await createInvoiceUseCase.execute(entity.data());
         await loadInvoices(); // Refresh list
         return { success: true };
       } catch (err) {

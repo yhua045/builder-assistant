@@ -7,10 +7,10 @@
  *
  * Required native dependency
  * ──────────────────────────
- *   npm install rn-pdf-renderer
+ *   npm install react-native-pdf-renderer
  *   cd ios && pod install
  *
- * Until rn-pdf-renderer is installed, this class throws
+ * Until a compatible native renderer is available, this class throws
  * `PdfConversionError('UNKNOWN', 'Native PDF renderer is not available …')`
  * so callers can detect the missing dependency at runtime.
  *
@@ -39,14 +39,37 @@ interface RnPdfRenderer {
   ): Promise<{ width: number; height: number }>;
 }
 
+function isRendererModule(value: unknown): value is RnPdfRenderer {
+  return !!value &&
+    typeof (value as RnPdfRenderer).getPageCount === 'function' &&
+    typeof (value as RnPdfRenderer).renderPage === 'function';
+}
+
 /** Lazily required so the module is not imported at module-evaluation time. */
 function tryLoadRenderer(): RnPdfRenderer | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('rn-pdf-renderer').default as RnPdfRenderer;
+    const legacyModule = require('rn-pdf-renderer');
+    const legacyCandidate = legacyModule?.default ?? legacyModule;
+    if (isRendererModule(legacyCandidate)) {
+      return legacyCandidate;
+    }
+  } catch {
+    // continue and try the npm package name
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const npmModule = require('react-native-pdf-renderer');
+    const npmCandidate = npmModule?.default ?? npmModule;
+    if (isRendererModule(npmCandidate)) {
+      return npmCandidate;
+    }
   } catch {
     return null;
   }
+
+  return null;
 }
 
 /** Convert a DPI value into a scale factor relative to the 72-DPI PDF baseline. */
@@ -147,8 +170,9 @@ export class MobilePdfConverter implements IPdfConverter {
       throw new PdfConversionError(
         'UNKNOWN',
         'Native PDF renderer is not available. ' +
-          'Install rn-pdf-renderer (`npm install rn-pdf-renderer && cd ios && pod install`) ' +
-          'and rebuild the app.',
+          'This adapter requires a native module exposing getPageCount/renderPage. ' +
+          'Install react-native-pdf-renderer (`npm install react-native-pdf-renderer && cd ios && pod install`) ' +
+          'or provide a compatible renderer implementation, then rebuild the app.',
       );
     }
     return this.renderer;

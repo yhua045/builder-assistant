@@ -335,6 +335,35 @@ describe('ProcessInvoiceUploadUseCase', () => {
       expect(combinedText).toContain('Page one text');
     });
 
+    it('passes merged OCR result from all pages to normalizer.normalize', async () => {
+      const pdfConverter = new MockPdfConverter([
+        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
+        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
+      ]);
+      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
+        extractText: jest.fn()
+          .mockResolvedValueOnce({
+            fullText: 'Invoice header page 1',
+            tokens: [{ text: 'header', confidence: 1, bounds: { x: 1, y: 1, width: 10, height: 10 } }],
+            imageUri: 'file:///tmp/p0.jpg',
+          })
+          .mockResolvedValueOnce({
+            fullText: 'Total due page 2',
+            tokens: [{ text: 'total', confidence: 1, bounds: { x: 2, y: 2, width: 10, height: 10 } }],
+            imageUri: 'file:///tmp/p1.jpg',
+          }),
+      };
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+
+      await useCase.execute(pdfInput);
+
+      const normalizeArg = normalizer.normalize.mock.calls[0][1];
+      expect(normalizeArg.fullText).toContain('Invoice header page 1');
+      expect(normalizeArg.fullText).toContain('Total due page 2');
+      expect(normalizeArg.tokens).toHaveLength(2);
+    });
+
     it('returns a NormalizedInvoice (not empty) for a PDF with converter', async () => {
       const pdfConverter = new MockPdfConverter();
       const ocrAdapter = makeMockOcr(makePageOcrResult('Acme Corp\nTotal: $500', 0));

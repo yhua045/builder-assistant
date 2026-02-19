@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -9,6 +9,9 @@ import UrgentAlerts from './components/UrgentAlerts';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
+import { MobileOcrAdapter } from '../../infrastructure/ocr/MobileOcrAdapter';
+import { InvoiceNormalizer } from '../../application/ai/InvoiceNormalizer';
+import { PdfThumbnailConverter } from '../../infrastructure/files/PdfThumbnailConverter';
 import { 
   DollarSign, 
   Plus,
@@ -118,6 +121,10 @@ export default function DashboardScreen() {
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   
   const [showQuotation, setShowQuotation] = useState(false);
+
+  const invoiceOcrAdapter = useMemo(() => new MobileOcrAdapter(), []);
+  const invoiceNormalizer = useMemo(() => new InvoiceNormalizer(), []);
+  const invoicePdfConverter = useMemo(() => new PdfThumbnailConverter(), []);
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
@@ -235,7 +242,12 @@ export default function DashboardScreen() {
         onRequestClose={() => setShowAddInvoice(false)}
         testID="add-invoice-modal"
       >
-        <InvoiceScreen onClose={() => setShowAddInvoice(false)} />
+        <InvoiceScreen
+          onClose={() => setShowAddInvoice(false)}
+          ocrAdapter={invoiceOcrAdapter}
+          invoiceNormalizer={invoiceNormalizer}
+          pdfConverter={invoicePdfConverter}
+        />
       </Modal>
       {/* Quotation Modal */}
       <QuotationScreen

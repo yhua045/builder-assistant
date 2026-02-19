@@ -1,6 +1,7 @@
 import { IOcrAdapter, OcrResult } from '../../services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../../ai/IInvoiceNormalizer';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
+import { IOcrDocumentService, OcrDocumentService } from '../../services/IOcrDocumentService';
 
 export interface ProcessInvoiceUploadInput {
   /** App-private URI to the file (already copied by InvoiceScreen) */
@@ -46,6 +47,7 @@ export class ProcessInvoiceUploadUseCase {
     private readonly ocrAdapter: IOcrAdapter,
     private readonly normalizer: IInvoiceNormalizer,
     private readonly pdfConverter?: IPdfConverter,
+    private readonly ocrDocumentService: IOcrDocumentService = new OcrDocumentService(ocrAdapter),
   ) {}
 
   async execute(input: ProcessInvoiceUploadInput): Promise<ProcessInvoiceUploadOutput> {
@@ -83,8 +85,24 @@ export class ProcessInvoiceUploadUseCase {
       const ocrResult = await this.ocrAdapter.extractText(fileUri);
       const rawOcrText = ocrResult.fullText;
 
+      console.log('[InvoiceOCR] Single file OCR extracted', {
+        fileUri,
+        fullTextLength: ocrResult.fullText.length,
+        tokenCount: ocrResult.tokens.length,
+        ocrResult,
+      });
+
       const candidates = this.normalizer.extractCandidates(rawOcrText);
+      console.log('[InvoiceOCR] Candidate extraction (single file)', {
+        fileUri,
+        candidates,
+      });
+
       const normalized = await this.normalizer.normalize(candidates, ocrResult);
+      console.log('[InvoiceOCR] Normalized invoice (single file)', {
+        fileUri,
+        normalized,
+      });
 
       return { normalized, documentRef, rawOcrText };
     } catch (err: any) {
@@ -107,6 +125,12 @@ export class ProcessInvoiceUploadUseCase {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const pages = await this.pdfConverter!.convertToImages(pdfUri);
 
+    console.log('[InvoiceOCR] PDF converted to images', {
+      pdfUri,
+      pageCount: pages.length,
+      pageImageUris: pages.map((page) => page.uri),
+    });
+
     if (pages.length === 0) {
       return {
         normalized: this.emptyNormalizedInvoice(),
@@ -115,29 +139,31 @@ export class ProcessInvoiceUploadUseCase {
       };
     }
 
-    // Run OCR on each page sequentially to avoid memory pressure
-    const pageTexts: string[] = [];
-    let firstOcrResult: OcrResult | null = null;
+    const pageImageUris = pages.map((page) => page.uri);
+    const documentOcrResult = await this.ocrDocumentService.extractFromPages(pageImageUris);
+    const rawOcrText = documentOcrResult.rawText;
 
-    for (const page of pages) {
-      const ocrResult = await this.ocrAdapter.extractText(page.uri);
-      pageTexts.push(ocrResult.fullText);
-      if (firstOcrResult === null) {
-        firstOcrResult = ocrResult;
-      }
-    }
-
-    // Combine page texts with page separators
-    const rawOcrText =
-      pages.length === 1
-        ? pageTexts[0]
-        : pageTexts
-            .map((text, idx) => `--- Page ${idx + 1} ---\n${text}`)
-            .join('\n\n');
+    console.log('[InvoiceOCR] OCR extracted from converted pages', {
+      pdfUri,
+      pageCount: documentOcrResult.pageCount,
+      rawTextLength: rawOcrText.length,
+      mergedTokenCount: documentOcrResult.merged.tokens.length,
+      mergedOcrResult: documentOcrResult.merged,
+    });
 
     const candidates = this.normalizer.extractCandidates(rawOcrText);
-    // Use first page's OcrResult for layout context; pass combined text via candidates
-    const normalized = await this.normalizer.normalize(candidates, firstOcrResult!);
+    console.log('[InvoiceOCR] Candidate extraction (PDF)', {
+      pdfUri,
+      pageCount: documentOcrResult.pageCount,
+      candidates,
+    });
+
+    const normalized = await this.normalizer.normalize(candidates, documentOcrResult.merged);
+    console.log('[InvoiceOCR] Normalized invoice (PDF)', {
+      pdfUri,
+      pageCount: documentOcrResult.pageCount,
+      normalized,
+    });
 
     return { normalized, documentRef, rawOcrText };
   }

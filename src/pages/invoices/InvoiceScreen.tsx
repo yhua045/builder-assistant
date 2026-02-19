@@ -69,9 +69,28 @@ export const InvoiceScreen = ({
   const fileSystem = fileSystemAdapter ?? new MobileFileSystemAdapter();
 
   const buildUseCase = (): ProcessInvoiceUploadUseCase | null => {
+    console.log('[InvoiceScreen] OCR dependency check', {
+      hasOcrAdapter: !!ocrAdapter,
+      hasInvoiceNormalizer: !!invoiceNormalizer,
+      hasPdfConverter: !!pdfConverter,
+      enablePdfParsing,
+    });
+
     if (ocrAdapter && invoiceNormalizer) {
+      console.log('[InvoiceScreen] Building ProcessInvoiceUploadUseCase with dependencies', {
+        hasOcrAdapter: true,
+        hasInvoiceNormalizer: true,
+        hasPdfConverter: !!pdfConverter,
+      });
       return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter);
     }
+
+    console.log('[InvoiceScreen] OCR pipeline disabled - missing dependencies', {
+      hasOcrAdapter: !!ocrAdapter,
+      hasInvoiceNormalizer: !!invoiceNormalizer,
+      hasPdfConverter: !!pdfConverter,
+    });
+
     return null;
   };
 
@@ -79,6 +98,7 @@ export const InvoiceScreen = ({
     const useCase = buildUseCase();
     if (!useCase) {
       // No OCR adapters injected — skip to form directly
+      console.log('[InvoiceScreen] Skipping OCR pipeline and opening manual form (no use case)');
       setProcessingStep('idle');
       setFormPdfFile(pdfFile);
       setFormInitialValues(undefined);
@@ -93,9 +113,14 @@ export const InvoiceScreen = ({
       mimeType: pdfFile.mimeType ?? 'application/pdf',
       fileSize: pdfFile.size,
     });
-
+    
+    // Populate form directly with normalized OCR result (skip intermediate review)
     setNormalizedResult(output.normalized);
-    setProcessingStep('review');
+    const initialValues = normalizedInvoiceToFormValues(output.normalized);
+    setFormInitialValues(initialValues);
+    setFormPdfFile(pdfFile);
+    setProcessingStep('idle');
+    setView('form');
   };
 
   const handleUploadPdf = async () => {
