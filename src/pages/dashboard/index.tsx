@@ -252,20 +252,12 @@ export default function DashboardScreen() {
           pdfConverter={invoicePdfConverter}
         />
       </Modal>
-      {/* Ad Hoc Task Modal */}
+      {/* Ad Hoc Task (TaskScreen manages its own Modal) */}
       {showAdHocTask && (
-        <Modal
-          visible={showAdHocTask}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setShowAdHocTask(false)}
-        >
-          {/* Lazy-load to avoid circular imports in tests; require inside render */}
-          {(() => {
-            const TaskScreen = require('../tasks/TaskScreen').default;
-            return <TaskScreen onClose={() => setShowAdHocTask(false)} />;
-          })()}
-        </Modal>
+        (() => {
+          const TaskScreen = require('../tasks/TaskScreen').default;
+          return <TaskScreen onClose={() => setShowAdHocTask(false)} />;
+        })()
       )}
       {/* Quotation Modal */}
       <QuotationScreen
