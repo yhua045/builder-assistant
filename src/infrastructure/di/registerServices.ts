@@ -8,6 +8,8 @@ import { DrizzleTaskRepository } from '../repositories/DrizzleTaskRepository';
 import { DrizzleDocumentRepository } from '../repositories/DrizzleDocumentRepository';
 import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
+import { MockAudioRecorder } from '../voice/MockAudioRecorder';
+import { MockVoiceParsingService } from '../voice/MockVoiceParsingService';
 
 // Register default implementations
 container.registerSingleton('ProjectRepository', DrizzleProjectRepository);
@@ -19,4 +21,9 @@ container.registerSingleton('DocumentRepository', DrizzleDocumentRepository);
 container.registerSingleton('FileSystemAdapter', MobileFileSystemAdapter);
 container.registerSingleton('CameraService', MobileCameraAdapter);
 
+// Voice services — currently backed by mocks (swap for production adapters when available)
+container.registerSingleton('IAudioRecorder', MockAudioRecorder);
+container.registerSingleton('IVoiceParsingService', MockVoiceParsingService);
+
 export default container;
+
