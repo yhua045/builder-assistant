@@ -93,3 +93,41 @@
 - **Temp file cleanup**: Implement post-upload cleanup of `pdf_render/` cache directory.
 - **Manual QA**: Test with real single-page, multi-page, and landscape PDFs on iOS and Android devices.
 - **Max-pages UX**: Decide whether to surface a warning when a PDF exceeds the 10-page default cap.
+
+---
+
+## 5. Issue #94 — Voice Task Entry (2026-02-20)
+
+### Key Decisions
+- **Two-port architecture**: Split voice responsibility into two clean interfaces — `IAudioRecorder` (captures raw audio as `ArrayBuffer`) and `IVoiceParsingService` (converts `ArrayBuffer` → `TaskDraft`). This allows swapping each adapter independently (e.g. switch STT backend without touching the recorder).
+- **ArrayBuffer over file path**: Audio is decoded in-memory immediately after recording and the temp `.mp4` file is always deleted inside `stopRecording()` (try/finally). No audio persists on device beyond the duration of a single parse call.
+- **Singleton player**: `react-native-audio-recorder-player` exports a module-level singleton instance rather than a constructable class. `MobileAudioRecorder` holds a reference to that singleton; mocks replace the module via Jest `__mocks__`.
+- **Timer inside the hook**: `useVoiceTask` owns the elapsed-seconds counter and the auto-stop timer (`setInterval`). The interval callback holds a `useRef`-stabilised reference to `stopAndParse` to avoid stale closure bugs. The timer is always cleared (cancel / manual stop / auto-stop) before state transitions.
+- **Mocks wired into DI for dev**: `MockAudioRecorder` and `MockVoiceParsingService` registered as singletons in `registerServices.ts`. Swap for production adapters (`MobileAudioRecorder`, `RemoteVoiceParsingService`) by changing two lines once the STT backend is ready.
+- **TaskForm remount via key**: Both task pages use a React `key` prop on `<TaskForm>` that changes when a voice draft arrives. This forces `TaskForm` to remount and pick up new `initialValues` without modifying the form component itself.
+- **Draft merge strategy on Edit**: In `EditTaskPage`, only defined (non-`undefined`) draft fields overwrite the existing task. This ensures partial voice results (e.g. title only) do not blank out fields the user already set.
+
+### Completed
+- Design doc at `design/issue-94-voice-task-entry.md` (user story, port contracts, field mapping, open questions answered).
+- `react-native-audio-recorder-player` installed; `jest.config.js` `transformIgnorePatterns` updated.
+- `__mocks__/react-native-audio-recorder-player.js` — singleton mock (not constructor mock).
+- `src/infrastructure/voice/MobileAudioRecorder.ts` — concrete `IAudioRecorder`: writes AAC/MP4 to caches dir, reads as base64, decodes to `ArrayBuffer`, deletes temp file in finally block.
+- `src/infrastructure/voice/RemoteVoiceParsingService.ts` — skeleton `IVoiceParsingService` ready for a future `POST /api/voice/parse` STT backend (not wired into DI yet).
+- `src/hooks/useVoiceTask.ts` — extended with `elapsedSeconds`, `maxSeconds`, `cancel()`, auto-stop timer, and `MAX_RECORDING_SECONDS = 60` export.
+- `src/infrastructure/di/registerServices.ts` — voice mocks registered as singletons.
+- `src/components/tasks/VoiceRecordingOverlay.tsx` — new full-screen modal overlay with countdown timer, Done / Cancel buttons, and parsing spinner.
+- `src/pages/tasks/CreateTaskPage.tsx` — Voice button in header; overlay wired in; draft applied as `initialValues` on `TaskForm`.
+- `src/pages/tasks/EditTaskPage.tsx` — same Voice button + overlay; draft merged over existing task fields before passing to `TaskForm`.
+- 38 new tests across 4 suites — all passing; zero TypeScript errors introduced:
+  - `__tests__/unit/MobileAudioRecorder.test.ts` (8 tests)
+  - `__tests__/unit/ParseVoiceTaskUseCase.test.ts` (8 tests, replaced minimal stub)
+  - `__tests__/unit/useVoiceTask.test.tsx` (14 tests, replaced original 1-test file)
+  - `__tests__/integration/TaskPage.voice.integration.test.tsx` (8 tests, new)
+
+### Pending / Next Steps
+- **Native permissions**: Add `NSMicrophoneUsageDescription` to `ios/BuilderAssistantApp/Info.plist` and `RECORD_AUDIO` permission to `android/app/src/main/AndroidManifest.xml` before submitting to stores.
+- **Link native module**: Run `cd ios && pod install` after a fresh clone — `react-native-audio-recorder-player` requires CocoaPods linking on iOS.
+- **Wire production STT**: Implement a real `IVoiceParsingService` (e.g. `RemoteVoiceParsingService` pointed at a Whisper/Azure Speech endpoint) and swap the DI registration in `registerServices.ts`.
+- **Wire `MobileAudioRecorder` in DI**: Once mic permissions are confirmed working on-device, replace `MockAudioRecorder` with `MobileAudioRecorder` in `registerServices.ts`.
+- **On-device QA**: Test recording, auto-stop at 60 s, cancel, and parsed draft pre-fill on both iOS and Android.
+- **`durationEstimate` / `trade` fields in TaskForm**: `TaskDraft` includes these fields but `TaskForm` does not yet render them. Add inputs if the STT service starts returning them.
