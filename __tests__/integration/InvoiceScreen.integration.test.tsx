@@ -102,6 +102,7 @@ describe('InvoiceScreen integration', () => {
       exists: jest.fn(async (filePath: string) => {
         return mockFileStorage.has(filePath);
       }),
+      deleteFile: jest.fn(async (_filePath: string) => {}),
     };
   });
 
@@ -267,10 +268,11 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
       }),
       getDocumentsDirectory: jest.fn(async () => '/app/documents'),
       exists: jest.fn(async (p: string) => mockFileStorage.has(p)),
+      deleteFile: jest.fn(async (_filePath: string) => {}),
     };
   });
 
-  it('happy path: image upload → OCR → normalize → shows review panel', async () => {
+  it('happy path: image upload → OCR → normalize → opens inline form', async () => {
     const pickerResult: FilePickerResult = {
       cancelled: false,
       uri: 'file:///original/invoice.jpg',
@@ -308,19 +310,14 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
     );
     expect(mockNormalizer.normalize).toHaveBeenCalled();
 
-    // Review panel is visible
-    const texts = testRenderer!.root
-      .findAllByType(require('react-native').Text)
-      .map((t: any) => t.props.children)
-      .flat()
-      .join(' ');
-    expect(texts).toContain('Review Extraction');
+    // Inline form is shown directly (review step removed)
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
 
     // Navigate was NOT called yet (user hasn't accepted)
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('happy path: accept extraction navigates to form with prefilled initialValues', async () => {
+  it('happy path: opens form with prefilled initialValues after normalize', async () => {
     const pickerResult: FilePickerResult = {
       cancelled: false,
       uri: 'file:///original/inv.jpg',
@@ -353,19 +350,14 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
     });
     await act(flushPromises);
 
-    // Press Accept on ExtractionResultsPanel
-    await act(async () => {
-      testRenderer!.root.findByProps({ testID: 'accept-button' }).props.onPress();
-    });
-
     // The embedded form should be rendered with prefilled initial values
     expect(mockNavigate).not.toHaveBeenCalled();
-    const form = testRenderer!.root.findByProps({ testID: 'invoice-form' });
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
     const vendorInput = testRenderer!.root.findByProps({ testID: 'invoice-form-vendor-input' });
     expect(vendorInput.props.value).toBe('Acme Corp');
   });
 
-  it('OCR failure → error state → retry succeeds → review panel', async () => {
+  it('OCR failure → error state → retry succeeds → inline form', async () => {
     const pickerResult: FilePickerResult = {
       cancelled: false,
       uri: 'file:///original/inv.jpg',
@@ -412,12 +404,7 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
     });
     await act(flushPromises);
 
-    const texts = testRenderer!.root
-      .findAllByType(require('react-native').Text)
-      .map((t: any) => t.props.children)
-      .flat()
-      .join(' ');
-    expect(texts).toContain('Review Extraction');
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('OCR failure → fallback to manual entry includes cached pdfFile', async () => {
@@ -467,7 +454,7 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
     expect(texts).toContain('inv.jpg');
   });
 
-  it('PDF upload skips OCR and shows review panel with empty data', async () => {
+  it('PDF upload skips OCR and opens inline form with empty extraction', async () => {
     const pickerResult: FilePickerResult = {
       cancelled: false,
       uri: 'file:///original/invoice.pdf',
@@ -502,12 +489,7 @@ describe('InvoiceScreen integration — OCR pipeline', () => {
     // OCR should NOT have been called
     expect(mockOcr.extractText).not.toHaveBeenCalled();
 
-    // Review panel should be shown
-    const texts = testRenderer!.root
-      .findAllByType(require('react-native').Text)
-      .map((t: any) => t.props.children)
-      .flat()
-      .join(' ');
-    expect(texts).toContain('Review Extraction');
+    // Inline form should be shown
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 });

@@ -2,28 +2,50 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
 import { TaskForm } from '../../components/tasks/TaskForm';
+import { TaskPhotoPreview } from '../../components/tasks/TaskPhotoPreview';
 import MockVoiceParsingService from '../../infrastructure/voice/MockVoiceParsingService';
 import MockAudioRecorder from '../../infrastructure/voice/MockAudioRecorder';
 import { useVoiceTask } from '../../hooks/useVoiceTask';
 import { useTasks } from '../../hooks/useTasks';
+import { useCameraTask, type UseCameraTaskReturn } from '../../hooks/useCameraTask';
 import { TaskDraft } from '../../application/services/IVoiceParsingService';
+import { ICameraService } from '../../application/services/ICameraService';
+import type { Task } from '../../domain/entities/Task';
+
+type ViewMode = 'choose' | 'preview' | 'form';
 
 interface Props {
   onClose: () => void;
   audioRecorder?: any;
   voiceParsingService?: any;
+  /** Optional camera adapter override (used in tests) */
+  cameraAdapter?: ICameraService;
+  /** Optional pre-built camera hook override (used in tests) */
+  cameraHook?: UseCameraTaskReturn;
 }
 
-export default function TaskScreen({ onClose, audioRecorder, voiceParsingService }: Props) {
+export default function TaskScreen({ onClose, audioRecorder, voiceParsingService, cameraAdapter, cameraHook: cameraHookProp }: Props) {
   const recorder = useMemo(() => audioRecorder ?? new MockAudioRecorder(), [audioRecorder]);
   const voiceService = useMemo(() => voiceParsingService ?? new MockVoiceParsingService(), [voiceParsingService]);
 
   const { state, startRecording, stopAndParse } = useVoiceTask(recorder, voiceService);
-  const { createTask } = useTasks();
+  const { createTask, updateTask } = useTasks();
+  const internalCameraHook = useCameraTask(cameraAdapter);
+  const cameraHook = cameraHookProp ?? internalCameraHook;
 
-  const [view, setView] = useState<'choose' | 'form'>('choose');
+  const [view, setView] = useState<ViewMode>('choose');
   const [initialDraft, setInitialDraft] = useState<TaskDraft | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Camera flow state
+  const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [createdTask, setCreatedTask] = useState<Task | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Voice handlers
+  // ---------------------------------------------------------------------------
 
   const handleStartVoice = async () => {
     try {
@@ -45,24 +67,83 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
 
   const handleManual = () => {
     setInitialDraft(undefined);
+    setCreatedTask(null);
     setView('form');
   };
+
+  // ---------------------------------------------------------------------------
+  // Camera handlers
+  // ---------------------------------------------------------------------------
+
+  const doCapture = async (): Promise<string | null> => {
+    setIsCapturing(true);
+    try {
+      return await cameraHook.capturePhoto({ quality: 0.8, maxWidth: 2048, maxHeight: 2048 });
+    } catch (e: any) {
+      Alert.alert('Camera error', e?.message ?? 'Could not capture photo');
+      return null;
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleUseCamera = async () => {
+    const uri = await doCapture();
+    if (!uri) return; // cancelled → stay on choose
+    setCapturedUri(uri);
+    setView('preview');
+  };
+
+  const handleRetake = async () => {
+    const uri = await doCapture();
+    if (!uri) return; // cancelled → stay on preview
+    setCapturedUri(uri);
+  };
+
+  const handleConfirm = async () => {
+    if (!capturedUri) return;
+    setIsCreatingTask(true);
+    try {
+      const task = await cameraHook.createFromPhoto(capturedUri, undefined);
+      setCreatedTask(task);
+      setView('form');
+    } catch (e: any) {
+      Alert.alert('Error', 'Could not create task from photo');
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
+
+  const handleCancelPreview = () => {
+    setCapturedUri(null);
+    setView('choose');
+  };
+
+  // ---------------------------------------------------------------------------
+  // Form submit (create for voice/manual, update for camera)
+  // ---------------------------------------------------------------------------
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await createTask({
-        title: data.title,
-        notes: data.notes,
-        projectId: data.projectId,
-        dueDate: data.dueDate,
-        status: data.status ?? 'pending',
-        priority: data.priority ?? 'medium',
-      });
+      if (createdTask) {
+        // Camera path: update the already-created task
+        await updateTask({ ...createdTask, ...data });
+      } else {
+        // Voice / manual path: create new task
+        await createTask({
+          title: data.title,
+          notes: data.notes,
+          projectId: data.projectId,
+          dueDate: data.dueDate,
+          status: data.status ?? 'pending',
+          priority: data.priority ?? 'medium',
+        });
+      }
       onClose();
     } catch (e) {
-      console.error('Create task failed', e);
-      Alert.alert('Error', 'Could not create task');
+      console.error('Create/update task failed', e);
+      Alert.alert('Error', 'Could not save task');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,12 +172,28 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
 
             <Pressable
               onPress={handleManual}
-              className="bg-card rounded-xl p-6"
+              className="bg-card rounded-xl p-6 mb-3"
               testID="manual-start"
             >
               <Text className="text-lg font-semibold">Manual entry</Text>
               <Text className="text-sm text-foreground/70 mt-2">Enter the task details manually.</Text>
             </Pressable>
+
+            <Pressable
+              onPress={handleUseCamera}
+              className="bg-card rounded-xl p-6"
+              testID="camera-start"
+              disabled={isCapturing}
+            >
+              <Text className="text-lg font-semibold">📷 Use Camera</Text>
+              <Text className="text-sm text-foreground/70 mt-2">Take a photo to create a task instantly.</Text>
+            </Pressable>
+
+            {isCapturing && (
+              <View className="mt-4 items-center">
+                <ActivityIndicator />
+              </View>
+            )}
 
             {state.phase === 'recording' && (
               <Pressable onPress={handleStopVoice} className="mt-6 bg-red-600 p-3 rounded-lg" testID="voice-stop">
@@ -113,9 +210,19 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
           </View>
         )}
 
+        {view === 'preview' && capturedUri && (
+          <TaskPhotoPreview
+            photoUri={capturedUri}
+            isLoading={isCreatingTask}
+            onRetake={handleRetake}
+            onConfirm={handleConfirm}
+            onCancel={handleCancelPreview}
+          />
+        )}
+
         {view === 'form' && (
           <TaskForm
-            initialValues={initialDraft as any}
+            initialValues={(createdTask ?? initialDraft) as any}
             onSubmit={handleSubmit}
             onCancel={onClose}
             isLoading={isSubmitting}
@@ -125,3 +232,4 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
     </Modal>
   );
 }
+

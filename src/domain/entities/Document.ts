@@ -16,6 +16,9 @@ export interface Document {
   storageKey?: string;
   cloudUrl?: string;
   
+  // Relationships
+  taskId?: string; // Optional link to a Task (e.g. photo attachment)
+
   // Provenance
   source?: 'camera' | 'scan' | 'import';
   uploadedBy?: string;

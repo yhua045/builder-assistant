@@ -18,6 +18,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
       id: row.id,
       localId: row.local_id,
       projectId: row.project_id || undefined,
+      taskId: row.task_id || undefined,
       type: row.type || undefined,
       title: row.title || undefined,
       mimeType: row.mime_type || undefined,
@@ -53,6 +54,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     const params = [
         document.id,
         document.projectId || null,
+        document.taskId || null,
         document.type || null,
         document.title || null,
         document.filename || null,
@@ -80,7 +82,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     if (existing) {
        await db.executeSql(`
          UPDATE documents SET 
-           project_id=?, type=?, title=?, filename=?, mime_type=?, size=?, status=?,
+           project_id=?, task_id=?, type=?, title=?, filename=?, mime_type=?, size=?, status=?,
            local_path=?, storage_key=?, cloud_url=?, uri=?, issued_by=?, issued_date=?,
            expires_at=?, notes=?, tags=?, ocr_text=?, source=?, uploaded_by=?, uploaded_at=?,
            checksum=?, created_at=?, updated_at=?
@@ -89,11 +91,11 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     } else {
        await db.executeSql(`
          INSERT INTO documents (
-           id, project_id, type, title, filename, mime_type, size, status,
+           id, project_id, task_id, type, title, filename, mime_type, size, status,
            local_path, storage_key, cloud_url, uri, issued_by, issued_date,
            expires_at, notes, tags, ocr_text, source, uploaded_by, uploaded_at,
            checksum, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        `, params);
     }
   }
@@ -139,6 +141,20 @@ export class DrizzleDocumentRepository implements DocumentRepository {
 
   async findByProjectId(projectId: string): Promise<Document[]> {
     return this.findAll({ projectId });
+  }
+
+  async findByTaskId(taskId: string): Promise<Document[]> {
+    if (!this.drizzle) await this.init();
+    const { db } = getDatabase();
+    const [result] = await db.executeSql(
+      'SELECT * FROM documents WHERE task_id = ? ORDER BY created_at ASC',
+      [taskId],
+    );
+    const docs: Document[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      docs.push(this.mapRowToDocument(result.rows.item(i)));
+    }
+    return docs;
   }
 
   async update(document: Document): Promise<void> {

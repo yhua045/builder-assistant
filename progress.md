@@ -65,7 +65,6 @@
 - **UI Polish**: Address remaining ESLint inline-style warnings in UI components.
 - **Accessibility**: Add ARIA attributes and keyboard navigation to custom selectors.
 
----
 
 ## 4. Issue #87 — PDF → Image Conversion Adapter (2026-02-19)
 
@@ -94,6 +93,39 @@
 - **Manual QA**: Test with real single-page, multi-page, and landscape PDFs on iOS and Android devices.
 - **Max-pages UX**: Decide whether to surface a warning when a PDF exceeds the 10-page default cap.
 
+
+
+---
+
+## 5. Issue #95 — "Use Camera" on TaskScreen (2026-02-20)
+
+### Key Decisions
+- **Reuse `Document` entity**: Added optional `taskId?` field to `Document` rather than creating a new `TaskAttachment` entity — keeps the schema lean and reuses existing upload/storage infrastructure.
+- **Auto-create on Confirm**: Task is created immediately when the user taps Confirm on the photo preview (default title `Task – DD Mon YYYY`, `dueDate` = T+3 days). The user is then dropped into `TaskForm` in edit mode to refine details. This prevents orphaned in-progress tasks.
+- **Hook injection for testability**: `TaskScreen` accepts an optional `cameraHook?: UseCameraTaskReturn` prop so tests can inject a plain mock object directly — avoids `jest.mock` hoisting / TDZ issues that arise when mocking hooks that call `container.resolve()`.
+- **Null-safe DI in `useCameraTask`**: All `container.resolve()` calls are wrapped in try/catch returning `null` when tokens are unregistered (e.g. in unit tests). The hook throws a clear error at call-time if dependencies are missing, not at mount-time.
+
+### ⚠️ Gotcha
+`renderer.create(<ComponentWithModal />)` triggers internal state updates that must be wrapped in `act()` — i.e., use `await act(async () => { tree = renderer.create(...); })`. Omitting this causes "Can't access .root on unmounted test renderer" on all subsequent assertions.
+
+### Completed
+- Design doc at `design/issue-95-task-camera.md`.
+- `Document.taskId?: string` field + `DocumentRepository.findByTaskId()` interface and `DrizzleDocumentRepository` implementation.
+- DB migration `0009_documents_task_id` (`ALTER TABLE documents ADD COLUMN task_id TEXT` + index).
+- `ICameraService` application-layer port; `IFileSystemAdapter.deleteFile()`.
+- `CreateTaskFromPhotoUseCase` — copies photo to permanent storage, saves `Document` record linked to task, deletes temp file.
+- `useCameraTask` hook wiring `ICameraService` → use case.
+- `TaskPhotoPreview` component (Retake / Confirm / Cancel).
+- `TaskScreen` rewritten with `choose → preview → form` flow.
+- `DocumentRepository`, `FileSystemAdapter`, `CameraService` registered in `registerServices.ts`.
+- 14 new tests (8 use-case unit + 6 UI unit); all pass. No regressions introduced.
+
+### Pending / Next Steps
+- **Device QA**: Verify `react-native-image-picker` camera permissions and URI handling on iOS and Android.
+- **Cascade delete**: Deleting a `Task` should delete its linked `Document` records (and their local files) — not yet implemented.
+- **Multi-attachment**: Current flow creates one `Document` per session. Future: allow multiple retakes to accumulate attachments before confirm.
+
+---
 ---
 
 ## 5. Issue #94 — Voice Task Entry (2026-02-20)

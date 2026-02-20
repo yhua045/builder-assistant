@@ -611,6 +611,15 @@ const migrations: RNMigration[] = [
       'PRAGMA foreign_keys=ON;'
     ],
   },
+  {
+    tag: '0009_documents_task_id',
+    hash: '0009_documents_task_id',
+    folderMillis: 1771544600000,
+    sql: [
+      `ALTER TABLE "documents" ADD COLUMN "task_id" text;`,
+      `CREATE INDEX "idx_documents_task" ON "documents" ("task_id");`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
