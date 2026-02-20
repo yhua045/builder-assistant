@@ -24,4 +24,10 @@ export interface IFileSystemAdapter {
    * @returns True if file exists, false otherwise
    */
   exists(filePath: string): Promise<boolean>;
+
+  /**
+   * Delete a file at the given path
+   * @param filePath - File URI or path to delete
+   */
+  deleteFile(filePath: string): Promise<void>;
 }

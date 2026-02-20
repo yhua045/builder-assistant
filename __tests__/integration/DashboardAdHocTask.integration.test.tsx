@@ -16,7 +16,10 @@ jest.mock('lucide-react-native', () => ({
 // Mock TaskScreen to detect when it's rendered
 jest.mock('../../src/pages/tasks/TaskScreen', () => ({
   __esModule: true,
-  default: (props: any) => React.createElement('Text', { testID: 'mock-taskscreen' }, 'TASK'),
+  default: () => {
+    const ReactLocal = require('react');
+    return ReactLocal.createElement('Text', { testID: 'mock-taskscreen' }, 'TASK');
+  },
 }));
 
 import DashboardScreen from '../../src/pages/dashboard';

@@ -123,6 +123,7 @@ export const documents = sqliteTable('documents', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
   projectId: text('project_id'), // Optional
+  taskId: text('task_id'),       // Optional link to a Task
   type: text('type'),
   title: text('title'),
   

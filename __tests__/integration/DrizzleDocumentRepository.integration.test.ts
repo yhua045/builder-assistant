@@ -136,7 +136,8 @@ describe('DrizzleDocumentRepository integration', () => {
                 uploaded_at INTEGER,
                 checksum TEXT,
                 created_at INTEGER,
-                updated_at INTEGER
+                updated_at INTEGER,
+                task_id TEXT
             );
         `);
     });

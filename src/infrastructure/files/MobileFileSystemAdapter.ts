@@ -51,4 +51,15 @@ export class MobileFileSystemAdapter implements IFileSystemAdapter {
     const cleanPath = filePath.replace('file://', '');
     return RNFS.exists(cleanPath);
   }
+
+  /**
+   * Delete a file at the given path
+   */
+  async deleteFile(filePath: string): Promise<void> {
+    const cleanPath = filePath.replace('file://', '');
+    const exists = await RNFS.exists(cleanPath);
+    if (exists) {
+      await RNFS.unlink(cleanPath);
+    }
+  }
 }

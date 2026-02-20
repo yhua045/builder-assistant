@@ -34,6 +34,7 @@ describe('InvoiceScreen', () => {
       copyToAppStorage: jest.fn(),
       getDocumentsDirectory: jest.fn(),
       exists: jest.fn(),
+      deleteFile: jest.fn(),
     };
 
     mockOnClose = jest.fn();
@@ -416,12 +417,13 @@ describe('InvoiceScreen — OCR pipeline', () => {
       copyToAppStorage: jest.fn().mockResolvedValue('file:///app/documents/invoice_123.jpg'),
       getDocumentsDirectory: jest.fn().mockResolvedValue('/app/documents'),
       exists: jest.fn().mockResolvedValue(true),
+      deleteFile: jest.fn(),
     };
     mockOnClose = jest.fn();
     mockOnNavigateToForm = jest.fn();
   });
 
-  it('shows ExtractionResultsPanel (review state) after successful OCR + normalize', async () => {
+  it('opens inline form after successful OCR + normalize', async () => {
     mockFilePicker.pickDocument.mockResolvedValue(makeMockFile());
     const mockOcr = makeMockOcr(makeOcrResult());
     const mockNormalizer = makeMockNormalizer(makeNormalizedInvoice());
@@ -445,15 +447,9 @@ describe('InvoiceScreen — OCR pipeline', () => {
     });
     await act(flushPromises);
 
-    // Should now show the review screen (ExtractionResultsPanel)
+    // Should now open the inline form directly (review step removed)
     expect(testRenderer!.root.findByProps({ testID: 'invoice-screen' })).toBeTruthy();
-    // "Review Extraction" heading appears in review state
-    const texts = testRenderer!.root
-      .findAllByType(require('react-native').Text)
-      .map((t: any) => t.props.children)
-      .flat()
-      .join(' ');
-    expect(texts).toContain('Review Extraction');
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('calls ocrAdapter.extractText during upload', async () => {
@@ -573,7 +569,7 @@ describe('InvoiceScreen — OCR pipeline', () => {
     expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
-  it('skips OCR for PDF files, still shows review panel (empty extraction)', async () => {
+  it('skips OCR for PDF files and still opens inline form', async () => {
     mockFilePicker.pickDocument.mockResolvedValue(
       makeMockFile({ type: 'application/pdf', name: 'invoice.pdf' }),
     );
@@ -600,13 +596,8 @@ describe('InvoiceScreen — OCR pipeline', () => {
 
     // OCR should NOT be called for PDFs
     expect(mockOcr.extractText).not.toHaveBeenCalled();
-    // Should show review screen with empty data
-    const texts = testRenderer!.root
-      .findAllByType(require('react-native').Text)
-      .map((t: any) => t.props.children)
-      .flat()
-      .join(' ');
-    expect(texts).toContain('Review Extraction');
+    // Should open inline form directly
+    expect(testRenderer!.root.findByProps({ testID: 'invoice-form' })).toBeTruthy();
   });
 
   it('when no OCR adapters are injected, navigates directly to form with pdfFile', async () => {
