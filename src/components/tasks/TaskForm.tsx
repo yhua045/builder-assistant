@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Task } from '../../domain/entities/Task';
+import ProjectPicker from '../inputs/ProjectPicker';
 import { TaskDraft } from '../../application/services/IVoiceParsingService';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { X, Save } from 'lucide-react-native';
@@ -63,14 +64,8 @@ export function TaskForm({ initialValues, onSubmit, onCancel, isLoading }: Props
         </View>
 
         <View className="gap-2">
-          <Text className="text-sm font-medium text-foreground">Project ID (Optional)</Text>
-          <TextInput
-            className="h-12 rounded-lg border border-input bg-background px-3 text-foreground"
-            placeholder="Associated Project ID"
-            placeholderTextColor="#9ca3af"
-            value={projectId}
-            onChangeText={setProjectId}
-          />
+          <Text className="text-sm font-medium text-foreground">Project (Optional)</Text>
+          <ProjectPicker value={projectId} onChange={(v) => setProjectId(v || '')} />
         </View>
 
         <View className="gap-2">
