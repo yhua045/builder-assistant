@@ -135,7 +135,7 @@ export default function DashboardScreen() {
       setShowAddInvoice(true);
     } else if (actionId === '5') { // Ad Hoc Task
       setShowAdHocTask(true);
-    } else if (actionId === '3') { // Add Quote
+    } else if (actionId === '4') { // Add Quote
       setShowQuotation(true);
     }
     // Handle other actions...
