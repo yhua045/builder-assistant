@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { ClipboardList, Clock } from 'lucide-react-native';
 
 type Task = {
@@ -19,7 +19,7 @@ export default function ActiveTasks({ tasks }: { tasks: Task[] }) {
         <Text className="text-lg font-bold text-foreground">Next Up</Text>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {tasks.map((task) => (
           <Pressable key={task.id}>
             <View className="bg-card border border-border rounded-xl p-4 w-72">
@@ -48,3 +48,7 @@ export default function ActiveTasks({ tasks }: { tasks: Task[] }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: { paddingHorizontal: 24, gap: 12 },
+});

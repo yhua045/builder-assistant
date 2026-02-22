@@ -15,7 +15,7 @@ export default function EditTaskPage() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { taskId } = route.params;
-  const { getTask, updateTask, loading: saving, tasks } = useTasks(); 
+  const { getTask, updateTask, loading: saving } = useTasks(); 
   // Wait, useTasks fetches all tasks implicitly. 
   // We can also use getTask explicitly.
 
@@ -34,7 +34,7 @@ export default function EditTaskPage() {
        if (mounted) setFetching(false);
     });
     return () => { mounted = false; };
-  }, [taskId]);
+  }, [taskId, getTask]);
 
   // Resolve voice services from DI container
   const recorder = useMemo(() => container.resolve<IAudioRecorder>('IAudioRecorder'), []);

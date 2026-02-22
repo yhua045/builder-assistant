@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import HeroSection from './components/HeroSection';
@@ -154,7 +154,7 @@ export default function DashboardScreen() {
         <ThemeToggle />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Hero Section - Show when no projects exist */}
         {!hasProjects && <HeroSection />}
         {hasProjects && (
@@ -189,11 +189,11 @@ export default function DashboardScreen() {
       >
         <Pressable 
           className="flex-1 justify-end"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          style={styles.modalBackdrop}
           onPress={() => setShowQuickActions(false)}
         >
           <Pressable 
-            style={{ backgroundColor: '#ffffff' }}
+            style={styles.modalContainer}
             className="rounded-t-3xl p-6 dark:bg-[#1e1e1e]"
             onPress={(e) => e.stopPropagation()}
           >
@@ -271,3 +271,9 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: { paddingBottom: 128 },
+  modalBackdrop: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  modalContainer: { backgroundColor: '#ffffff' },
+});

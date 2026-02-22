@@ -32,7 +32,7 @@ export default function TaskDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, getTask]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {

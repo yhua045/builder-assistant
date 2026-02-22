@@ -1,4 +1,4 @@
-import { IOcrAdapter, OcrResult } from '../../services/IOcrAdapter';
+import { IOcrAdapter } from '../../services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../../ai/IInvoiceNormalizer';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IOcrDocumentService, OcrDocumentService } from '../../services/IOcrDocumentService';
@@ -122,7 +122,7 @@ export class ProcessInvoiceUploadUseCase {
     pdfUri: string,
     documentRef: DocumentRef,
   ): Promise<ProcessInvoiceUploadOutput> {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+     
     const pages = await this.pdfConverter!.convertToImages(pdfUri);
 
     console.log('[InvoiceOCR] PDF converted to images', {

@@ -162,7 +162,6 @@ describe('InvoiceScreen', () => {
     });
 
     const root = testRenderer!.root;
-    const pressables = root.findAllByType(require('react-native').Pressable);
     const uploadButton = root.findByProps({ testID: 'upload-pdf-button' })
     await act(async () => {
       await uploadButton.props.onPress();
@@ -281,7 +280,6 @@ describe('InvoiceScreen', () => {
     });
 
     const root = testRenderer!.root;
-    const pressables = root.findAllByType(require('react-native').Pressable);
     const uploadButton = root.findByProps({ testID: 'upload-pdf-button' })
     await act(async () => {
       await uploadButton.props.onPress();

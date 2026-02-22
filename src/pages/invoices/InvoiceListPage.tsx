@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StyleSheet as RNStyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { FileText, DollarSign, Eye, Edit, Trash2 } from 'lucide-react-native';
@@ -106,7 +106,7 @@ export default function InvoiceListPage() {
   return (
     <SafeAreaView
       className="flex-1 bg-background"
-      style={{ backgroundColor: isDark ? '#0f172a' : '#fafbfc' }}
+      style={isDark ? styles.darkBg : styles.lightBg}
     >
       {/* Header */}
       <View className="px-6 py-4 border-b border-border">
@@ -142,7 +142,7 @@ export default function InvoiceListPage() {
 
       {/* Filter Tabs */}
       <View className="px-6 py-4 border-b border-border">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
           {(['all', 'draft', 'issued', 'paid', 'overdue', 'cancelled'] as const).map((filter) => (
             <TouchableOpacity
               key={filter}
@@ -194,7 +194,7 @@ export default function InvoiceListPage() {
       {/* Invoice List */}
       {!loading && !error && filteredInvoices.length > 0 && (
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 128 }}
+            contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -286,3 +286,10 @@ export default function InvoiceListPage() {
     </SafeAreaView>
   );
 }
+
+const styles = RNStyleSheet.create({
+  darkBg: { backgroundColor: '#0f172a' },
+  lightBg: { backgroundColor: '#fafbfc' },
+  scrollContent: { paddingBottom: 128 },
+  tabsContent: { gap: 8 },
+});

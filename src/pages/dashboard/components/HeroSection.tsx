@@ -1,10 +1,20 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Upload, Lightbulb } from 'lucide-react-native';
 import ManualProjectEntry from '../../../components/ManualProjectEntry';
 
 
 export default function HeroSection() {
+  const styles = StyleSheet.create({
+    cardShadow: {
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+    },
+  });
+
   return (
     <View className="px-6 mb-8">
       <View className="bg-gradient-to-br from-primary/10 to-chart-1/10 border-2 border-primary/20 rounded-2xl p-6">
@@ -15,7 +25,7 @@ export default function HeroSection() {
 
         <Pressable
           className="bg-primary rounded-xl p-5 mb-3 active:opacity-80"
-          style={{ elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }}
+            style={styles.cardShadow}
         >
           <View className="flex-row items-center mb-3">
             <View className="bg-white/20 p-2 rounded-lg mr-3">
@@ -35,7 +45,7 @@ export default function HeroSection() {
             <Text className="text-foreground/70 text-sm leading-5">Did you know? You can snap a photo of a receipt in the 'Costs' tab later to track ad-hoc spending.</Text>
           </View>
         </View>
-      </View>
-    </View>
-  );
-}
+        </View>
+        </View>
+      );
+    }

@@ -64,6 +64,10 @@ export const ExtractionResultsPanel: React.FC<ExtractionResultsPanelProps> = ({
 
   const canAccept = editedResult.confidence.overall >= 0.3; // Minimum threshold
 
+  const overallBgStyle = { backgroundColor: `${getConfidenceColor(editedResult.confidence.overall)}20` };
+  const overallTextColor = { color: getConfidenceColor(editedResult.confidence.overall) };
+  const acceptOpacityStyle = { opacity: canAccept ? 1 : 0.5 };
+
   return (
     <ScrollView className="bg-background p-4">
       {/* Overall Confidence Badge */}
@@ -73,12 +77,12 @@ export const ExtractionResultsPanel: React.FC<ExtractionResultsPanelProps> = ({
           <View
             testID="confidence-overall"
             className="flex-row items-center px-3 py-1 rounded-full"
-            style={{ backgroundColor: `${getConfidenceColor(editedResult.confidence.overall)}20` }}
+            style={overallBgStyle}
           >
             {getConfidenceIcon(editedResult.confidence.overall)}
             <Text
               className="ml-2 font-medium"
-              style={{ color: getConfidenceColor(editedResult.confidence.overall) }}
+              style={overallTextColor}
             >
               {Math.round(editedResult.confidence.overall * 100)}%
             </Text>
@@ -199,7 +203,7 @@ export const ExtractionResultsPanel: React.FC<ExtractionResultsPanelProps> = ({
           onPress={() => onAccept(editedResult)}
           disabled={!canAccept}
           accessibilityState={{ disabled: !canAccept }}
-          style={{ opacity: canAccept ? 1 : 0.5 }}
+          style={acceptOpacityStyle}
         >
           <Text className="text-primary-foreground font-semibold">Accept & Save</Text>
         </Pressable>
@@ -257,6 +261,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
       return <AlertCircle size={14} color={color} />;
     }
   };
+  const borderStyle = { borderColor: getConfidenceColor(confidence), borderWidth: 1 };
 
   return (
     <View className="mb-4">
@@ -273,6 +278,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
           </Text>
         </View>
       </View>
+
       <TextInput
         testID={testID}
         value={value}
@@ -281,10 +287,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
         placeholderTextColor="#9ca3af"
         keyboardType={keyboardType}
         className="p-3 bg-background border rounded-lg text-foreground"
-        style={{
-          borderColor: getConfidenceColor(confidence),
-          borderWidth: 1,
-        }}
+          style={borderStyle}
       />
     </View>
   );
@@ -313,6 +316,7 @@ const FieldDisplay: React.FC<FieldDisplayProps> = ({ label, value, confidence })
       return <AlertCircle size={14} color={color} />;
     }
   };
+  const boxStyle = { borderColor: getConfidenceColor(confidence), borderWidth: 1 };
 
   return (
     <View className="mb-4">
@@ -325,12 +329,10 @@ const FieldDisplay: React.FC<FieldDisplayProps> = ({ label, value, confidence })
           </Text>
         </View>
       </View>
+
       <View
         className="p-3 bg-muted rounded-lg"
-        style={{
-          borderColor: getConfidenceColor(confidence),
-          borderWidth: 1,
-        }}
+        style={boxStyle}
       >
         <Text className="text-foreground">{value}</Text>
       </View>

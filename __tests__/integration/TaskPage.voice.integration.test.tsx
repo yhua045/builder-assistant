@@ -12,7 +12,7 @@
  * Run: npx jest __tests__/integration/TaskPage.voice.integration.test.tsx
  */
 import React from 'react';
-import { act, fireEvent, render, waitFor, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 // ── Navigation stubs ──────────────────────────────────────────────────────────
 jest.mock('@react-navigation/native', () => ({
@@ -65,7 +65,6 @@ jest.mock('../../src/hooks/useTasks', () => ({
 
 // ── useVoiceTask stub — starts idle; tests can override ───────────────────────
 import type { VoiceTaskState } from '../../src/hooks/useVoiceTask';
-import { MAX_RECORDING_SECONDS } from '../../src/hooks/useVoiceTask';
 
 const mockStartRecording = jest.fn();
 const mockStopAndParse = jest.fn();

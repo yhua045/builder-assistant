@@ -55,7 +55,7 @@ export class MobileAudioRecorder implements IAudioRecorder {
  * React Native polyfills `atob` at runtime; we declare it here so tsc
  * does not complain about the missing DOM lib in the React Native tsconfig.
  */
-// eslint-disable-next-line no-var
+ 
 declare function atob(s: string): string;
 
 function base64ToArrayBuffer(b64: string): ArrayBuffer {

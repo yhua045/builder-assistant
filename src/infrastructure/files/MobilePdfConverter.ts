@@ -48,7 +48,7 @@ function isRendererModule(value: unknown): value is RnPdfRenderer {
 /** Lazily required so the module is not imported at module-evaluation time. */
 function tryLoadRenderer(): RnPdfRenderer | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const legacyModule = require('rn-pdf-renderer');
     const legacyCandidate = legacyModule?.default ?? legacyModule;
     if (isRendererModule(legacyCandidate)) {
@@ -59,7 +59,7 @@ function tryLoadRenderer(): RnPdfRenderer | null {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const npmModule = require('react-native-pdf-renderer');
     const npmCandidate = npmModule?.default ?? npmModule;
     if (isRendererModule(npmCandidate)) {

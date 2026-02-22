@@ -86,7 +86,7 @@ describe('CreateTaskFromPhotoUseCase', () => {
   });
 
   it('creates a task saved to the repository', async () => {
-    const result = await useCase.execute({ localUri: TEMP_URI });
+    await useCase.execute({ localUri: TEMP_URI });
 
     expect(taskRepo.save).toHaveBeenCalledTimes(1);
     const savedTask: Task = taskRepo.save.mock.calls[0][0];
@@ -95,14 +95,14 @@ describe('CreateTaskFromPhotoUseCase', () => {
   });
 
   it('gives the task a default title containing the current date', async () => {
-    const result = await useCase.execute({ localUri: TEMP_URI });
+    await useCase.execute({ localUri: TEMP_URI });
 
     const savedTask: Task = taskRepo.save.mock.calls[0][0];
     expect(savedTask.title).toMatch(/2026/); // contains year
   });
 
   it('sets dueDate to 3 days from today', async () => {
-    const result = await useCase.execute({ localUri: TEMP_URI });
+    await useCase.execute({ localUri: TEMP_URI });
 
     const savedTask: Task = taskRepo.save.mock.calls[0][0];
     const due = new Date(savedTask.dueDate!);

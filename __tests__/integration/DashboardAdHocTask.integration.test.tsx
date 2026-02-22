@@ -38,7 +38,7 @@ describe.skip('Dashboard AdHoc Task wiring', () => {
     // Find the quick action Pressable with title 'Ad Hoc Task'
     const actionPressable = root.findAll((n: any) => n.props && n.type === 'Text' && n.props.children === 'Ad Hoc Task')[0].parent;
     await act(async () => {
-      actionPressable.props.onPress();
+      actionPressable!.props.onPress();
     });
 
     // TaskScreen mock should now be in the tree

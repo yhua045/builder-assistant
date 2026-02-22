@@ -1,4 +1,4 @@
-import { IAudioRecorder, AudioRecording } from '../../services/IAudioRecorder';
+import { IAudioRecorder } from '../../services/IAudioRecorder';
 import { IVoiceParsingService, TaskDraft } from '../../services/IVoiceParsingService';
 
 export class ParseVoiceTaskUseCase {

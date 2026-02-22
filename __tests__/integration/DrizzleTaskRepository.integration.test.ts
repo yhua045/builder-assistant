@@ -56,7 +56,7 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzleTaskRepository } from '../../src/infrastructure/repositories/DrizzleTaskRepository';
 import { TaskEntity } from '../../src/domain/entities/Task';
-import { closeDatabase, initDatabase } from '../../src/infrastructure/database/connection';
+import { initDatabase } from '../../src/infrastructure/database/connection';
 
 describe('DrizzleTaskRepository integration (better-sqlite3 :memory:)', () => {
   let repo: DrizzleTaskRepository;

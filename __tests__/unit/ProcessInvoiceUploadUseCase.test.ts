@@ -6,7 +6,6 @@ import {
   NormalizedInvoice,
 } from '../../src/application/ai/IInvoiceNormalizer';
 import { MockPdfConverter } from '../../__mocks__/MockPdfConverter';
-import { PdfConversionError, PdfPageImage } from '../../src/infrastructure/files/IPdfConverter';
 
 const makeOcrResult = (text = 'Acme Corp\nInvoice #INV-001\nTotal: $500.00'): OcrResult => ({
   fullText: text,

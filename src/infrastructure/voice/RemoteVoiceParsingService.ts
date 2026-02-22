@@ -18,7 +18,7 @@ export class RemoteVoiceParsingService implements IVoiceParsingService {
   async parseAudioToTaskDraft(audio: ArrayBuffer): Promise<TaskDraft> {
     // FormData and Blob are polyfilled by React Native but are not in the
     // @react-native/typescript-config lib, so we cast to any here.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const form = new (FormData as any)();
     (form as any).append(
       'audio',

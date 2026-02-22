@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { AlertCircle, Calendar, DollarSign, Filter, CheckCircle, Clock } from 'lucide-react-native';
@@ -110,7 +110,7 @@ export default function PaymentsScreen() {
   return (
     <SafeAreaView
       className="flex-1 bg-background"
-      style={{ backgroundColor: isDark ? '#0f172a' : '#fafbfc' }}
+      style={isDark ? styles.darkBg : styles.lightBg}
     >
       {/* Header */}
       <View className="px-6 py-4 border-b border-border">
@@ -141,7 +141,7 @@ export default function PaymentsScreen() {
 
       {/* Filter Tabs */}
       <View className="px-6 py-4 border-b border-border">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
           {(['all', 'overdue', 'upcoming', 'paid'] as const).map((filter) => (
             <TouchableOpacity
               key={filter}
@@ -168,7 +168,7 @@ export default function PaymentsScreen() {
 
       {/* Payments List */}
       <ScrollView 
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 128, gap: 12, paddingTop: 16 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={loading}
@@ -275,3 +275,10 @@ export default function PaymentsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  darkBg: { backgroundColor: '#0f172a' },
+  lightBg: { backgroundColor: '#fafbfc' },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 128, gap: 12, paddingTop: 16 },
+  tabsContent: { gap: 8 },
+});

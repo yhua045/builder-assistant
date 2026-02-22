@@ -45,7 +45,7 @@ interface InvoiceScreenProps {
 
 export const InvoiceScreen = ({
   onClose,
-  onNavigateToForm,
+  onNavigateToForm: _onNavigateToForm,
   filePickerAdapter,
   fileSystemAdapter,
   ocrAdapter,
@@ -62,7 +62,7 @@ export const InvoiceScreen = ({
   const [formInitialValues, setFormInitialValues] = useState<Partial<Invoice> | undefined>(undefined);
   const [formPdfFile, setFormPdfFile] = useState<PdfFileMetadata | undefined>(undefined);
 
-  const { createInvoice, updateInvoice, loading: invoicesLoading } = useInvoices();
+  const { createInvoice, loading: invoicesLoading } = useInvoices();
 
   // Use provided adapters or create default instances
   const filePicker = filePickerAdapter ?? new MobileFilePickerAdapter();

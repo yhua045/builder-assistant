@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, Clock, Plus } from 'lucide-react-native';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -44,10 +44,12 @@ export default function TasksScreen() {
     [tasks],
   );
 
+  const containerBg = isDark ? styles.darkBg : styles.lightBg;
+
   return (
     <SafeAreaView
       className="flex-1 bg-background"
-      style={{ backgroundColor: isDark ? '#0f172a' : '#fafbfc' }}
+      style={containerBg}
       edges={['top']}
     >
       {/* Header */}
@@ -104,7 +106,7 @@ export default function TasksScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
+          contentContainerStyle={filterContentStyle}
         >
           {FILTER_PILLS.map(({ label, value }) => (
             <TouchableOpacity
@@ -130,7 +132,7 @@ export default function TasksScreen() {
       {/* Task List */}
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 128 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             testID="tasks-refresh-control"
@@ -149,3 +151,11 @@ export default function TasksScreen() {
     </SafeAreaView>
   );
 }
+
+const filterContentStyle = { gap: 8 } as const;
+
+const styles = StyleSheet.create({
+  darkBg: { backgroundColor: '#0f172a' },
+  lightBg: { backgroundColor: '#fafbfc' },
+  scrollContent: { paddingBottom: 128 },
+});

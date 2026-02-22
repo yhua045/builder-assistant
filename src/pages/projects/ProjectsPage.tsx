@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet as RNStyleSheet } from 'react-native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
@@ -56,13 +56,13 @@ const ProjectsPage: React.FC = () => {
 
       {!loading && !error && projectDtos.length === 0 && (
           <View className="px-6 gap-4">
-            <Text testID="projects-empty" style={{ marginBottom: 20 }}>No projects yet</Text>
+            <Text testID="projects-empty" style={emptyTextStyle}>No projects yet</Text>
               <ManualProjectEntry />
           </View>
       )}
   
       {!loading && !error && projectDtos.length > 0 && (
-        <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Projects List */}
           <View className="px-6 gap-4">
             {projectDtos.map((project) => (
@@ -77,4 +77,11 @@ const ProjectsPage: React.FC = () => {
 
 
 export default ProjectsPage;
+
+
+const emptyTextStyle = { marginBottom: 20 } as const;
+
+const styles = RNStyleSheet.create({
+  scrollContent: { paddingBottom: 128 },
+});
 
