@@ -53,5 +53,7 @@
 	<string>Builder Assistant needs camera access to scan receipts and documents</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Builder Assistant needs photo access to import receipt images</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Builder Assistant needs microphone access to record voice task notes</string>
 </dict>
 </plist>
