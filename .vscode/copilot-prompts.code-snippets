@@ -1,0 +1,9 @@
+{
+  "Copilot: Ticket Review": {
+    "prefix": "copilot-ticket",
+    "body": [
+      "let's look into ${1:Github ticket URL}, please follow the development workflow as per CLAUDE.md file and ensure the proposed plan is created under \"design\" directory, review and approval is needed before proceeding implementation"
+    ],
+    "description": "Insert reusable Copilot prompt to review a GitHub ticket and create a design plan per CLAUDE.md"
+  }
+}
