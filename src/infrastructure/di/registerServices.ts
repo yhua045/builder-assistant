@@ -67,8 +67,10 @@ if (typeof (container as any).registerSingleton === 'function') {
 }
 
 // Location services
-container.registerSingleton('StoredLocationRepository', DrizzleStoredLocationRepository);
-container.registerSingleton('GpsService', DeviceGpsService);
+if (typeof (container as any).registerSingleton === 'function') {
+	container.registerSingleton('StoredLocationRepository', DrizzleStoredLocationRepository);
+	container.registerSingleton('GpsService', DeviceGpsService);
+}
 
 export default container;
 
