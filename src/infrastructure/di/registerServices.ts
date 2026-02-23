@@ -10,6 +10,8 @@ import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
 import { MockAudioRecorder } from '../voice/MockAudioRecorder';
 import { MockVoiceParsingService } from '../voice/MockVoiceParsingService';
+import { DrizzleStoredLocationRepository } from '../location/DrizzleStoredLocationRepository';
+import { DeviceGpsService } from '../location/DeviceGpsService';
 
 // Register default implementations
 container.registerSingleton('ProjectRepository', DrizzleProjectRepository);
@@ -24,6 +26,10 @@ container.registerSingleton('CameraService', MobileCameraAdapter);
 // Voice services — currently backed by mocks (swap for production adapters when available)
 container.registerSingleton('IAudioRecorder', MockAudioRecorder);
 container.registerSingleton('IVoiceParsingService', MockVoiceParsingService);
+
+// Location services
+container.registerSingleton('StoredLocationRepository', DrizzleStoredLocationRepository);
+container.registerSingleton('GpsService', DeviceGpsService);
 
 export default container;
 
