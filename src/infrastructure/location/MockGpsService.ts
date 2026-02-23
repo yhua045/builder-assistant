@@ -9,7 +9,7 @@ export class MockGpsService implements IGpsService {
     this.shouldThrow = shouldThrow;
   }
 
-  async getBestLocation(options?: GetLocationOptions): Promise<GeoLocation | null> {
+  async getBestLocation(_options?: GetLocationOptions): Promise<GeoLocation | null> {
     if (this.shouldThrow) throw new Error('permission_denied');
     // In the mock we simply return the configured stored value as "current"
     return this.stored;

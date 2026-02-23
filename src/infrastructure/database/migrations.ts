@@ -639,6 +639,15 @@ const migrations: RNMigration[] = [
 			'PRAGMA foreign_keys=ON;'
 		],
 	},
+  {
+    tag: '0011_add_property_coords',
+    hash: '0011_add_property_coords',
+    folderMillis: 1772500000000,
+    sql: [
+      'ALTER TABLE "properties" ADD COLUMN "latitude" real;',
+      'ALTER TABLE "properties" ADD COLUMN "longitude" real;',
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
