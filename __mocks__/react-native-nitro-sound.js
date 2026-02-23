@@ -1,4 +1,4 @@
-// Mock for react-native-audio-recorder-player
+// Mock for react-native-nitro-sound
 // The real library exports a singleton instance (not a constructor).
 
 const mockAudioRecorderPlayer = {
@@ -14,7 +14,6 @@ const mockAudioRecorderPlayer = {
   removePlayBackListener: jest.fn(),
 };
 
-// Expose as default export matching the real library API
 module.exports = mockAudioRecorderPlayer;
 module.exports.default = mockAudioRecorderPlayer;
 module.exports.__esModule = true;

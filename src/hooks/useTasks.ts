@@ -59,26 +59,26 @@ export function useTasks(projectId?: string): UseTasksReturn {
     loadTasks();
   }, [loadTasks]);
 
-  const createTask = async (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => {
-    await createUseCase.execute(data);
-    await loadTasks();
-  };
-
-  const updateTask = async (task: Task) => {
+  const updateTask = useCallback(async (task: Task) => {
     await updateUseCase.execute(task);
     await loadTasks();
-  };
+  }, [updateUseCase, loadTasks]);
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     await deleteUseCase.execute(id);
     await loadTasks();
-  };
+  }, [deleteUseCase, loadTasks]);
 
-  const getTask = async (id: string) => {
+  const createTask = useCallback(async (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => {
+    await createUseCase.execute(data);
+    await loadTasks();
+  }, [createUseCase, loadTasks]);
+
+  const getTask = useCallback(async (id: string) => {
     return getUseCase.execute(id);
-  };
+  }, [getUseCase]);
 
-  return {
+  return useMemo(() => ({
     tasks,
     loading,
     refreshTasks: loadTasks,
@@ -86,5 +86,5 @@ export function useTasks(projectId?: string): UseTasksReturn {
     updateTask,
     deleteTask,
     getTask,
-  };
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask]);
 }

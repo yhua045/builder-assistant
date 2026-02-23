@@ -1,4 +1,4 @@
-declare module 'react-native-audio-recorder-player' {
+declare module 'react-native-nitro-sound' {
   type Subscription = { remove: () => void };
 
   export const AudioRecorderPlayer: {

@@ -1,15 +1,15 @@
 /**
  * Unit tests for MobileAudioRecorder (singleton-player pattern)
  *
- * react-native-audio-recorder-player exports a singleton instance, not a class.
+ * react-native-nitro-sound exports a singleton instance, not a class.
  * Tests spy on that singleton via the Jest manual mock in
- * __mocks__/react-native-audio-recorder-player.js.
+ * __mocks__/react-native-nitro-sound.js.
  *
  * Run: npx jest __tests__/unit/MobileAudioRecorder.test.ts
  */
 
 // Mock native modules before importing the class under test
-jest.mock('react-native-audio-recorder-player');
+jest.mock('react-native-nitro-sound');
 jest.mock('react-native-fs', () => ({
   CachesDirectoryPath: '/mock/caches',
   readFile: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('react-native-fs', () => ({
 }));
 
 import RNFS from 'react-native-fs';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer from 'react-native-nitro-sound';
 import { MobileAudioRecorder } from '../../src/infrastructure/voice/MobileAudioRecorder';
 
 // "hello" encoded as base64

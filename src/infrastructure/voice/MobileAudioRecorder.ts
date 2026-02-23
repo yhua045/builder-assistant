@@ -1,9 +1,9 @@
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer from 'react-native-nitro-sound';
 import RNFS from 'react-native-fs';
 import { IAudioRecorder, AudioRecording } from '../../application/services/IAudioRecorder';
 
 /**
- * Concrete IAudioRecorder for iOS and Android using react-native-audio-recorder-player.
+ * Concrete IAudioRecorder for iOS and Android using react-native-nitro-sound.
  *
  * Lifecycle:
  *  1. startRecording() — writes audio to a timestamped .mp4 file in the app cache directory.
