@@ -163,3 +163,42 @@
 - **Wire `MobileAudioRecorder` in DI**: Once mic permissions are confirmed working on-device, replace `MockAudioRecorder` with `MobileAudioRecorder` in `registerServices.ts`.
 - **On-device QA**: Test recording, auto-stop at 60 s, cancel, and parsed draft pre-fill on both iOS and Android.
 - **`durationEstimate` / `trade` fields in TaskForm**: `TaskDraft` includes these fields but `TaskForm` does not yet render them. Add inputs if the STT service starts returning them.
+
+---
+
+## 6. Issue #103 — Voice Production Wiring (Groq STT + LLM) (2026-02-23)
+
+### Key Decisions
+- **Groq chosen for POC**: Groq provides a single free API key that covers both Whisper large-v3 (STT) and Llama 3.3 70B (LLM extraction), avoiding the need for two separate service accounts during development.
+- **Internal adapter split**: Introduced two new internal ports — `ISTTAdapter` (audio bytes → raw transcript string) and `ITranscriptParser` (transcript string → `TaskDraft`) — inside `RemoteVoiceParsingService`. The outer `IVoiceParsingService` interface is unchanged, so no hooks or pages were modified.
+- **`RemoteVoiceParsingService` as thin orchestrator**: Delegates to the two adapters in sequence rather than containing STT/LLM logic directly. Each adapter is independently swappable without touching the orchestrator.
+- **Retry + timeout per adapter**: Both `GroqSTTAdapter` and `GroqTranscriptParser` use `AbortController`-based timeouts and configurable retry counts with exponential backoff to handle transient API errors and 429 rate-limit responses.
+- **Graceful parser fallback**: If `GroqTranscriptParser` receives a malformed JSON response from the LLM, it returns the raw transcript in the `notes` field of `TaskDraft` rather than throwing — ensuring the user always gets something useful.
+- **Feature flags in DI**: `VOICE_USE_MOCK_PARSER` env flag allows soft-rollout (keep mock parser while using real STT, or vice versa). `__DEV__` still preserves full-mock stubs in local dev. `GROQ_API_KEY` is read from `.env` via `react-native-config`.
+- **DI guard for tests**: `registerServices.ts` checks `typeof container.registerSingleton === 'function'` before registering — prevents errors when `tsyringe` is mocked as a plain object in Jest.
+- **Stable mocks in integration tests**: `useTasks` mock functions are declared at module level (not recreated per render), so `useEffect` dependency arrays in `EditTaskPage` do not trigger infinite re-render loops during tests.
+
+### Completed
+- Design doc at `design/issue-103-voice-production-wiring.md` (provider comparison, adapter pattern, retry strategy, QA checklist, acceptance criteria — APPROVED).
+- `src/application/services/ISTTAdapter.ts` — new port: `transcribe(audio: ArrayBuffer, mimeType: string): Promise<string>`.
+- `src/application/services/ITranscriptParser.ts` — new port: `parse(transcript: string): Promise<TaskDraft>`.
+- `src/infrastructure/voice/GroqSTTAdapter.ts` — Groq Whisper large-v3 adapter with retries, AbortController timeout, multipart form upload.
+- `src/infrastructure/voice/GroqTranscriptParser.ts` — Groq Llama 3.3 70B adapter with structured prompt, JSON extraction, `notes` fallback on parse failure.
+- `src/infrastructure/voice/RemoteVoiceParsingService.ts` — replaced skeleton with orchestrator composing `ISTTAdapter` + `ITranscriptParser`.
+- `src/infrastructure/di/registerServices.ts` — wired `GroqSTTAdapter`, `GroqTranscriptParser`, and `MobileAudioRecorder` behind feature flags; added DI guard for test environments.
+- `ios/BuilderAssistantApp/Info.plist` — added `NSMicrophoneUsageDescription`.
+- `android/app/src/main/AndroidManifest.xml` — added `RECORD_AUDIO` permission.
+- `README.md` — added `cd ios && pod install` note and `GROQ_API_KEY` setup guidance.
+- 3 new unit test suites — all passing:
+  - `__tests__/unit/GroqSTTAdapter.test.ts`
+  - `__tests__/unit/GroqTranscriptParser.test.ts`
+  - `__tests__/unit/RemoteVoiceParsingService.test.ts`
+- `__tests__/integration/TaskPage.voice.integration.test.tsx` — stabilised mock identity; all 8 tests pass.
+- Full Jest suite green (80 passed, 2 skipped); TypeScript strict check clean.
+
+### Pending / Next Steps
+- **Expand adapter tests**: Add tests for retry exhaustion, 429 backoff, AbortController timeout, and network failure paths in `GroqSTTAdapter` and `GroqTranscriptParser`.
+- **Production token vending**: Replace `.env`-based `GROQ_API_KEY` with a short-lived token endpoint for production to prevent key exposure in the app bundle.
+- **On-device QA**: Verify mic recording → Groq STT → LLM extraction → form pre-fill on both iOS and Android physical devices per the checklist in the design doc.
+- **Wire `MobileAudioRecorder` in DI**: Confirm mic permissions work on-device then remove `MockAudioRecorder` from the default DI registration.
+- **`durationEstimate` / `trade` fields in TaskForm**: `TaskDraft` includes these fields but `TaskForm` does not yet render them. Add inputs if the STT service starts returning them.
