@@ -156,3 +156,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Architecture Documentation](./ARCHITECTURE.md)
 - [React Native Documentation](https://reactnative.dev/)
 - [Clean Architecture Principles](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+
+## iOS & Voice Setup Notes
+
+- After a fresh clone or when adding native dependencies run:
+
+```bash
+cd ios && pod install && cd ..
+```
+
+- For the Groq-based voice adapters configure a `GROQ_API_KEY` in your `.env` (use `react-native-config` or your preferred env loader). Do not commit `.env` to source control.

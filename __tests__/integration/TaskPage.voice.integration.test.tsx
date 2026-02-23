@@ -47,17 +47,21 @@ jest.mock('../../src/components/inputs/DatePickerInput', () => {
 });
 
 // ── useTasks stub ─────────────────────────────────────────────────────────────
+const mockCreateTask = jest.fn().mockResolvedValue(undefined);
+const mockUpdateTask = jest.fn().mockResolvedValue(undefined);
+const mockGetTask = jest.fn().mockResolvedValue({
+  id: 'task-1',
+  title: 'Existing task',
+  notes: 'Old notes',
+  priority: 'low',
+  status: 'pending',
+});
+
 jest.mock('../../src/hooks/useTasks', () => ({
   useTasks: () => ({
-    createTask: jest.fn().mockResolvedValue(undefined),
-    updateTask: jest.fn().mockResolvedValue(undefined),
-    getTask: jest.fn().mockResolvedValue({
-      id: 'task-1',
-      title: 'Existing task',
-      notes: 'Old notes',
-      priority: 'low',
-      status: 'pending',
-    }),
+    createTask: mockCreateTask,
+    updateTask: mockUpdateTask,
+    getTask: mockGetTask,
     loading: false,
     tasks: [],
   }),
@@ -103,6 +107,18 @@ function resetVoiceState() {
   mockStartRecording.mockReset();
   mockStopAndParse.mockReset();
   mockCancel.mockReset();
+  mockCreateTask.mockReset();
+  mockCreateTask.mockResolvedValue(undefined);
+  mockUpdateTask.mockReset();
+  mockUpdateTask.mockResolvedValue(undefined);
+  mockGetTask.mockReset();
+  mockGetTask.mockResolvedValue({
+    id: 'task-1',
+    title: 'Existing task',
+    notes: 'Old notes',
+    priority: 'low',
+    status: 'pending',
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
