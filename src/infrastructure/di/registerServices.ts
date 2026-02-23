@@ -14,6 +14,9 @@ import { MockAudioRecorder } from '../voice/MockAudioRecorder';
 import { MockVoiceParsingService } from '../voice/MockVoiceParsingService';
 import { DrizzleStoredLocationRepository } from '../location/DrizzleStoredLocationRepository';
 import { DeviceGpsService } from '../location/DeviceGpsService';
+import { LocalLocationAdapter } from '../location/LocalLocationAdapter';
+import { RemoteLocationAdapter } from '../location/RemoteLocationAdapter';
+import { GetNearbyProjectsUseCase } from '../../application/usecases/location/GetNearbyProjectsUseCase';
 import { MobileAudioRecorder } from '../voice/MobileAudioRecorder';
 import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
@@ -70,6 +73,25 @@ if (typeof (container as any).registerSingleton === 'function') {
 if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('StoredLocationRepository', DrizzleStoredLocationRepository);
 	container.registerSingleton('GpsService', DeviceGpsService);
+	container.registerSingleton('LocalLocationAdapter', LocalLocationAdapter);
+	container.registerSingleton('RemoteLocationAdapter', RemoteLocationAdapter);
+	// Network status: simple online check via NetInfo (navigator.onLine fallback for tests)
+	const networkStatus = { isOnline: () => true };
+	//
+	// Feature flag: LOCATION_REMOTE_ENABLED
+	//   'true'  → attempt server-side spatial query when online (requires backend endpoint)
+	//   unset / anything else → local-only (safe default; remote skeleton throws not_implemented)
+	//
+	const locationRemoteEnabled = process.env.LOCATION_REMOTE_ENABLED === 'true';
+	container.register('GetNearbyProjectsUseCase', {
+		useFactory: () =>
+			new GetNearbyProjectsUseCase(
+				new LocalLocationAdapter(),
+				new RemoteLocationAdapter(),
+				networkStatus,
+				locationRemoteEnabled,
+			),
+	});
 }
 
 export default container;

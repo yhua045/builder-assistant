@@ -72,6 +72,8 @@ export const properties = sqliteTable('properties', {
   lotSizeUnit: text('lot_size_unit'),
   yearBuilt: integer('year_built'),
   ownerId: text('owner_id'),
+  latitude: real('latitude'),   // nullable; populated by geocoding or manual entry
+  longitude: real('longitude'),  // nullable
   meta: text('meta'), // JSON
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),

@@ -48,6 +48,8 @@ export const mapPropertyFromRow = (row: any, prefix: string): Property | null =>
     lotSizeUnit: row[`${prefix}lot_size_unit`] ?? undefined,
     yearBuilt: row[`${prefix}year_built`] ?? undefined,
     ownerId: row[`${prefix}owner_id`] ?? undefined,
+    latitude: row[`${prefix}latitude`] ?? null,
+    longitude: row[`${prefix}longitude`] ?? null,
     meta: row[`${prefix}meta`] ? JSON.parse(row[`${prefix}meta`]) : undefined,
     createdAt: toIsoString(row[`${prefix}created_at`]),
     updatedAt: toIsoString(row[`${prefix}updated_at`]),

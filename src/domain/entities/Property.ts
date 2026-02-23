@@ -12,6 +12,8 @@ export interface Property {
   lotSizeUnit?: string;
   yearBuilt?: number;
   ownerId?: string; // contacts.id
+  latitude?: number | null;
+  longitude?: number | null;
   meta?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
