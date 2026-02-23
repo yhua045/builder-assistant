@@ -242,3 +242,40 @@ cd ios && pod install
 - **On-device QA**: Verify mic recording → Groq STT → LLM extraction → form pre-fill on both iOS and Android physical devices per the checklist in the design doc.
 - **Wire `MobileAudioRecorder` in DI**: Confirm mic permissions work on-device then remove `MockAudioRecorder` from the default DI registration.
 - **`durationEstimate` / `trade` fields in TaskForm**: `TaskDraft` includes these fields but `TaskForm` does not yet render them. Add inputs if the STT service starts returning them.
+
+---
+
+## 7. Issue #97 — LocationService: Find Nearby Projects & Rank Matches (2026-02-24)
+
+### Key Decisions
+- **Coordinates live on `Property`, not `Project`**: A property is a physical place; multiple projects may share one property. Adding `latitude`/`longitude` to the `properties` table is architecturally correct.
+- **Bounding-box + Haversine, no R-Tree**: At 10–20 active projects per small-to-medium builder, a SQL bounding-box pre-filter + in-JS Haversine refinement runs in sub-millisecond time. R-Tree was explicitly considered and rejected — the sync-trigger overhead and Drizzle incompatibility outweigh any gain at this scale. Geohash prefix indexing noted as the future upgrade path if data grows.
+- **`LocalLocationAdapter` as primary, `RemoteLocationAdapter` as skeleton**: The app must work offline on-site. Remote adapter throws `not_implemented` until a backend spatial endpoint is built (separate ticket).
+- **Composite ranking (70/30)**: 70% proximity score (`1 − d / radius`) + 30% recency score (normalised project `updatedAt`) gives sensible defaults that weight closeness heavily while breaking ties by recent activity.
+- **`GetNearbyProjectsUseCase` for online/offline routing**: Injected `NetworkStatusProvider` keeps routing logic in the use case, not in the adapters. DI-registered with a simple `{ isOnline: () => true }` stub until a proper `NetInfo` wrapper is created.
+- **Migration 0011 as simple `ALTER TABLE`**: SQLite allows `ADD COLUMN` for nullable columns with no default — no recreation/copy needed. Applied automatically on app start via `getBundledMigrations()`.
+- **`haversineMeters` as a standalone pure utility** (`src/utils/haversine.ts`): Zero dependencies, trivially unit-testable, reusable from any layer.
+
+### Completed
+- Design doc at `design/issue-97-location-service.md` (approved before implementation).
+- `src/application/services/ILocationService.ts` — new port: `findNearbyProjects`, `PropertyMatch`, `NearbySearchOptions`.
+- `src/domain/entities/Property.ts` — added `latitude?: number | null`, `longitude?: number | null`.
+- `src/infrastructure/database/schema.ts` — added `latitude: real('latitude')` and `longitude: real('longitude')` nullable columns to `properties` table.
+- `src/infrastructure/database/migrations.ts` — migration `0011_add_property_coords` with two `ALTER TABLE properties ADD COLUMN` statements.
+- `src/infrastructure/mappers/ProjectMapper.ts` — `mapPropertyFromRow` updated to map `latitude` / `longitude` from query rows.
+- `src/utils/haversine.ts` — pure Haversine great-circle distance function.
+- `src/infrastructure/location/LocalLocationAdapter.ts` — offline-first adapter: SQL bounding-box, Haversine refinement, composite 70/30 ranking.
+- `src/infrastructure/location/RemoteLocationAdapter.ts` — skeleton; throws `not_implemented` until backend is ready.
+- `src/application/usecases/location/GetNearbyProjectsUseCase.ts` — online/offline routing, `minConfidence` filter, `maxResults` cap; exports `NetworkStatusProvider` port.
+- `src/infrastructure/di/registerServices.ts` — registers `LocalLocationAdapter`, `RemoteLocationAdapter`, and `GetNearbyProjectsUseCase`.
+- **19 new tests** — all green:
+  - `__tests__/unit/haversine.test.ts` (5 tests) — pure math coverage including symmetry, antipodal sanity, real-world Sydney distances.
+  - `__tests__/unit/GetNearbyProjectsUseCase.test.ts` (7 tests) — offline/online routing, fallback on remote failure, maxResults cap, minConfidence filter, opts pass-through.
+  - `__tests__/integration/LocalLocationAdapter.integration.test.ts` (7 tests) — seeded in-memory SQLite, radius filtering, coordinate exclusion, ranking order, maxResults, empty-array edge case.
+- Full Jest suite: **528 tests pass, 0 failures**. TypeScript strict check (`npx tsc --noEmit`) clean.
+
+### Pending / Next Steps
+- **Populate property coordinates**: Decide mechanism — manual entry in Property form, GPS capture on project creation, or geocoding on address save. Schema is ready; no blocker.
+- **`NetworkStatusProvider` real implementation**: Wrap `@react-native-community/netinfo` for production. Currently registered as a static `{ isOnline: () => true }` stub.
+- **Backend `/api/projects/nearby` endpoint**: Implement server-side PostGIS query to enable `RemoteLocationAdapter`. Once done, replace `throw not_implemented` with `fetch` call.
+- **UI wiring in TaskScreen**: Consume `GetNearbyProjectsUseCase` to suggest nearest project automatically when creating a new task.
