@@ -64,6 +64,13 @@
       "when": 1771300670794,
       "tag": "0008_good_mattie_franklin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771809855302,
+      "tag": "0009_lush_stryfe",
+      "breakpoints": true
     }
   ]
 }

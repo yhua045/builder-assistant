@@ -78,6 +78,18 @@ export const properties = sqliteTable('properties', {
 });
 
 // Contacts Table
+
+// Last-known locations (append-log, pruned by retention)
+export const lastKnownLocations = sqliteTable('last_known_locations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  latitude: real('latitude').notNull(),
+  longitude: real('longitude').notNull(),
+  accuracyMeters: real('accuracy_meters'),
+  altitude: real('altitude'),
+  timestamp: text('timestamp').notNull(),  // ISO 8601 (device fix time)
+  savedAt: integer('saved_at').notNull(),  // Unix ms (wall clock insert time)
+});
+
 export const contacts = sqliteTable('contacts', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),

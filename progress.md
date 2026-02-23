@@ -166,6 +166,46 @@
 
 ---
 
+## 6. Issue #96 — GPS Service: Best-Known Location with Sync/Async API (2026-02-23)
+
+### Key Decisions
+- **Hybrid async/sync API**: Primary API `getBestLocation()` is `async` (handles OS permission prompts, timeouts, and fallbacks). Secondary API `getLastKnownLocation()` returns the in-memory cached value synchronously for callers that need immediate, zero-latency access.
+- **Append-log + prune persistence**: `last_known_locations` uses an append-log pattern (plain `INSERT`) rather than a single-row upsert (delete + insert transaction). Each `save()` appends a row then deletes rows older than `LOCATION_LOG_RETENTION_MS` (24 h). This avoids any brief empty-table window inherent in a delete-then-insert approach, and incidentally provides a short debug history for free. SQLite's serialised write model prevents any concurrent-writer race.
+- **`DeviceGpsService` owns permission flow**: `DeviceGpsService` requests Android `ACCESS_FINE_LOCATION` permission internally and surfaces a typed `'permission_denied'` error. `GetBestLocationUseCase` catches this (and any other device error) and falls back to the persisted last-known location — keeping the use case implementation-agnostic of permission UX.
+- **`DeviceLocationProvider` port separates device concern from use case**: The use case depends on a minimal `DeviceLocationProvider` interface (`getCurrentLocation()`), not the full `IGpsService`. Infrastructure adapters (`DeviceGpsService`, `MockGpsService`) implement this port, preserving Clean Architecture inward-dependency flow.
+- **Dynamic `require` in `DeviceGpsService`**: `react-native-geolocation-service` is required dynamically at runtime so the adapter degrades gracefully in environments where the native module is not yet linked (tests, CI).
+- **Drizzle is the single persistence layer**: `AsyncStorage` was considered but rejected; all location persistence goes through Drizzle to keep the persistence layer uniform, as required by CLAUDE.md.
+
+### ⚠️ Gotcha
+`react-native-geolocation-service` is not installed in `package.json` yet. `DeviceGpsService` uses a dynamic `require()` that throws `'geolocation_module_missing'` if the native module is absent — this is caught by `GetBestLocationUseCase` and treated as a fallback signal. Install before on-device use:
+```bash
+npm install react-native-geolocation-service
+cd ios && pod install
+```
+
+### Completed
+- Design doc at `design/issue-96-gps-service.md` (user story, architecture, interface contracts, persistence strategy, open questions resolved, TDD implementation order).
+- `IGpsService` port + `GeoLocation` / `GetLocationOptions` types in `src/application/services/IGpsService.ts`.
+- `StoredLocationRepository` interface in `src/domain/repositories/StoredLocationRepository.ts`.
+- `GetBestLocationUseCase` in `src/application/usecases/location/GetBestLocationUseCase.ts` (maxAgeMs cache-fast-return, device fix, accuracy gate, permission/timeout fallback to last-known, null-safe).
+- `MockGpsService` and `MockStoredLocationRepository` in `src/infrastructure/location/`.
+- `DrizzleStoredLocationRepository` in `src/infrastructure/location/DrizzleStoredLocationRepository.ts` (append + 24h prune, `better-sqlite3`-compatible for tests).
+- `DeviceGpsService` in `src/infrastructure/location/DeviceGpsService.ts` (Android permission request, dynamic geolocation require, `timeoutMs` / `maxAgeMs` forwarded to native API).
+- `StoredLocationRepository` and `GpsService` registered as singletons in `src/infrastructure/di/registerServices.ts`.
+- `last_known_locations` table added to `src/infrastructure/database/schema.ts`.
+- Drizzle-kit generated migration `drizzle/migrations/0009_lush_stryfe.sql` + snapshot `drizzle/migrations/meta/0009_snapshot.json`; registered in `drizzle/migrations/migrations.js`.
+- Bundled migration entry `0010_add_last_known_locations` added to `src/infrastructure/database/migrations.ts` for runtime app auto-apply.
+- 4 unit tests in `__tests__/unit/GetBestLocationUseCase.test.ts` — all passing.
+- 1 integration test in `__tests__/integration/DrizzleStoredLocationRepository.integration.test.ts` — verifies migration applied and save→getLastKnown roundtrip works.
+- TypeScript strict check clean (`npx tsc --noEmit` passes).
+
+### Pending / Next Steps
+- **Install native module**: `npm install react-native-geolocation-service && cd ios && pod install` — required before GPS works on-device.
+- **iOS permission**: Add `NSLocationWhenInUseUsageDescription` to `ios/BuilderAssistantApp/Info.plist`.
+- **Android permission**: Add `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` to `android/app/src/main/AndroidManifest.xml`.
+- **Wire `DeviceGpsService` production injection**: Currently `GpsService` is registered in DI. Confirm it resolves correctly in the app shell once native module is linked.
+- **UI consumption**: No UI components consume the GPS service yet — future feature (e.g. pre-fill site address on task/project creation).
+- **Continuous tracking**: Observable/subscribe API deferred to a separate feature when the app needs live location updates.
 ## 6. Issue #103 — Voice Production Wiring (Groq STT + LLM) (2026-02-23)
 
 ### Key Decisions

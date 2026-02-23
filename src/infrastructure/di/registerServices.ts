@@ -12,6 +12,8 @@ import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
 import { MockAudioRecorder } from '../voice/MockAudioRecorder';
 import { MockVoiceParsingService } from '../voice/MockVoiceParsingService';
+import { DrizzleStoredLocationRepository } from '../location/DrizzleStoredLocationRepository';
+import { DeviceGpsService } from '../location/DeviceGpsService';
 import { MobileAudioRecorder } from '../voice/MobileAudioRecorder';
 import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
@@ -63,6 +65,10 @@ if (typeof (container as any).registerSingleton === 'function') {
 	// mocked container to avoid runtime errors; tests are expected to control the
 	// container behavior themselves.
 }
+
+// Location services
+container.registerSingleton('StoredLocationRepository', DrizzleStoredLocationRepository);
+container.registerSingleton('GpsService', DeviceGpsService);
 
 export default container;
 
