@@ -206,6 +206,9 @@ cd ios && pod install
 - **Wire `DeviceGpsService` production injection**: Currently `GpsService` is registered in DI. Confirm it resolves correctly in the app shell once native module is linked.
 - **UI consumption**: No UI components consume the GPS service yet — future feature (e.g. pre-fill site address on task/project creation).
 - **Continuous tracking**: Observable/subscribe API deferred to a separate feature when the app needs live location updates.
+
+
+
 ## 6. Issue #103 — Voice Production Wiring (Groq STT + LLM) (2026-02-23)
 
 ### Key Decisions
