@@ -84,3 +84,4 @@ ios/build/
 .env
 .env.local
 .env.*.local
+/.env.development

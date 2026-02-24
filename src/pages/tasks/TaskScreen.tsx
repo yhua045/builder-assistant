@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
+import { container } from 'tsyringe';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { TaskPhotoPreview } from '../../components/tasks/TaskPhotoPreview';
 import MockVoiceParsingService from '../../infrastructure/voice/MockVoiceParsingService';
@@ -8,7 +9,8 @@ import MockAudioRecorder from '../../infrastructure/voice/MockAudioRecorder';
 import { useVoiceTask } from '../../hooks/useVoiceTask';
 import { useTasks } from '../../hooks/useTasks';
 import { useCameraTask, type UseCameraTaskReturn } from '../../hooks/useCameraTask';
-import { TaskDraft } from '../../application/services/IVoiceParsingService';
+import { IVoiceParsingService, TaskDraft } from '../../application/services/IVoiceParsingService';
+import { IAudioRecorder } from '../../application/services/IAudioRecorder';
 import { ICameraService } from '../../application/services/ICameraService';
 import type { Task } from '../../domain/entities/Task';
 
@@ -25,8 +27,29 @@ interface Props {
 }
 
 export default function TaskScreen({ onClose, audioRecorder, voiceParsingService, cameraAdapter, cameraHook: cameraHookProp }: Props) {
-  const recorder = useMemo(() => audioRecorder ?? new MockAudioRecorder(), [audioRecorder]);
-  const voiceService = useMemo(() => voiceParsingService ?? new MockVoiceParsingService(), [voiceParsingService]);
+  const recorder = useMemo(() => {
+    if (audioRecorder) return audioRecorder;
+    try {
+      const resolved = container.resolve<IAudioRecorder>('IAudioRecorder');
+      console.log('[TaskScreen] using DI audio recorder:', resolved?.constructor?.name ?? typeof resolved);
+      return resolved;
+    } catch (error) {
+      console.log('[TaskScreen] fallback to MockAudioRecorder (DI resolve failed):', error);
+      return new MockAudioRecorder();
+    }
+  }, [audioRecorder]);
+
+  const voiceService = useMemo(() => {
+    if (voiceParsingService) return voiceParsingService;
+    try {
+      const resolved = container.resolve<IVoiceParsingService>('IVoiceParsingService');
+      console.log('[TaskScreen] using DI voice service:', resolved?.constructor?.name ?? typeof resolved);
+      return resolved;
+    } catch (error) {
+      console.log('[TaskScreen] fallback to MockVoiceParsingService (DI resolve failed):', error);
+      return new MockVoiceParsingService();
+    }
+  }, [voiceParsingService]);
 
   const { state, startRecording, stopAndParse } = useVoiceTask(recorder, voiceService);
   const { createTask, updateTask } = useTasks();

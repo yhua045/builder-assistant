@@ -1,6 +1,12 @@
 import 'reflect-metadata';
 // Allow access to `process.env` in RN build-time scripts; keep typing loose here.
 declare const process: any;
+import {
+	FORCE_REAL_AUDIO as ENV_FORCE_REAL_AUDIO,
+	GROQ_API_KEY as ENV_GROQ_API_KEY,
+	LOCATION_REMOTE_ENABLED as ENV_LOCATION_REMOTE_ENABLED,
+	VOICE_USE_MOCK_PARSER as ENV_VOICE_USE_MOCK_PARSER,
+} from '@env';
 import { container } from 'tsyringe';
 import { DrizzleProjectRepository } from '../repositories/DrizzleProjectRepository';
 import { DrizzleInvoiceRepository } from '../repositories/DrizzleInvoiceRepository';
@@ -41,23 +47,41 @@ if (typeof (container as any).registerSingleton === 'function') {
 	//   __DEV__ = false (production/release)  → Real Groq-backed adapters
 	//   VOICE_USE_MOCK_PARSER = 'true'        → Keep mock parser (soft rollout)
 	//
-	const GROQ_API_KEY = process.env.GROQ_API_KEY ?? '';
+	const GROQ_API_KEY = ENV_GROQ_API_KEY ?? process.env.GROQ_API_KEY ?? '';
+	if (__DEV__) {
+		console.log('[Voice][Env] GROQ_API_KEY diagnostics', {
+			hasKey: GROQ_API_KEY.length > 0,
+			length: GROQ_API_KEY.length,
+			masked: maskSecret(GROQ_API_KEY),
+			appEnv: process?.env?.APP_ENV ?? 'unset',
+			envHasKey: !!process?.env && Object.prototype.hasOwnProperty.call(process.env, 'GROQ_API_KEY'),
+		});
+	}
 
 	// Allow forcing the real audio recorder via env var when running locally:
 	//   FORCE_REAL_AUDIO=true npx react-native run-ios
-	const forceRealRecorder = process.env.FORCE_REAL_AUDIO === 'true';
+	const forceRealRecorder = (ENV_FORCE_REAL_AUDIO ?? process.env.FORCE_REAL_AUDIO) === 'true';
 	const useMockVoice = __DEV__ && !forceRealRecorder;
-	const useMockParser = useMockVoice || process.env.VOICE_USE_MOCK_PARSER === 'true';
+	const useMockParser = useMockVoice || (ENV_VOICE_USE_MOCK_PARSER ?? process.env.VOICE_USE_MOCK_PARSER) === 'true';
 
-	if (useMockVoice) {
-		container.registerSingleton('IAudioRecorder', MockAudioRecorder);
-	} else {
+	// if (useMockVoice) {
+	// 	container.registerSingleton('IAudioRecorder', MockAudioRecorder);
+	// } else {
 		container.registerSingleton('IAudioRecorder', MobileAudioRecorder);
+	// }
+
+	// Temporary startup debug: force-resolve recorder so constructor logs are emitted
+	// and print the concrete instance name in Metro / DevTools.
+	try {
+		const resolvedRecorder = container.resolve<any>('IAudioRecorder');
+		console.log('[DI] IAudioRecorder resolved to:', resolvedRecorder?.constructor?.name ?? typeof resolvedRecorder);
+	} catch (error) {
+		console.log('[DI] Failed to resolve IAudioRecorder during startup:', error);
 	}
 
-	if (useMockParser) {
-		container.registerSingleton('IVoiceParsingService', MockVoiceParsingService);
-	} else {
+	// if (useMockParser) {
+	// 	container.registerSingleton('IVoiceParsingService', MockVoiceParsingService);
+	// } else {
 		container.register('IVoiceParsingService', {
 			useFactory: () =>
 				new RemoteVoiceParsingService(
@@ -65,7 +89,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 					new GroqTranscriptParser(GROQ_API_KEY),
 				),
 		});
-	}
+	//}
 } else {
 	// tsyringe was mocked (e.g. in tests). Don't attempt registrations against the
 	// mocked container to avoid runtime errors; tests are expected to control the
@@ -85,7 +109,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 	//   'true'  → attempt server-side spatial query when online (requires backend endpoint)
 	//   unset / anything else → local-only (safe default; remote skeleton throws not_implemented)
 	//
-	const locationRemoteEnabled = process.env.LOCATION_REMOTE_ENABLED === 'true';
+	const locationRemoteEnabled = (ENV_LOCATION_REMOTE_ENABLED ?? process.env.LOCATION_REMOTE_ENABLED) === 'true';
 	container.register('GetNearbyProjectsUseCase', {
 		useFactory: () =>
 			new GetNearbyProjectsUseCase(
@@ -98,4 +122,10 @@ if (typeof (container as any).registerSingleton === 'function') {
 }
 
 export default container;
+
+function maskSecret(value: string): string {
+	if (!value) return '<empty>';
+	if (value.length <= 8) return `${value[0]}***${value[value.length - 1]}`;
+	return `${value.slice(0, 4)}***${value.slice(-4)}`;
+}
 

@@ -14,7 +14,24 @@ export class RemoteVoiceParsingService implements IVoiceParsingService {
 
   async parseAudioToTaskDraft(audio: ArrayBuffer): Promise<TaskDraft> {
     const transcript = await this.stt.transcribe(audio, 'audio/mp4');
-    return this.parser.parse(transcript);
+    if (__DEV__) {
+      try {
+        console.log('[Voice][Remote] transcript (preview)', transcript.slice(0, 1000));
+      } catch (e) {
+        console.log('[Voice][Remote] transcript (preview) failed to log', e);
+      }
+    }
+
+    const draft = await this.parser.parse(transcript);
+    if (__DEV__) {
+      try {
+        console.log('[Voice][Remote] parsed draft', draft);
+      } catch (e) {
+        console.log('[Voice][Remote] parsed draft failed to log', e);
+      }
+    }
+
+    return draft;
   }
 }
 

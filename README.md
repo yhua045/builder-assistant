@@ -165,4 +165,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 cd ios && pod install && cd ..
 ```
 
-- For the Groq-based voice adapters configure a `GROQ_API_KEY` in your `.env` (use `react-native-config` or your preferred env loader). Do not commit `.env` to source control.
+- For the Groq-based voice adapters configure `GROQ_API_KEY` in `.env.development` (and optionally `.env.production`).
+- This project loads env values via `react-native-dotenv` with `APP_ENV`:
+	- `npm run start:dev` / `npm run ios-15` → uses development env
+	- `npm run start:prod` / `npm run ios-15:prod` → uses production env
+- Do not commit real API keys to source control.

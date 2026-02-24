@@ -14,10 +14,22 @@ export function registerFactory(key: string, factory: Factory) {
 }
 
 export function resolve<T>(key: string): T {
-  if (registry.has(key)) return registry.get(key) as T;
+  if (registry.has(key)) {
+    const inst = registry.get(key) as T;
+    try {
+      // Log resolved implementation for easier debugging in dev
+      // eslint-disable-next-line no-console
+      console.debug(`[DI] resolve(${key}) ->`, inst && (inst.constructor ? inst.constructor.name : typeof inst));
+    } catch {}
+    return inst;
+  }
   if (factories.has(key)) {
     const inst = factories.get(key)!();
     registry.set(key, inst);
+    try {
+      // eslint-disable-next-line no-console
+      console.debug(`[DI] resolve(${key}) via factory ->`, inst && (inst.constructor ? inst.constructor.name : typeof inst));
+    } catch {}
     return inst as T;
   }
 
