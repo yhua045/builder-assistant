@@ -43,7 +43,10 @@ if (typeof (container as any).registerSingleton === 'function') {
 	//
 	const GROQ_API_KEY = process.env.GROQ_API_KEY ?? '';
 
-	const useMockVoice = __DEV__;
+	// Allow forcing the real audio recorder via env var when running locally:
+	//   FORCE_REAL_AUDIO=true npx react-native run-ios
+	const forceRealRecorder = process.env.FORCE_REAL_AUDIO === 'true';
+	const useMockVoice = __DEV__ && !forceRealRecorder;
 	const useMockParser = useMockVoice || process.env.VOICE_USE_MOCK_PARSER === 'true';
 
 	if (useMockVoice) {
