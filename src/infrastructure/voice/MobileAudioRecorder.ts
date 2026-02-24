@@ -1,6 +1,30 @@
 import AudioRecorderPlayer from 'react-native-nitro-sound';
 import RNFS from 'react-native-fs';
+import { Platform } from 'react-native';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { IAudioRecorder, AudioRecording } from '../../application/services/IAudioRecorder';
+
+/**
+ * Request microphone permission on iOS and Android before recording.
+ * Throws if the user denies or if the permission is blocked.
+ */
+async function requestMicrophonePermission(): Promise<void> {
+  const permission = Platform.select({
+    ios: PERMISSIONS.IOS.MICROPHONE,
+    android: PERMISSIONS.ANDROID.RECORD_AUDIO,
+  });
+  if (!permission) return;
+
+  const status = await check(permission);
+  if (status === RESULTS.GRANTED) return;
+
+  const result = await request(permission);
+  if (result !== RESULTS.GRANTED) {
+    throw new Error(
+      `Microphone permission ${result}. Please enable it in Settings > Builder Assistant.`
+    );
+  }
+}
 
 /**
  * Concrete IAudioRecorder for iOS and Android using react-native-nitro-sound.
@@ -19,6 +43,7 @@ export class MobileAudioRecorder implements IAudioRecorder {
   private currentPath: string | null = null;
 
   async startRecording(): Promise<void> {
+    await requestMicrophonePermission();
     const path = `${RNFS.CachesDirectoryPath}/voice-${Date.now()}.mp4`;
     this.currentPath = path;
     await this.player.startRecorder(path);
