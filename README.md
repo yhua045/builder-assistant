@@ -6,17 +6,17 @@ A comprehensive React Native application for building project management, design
 
 ### Core Functionality
 - **Project Management**: Create and track building projects with timeline and budget management
-- **Design Flaw Detection**: Identifies potential structural and design issues early in the planning phase
-- **Material Estimation**: Calculates accurate material quantities and cost estimates
-- **Timeline Management**: Manages project phases with dependency tracking
+- **Financial Tracking**: Full lifecycle management for Invoices, Payments, and Quotations
+- **Smart Data Entry**: Snap receipts and upload invoice PDFs with automated OCR extraction
+- **Task Management**: Track tasks with camera attachments and AI-powered voice entry
 - **Resource Planning**: Assists in coordinating materials and workforce scheduling
 
 ### Technical Features
 - **Clean Architecture**: Separates domain logic from UI and platform-specific code
 - **Cross-Platform**: Runs on both iOS and Android with shared business logic
 - **TypeScript**: Full type safety and enhanced development experience
-- **Offline Storage**: Local data persistence using AsyncStorage
-- **Real-time Analysis**: Provides instant project analysis and recommendations
+- **Offline Storage**: Local data persistence using Drizzle ORM and SQLite
+- **AI Integration**: Groq STT + LLM for voice parsing, and deterministic OCR normalization
 
 ## 🏗️ Architecture
 
@@ -127,9 +127,9 @@ npx tsc --noEmit
 ## 🎯 Core Use Cases
 
 - **Create Project**: Initialize new building projects with validation
-- **Project Analysis**: Comprehensive analysis including design flaw detection
-- **Material Management**: Track materials with cost and delivery estimates
-- **Timeline Validation**: Detect scheduling conflicts and dependencies
+- **Financial Management**: Track invoices, payments, and quotations
+- **Smart Receipts**: Snap and auto-extract receipt data via OCR
+- **Task Management**: Create tasks via voice dictation or camera attachments
 - **Progress Tracking**: Monitor project completion and milestones
 
 ## 🔄 Clean Architecture Benefits

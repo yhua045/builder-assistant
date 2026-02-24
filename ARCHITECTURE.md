@@ -15,6 +15,8 @@ Builder Assistant is a React Native construction project management app for owne
 | Persistence | Drizzle ORM v0.45 over `react-native-sqlite-storage` (SQLite) |
 | File Storage | `react-native-fs` (abstracted via `LocalDocumentStorageEngine`) |
 | Camera / File Pick | `react-native-image-picker`, `react-native-document-picker` |
+| Audio / Voice | `react-native-nitro-sound`, Groq STT + LLM |
+| PDF Conversion | `rn-pdf-renderer` |
 | ML / OCR | `@react-native-ml-kit/text-recognition` + deterministic normalizer |
 | DI Container | Lightweight custom registry (`src/infrastructure/di/container.ts`) + `tsyringe` (decorator pattern) |
 | Testing | Jest 29 + React Test Renderer + `@testing-library/react-native` |
@@ -129,7 +131,7 @@ Thin orchestration — no database access, no UI.
 | payment/ | `RecordPaymentUseCase`, `ListPaymentsUseCase` |
 | quotation/ | `CreateQuotationUseCase`, `GetQuotationByIdUseCase`, `ListQuotationsUseCase`, `UpdateQuotationUseCase`, `DeleteQuotationUseCase` |
 | receipt/ | `SnapReceiptUseCase` |
-| task/ | task use cases |
+| task/ | `CreateTaskUseCase`, `CreateTaskFromPhotoUseCase`, `UpdateTaskUseCase`, `DeleteTaskUseCase`, `GetTaskUseCase`, `ListTasksUseCase` |
 
 **Normalizers / AI** (`src/application/receipt/`, `src/application/ai/`) — rules-based field extraction for receipt and invoice OCR; `IReceiptNormalizer` and `IInvoiceNormalizer` are the interfaces; `DeterministicReceiptNormalizer` / `InvoiceNormalizer` are the live implementations.
 
@@ -154,6 +156,8 @@ All I/O and platform concerns live here. Implements domain interfaces; nothing i
 - File Pick: `IFilePickerAdapter` → `MobileFilePickerAdapter`
 - File System: `IFileSystemAdapter` → `MobileFileSystemAdapter` (wraps `react-native-fs`)
 - OCR: `MobileOcrAdapter` (wraps ML Kit text recognition)
+- PDF Conversion: `IPdfConverter` → `MobilePdfConverter` (wraps `rn-pdf-renderer`)
+- Voice/Audio: `IAudioRecorder` → `MobileAudioRecorder` (wraps `react-native-nitro-sound`), `IVoiceParsingService` → `RemoteVoiceParsingService` (Groq STT + LLM)
 
 **DI Container** (`src/infrastructure/di/`):
 - Lightweight key-based registry (`container.ts`): `registerInstance`, `registerFactory`, `resolve`, `clearContainer`
@@ -171,6 +175,9 @@ All I/O and platform concerns live here. Implements domain interfaces; nothing i
 | `usePayments` | Payment recording + list |
 | `useQuotations` | Quotation CRUD |
 | `useSnapReceipt` | Camera → OCR → ReceiptForm flow |
+| `useTasks` | Task CRUD |
+| `useCameraTask` | Camera → Task creation flow |
+| `useVoiceTask` | Voice recording → STT → Task draft flow |
 | `useContacts` / `useTeams` | Selector data (in-memory stubs; Drizzle-backed repos pending) |
 
 **Components** (`src/components/`) — purely presentational; receive data and callbacks via props. All styling via NativeWind Tailwind classes (avoid inline `style` props).
