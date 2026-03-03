@@ -282,3 +282,65 @@ cd ios && pod install
 - **`NetworkStatusProvider` real implementation**: Wrap `@react-native-community/netinfo` for production. Currently registered as a static `{ isOnline: () => true }` stub.
 - **Backend `/api/projects/nearby` endpoint**: Implement server-side PostGIS query to enable `RemoteLocationAdapter`. Once done, replace `throw not_implemented` with `fetch` call.
 - **UI wiring in TaskScreen**: Consume `GetNearbyProjectsUseCase` to suggest nearest project automatically when creating a new task.
+
+---
+
+## 8. Issue #108 — Task Detail: Documents, Dependencies, Subcontractor, Delay Reason (2026-03-03)
+
+### Key Decisions
+- **Extend `TaskDetailsPage`, not rebuild**: All existing fields (title, status badge, due date, scheduled date, project ID, notes) are preserved in place. The four new sections (Subcontractor, Documents, Dependencies, Delay Log) are appended below existing content inside the same `ScrollView` — zero regression risk to current UI.
+- **`delay_reason_types` as a lookup table (seed data)**: Delay reasons are user-selectable from a fixed lookup table (`delay_reason_types`) rather than free text, enabling consistent reporting. 10 seed rows (Weather, Material delivery, Subcontractor no-show, Permit/council delay, Design change, Equipment failure, Site access, Labour shortage, Client-requested hold, Other) are inserted via `INSERT OR IGNORE` in migration `0012`. The label is denormalised into `task_delay_reasons.reason_type_label` at write time for display without joins.
+- **`INSERT OR IGNORE` for dependency idempotency**: `addDependency` uses `INSERT OR IGNORE` backed by a `UNIQUE(task_id, depends_on_task_id)` constraint — calling it twice for the same pair is silently safe.
+- **BFS circular-dependency guard (depth 10)**: `AddTaskDependencyUseCase` walks the dependency graph with a BFS up to 10 hops before accepting an `addDependency` call. Depth limit chosen to keep the check cheap while covering realistic project task graphs; deeper chains are accepted without complaint.
+- **`AddDelayReasonUseCase` sets task to `blocked`**: When a delay reason is added, the use case auto-transitions the task status to `'blocked'` if it is not already. Status reverts only by explicit user action — removing delay reasons does not auto-clear `blocked`.
+- **`GetTaskDetailUseCase` as a read-model aggregator**: Fetches the base task, its dependency tasks, and delay reasons in parallel (`Promise.all`) and returns a `TaskDetail` type — avoids scattering hydration logic across multiple hooks or components.
+- **`delayReasonTypes` exposed via a dedicated `useDelayReasonTypes` hook**: Keeps separation of concerns — `useTasks` manages task lifecycle; `useDelayReasonTypes` is a simple read-only hook for the lookup table, consumed only by `AddDelayReasonModal`.
+- **Raw SQL pattern maintained**: All new `DrizzleTaskRepository` methods follow the existing `db.executeSql()` pattern (not Drizzle query builder) for consistency with the rest of the infrastructure layer.
+
+### Completed
+- Design doc at `design/issue-108-task-detail.md` (DB changes, domain model, use cases, UI plan, test plan — APPROVED before implementation).
+- **Schema** (`src/infrastructure/database/schema.ts`): Added `subcontractor_id` column to `tasks`; added three new tables: `task_dependencies` (with `UNIQUE` index), `delay_reason_types` (lookup), `task_delay_reasons`.
+- **Migration** `0012_task_detail_extensions` (`src/infrastructure/database/migrations.ts`): 5 SQL DDL statements + 10 `INSERT OR IGNORE` seed rows for delay reason types.
+- **Domain entities**:
+  - `src/domain/entities/DelayReason.ts` — new: `DelayReasonType` + `DelayReason` interfaces.
+  - `src/domain/entities/Task.ts` — added `subcontractorId?: string` and `delayReasons?: DelayReason[]`.
+- **Repository interfaces**:
+  - `src/domain/repositories/TaskRepository.ts` — added 7 new methods: `addDependency`, `removeDependency`, `findDependencies`, `findDependents`, `addDelayReason`, `removeDelayReason`, `findDelayReasons`.
+  - `src/domain/repositories/DelayReasonTypeRepository.ts` — new read-only interface: `findAll()`, `findById()`.
+- **Use cases** (all in `src/application/usecases/task/`):
+  - `AddTaskDependencyUseCase.ts` — validates both tasks exist, rejects self-dependency, BFS circular check, calls `repo.addDependency`.
+  - `RemoveTaskDependencyUseCase.ts` — delegates to `repo.removeDependency`.
+  - `AddDelayReasonUseCase.ts` — validates reason type and task exist, adds delay, sets task status to `'blocked'`.
+  - `RemoveDelayReasonUseCase.ts` — delegates to `repo.removeDelayReason`.
+  - `GetTaskDetailUseCase.ts` — parallel fetch of task + dependencies + delay reasons; exports `TaskDetail` type.
+- **Infrastructure**:
+  - `src/infrastructure/repositories/DrizzleTaskRepository.ts` — updated row mappers and INSERT/UPDATE SQL for `subcontractor_id`; added 7 new methods (dependency and delay CRUD); `findDelayReasons` LEFT JOINs `delay_reason_types` to populate `reasonTypeLabel`.
+  - `src/infrastructure/repositories/DrizzleDelayReasonTypeRepository.ts` — new read-only repo: `findAll` (active, ordered by `display_order`), `findById`.
+  - `src/infrastructure/di/registerServices.ts` — registered `DrizzleDelayReasonTypeRepository` as singleton under token `'DelayReasonTypeRepository'`.
+- **Hooks**:
+  - `src/hooks/useTasks.ts` — added 5 new methods: `getTaskDetail`, `addDependency`, `removeDependency`, `addDelayReason`, `removeDelayReason`; re-exports `TaskDetail` and `AddDelayReasonInput` types.
+  - `src/hooks/useDelayReasonTypes.ts` — new hook returning `delayReasonTypes: DelayReasonType[]` and `loading`.
+- **UI components** (all in `src/components/tasks/`):
+  - `TaskDocumentSection.tsx` — horizontal chip scroll of linked documents.
+  - `TaskDependencySection.tsx` — dependency list with status badges and "Blocked" indicator when any dependency is incomplete.
+  - `TaskSubcontractorSection.tsx` — subcontractor card (name, trade, phone, email) with edit affordance.
+  - `TaskDelaySection.tsx` — chronological delay log with duration, date, actor, and remove action.
+  - `AddDelayReasonModal.tsx` — bottom-sheet modal: reason type picker (required, from `useDelayReasonTypes`), notes text input, duration (numeric), responsible party.
+- **`src/pages/tasks/TaskDetailsPage.tsx`** — extended to use `getTaskDetail`; loads documents via `DocumentRepository.findByTaskId`; appends four new sections below existing content; wires `AddDelayReasonModal`.
+- **Test fixes** for extended interfaces: `__tests__/unit/CreateTaskFromPhotoUseCase.test.ts` mock repo and `__tests__/unit/TasksScreen.test.tsx` mock hook updated with new methods.
+- **26 new tests** — all passing:
+  - `__tests__/unit/AddTaskDependencyUseCase.test.ts` (4 tests) — valid add, self-dependency rejected, circular rejected, task-not-found rejected.
+  - `__tests__/unit/RemoveTaskDependencyUseCase.test.ts` (1 test) — happy path.
+  - `__tests__/unit/AddDelayReasonUseCase.test.ts` (5 tests) — valid add, unknown/empty reason type rejected, task not found rejected, already-blocked task.
+  - `__tests__/unit/RemoveDelayReasonUseCase.test.ts` (1 test) — happy path.
+  - `__tests__/unit/GetTaskDetailUseCase.test.ts` (3 tests) — not found, hydrated detail with dependencies and delays, empty array edge cases.
+  - `__tests__/integration/DrizzleTaskRepository.taskDetail.integration.test.ts` (12 tests) — dependency CRUD (5), delay reason CRUD (4), subcontractor field roundtrip (2), seeded delay types (1).
+- Full Jest suite: **558 tests pass, 0 failures**. TypeScript strict check (`npx tsc --noEmit`) clean.
+
+### Pending / Next Steps
+- **Subcontractor contact lookup**: `TaskSubcontractorSection` currently displays the raw `subcontractorId` string when a subcontractor is assigned. Wire up a contact resolver (filtered to `'contractor'`/`'subcontractor'` roles per OQ-5 in design doc) to show name, trade, phone, and email.
+- **"Add Dependency" task picker**: The `TaskDependencySection` renders existing dependencies and a remove action but the "Add" button has no navigation target yet. Implement a task-picker screen (filtered to same project) and wire `addDependency` on confirm.
+- **Document upload flow**: `TaskDocumentSection` renders existing documents but the "Add Document" button is not yet wired. Implement file-copy + `Document` record creation (reuse `IFilePickerAdapter` + `IFileSystemAdapter`, simpler than invoice upload — no OCR needed).
+- **Remove dependency confirmation UX**: Currently triggers an `Alert.alert` inline in `TaskDetailsPage`. Consider extracting to a reusable confirmation hook.
+- **Cascade delete**: Deleting a task should cascade-delete its `task_dependencies` and `task_delay_reasons` rows. Add `ON DELETE CASCADE` to the FK constraints or handle in `DeleteTaskUseCase`.
+- **On-device QA**: Verify the four new sections render correctly and interactions (add delay, remove dependency) work end-to-end on iOS and Android simulators.

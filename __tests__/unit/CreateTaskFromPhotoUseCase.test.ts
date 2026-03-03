@@ -31,6 +31,13 @@ function makeTaskRepo(): jest.Mocked<TaskRepository> {
     findUpcoming: jest.fn().mockResolvedValue([]),
     update: jest.fn().mockResolvedValue(undefined),
     delete: jest.fn().mockResolvedValue(undefined),
+    addDependency: jest.fn().mockResolvedValue(undefined),
+    removeDependency: jest.fn().mockResolvedValue(undefined),
+    findDependencies: jest.fn().mockResolvedValue([]),
+    findDependents: jest.fn().mockResolvedValue([]),
+    addDelayReason: jest.fn().mockResolvedValue({ id: 'dr-1', taskId: '', reasonTypeId: '', createdAt: '' }),
+    removeDelayReason: jest.fn().mockResolvedValue(undefined),
+    findDelayReasons: jest.fn().mockResolvedValue([]),
   };
 }
 

@@ -648,6 +648,55 @@ const migrations: RNMigration[] = [
       'ALTER TABLE "properties" ADD COLUMN "longitude" real;',
     ],
   },
+  {
+    tag: '0012_task_detail_extensions',
+    hash: '0012_task_detail_extensions',
+    folderMillis: 1772700000000,
+    sql: [
+      // 1. Add subcontractor_id to tasks
+      'ALTER TABLE "tasks" ADD COLUMN "subcontractor_id" text;',
+      // 2. Create task_dependencies join table
+      `CREATE TABLE IF NOT EXISTS "task_dependencies" (
+        "local_id" integer PRIMARY KEY AUTOINCREMENT,
+        "task_id" text NOT NULL,
+        "depends_on_task_id" text NOT NULL,
+        "created_at" integer
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_task_deps_task" ON "task_dependencies" ("task_id");`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS "idx_task_deps_unique" ON "task_dependencies" ("task_id", "depends_on_task_id");`,
+      // 3. Create delay_reason_types lookup table
+      `CREATE TABLE IF NOT EXISTS "delay_reason_types" (
+        "id" text PRIMARY KEY,
+        "label" text NOT NULL,
+        "display_order" integer NOT NULL,
+        "is_active" integer NOT NULL DEFAULT 1
+      );`,
+      // 4. Seed delay_reason_types
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('WEATHER', 'Bad weather', 1, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('MATERIAL_DELAY', 'Material / supply delay', 2, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('SUBCONTRACTOR', 'Subcontractor unavailability', 3, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('PERMIT', 'Permit / approval delay', 4, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('DESIGN_CHANGE', 'Design change', 5, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('EQUIPMENT', 'Equipment breakdown', 6, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('ACCESS', 'Site access issue', 7, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('LABOUR', 'Labour shortage', 8, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('CLIENT', 'Client decision pending', 9, 1);`,
+      `INSERT OR IGNORE INTO "delay_reason_types" ("id", "label", "display_order", "is_active") VALUES ('OTHER', 'Other', 10, 1);`,
+      // 5. Create task_delay_reasons table
+      `CREATE TABLE IF NOT EXISTS "task_delay_reasons" (
+        "local_id" integer PRIMARY KEY AUTOINCREMENT,
+        "id" text NOT NULL UNIQUE,
+        "task_id" text NOT NULL,
+        "reason_type_id" text NOT NULL,
+        "notes" text,
+        "delay_duration_days" real,
+        "delay_date" integer,
+        "actor" text,
+        "created_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_task_delays_task" ON "task_delay_reasons" ("task_id");`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

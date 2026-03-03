@@ -82,6 +82,11 @@ function buildHookReturn(
     updateTask: jest.fn(),
     deleteTask: jest.fn(),
     getTask: jest.fn(),
+    getTaskDetail: jest.fn(),
+    addDependency: jest.fn(),
+    removeDependency: jest.fn(),
+    addDelayReason: jest.fn(),
+    removeDelayReason: jest.fn(),
   };
 }
 
