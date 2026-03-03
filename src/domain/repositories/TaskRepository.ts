@@ -20,7 +20,10 @@ export interface TaskRepository {
   // Delay reasons
   addDelayReason(entry: Omit<DelayReason, 'id' | 'createdAt'>): Promise<DelayReason>;
   removeDelayReason(delayReasonId: string): Promise<void>;
+  resolveDelayReason(delayReasonId: string, resolvedAt: string, mitigationNotes?: string): Promise<void>;
   findDelayReasons(taskId: string): Promise<DelayReason[]>;
+  /** Returns counts per reason type, optionally filtered to a single task. */
+  summarizeDelayReasons(taskId?: string): Promise<{ reasonTypeId: string; count: number }[]>;
 
   // Cascade helpers (used by DeleteTaskUseCase)
   deleteDependenciesByTaskId(taskId: string): Promise<void>;

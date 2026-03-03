@@ -283,6 +283,8 @@ export class DrizzleTaskRepository implements TaskRepository {
       delayDurationDays: entry.delayDurationDays,
       delayDate: entry.delayDate,
       actor: entry.actor,
+      resolvedAt: undefined,
+      mitigationNotes: undefined,
       createdAt: new Date(now).toISOString(),
     };
   }
@@ -316,6 +318,8 @@ export class DrizzleTaskRepository implements TaskRepository {
         delayDurationDays: row.delay_duration_days ?? undefined,
         delayDate: row.delay_date ? new Date(row.delay_date).toISOString() : undefined,
         actor: row.actor || undefined,
+        resolvedAt: row.resolved_at ? new Date(row.resolved_at).toISOString() : undefined,
+        mitigationNotes: row.mitigation_notes || undefined,
         createdAt: new Date(row.created_at).toISOString(),
       });
     }
@@ -338,5 +342,44 @@ export class DrizzleTaskRepository implements TaskRepository {
     await this.ensureInitialized();
     const { db } = getDatabase();
     await db.executeSql('DELETE FROM task_delay_reasons WHERE task_id = ?', [taskId]);
+  }
+
+  async resolveDelayReason(
+    delayReasonId: string,
+    resolvedAt: string,
+    mitigationNotes?: string,
+  ): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    await db.executeSql(
+      `UPDATE task_delay_reasons
+       SET resolved_at = ?, mitigation_notes = ?
+       WHERE id = ?`,
+      [
+        new Date(resolvedAt).getTime(),
+        mitigationNotes || null,
+        delayReasonId,
+      ],
+    );
+  }
+
+  async summarizeDelayReasons(taskId?: string): Promise<{ reasonTypeId: string; count: number }[]> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    let sql = `SELECT reason_type_id, COUNT(*) AS cnt
+               FROM task_delay_reasons`;
+    const params: any[] = [];
+    if (taskId) {
+      sql += ' WHERE task_id = ?';
+      params.push(taskId);
+    }
+    sql += ' GROUP BY reason_type_id ORDER BY cnt DESC';
+    const [result] = await db.executeSql(sql, params);
+    const rows: { reasonTypeId: string; count: number }[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      rows.push({ reasonTypeId: row.reason_type_id, count: Number(row.cnt) });
+    }
+    return rows;
   }
 }

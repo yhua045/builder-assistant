@@ -697,6 +697,15 @@ const migrations: RNMigration[] = [
       `CREATE INDEX IF NOT EXISTS "idx_task_delays_task" ON "task_delay_reasons" ("task_id");`,
     ],
   },
+  {
+    tag: '0013_delay_reason_resolved_at',
+    hash: '0013_delay_reason_resolved_at',
+    folderMillis: 1772900000000,
+    sql: [
+      `ALTER TABLE "task_delay_reasons" ADD COLUMN "resolved_at" integer;`,
+      `ALTER TABLE "task_delay_reasons" ADD COLUMN "mitigation_notes" text;`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
