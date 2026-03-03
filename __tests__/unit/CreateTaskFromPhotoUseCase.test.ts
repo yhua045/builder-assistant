@@ -40,6 +40,8 @@ function makeTaskRepo(): jest.Mocked<TaskRepository> {
     findDelayReasons: jest.fn().mockResolvedValue([]),
     deleteDependenciesByTaskId: jest.fn().mockResolvedValue(undefined),
     deleteDelayReasonsByTaskId: jest.fn().mockResolvedValue(undefined),
+    resolveDelayReason: jest.fn().mockResolvedValue(undefined),
+    summarizeDelayReasons: jest.fn().mockResolvedValue([]),
   };
 }
 

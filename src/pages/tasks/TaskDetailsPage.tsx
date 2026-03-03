@@ -43,6 +43,7 @@ export default function TaskDetailsPage() {
     removeDependency,
     addDelayReason,
     removeDelayReason,
+    resolveDelayReason,
   } = useTasks();
   const { delayReasonTypes } = useDelayReasonTypes();
   const { confirm } = useConfirm();
@@ -174,6 +175,15 @@ export default function TaskDetailsPage() {
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to remove delay reason');
+    }
+  };
+
+  const handleResolveDelayReason = async (delayReasonId: string) => {
+    try {
+      await resolveDelayReason(delayReasonId);
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to resolve delay reason');
     }
   };
 
@@ -324,6 +334,7 @@ export default function TaskDetailsPage() {
             delayReasons={taskDetail?.delayReasons ?? []}
             onAddDelay={() => setShowDelayModal(true)}
             onRemoveDelay={handleRemoveDelayReason}
+            onResolveDelay={handleResolveDelayReason}
           />
         </View>
       </ScrollView>

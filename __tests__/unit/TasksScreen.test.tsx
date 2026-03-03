@@ -87,6 +87,7 @@ function buildHookReturn(
     removeDependency: jest.fn(),
     addDelayReason: jest.fn(),
     removeDelayReason: jest.fn(),
+    resolveDelayReason: jest.fn(),
   };
 }
 

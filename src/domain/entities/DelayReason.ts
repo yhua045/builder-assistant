@@ -10,9 +10,11 @@ export interface DelayReason {
   taskId: string;
   reasonTypeId: string;        // FK to DelayReasonType.id
   reasonTypeLabel?: string;    // denormalised label for display (populated by repo)
-  notes?: string;              // optional supplemental free text
-  delayDurationDays?: number;
-  delayDate?: string;          // ISO date string
-  actor?: string;
+  notes?: string;              // optional supplemental free text (reasonDetails)
+  delayDurationDays?: number;  // estimatedDelayDays
+  delayDate?: string;          // reportedAt — ISO date string
+  actor?: string;              // reportedBy
+  resolvedAt?: string;         // ISO date string — set when the delay is lifted
+  mitigationNotes?: string;    // optional resolution / workaround notes
   createdAt: string;
 }

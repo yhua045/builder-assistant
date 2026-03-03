@@ -1,19 +1,21 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { DelayReason } from '../../domain/entities/DelayReason';
-import { Clock, Plus } from 'lucide-react-native';
+import { Clock, Plus, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 interface Props {
   delayReasons: DelayReason[];
   onAddDelay?: () => void;
   onRemoveDelay?: (id: string) => void;
+  onResolveDelay?: (id: string) => void;
 }
 
-export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay }: Props) {
+export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay, onResolveDelay }: Props) {
   return (
     <View className="bg-card p-4 rounded-lg border border-border">
       <View className="flex-row justify-between items-center mb-3">
@@ -39,15 +41,29 @@ export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay }: Pr
                     {reason.reasonTypeLabel || reason.reasonTypeId}
                   </Text>
                 </View>
-                {reason.delayDurationDays != null && (
-                  <Text className="text-xs text-muted-foreground">
-                    {reason.delayDurationDays}d
-                  </Text>
-                )}
+                <View className="flex-row items-center gap-2">
+                  {reason.resolvedAt ? (
+                    <View className="flex-row items-center gap-1">
+                      <CheckCircle size={14} className="text-green-600" />
+                      <Text className="text-xs text-green-600 font-medium">Resolved</Text>
+                    </View>
+                  ) : (
+                    <Text className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full">Open</Text>
+                  )}
+                  {reason.delayDurationDays != null && (
+                    <Text className="text-xs text-muted-foreground">
+                      {reason.delayDurationDays}d
+                    </Text>
+                  )}
+                </View>
               </View>
 
               {reason.notes && (
                 <Text className="text-sm text-muted-foreground mt-1 ml-6">{reason.notes}</Text>
+              )}
+
+              {reason.mitigationNotes && reason.resolvedAt && (
+                <Text className="text-sm text-muted-foreground italic mt-1 ml-6">↳ {reason.mitigationNotes}</Text>
               )}
 
               <View className="flex-row items-center gap-3 mt-2 ml-6">
@@ -59,19 +75,28 @@ export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay }: Pr
                 {reason.actor && (
                   <Text className="text-xs text-muted-foreground">{reason.actor}</Text>
                 )}
+                {reason.resolvedAt && (
+                  <Text className="text-xs text-muted-foreground">
+                    Resolved {new Date(reason.resolvedAt).toLocaleDateString()}
+                  </Text>
+                )}
                 <Text className="text-xs text-muted-foreground">
                   {new Date(reason.createdAt).toLocaleDateString()}
                 </Text>
               </View>
 
-              {onRemoveDelay && (
-                <TouchableOpacity
-                  onPress={() => onRemoveDelay(reason.id)}
-                  className="mt-2 ml-6"
-                >
-                  <Text className="text-xs text-destructive">Remove</Text>
-                </TouchableOpacity>
-              )}
+              <View className="flex-row gap-3 mt-2 ml-6">
+                {!reason.resolvedAt && onResolveDelay && (
+                  <TouchableOpacity onPress={() => onResolveDelay(reason.id)}>
+                    <Text className="text-xs text-green-600 font-medium">Mark Resolved</Text>
+                  </TouchableOpacity>
+                )}
+                {onRemoveDelay && (
+                  <TouchableOpacity onPress={() => onRemoveDelay(reason.id)}>
+                    <Text className="text-xs text-destructive">Remove</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           ))}
         </View>
