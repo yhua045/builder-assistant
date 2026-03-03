@@ -285,6 +285,7 @@ export const tasks = sqliteTable('tasks', {
     enum: ['low', 'medium', 'high', 'urgent'] 
   }),
   
+  subcontractorId: text('subcontractor_id'), // FK (soft) to contacts.id
   completedDate: integer('completed_date'), // Unix timestamp
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
@@ -292,6 +293,40 @@ export const tasks = sqliteTable('tasks', {
   projectIdx: index('idx_tasks_project').on(table.projectId),
   scheduledIdx: index('idx_tasks_scheduled').on(table.scheduledAt),
   statusIdx: index('idx_tasks_status').on(table.status),
+}));
+
+// Task Dependencies (join table)
+export const taskDependencies = sqliteTable('task_dependencies', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  taskId: text('task_id').notNull(),
+  dependsOnTaskId: text('depends_on_task_id').notNull(),
+  createdAt: integer('created_at'),
+}, (table) => ({
+  taskIdx: index('idx_task_deps_task').on(table.taskId),
+  uniqueDep: uniqueIndex('idx_task_deps_unique').on(table.taskId, table.dependsOnTaskId),
+}));
+
+// Delay Reason Types (lookup / reference data)
+export const delayReasonTypes = sqliteTable('delay_reason_types', {
+  id: text('id').primaryKey(),
+  label: text('label').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+});
+
+// Task Delay Reasons
+export const taskDelayReasons = sqliteTable('task_delay_reasons', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  taskId: text('task_id').notNull(),
+  reasonTypeId: text('reason_type_id').notNull(), // FK (soft) to delay_reason_types.id
+  notes: text('notes'),
+  delayDurationDays: real('delay_duration_days'),
+  delayDate: integer('delay_date'), // Unix ms
+  actor: text('actor'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  taskIdx: index('idx_task_delays_task').on(table.taskId),
 }));
 
 // Inspections Table

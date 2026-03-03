@@ -1,3 +1,5 @@
+import { DelayReason } from './DelayReason';
+
 export interface Task {
   id: string;
   localId?: number; // SQLite INTEGER PRIMARY KEY
@@ -23,7 +25,13 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed' | 'blocked' | 'cancelled';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   
+  // Subcontractor
+  subcontractorId?: string; // contactId of assigned subcontractor
+
+  // Dependencies & delays (hydrated by repository on single-task fetches)
   dependencies?: string[]; // taskIds
+  delayReasons?: DelayReason[];
+
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;

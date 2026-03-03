@@ -1,0 +1,34 @@
+import { RemoveDelayReasonUseCase } from '../../src/application/usecases/task/RemoveDelayReasonUseCase';
+import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+
+function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
+  return {
+    save: jest.fn(),
+    findById: jest.fn().mockResolvedValue(null),
+    findAll: jest.fn().mockResolvedValue([]),
+    findByProjectId: jest.fn().mockResolvedValue([]),
+    findAdHoc: jest.fn().mockResolvedValue([]),
+    findUpcoming: jest.fn().mockResolvedValue([]),
+    update: jest.fn(),
+    delete: jest.fn(),
+    addDependency: jest.fn(),
+    removeDependency: jest.fn(),
+    findDependencies: jest.fn().mockResolvedValue([]),
+    findDependents: jest.fn().mockResolvedValue([]),
+    addDelayReason: jest.fn(),
+    removeDelayReason: jest.fn(),
+    findDelayReasons: jest.fn().mockResolvedValue([]),
+    ...overrides,
+  };
+}
+
+describe('RemoveDelayReasonUseCase', () => {
+  it('removes a delay reason', async () => {
+    const repo = makeMockRepo();
+    const uc = new RemoveDelayReasonUseCase(repo);
+
+    await uc.execute({ delayReasonId: 'delay-1' });
+
+    expect(repo.removeDelayReason).toHaveBeenCalledWith('delay-1');
+  });
+});

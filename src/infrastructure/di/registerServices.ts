@@ -14,6 +14,7 @@ import { DrizzlePaymentRepository } from '../repositories/DrizzlePaymentReposito
 import { DrizzleReceiptRepository } from '../repositories/DrizzleReceiptRepository';
 import { DrizzleTaskRepository } from '../repositories/DrizzleTaskRepository';
 import { DrizzleDocumentRepository } from '../repositories/DrizzleDocumentRepository';
+import { DrizzleDelayReasonTypeRepository } from '../repositories/DrizzleDelayReasonTypeRepository';
 import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
 import { MockAudioRecorder } from '../voice/MockAudioRecorder';
@@ -37,6 +38,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('ReceiptRepository', DrizzleReceiptRepository);
 	container.registerSingleton('TaskRepository', DrizzleTaskRepository);
 	container.registerSingleton('DocumentRepository', DrizzleDocumentRepository);
+	container.registerSingleton('DelayReasonTypeRepository', DrizzleDelayReasonTypeRepository);
 	container.registerSingleton('FileSystemAdapter', MobileFileSystemAdapter);
 	container.registerSingleton('CameraService', MobileCameraAdapter);
 
