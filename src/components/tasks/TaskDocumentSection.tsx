@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Document } from '../../domain/entities/Document';
 import { FileText, Plus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
@@ -11,17 +11,29 @@ interface Props {
   documents: Document[];
   onAddDocument?: () => void;
   onDocumentPress?: (doc: Document) => void;
+  /** Shows a spinner on the Add button while a document is being copied/saved */
+  uploading?: boolean;
 }
 
-export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress }: Props) {
+export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress, uploading }: Props) {
   return (
     <View className="bg-card p-4 rounded-lg border border-border">
       <View className="flex-row justify-between items-center mb-3">
         <Text className="text-sm font-semibold text-muted-foreground">DOCUMENTS</Text>
         {onAddDocument && (
-          <TouchableOpacity onPress={onAddDocument} className="flex-row items-center gap-1">
-            <Plus size={16} className="text-primary" />
-            <Text className="text-sm text-primary font-medium">Add</Text>
+          <TouchableOpacity
+            onPress={uploading ? undefined : onAddDocument}
+            disabled={uploading}
+            className="flex-row items-center gap-1"
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <>
+                <Plus size={16} className="text-primary" />
+                <Text className="text-sm text-primary font-medium">Add</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
       </View>
