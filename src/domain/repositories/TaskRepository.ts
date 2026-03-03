@@ -21,4 +21,8 @@ export interface TaskRepository {
   addDelayReason(entry: Omit<DelayReason, 'id' | 'createdAt'>): Promise<DelayReason>;
   removeDelayReason(delayReasonId: string): Promise<void>;
   findDelayReasons(taskId: string): Promise<DelayReason[]>;
+
+  // Cascade helpers (used by DeleteTaskUseCase)
+  deleteDependenciesByTaskId(taskId: string): Promise<void>;
+  deleteDelayReasonsByTaskId(taskId: string): Promise<void>;
 }

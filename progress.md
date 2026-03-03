@@ -344,3 +344,50 @@ cd ios && pod install
 - **Remove dependency confirmation UX**: Currently triggers an `Alert.alert` inline in `TaskDetailsPage`. Consider extracting to a reusable confirmation hook.
 - **Cascade delete**: Deleting a task should cascade-delete its `task_dependencies` and `task_delay_reasons` rows. Add `ON DELETE CASCADE` to the FK constraints or handle in `DeleteTaskUseCase`.
 - **On-device QA**: Verify the four new sections render correctly and interactions (add delay, remove dependency) work end-to-end on iOS and Android simulators.
+
+---
+
+## Issue #111 — Finish Task Details: Subcontractor Lookup, Dependency Picker, Document Upload, UX Refactor, Cascade Deletes
+
+**Date**: 2026-03-03 | **Branch**: `issue-111` | **Design doc**: `design/issue-111-task-details-followup.md`
+
+### Key Decisions
+- **Cascade delete — application-level** (`DeleteTaskUseCase`): Added two new `TaskRepository` interface methods (`deleteDependenciesByTaskId`, `deleteDelayReasonsByTaskId`) and implemented them in `DrizzleTaskRepository`. Prefer this over a SQLite `ON DELETE CASCADE` migration because SQLite requires full table recreation for FK changes, which adds schema recreation risk. Future ticket can add DB-level cascade via migration once the tooling is verified safe.
+- **`deleteDependenciesByTaskId` cleans both directions**: The SQL deletes rows `WHERE task_id = ? OR depends_on_task_id = ?` so reverse-dependency references (where the deleted task appears as the `depends_on_task_id` in another task's row) are also cleaned up, preventing dangling references.
+- **Subcontractor lookup in page layer**: `TaskDetailsPage` resolves `ContactRepository` from the DI container and calls `findById(subcontractorId)` — the `TaskSubcontractorSection` component remains a pure display component accepting a `SubcontractorInfo` shape. This mirrors the existing pattern used for `DocumentRepository` in the same page.
+- **`TaskPickerModal` as a modal overlay** (not a new navigation screen): Keeps the navigation stack simple; the picker is a short-lived selection UI with no own back-stack entry. `useTasks(projectId)` is used in the modal so it shares the same hook memoisation pattern.
+- **`AddTaskDocumentUseCase`**: New use case in `src/application/usecases/document/` — delegates file copy to `IFileSystemAdapter` and persistence to `DocumentRepository`. Keeps file I/O and DB writes in the application layer, not in UI handlers.
+- **`useConfirm` hook**: Promise-based wrapper around `Alert.alert`. Replaces three inline `Alert.alert` destructive prompts in `TaskDetailsPage` (`handleDelete`, `handleRemoveDependency`, `handleRemoveDelayReason`). Easy to mock in tests via `jest.spyOn(Alert, 'alert')`.
+- **`TaskDocumentSection.uploading` prop**: Disables the Add button and shows an `ActivityIndicator` during file copy. This is declarative and avoids internal state inside the presentational component.
+
+### Completed
+- Design doc created and approved: `design/issue-111-task-details-followup.md`.
+- **`src/hooks/useConfirm.ts`** *(new)*: Promise-based confirmation hook wrapping `Alert.alert`. Accepts `title`, `message`, `confirmLabel`, `cancelLabel`, `destructive` options.
+- **`TaskRepository` interface** (`src/domain/repositories/TaskRepository.ts`): Added `deleteDependenciesByTaskId(taskId)` and `deleteDelayReasonsByTaskId(taskId)`.
+- **`DeleteTaskUseCase`** (`src/application/usecases/task/DeleteTaskUseCase.ts`): Now calls cascade methods before `delete`, in order: dependencies → delay reasons → task.
+- **`DrizzleTaskRepository`** (`src/infrastructure/repositories/DrizzleTaskRepository.ts`): Implemented both cascade methods using `db.executeSql`. `deleteDependenciesByTaskId` uses `OR` clause to cover both FK directions.
+- **`AddTaskDocumentUseCase`** (`src/application/usecases/document/AddTaskDocumentUseCase.ts`) *(new)*: Accepts `{taskId, projectId?, sourceUri, filename, mimeType?, size?}`; copies file via `IFileSystemAdapter.copyToAppStorage`; creates `DocumentEntity` with `status: 'local-only'`, `source: 'import'`; persists via `DocumentRepository.save`.
+- **`TaskPickerModal`** (`src/pages/tasks/TaskPickerModal.tsx`) *(new)*: Modal listing project tasks filtered by `excludeTaskId` (self) and `existingDependencyIds` (already-added deps). Includes a search input. Tapping a task calls `onSelect(taskId)` and closes.
+- **`TaskDocumentSection`** (`src/components/tasks/TaskDocumentSection.tsx`): Added `uploading?: boolean` prop — disables Add button and replaces its contents with `<ActivityIndicator size="small" />` while upload is in progress.
+- **`TaskDetailsPage`** (`src/pages/tasks/TaskDetailsPage.tsx`): Full wiring —
+  - Imports and uses `useConfirm`; `handleDelete`, `handleRemoveDependency`, `handleRemoveDelayReason` rewritten to use the hook.
+  - Resolves `ContactRepository` from DI; `loadData` fetches `Contact` for `subcontractorId` and stores in `subcontractor` state; mapped to `SubcontractorInfo` shape for `TaskSubcontractorSection`.
+  - Resolves `IFilePickerAdapter`, `IFileSystemAdapter`; `handleAddDocument` runs file pick → copy → persist flow with `uploadingDocument` state.
+  - Adds `showTaskPicker` state; `TaskDependencySection.onAddDependency` opens `TaskPickerModal`; `handleAddDependency` calls `addDependency` then `loadData`.
+  - `TaskPickerModal` rendered at bottom of tree with `projectId`, `excludeTaskId=taskId`, `existingDependencyIds` from current detail state.
+- **Test mocks updated** in 6 unit test files to include `deleteDependenciesByTaskId` and `deleteDelayReasonsByTaskId`.
+- **28 new tests added**:
+  - `__tests__/unit/useConfirm.test.ts` (6 tests)
+  - `__tests__/unit/DeleteTaskUseCase.test.ts` (2 tests)
+  - `__tests__/unit/AddTaskDocumentUseCase.test.ts` (4 tests)
+  - `__tests__/unit/TaskPickerModal.test.tsx` (6 tests)
+  - `__tests__/integration/DeleteTaskCascade.integration.test.ts` (3 tests)
+  - `__tests__/integration/TaskDependencyPicker.integration.test.ts` (5 tests)
+  - `__tests__/integration/TaskDocumentUpload.integration.test.ts` (2 tests)
+- Full Jest suite: **586 tests pass, 0 failures** (up from 558). `npx tsc --noEmit` clean.
+
+### Trade-offs & Technical Debt
+- DB-level `ON DELETE CASCADE` for `task_dependencies` and `task_delay_reasons` was deferred. Application-level cascade in `DeleteTaskUseCase` is correct but requires remembering to extend it if new related tables are added in future. A future migration (`0013_cascade_deletes.sql`) can add proper FK CASCADE constraints once the migration tooling supports SQLite table recreation safely.
+- `TaskDetailsPage` now resolves 4 repositories/adapters with individual `try/catch` blocks in `useMemo`. If all 4 are registered in DI, this is transparent. An unregistered adapter silently disables the related feature (document upload, contact lookup) rather than crashing — intentional graceful degradation.
+
+```

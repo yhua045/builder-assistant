@@ -321,4 +321,22 @@ export class DrizzleTaskRepository implements TaskRepository {
     }
     return reasons;
   }
+
+  // ── Cascade Helpers ───────────────────────────────────────────────────────
+
+  async deleteDependenciesByTaskId(taskId: string): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    // Remove rows where this task is the dependent OR the dependency
+    await db.executeSql(
+      'DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_task_id = ?',
+      [taskId, taskId],
+    );
+  }
+
+  async deleteDelayReasonsByTaskId(taskId: string): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    await db.executeSql('DELETE FROM task_delay_reasons WHERE task_id = ?', [taskId]);
+  }
 }
