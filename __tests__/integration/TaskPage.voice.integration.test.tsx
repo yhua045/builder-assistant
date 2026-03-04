@@ -33,6 +33,15 @@ jest.mock('nativewind', () => ({
 jest.mock('lucide-react-native', () => ({
   X: 'X',
   Save: 'Save',
+  Trash2: 'Trash2',
+  HardHat: 'HardHat',
+  Phone: 'Phone',
+  Mail: 'Mail',
+  Pencil: 'Pencil',
+  FileText: 'FileText',
+  Plus: 'Plus',
+  Link2: 'Link2',
+  AlertTriangle: 'AlertTriangle',
 }));
 
 // ── Safe area stub ────────────────────────────────────────────────────────────

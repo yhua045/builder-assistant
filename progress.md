@@ -391,3 +391,42 @@ cd ios && pod install
 - `TaskDetailsPage` now resolves 4 repositories/adapters with individual `try/catch` blocks in `useMemo`. If all 4 are registered in DI, this is transparent. An unregistered adapter silently disables the related feature (document upload, contact lookup) rather than crashing — intentional graceful degradation.
 
 ```
+
+---
+
+## Issue #114 — Extend Task Form: Documents, Subcontractor & Dependencies (2026-03-05)
+
+**Branch**: `issue-114-task-form` | **Design doc**: `design/issue-114-task-form-extensions.md`
+
+### Key Decisions
+- **`useTaskForm` hook as single orchestrator**: All form state (title, notes, status, priority, due date, subcontractor, pending/saved documents, dependency task IDs, validation error, submit loading) is owned by one hook. This keeps `TaskForm.tsx` a pure presentation layer and makes the submit logic independently testable without rendering.
+- **Two-phase document model (pending vs saved)**: Documents selected during form entry are held as `PendingDocument[]` objects in memory until submit. On submit, each pending doc is copied to app storage and persisted via `AddTaskDocumentUseCase`. This prevents orphaned `Document` records if the user cancels. Existing documents fetched from the DB are in `savedDocuments[]` and removed via `RemoveTaskDocumentUseCase`.
+- **`RemoveTaskDocumentUseCase` with best-effort file deletion**: Deletes the DB record unconditionally; local file deletion is wrapped in `try/catch` so a missing file does not abort the operation. Consistent with the existing "soft-delete" spirit of the document model.
+- **`SubcontractorPickerModal` reuses `useContacts` with role filter**: Filters contacts to `role === 'subcontractor' || role === 'contractor'` inline in the modal, keeping the modal self-contained and avoiding a new use case for a simple filtered list.
+- **`onSuccess` replaces `onSubmit` as the preferred prop**: `TaskForm` now favours `onSuccess(task: Task)` for callers who want to react after a successful save. The legacy `onSubmit(data)` prop is preserved for backwards compatibility but is no longer used by `CreateTaskPage`, `EditTaskPage`, or `TaskScreen`. This removes redundant `handleCreate`/`handleUpdate`/`handleSubmit` wrappers from all three callers and consolidates save logic in `useTaskForm`.
+- **Dependency add/remove uses object input**: `AddTaskDependencyUseCase.execute({ taskId, dependsOnTaskId })` and `RemoveTaskDependencyUseCase.execute({ taskId, dependsOnTaskId })` — single-object API matching the existing use case signatures. Passing two positional args (a common mistake) is caught by TypeScript at compile time.
+- **No new DB migrations**: All required schema changes (dependency tables, subcontractor ID on tasks, document `taskId` field) were already delivered in issues #108 and #111. Issue #114 is purely UI and application-layer.
+- **Voice test mock extended, not patched around**: Root cause of the `TaskPage.voice.integration.test.tsx` regressions was an incomplete `lucide-react-native` mock (`{ X, Save }` only). Adding `TaskSubcontractorSection` to the render tree introduced new icons (`HardHat`, `Phone`, `Mail`, `Pencil`, `FileText`, `Plus`, `Link2`, `AlertTriangle`, `Trash2`) that resolved to `undefined`, causing `maybeHijackSafeAreaProvider(undefined)` to crash on `.displayName`. Fix: extended the mock in the voice test to enumerate all icons. No inline styles were introduced; `cssInterop` registrations remain unchanged.
+
+### Completed
+- Design doc at `design/issue-114-task-form-extensions.md` (user story, component sketches, acceptance criteria — approved before implementation).
+- **`RemoveTaskDocumentUseCase`** (`src/application/usecases/document/RemoveTaskDocumentUseCase.ts`) *(new)*: deletes local file (best-effort) then removes DB record.
+- **`useTaskForm`** (`src/hooks/useTaskForm.ts`) *(new)*: central hook for all TaskForm state and submit orchestration (create + update paths); resolves `TaskRepository`, `DocumentRepository`, `FileSystemAdapter` from DI container.
+- **`SubcontractorPickerModal`** (`src/components/tasks/SubcontractorPickerModal.tsx`) *(new)*: modal contact picker filtered to subcontractor/contractor roles; reuses `useContacts` hook.
+- **`TaskForm.tsx`** (`src/components/tasks/TaskForm.tsx`) — major rewrite: adds Documents section (pending + saved), Subcontractor section (`TaskSubcontractorSection` + `SubcontractorPickerModal`), Dependencies section (`TaskDependencySection` + `TaskPickerModal`), and Delay Log section (`AddDelayReasonModal` visible in edit mode only); uses `useTaskForm` internally; `onSuccess` preferred prop; `onSubmit` kept for backwards compatibility.
+- **`CreateTaskPage.tsx`**, **`EditTaskPage.tsx`**, **`TaskScreen.tsx`** — updated to use `onSuccess={() => navigation.goBack() / onClose()}` and removed now-redundant `handleCreate`/`handleUpdate`/`handleSubmit` functions.
+- **`TaskPage.voice.integration.test.tsx`** — extended `lucide-react-native` mock to include all icons used by the new form sections.
+- **27 new tests** — all passing:
+  - `__tests__/unit/RemoveTaskDocumentUseCase.test.ts` (5 tests) — deletes DB record; deletes local file; skips file delete when no `localPath`; best-effort (does not throw if `deleteFile` throws); handles doc not in repo.
+  - `__tests__/unit/useTaskForm.test.tsx` (10 tests) — initial state, pending document add/remove, dependency add/remove, validation (empty title), create-mode submit, update-mode submit.
+  - `__tests__/integration/TaskFormRoundTrip.integration.test.ts` (8 tests) — create+attach doc, remove doc, create+add dependency, remove dependency, subcontractorId create/update/clear; using `InMemoryTaskRepository` and `InMemoryDocumentRepository`.
+- Full Jest suite: **629 tests pass, 0 failures** (up from 621). `npx tsc --noEmit` clean.
+
+### Trade-offs & Technical Debt
+- **Delay section is edit-mode only**: `AddDelayReasonModal` is visible only when `initialTask.id` is present (i.e. an existing task). Adding a delay reason during task *creation* is not a supported workflow — a task must exist before it can be blocked. This is intentional.
+- **`onSubmit` legacy prop**: Still accepted by `TaskForm` for backwards compatibility but deprecated. The prop can be removed in a future cleanup once all call sites are confirmed migrated to `onSuccess`.
+
+### Pending / Next Steps
+- **Document viewer**: Tapping a saved document chip in `TaskDocumentSection` currently has no action. Wire `Linking.openURL(doc.localPath)` or a full-screen image/PDF viewer.
+- **Delay section in create mode**: If product decides that assigning a pre-existing delay to a brand-new task is valid, wire `AddDelayReasonModal` for the create path and call `AddDelayReasonUseCase` post-creation.
+- **On-device QA**: Verify file picker → copy → document chip flow; subcontractor picker contact list; dependency picker filtering and circular-dependency guard; all on iOS and Android simulators.

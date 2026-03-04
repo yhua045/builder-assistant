@@ -7,7 +7,6 @@ import { TaskPhotoPreview } from '../../components/tasks/TaskPhotoPreview';
 import MockVoiceParsingService from '../../infrastructure/voice/MockVoiceParsingService';
 import MockAudioRecorder from '../../infrastructure/voice/MockAudioRecorder';
 import { useVoiceTask } from '../../hooks/useVoiceTask';
-import { useTasks } from '../../hooks/useTasks';
 import { useCameraTask, type UseCameraTaskReturn } from '../../hooks/useCameraTask';
 import { IVoiceParsingService, TaskDraft } from '../../application/services/IVoiceParsingService';
 import { IAudioRecorder } from '../../application/services/IAudioRecorder';
@@ -52,13 +51,11 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
   }, [voiceParsingService]);
 
   const { state, startRecording, stopAndParse } = useVoiceTask(recorder, voiceService);
-  const { createTask, updateTask } = useTasks();
   const internalCameraHook = useCameraTask(cameraAdapter);
   const cameraHook = cameraHookProp ?? internalCameraHook;
 
   const [view, setView] = useState<ViewMode>('choose');
   const [initialDraft, setInitialDraft] = useState<TaskDraft | undefined>(undefined);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Camera flow state
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
@@ -142,36 +139,6 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
     setView('choose');
   };
 
-  // ---------------------------------------------------------------------------
-  // Form submit (create for voice/manual, update for camera)
-  // ---------------------------------------------------------------------------
-
-  const handleSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      if (createdTask) {
-        // Camera path: update the already-created task
-        await updateTask({ ...createdTask, ...data });
-      } else {
-        // Voice / manual path: create new task
-        await createTask({
-          title: data.title,
-          notes: data.notes,
-          projectId: data.projectId,
-          dueDate: data.dueDate,
-          status: data.status ?? 'pending',
-          priority: data.priority ?? 'medium',
-        });
-      }
-      onClose();
-    } catch (e) {
-      console.error('Create/update task failed', e);
-      Alert.alert('Error', 'Could not save task');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View className="flex-1 bg-background p-4">
@@ -246,9 +213,8 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
         {view === 'form' && (
           <TaskForm
             initialValues={(createdTask ?? initialDraft) as any}
-            onSubmit={handleSubmit}
+            onSuccess={onClose}
             onCancel={onClose}
-            isLoading={isSubmitting}
           />
         )}
       </View>

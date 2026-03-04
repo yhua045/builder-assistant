@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { HardHat, Phone, Mail, Edit } from 'lucide-react-native';
+import { HardHat, Phone, Mail, Pencil } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 cssInterop(HardHat, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Phone, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Mail, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(Pencil, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 interface SubcontractorInfo {
   id: string;
@@ -28,7 +28,7 @@ export function TaskSubcontractorSection({ subcontractor, onEditSubcontractor }:
         <Text className="text-sm font-semibold text-muted-foreground">SUBCONTRACTOR</Text>
         {onEditSubcontractor && (
           <TouchableOpacity onPress={onEditSubcontractor} className="p-1">
-            <Edit size={16} className="text-primary" />
+            <Pencil size={16} className="text-primary" />
           </TouchableOpacity>
         )}
       </View>

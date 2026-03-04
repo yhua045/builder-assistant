@@ -15,9 +15,7 @@ export default function EditTaskPage() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { taskId } = route.params;
-  const { getTask, updateTask, loading: saving } = useTasks(); 
-  // Wait, useTasks fetches all tasks implicitly. 
-  // We can also use getTask explicitly.
+  const { getTask } = useTasks();
 
   const [task, setTask] = useState<Task | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -58,17 +56,6 @@ export default function EditTaskPage() {
     }
   }, [state, task]);
 
-  const handleUpdate = async (data: Partial<Task>) => {
-    if (!task) return;
-    try {
-      await updateTask({ ...task, ...data });
-      navigation.goBack();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Failed to update task');
-    }
-  };
-
   if (fetching) {
     return <ActivityIndicator className="flex-1" />;
   }
@@ -103,9 +90,8 @@ export default function EditTaskPage() {
       <TaskForm
         key={formKey}
         initialValues={formInitialValues ?? task}
-        onSubmit={handleUpdate}
+        onSuccess={() => navigation.goBack()}
         onCancel={() => navigation.goBack()}
-        isLoading={saving}
       />
 
       {/* Voice recording / parsing overlay */}
