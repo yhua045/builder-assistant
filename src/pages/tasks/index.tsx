@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, Clock, Plus } from 'lucide-react-native';
@@ -6,7 +6,13 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { cssInterop, useColorScheme } from 'nativewind';
 import { useNavigation } from '@react-navigation/native';
 import { useTasks } from '../../hooks/useTasks';
+import { useProjects } from '../../hooks/useProjects';
+import { useCockpitData } from '../../hooks/useCockpitData';
 import { TasksList } from '../../components/tasks/TasksList';
+import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
+import { FocusList } from '../../components/tasks/FocusList';
+import { TaskBottomSheet } from '../../components/tasks/TaskBottomSheet';
+import type { Task } from '../../domain/entities/Task';
 
 cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -23,9 +29,52 @@ const FILTER_PILLS: { label: string; value: FilterValue }[] = [
 ];
 
 export default function TasksScreen() {
-  const { tasks, loading, refreshTasks } = useTasks();
+  const { tasks, loading, refreshTasks, updateTask } = useTasks();
   const navigation = useNavigation<any>();
   const [filter, setFilter] = useState<FilterValue>('all');
+
+  // ── Cockpit data ──────────────────────────────────────────────────────────
+  // Default to the first project so the cockpit sections are meaningful even
+  // when TasksScreen shows a cross-project task list. If no projects exist,
+  // useCockpitData gracefully returns null.
+  const { projects } = useProjects();
+  const defaultProjectId = useMemo(() => projects[0]?.id ?? '', [projects]);
+  const { cockpit, refresh: refreshCockpit } = useCockpitData(defaultProjectId);
+
+  // ── Bottom sheet state ───────────────────────────────────────────────────
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetTask, setSheetTask] = useState<Task | null>(null);
+  const [sheetPrereqs, setSheetPrereqs] = useState<Task[]>([]);
+  const [sheetNextInLine, setSheetNextInLine] = useState<Task[]>([]);
+
+  const openSheet = useCallback((task: Task, prereqs: Task[] = [], nextInLine: Task[] = []) => {
+    setSheetTask(task);
+    setSheetPrereqs(prereqs);
+    setSheetNextInLine(nextInLine);
+    setSheetVisible(true);
+  }, []);
+
+  const closeSheet = useCallback(() => setSheetVisible(false), []);
+
+  const handleSheetUpdate = useCallback(async (updated: Task) => {
+    await updateTask(updated);
+    refreshCockpit();
+  }, [updateTask, refreshCockpit]);
+
+  const handleOpenFullDetails = useCallback((taskId: string) => {
+    setSheetVisible(false);
+    navigation.navigate('TaskDetails', { taskId });
+  }, [navigation]);
+
+  const handleMarkBlocked = useCallback((taskId: string) => {
+    setSheetVisible(false);
+    navigation.navigate('TaskDetails', { taskId });
+  }, [navigation]);
+
+  // ── Refresh coordination ─────────────────────────────────────────────────
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refreshTasks(), refreshCockpit()]);
+  }, [refreshTasks, refreshCockpit]);
 
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -101,6 +150,26 @@ export default function TasksScreen() {
         </View>
       </View>
 
+      {/* Cockpit — Blocker Carousel */}
+      {cockpit && cockpit.blockers.length > 0 && (
+        <View className="pt-2">
+          <BlockerCarousel
+            blockers={cockpit.blockers}
+            onCardPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
+          />
+        </View>
+      )}
+
+      {/* Cockpit — Focus List */}
+      {cockpit && cockpit.focus3.length > 0 && (
+        <View className="pt-1 pb-2">
+          <FocusList
+            focusItems={cockpit.focus3}
+            onItemPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
+          />
+        </View>
+      )}
+
       {/* Filter Pills */}
       <View className="px-6 pb-2">
         <ScrollView
@@ -137,7 +206,7 @@ export default function TasksScreen() {
           <RefreshControl
             testID="tasks-refresh-control"
             refreshing={loading}
-            onRefresh={refreshTasks}
+            onRefresh={handleRefresh}
           />
         }
       >
@@ -148,6 +217,18 @@ export default function TasksScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Task Bottom Sheet */}
+      <TaskBottomSheet
+        visible={sheetVisible}
+        task={sheetTask}
+        prereqs={sheetPrereqs}
+        nextInLine={sheetNextInLine}
+        onClose={closeSheet}
+        onUpdateTask={handleSheetUpdate}
+        onOpenFullDetails={handleOpenFullDetails}
+        onMarkBlocked={handleMarkBlocked}
+      />
     </SafeAreaView>
   );
 }

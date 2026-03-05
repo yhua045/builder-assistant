@@ -471,8 +471,53 @@ cd ios && pod install
 - **No UI yet (Phase 2)**: The `BlockerCarousel` and `FocusList` UI components, and the wiring into `TasksScreen`, are explicitly deferred to Phase 2. The `useCockpitData` hook is the bridge point.
 
 ### Pending / Next Steps (Phase 2 — UI)
-- **`BlockerCarousel` component**: Horizontally scrollable row of blocker cards surfacing `CockpitData.blockers`. Each card shows task title, severity badge (red/yellow), and the first blocked prereq name. Tap opens the Task Bottom Sheet (peek mode).
-- **`FocusList` component**: Renders `CockpitData.focus3` as a ranked list (3 rows max) with urgency label, score, and `nextInLine` count badge.
-- **`TasksScreen` wiring**: Insert `<BlockerCarousel>` and `<FocusList>` above the existing filter pills in `src/pages/tasks/index.tsx`, consuming `useCockpitData(projectId)`.
-- **Task Bottom Sheet (peek mode)**: Slide-up overlay on task tap: status + priority quick-edit, prereq/next-in-line list, "See Full Details" link to `TaskDetailsPage`.
+- ~~`BlockerCarousel` component~~ — **delivered in Issue #118**.
+- ~~`FocusList` component~~ — **delivered in Issue #118**.
+- ~~`TasksScreen` wiring~~ — **delivered in Issue #118**.
+- ~~Task Bottom Sheet (peek mode)~~ — **delivered in Issue #118**.
 - **On-device QA**: Verify cockpit renders correctly for a project with 5-10 active tasks, including at least one blocker and a critical-path task, on iOS and Android simulators.
+
+---
+
+## Issue #118 — Phase 2 Task Cockpit UI: BlockerCarousel, FocusList, TaskBottomSheet (2026-03-05)
+
+**Branch**: `issue-118-task-bottomsheet` | **Design doc**: `design/issue-118-task-bottomsheet.md`
+
+### Key Decisions
+- **No new hooks, use cases, or DB migrations**: This ticket is strictly UI wiring. All data comes from the existing `useCockpitData(projectId)` hook (delivering `CockpitData.blockers` and `CockpitData.focus3`). Mutations delegate to `useTasks().updateTask()` which calls the pre-existing `UpdateTaskUseCase`.
+- **`projectId` defaulting to first project**: `TasksScreen` does not receive a `projectId` nav-param (owner-builders typically have one active project). The cockpit hook is fed `useProjects()[0]?.id`; both cockpit sections (carousel + focus list) are hidden via conditional rendering when the result is `null`, preserving zero-state cleanness.
+- **RN `Modal` for the bottom sheet — no new library**: The sheet reuses the same `Modal` + `animationType="slide"` pattern already present in `ProjectPicker` and `ManualProjectEntryForm`. On iOS, `presentationStyle="formSheet"` gives the compact half-sheet appearance. On Android, `transparent` mode + a `maxHeight: '75%'` + rounded-top-corners wrapper simulates the peek behaviour.
+- **Optimistic status/priority updates**: `TaskBottomSheet` keeps a local `useState` copy of the task. Tapping a status or priority pill updates local state immediately (zero perceived latency) and fires `onUpdateTask` asynchronously in the background. Errors are logged but not surfaced in the sheet UI — consistent with the app's existing best-effort mutation pattern.
+- **`BlockerCarousel` returns `null` when empty**: Both `BlockerCarousel` and `FocusList` return `null` when their respective arrays are empty, so the Tasks screen layout does not shift or show empty placeholders when there are no blockers or focus items.
+- **Template-literal interpolation for dynamic text in `<Text>`**: JSX expressions like `+{n} tasks waiting` render as a React children array which stringifies with commas when tested. All dynamic numeric strings use template literals (`` `+${n} tasks waiting` ``) to ensure `String(children)` is a single coherent string in both runtime and test assertions.
+- **Integration test validates the full wiring without touching real DI**: `TasksScreen.cockpit.integration.test.tsx` mocks `useCockpitData`, `useTasks`, and `useProjects` but renders the real `BlockerCarousel`, `FocusList`, and `TaskBottomSheet`. This gives genuine component integration coverage without spinning up a SQLite in-memory DB.
+
+### Completed
+- Design doc at `design/issue-118-task-bottomsheet.md` (scope, component prop contracts, wiring plan, open questions answered, acceptance criteria — approved before implementation).
+- **`BlockerCarousel`** (`src/components/tasks/BlockerCarousel.tsx`) *(new)*: Horizontal `ScrollView` of blocker cards. Each card shows: severity badge (`🔴 BLOCKED` / `🟡 DELAYED`), task title, "Blocked by: \<prereq title\>" for the first prereq, `+N tasks waiting` count. Left border accent colour (red / amber). `testID="blocker-card-{id}"` on each card; `accessibilityRole="button"` + descriptive `accessibilityLabel`. Returns `null` when `blockers` is empty.
+- **`FocusList`** (`src/components/tasks/FocusList.tsx`) *(new)*: Card showing up to 3 ranked rows. Each row: `#1`/`#2`/`#3` rank badge, task title (truncated), urgency label (right-aligned), sub-row with score and `N tasks waiting`. Separator lines between rows. `testID="focus-item-{id}"` on each row. Returns `null` when `focusItems` is empty.
+- **`TaskBottomSheet`** (`src/components/tasks/TaskBottomSheet.tsx`) *(new)*: Slide-up `Modal` overlay. Sections: drag handle, header (title + close button), status quick-set (`pending / in_progress / blocked / completed` pills), priority quick-toggle (`urgent / high / medium / low` pills), prerequisites list (up to 5, with `+N more` overflow; `✅ / 🔴 / ⏳` status icons), next-in-line list (up to 3), quick-action buttons (`⚠ Mark as Blocked` / `📋 See Full Details`). All interactive elements carry `testID` props.
+- **`src/pages/tasks/index.tsx`** *(edited)*:
+  - Added imports: `useProjects`, `useCockpitData`, `BlockerCarousel`, `FocusList`, `TaskBottomSheet`, `Task` type.
+  - `useCallback` added to existing `useState`/`useMemo` imports.
+  - New state: `sheetVisible`, `sheetTask`, `sheetPrereqs`, `sheetNextInLine` + `openSheet` / `closeSheet` callbacks.
+  - `useCockpitData(useProjects()[0]?.id ?? '')` feeds both cockpit sections.
+  - `BlockerCarousel` and `FocusList` inserted between Summary Cards and Filter Pills; both hidden when `cockpit` is null or their arrays are empty.
+  - `TaskBottomSheet` appended after `</ScrollView>`.
+  - Pull-to-refresh coordinates `refreshTasks()` + `refreshCockpit()` via `Promise.all`.
+- **37 new tests** — all passing:
+  - `__tests__/unit/BlockerCarousel.test.tsx` (11 tests) — renders null when empty; card per blocker; `🔴 BLOCKED` / `🟡 DELAYED` badges; "Blocked by" prereq label; `+N tasks waiting` label; `onCardPress` called with correct `(task, prereqs, nextInLine)` triple; `accessibilityRole="button"`; non-empty `accessibilityLabel`.
+  - `__tests__/unit/FocusList.test.tsx` (10 tests) — renders null when empty; row per item; task title present; `urgencyLabel` shown/hidden correctly; numeric score shown; `N tasks waiting`; `#1/#2/#3` rank badges; `onItemPress` called with correct `(task, [], nextInLine)` triple.
+  - `__tests__/unit/TaskBottomSheet.test.tsx` (11 tests) — title rendered; null task renders safely; all 4 status pills present; status pill tap calls `onUpdateTask` with updated status; all 4 priority pills present; priority pill tap calls `onUpdateTask`; prereq titles rendered; next-in-line title rendered; `action-mark-blocked` calls `onMarkBlocked(taskId)`; `action-full-details` calls `onOpenFullDetails(taskId)`; close button calls `onClose`; optimistic mutation fires synchronously.
+  - `__tests__/integration/TasksScreen.cockpit.integration.test.tsx` (5 tests) — blocker-carousel present with fixture data; focus row present and urgency label shown; tapping blocker card opens bottom sheet with correct task title and visible status pills; "See Full Details" navigates to `TaskDetails` with correct `taskId`; cockpit sections absent when `cockpit` is null.
+- Full Jest suite: **739 tests pass, 0 failures** (up from 695; 7 pre-existing skips unchanged). `npx tsc --noEmit` clean.
+
+### Trade-offs & Technical Debt
+- **Single-project cockpit**: The cockpit sections default to `projects[0]` — if a user has multiple active projects, only the first project's blockers and focus tasks are shown. Cross-project aggregation in `GetCockpitDataUseCase` was considered but deferred because the use case is designed around a single `projectId`. A future "multi-project cockpit" ticket would need a new aggregating use case or a `projectId=ALL` sentinel.
+- **Mark as Blocked navigates to full details page**: The `onMarkBlocked` button closes the sheet and navigates to `TaskDetailsPage` (which hosts `AddDelayReasonModal`). A future iteration could embed `AddDelayReasonModal` directly inside `TaskBottomSheet` for a single-sheet flow — deferred to avoid increasing the sheet's complexity and scope in this ticket.
+- **Android peek simulation via `maxHeight: '75%'`**: The `'75%'` string is cast with `as any` to satisfy TypeScript's `DimensionValue` (which accepts `number | string | undefined` but not `"${number}%"` as a literal in some RN typings). This is cosmetically correct at runtime; a future cleanup could replace it with a calculated `Dimensions.get('window').height * 0.75` number.
+
+### Pending / Next Steps
+- **On-device QA**: Verify the carousel scrolls smoothly; the bottom sheet slides up/dismisses correctly; status/priority optimistic updates reflect immediately in the sheet; "See Full Details" navigates correctly — all on iOS and Android simulators.
+- **Refresh after mutation**: Currently `refreshCockpit()` is called after `onUpdateTask` completes. If the network is slow this may cause a brief stale cockpit. A follow-up could apply an optimistic cockpit update (remove a completed item from `focus3` immediately) before the refresh resolves.
+- **`isCriticalPath` toggle in the sheet**: `Task.isCriticalPath` can be toggled by the user but the bottom sheet does not currently expose this. Adding a small "⭐ Pin as critical" toggle would be a low-effort high-value addition for power users.
