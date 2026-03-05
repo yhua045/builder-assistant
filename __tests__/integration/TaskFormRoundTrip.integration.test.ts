@@ -61,6 +61,10 @@ class InMemoryTaskRepository implements TaskRepository {
   async summarizeDelayReasons(): Promise<{ reasonTypeId: string; count: number }[]> { return []; }
   async deleteDependenciesByTaskId(taskId: string): Promise<void> { this.deps = this.deps.filter(d => d.taskId !== taskId && d.dependsOnTaskId !== taskId); }
   async deleteDelayReasonsByTaskId(taskId: string): Promise<void> { this.delays = this.delays.filter(d => d.taskId !== taskId); }
+  async findAllDependencies(projectId: string): Promise<{ taskId: string; dependsOnTaskId: string }[]> {
+    const projectTaskIds = new Set([...this.tasks.values()].filter(t => t.projectId === projectId).map(t => t.id));
+    return this.deps.filter(d => projectTaskIds.has(d.taskId));
+  }
 }
 
 // ── In-memory DocumentRepository ─────────────────────────────────────────────
