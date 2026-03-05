@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { container } from 'tsyringe';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { VoiceRecordingOverlay } from '../../components/tasks/VoiceRecordingOverlay';
-import { useTasks } from '../../hooks/useTasks';
 import { useVoiceTask } from '../../hooks/useVoiceTask';
 import { IAudioRecorder } from '../../application/services/IAudioRecorder';
 import { IVoiceParsingService, TaskDraft } from '../../application/services/IVoiceParsingService';
@@ -12,8 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CreateTaskPage() {
   const navigation = useNavigation<any>();
-  const { createTask, loading } = useTasks();
-
   // Resolve voice services from DI container
   const recorder = useMemo(() => container.resolve<IAudioRecorder>('IAudioRecorder'), []);
   const voiceService = useMemo(() => container.resolve<IVoiceParsingService>('IVoiceParsingService'), []);
@@ -30,16 +27,6 @@ export default function CreateTaskPage() {
       Alert.alert('Voice Error', state.message);
     }
   }, [state]);
-
-  const handleCreate = async (data: any) => {
-    try {
-      await createTask(data);
-      navigation.goBack();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Failed to create task');
-    }
-  };
 
   const isOverlayVisible = state.phase === 'recording' || state.phase === 'parsing';
 
@@ -63,9 +50,8 @@ export default function CreateTaskPage() {
       <TaskForm
         key={voiceDraft ? 'voice-draft' : 'default'}
         initialValues={voiceDraft}
-        onSubmit={handleCreate}
+        onSuccess={() => navigation.goBack()}
         onCancel={() => navigation.goBack()}
-        isLoading={loading}
       />
 
       {/* Voice recording / parsing overlay */}
