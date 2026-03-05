@@ -286,6 +286,7 @@ export const tasks = sqliteTable('tasks', {
   }),
   
   subcontractorId: text('subcontractor_id'), // FK (soft) to contacts.id
+  isCriticalPath: integer('is_critical_path', { mode: 'boolean' }).default(false),
   completedDate: integer('completed_date'), // Unix timestamp
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),

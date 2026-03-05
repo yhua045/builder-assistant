@@ -706,6 +706,16 @@ const migrations: RNMigration[] = [
       `ALTER TABLE "task_delay_reasons" ADD COLUMN "mitigation_notes" text;`,
     ],
   },
+  {
+    tag: '0014_task_cockpit_critical_path',
+    hash: '0014_task_cockpit_critical_path',
+    folderMillis: 1741183200000, // 2026-03-05
+    sql: [
+      // Add manual critical-path pin flag used by the cockpit heuristic scorer.
+      // DEFAULT 0 (false) ensures existing rows are backward-compatible.
+      `ALTER TABLE "tasks" ADD COLUMN "is_critical_path" integer DEFAULT 0;`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

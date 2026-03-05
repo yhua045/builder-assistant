@@ -16,6 +16,12 @@ export interface TaskRepository {
   removeDependency(taskId: string, dependsOnTaskId: string): Promise<void>;
   findDependencies(taskId: string): Promise<Task[]>;
   findDependents(taskId: string): Promise<Task[]>;
+  /**
+   * Returns all dependency edges for tasks belonging to the given project.
+   * Used by GetCockpitDataUseCase to build the full adjacency graph in one query
+   * instead of N per-task fetches.
+   */
+  findAllDependencies(projectId: string): Promise<{ taskId: string; dependsOnTaskId: string }[]>;
 
   // Delay reasons
   addDelayReason(entry: Omit<DelayReason, 'id' | 'createdAt'>): Promise<DelayReason>;

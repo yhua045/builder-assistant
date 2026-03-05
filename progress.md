@@ -430,3 +430,49 @@ cd ios && pod install
 - **Document viewer**: Tapping a saved document chip in `TaskDocumentSection` currently has no action. Wire `Linking.openURL(doc.localPath)` or a full-screen image/PDF viewer.
 - **Delay section in create mode**: If product decides that assigning a pre-existing delay to a brand-new task is valid, wire `AddDelayReasonModal` for the create path and call `AddDelayReasonUseCase` post-creation.
 - **On-device QA**: Verify file picker → copy → document chip flow; subcontractor picker contact list; dependency picker filtering and circular-dependency guard; all on iOS and Android simulators.
+
+
+---
+
+## Issue #116 — Task Cockpit: Blocker Bar, Focus-3, State Management Layer (2026-03-05)
+
+**Branch**: `issue-116-task-cockpit` | **Design doc**: `design/issue-116-task-cockpit.md`
+
+### Key Decisions
+- **`findAllDependencies(projectId)` as a single batch query**: Rather than calling `findDependencies(taskId)` per task (N queries for N tasks), `GetCockpitDataUseCase` issues one batched JOIN query to load all dependency edges for the project at once. Added as a new method on `TaskRepository` interface and implemented in `DrizzleTaskRepository` via `INNER JOIN tasks ON t.id = td.task_id WHERE t.project_id = ?`. O(1) queries regardless of task count.
+- **`CockpitScorer` as a pure, stateless module**: All scoring heuristics (`computePriorityWeight`, `computeDueDateUrgency`, `computeBlockerSeverity`, `computeFocus3Score`, `computeBlockers`, `computeFocus3`) are side-effect-free functions that accept `now: Date` explicitly. This makes them trivially deterministic in tests without any date mocking.
+- **`isCriticalPath` flag on `Task` entity**: A lightweight boolean (+200 score boost in Focus-3) rather than a full CPM computation. CPM requires stable float estimates that owner-builders won't maintain; a manual flag achieves the practical effect of surfacing critical tasks without data-entry burden. Stored as `INTEGER DEFAULT 0` (SQLite boolean) and mapped via `Boolean(row.is_critical_path)`.
+- **Two-tier blocker severity (`'red'` / `'yellow'`)**: A prereq overdue by >2 days (or manually `status='blocked'`) → `'red'`. Overdue by 0–2 days → `'yellow'`. Threshold chosen to give builders a meaningful early warning without noise. Completed prereqs are explicitly excluded from auto-block logic.
+- **Focus-3 is project-scoped**: The ranked list is computed per `projectId`, not globally across all projects. This matches builder mental models — each shift on site is focused on one project. Cross-project ranking is deferred.
+- **Bottom sheet as peek mode (OQ-2)**: The Task Bottom Sheet is a quick-glance / quick-actions overlay with a "See Full Details" link to the existing `TaskDetailsPage`. The full detail page (documents, delay log, subcontractor) is preserved as-is; the bottom sheet is a non-destructive addition to the navigation flow.
+- **`useCockpitData` hook follows `useTasks` pattern**: Resolves `TaskRepository` from the tsyringe container, instantiates `GetCockpitDataUseCase` in a `useMemo`, and exposes `{ cockpit, loading, refresh }`. The hook does not own any scoring logic — all business logic stays in the use case.
+
+### Completed
+- Design doc at `design/issue-116-task-cockpit.md` (feasibility analysis, data model, scoring heuristic, open questions resolved, phase plan — approved before implementation).
+- **Schema** (`src/infrastructure/database/schema.ts`): Added `is_critical_path: integer('is_critical_path', { mode: 'boolean' }).default(false)` to the `tasks` table.
+- **Migration** `0014_task_cockpit_critical_path` (`src/infrastructure/database/migrations.ts`): `ALTER TABLE "tasks" ADD COLUMN "is_critical_path" integer DEFAULT 0;`. Also generated `drizzle/migrations/0010_workable_shard.sql` via `npm run db:generate` for Drizzle Kit alignment.
+- **Domain entity** `src/domain/entities/Task.ts`: Added `isCriticalPath?: boolean` field.
+- **Domain types** `src/domain/entities/CockpitData.ts` *(new)*: Exports `BlockerSeverity = 'red' | 'yellow'`, `BlockerItem { task, severity, blockedPrereqs, nextInLine }`, `FocusItem { task, score, urgencyLabel, nextInLine }`, `CockpitData { blockers, focus3 }`.
+- **`TaskRepository` interface** (`src/domain/repositories/TaskRepository.ts`): Added `findAllDependencies(projectId: string): Promise<{ taskId: string; dependsOnTaskId: string }[]>`.
+- **`CockpitScorer.ts`** (`src/application/usecases/task/CockpitScorer.ts`) *(new)*: Pure scoring module. Functions: `computePriorityWeight` (urgent=100 → low=10), `computeDueDateUrgency` (0–100 based on days-to-due), `computeUrgencyLabel` (emoji + human string e.g. `"🔴 3d overdue"`), `computeBlockerSeverity` (per-prereq severity), `computeFocus3Score` (priority + urgency + dependents×50 + critical-path×200), `computeBlockers` (manual + auto-derived), `computeFocus3` (top-3 by score, excludes completed/cancelled).
+- **`GetCockpitDataUseCase.ts`** (`src/application/usecases/task/GetCockpitDataUseCase.ts`) *(new)*: Two-query fetch (tasks + dependency edges), builds in-memory `taskMap`/`prereqsOf`/`dependentsOf` maps, delegates to `CockpitScorer`, returns early `{ blockers: [], focus3: [] }` when no active tasks exist. Accepts `now: Date = new Date()` for deterministic testing.
+- **`DrizzleTaskRepository`** (`src/infrastructure/repositories/DrizzleTaskRepository.ts`): Updated `mapRowToEntity` and `mapToDb` for `isCriticalPath`; added `is_critical_path` to INSERT and UPDATE SQL (now 16 params); implemented `findAllDependencies` via batched JOIN query.
+- **`useCockpitData`** (`src/hooks/useCockpitData.ts`) *(new)*: Hook returning `{ cockpit: CockpitData | null; loading: boolean; refresh: () => Promise<void> }`. Resolves `TaskRepository` from container, uses `useMemo` for use case instantiation, `useCallback` for `refresh`, `useEffect` on `projectId`.
+- **Test mock updates**: Added `findAllDependencies: jest.fn().mockResolvedValue([])` to 8 existing unit test mock repos and implemented `findAllDependencies` in `InMemoryTaskRepository` in `TaskFormRoundTrip.integration.test.ts`.
+- **66 new tests** — all passing:
+  - `__tests__/unit/CockpitScorer.test.ts` (33 tests) — `computeUrgencyLabel` (6), `computeDueDateUrgency` (5), `computePriorityWeight` (5), `computeBlockerSeverity` (8), `computeFocus3Score` (4), `computeBlockers` (6), `computeFocus3` (5); fixed `NOW = 2026-03-05T10:00:00.000Z`.
+  - `__tests__/unit/GetCockpitDataUseCase.test.ts` (23 tests) — empty project, all-completed, manual blockers, auto-blocker (overdue prereq), completed prereq excluded, `nextInLine` populated, `findAllDependencies` called exactly once, Focus-3 capped at 3, completed/cancelled excluded from focus3, score ordering, `isCriticalPath` override, urgency labels, project scoping.
+  - `__tests__/integration/GetCockpitData.integration.test.ts` (10 tests) — better-sqlite3 in-memory: empty project, manual blocked surfaces in bar, auto-block with overdue prereq (red), completed prereq no auto-block, focus3 score ordering, `isCriticalPath` persists and boosts score, focus3 capped at 3, urgency label populated, `nextInLine` in blocker item, cross-project isolation.
+- Full Jest suite: **695 tests pass, 0 failures** (up from 629). `npx tsc --noEmit` clean.
+
+### Trade-offs & Technical Debt
+- **No CPM (Critical Path Method) computation**: `isCriticalPath` is a manual flag, not derived from the dependency graph and float analysis. This is intentional — flow estimates in construction are too unreliable to auto-compute. A future ticket could add `estimatedDurationDays` to tasks and compute float automatically if builders demonstrate they maintain estimates.
+- **Focus-3 score is heuristic, not configurable**: Weights (priority, urgency, dependents multiplier, critical-path boost) are hardcoded constants in `CockpitScorer`. If the product needs user-configurable weights or different scoring models, `CockpitScorer` functions can be extracted to accept a `ScoringConfig` parameter without touching the use case.
+- **No UI yet (Phase 2)**: The `BlockerCarousel` and `FocusList` UI components, and the wiring into `TasksScreen`, are explicitly deferred to Phase 2. The `useCockpitData` hook is the bridge point.
+
+### Pending / Next Steps (Phase 2 — UI)
+- **`BlockerCarousel` component**: Horizontally scrollable row of blocker cards surfacing `CockpitData.blockers`. Each card shows task title, severity badge (red/yellow), and the first blocked prereq name. Tap opens the Task Bottom Sheet (peek mode).
+- **`FocusList` component**: Renders `CockpitData.focus3` as a ranked list (3 rows max) with urgency label, score, and `nextInLine` count badge.
+- **`TasksScreen` wiring**: Insert `<BlockerCarousel>` and `<FocusList>` above the existing filter pills in `src/pages/tasks/index.tsx`, consuming `useCockpitData(projectId)`.
+- **Task Bottom Sheet (peek mode)**: Slide-up overlay on task tap: status + priority quick-edit, prereq/next-in-line list, "See Full Details" link to `TaskDetailsPage`.
+- **On-device QA**: Verify cockpit renders correctly for a project with 5-10 active tasks, including at least one blocker and a critical-path task, on iOS and Android simulators.

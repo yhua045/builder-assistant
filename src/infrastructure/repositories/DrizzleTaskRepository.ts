@@ -25,6 +25,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       dueDate: row.due_date ? new Date(row.due_date).toISOString() : undefined,
       assignedTo: row.assigned_to || undefined,
       subcontractorId: row.subcontractor_id || undefined,
+      isCriticalPath: Boolean(row.is_critical_path),
       status: (row.status as Task['status']) || 'pending',
       priority: row.priority as Task['priority'] || undefined,
       completedAt: row.completed_date ? new Date(row.completed_date).toISOString() : undefined,
@@ -45,6 +46,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       due_date: task.dueDate ? new Date(task.dueDate).getTime() : null,
       assigned_to: task.assignedTo || null,
       subcontractor_id: task.subcontractorId || null,
+      is_critical_path: task.isCriticalPath ? 1 : 0,
       status: task.status || 'pending',
       priority: task.priority || null,
       completed_date: task.completedAt ? new Date(task.completedAt).getTime() : null,
@@ -68,8 +70,8 @@ export class DrizzleTaskRepository implements TaskRepository {
       `INSERT INTO tasks (
         id, project_id, title, description, notes,
         is_scheduled, scheduled_at, due_date, assigned_to, subcontractor_id,
-        status, priority, completed_date, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        is_critical_path, status, priority, completed_date, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       , [
         values.id,
         values.project_id,
@@ -81,6 +83,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.due_date,
         values.assigned_to,
         values.subcontractor_id,
+        values.is_critical_path,
         values.status,
         values.priority,
         values.completed_date,
@@ -165,6 +168,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         due_date = ?,
         assigned_to = ?,
         subcontractor_id = ?,
+        is_critical_path = ?,
         status = ?,
         priority = ?,
         completed_date = ?,
@@ -181,6 +185,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.due_date,
         values.assigned_to,
         values.subcontractor_id,
+        values.is_critical_path,
         values.status,
         values.priority,
         values.completed_date,
@@ -248,6 +253,29 @@ export class DrizzleTaskRepository implements TaskRepository {
       tasks.push(this.mapRowToEntity(result.rows.item(i)));
     }
     return tasks;
+  }
+
+  async findAllDependencies(
+    projectId: string,
+  ): Promise<{ taskId: string; dependsOnTaskId: string }[]> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    // Join with tasks to restrict to edges where the dependent task belongs to the project.
+    // (The dependency target may belong to a different project in theory, but for cockpit
+    //  purposes we only care about edges anchored to this project's tasks.)
+    const [result] = await db.executeSql(
+      `SELECT td.task_id, td.depends_on_task_id
+       FROM task_dependencies td
+       INNER JOIN tasks t ON t.id = td.task_id
+       WHERE t.project_id = ?`,
+      [projectId],
+    );
+    const edges: { taskId: string; dependsOnTaskId: string }[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      edges.push({ taskId: row.task_id, dependsOnTaskId: row.depends_on_task_id });
+    }
+    return edges;
   }
 
   // ── Delay Reasons ──────────────────────────────────────────────────────────

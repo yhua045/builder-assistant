@@ -11,6 +11,7 @@ import m0006 from './0006_overrated_jack_flag.sql';
 import m0007 from './0007_cloudy_leper_queen.sql';
 import m0008 from './0008_good_mattie_franklin.sql';
 import m0009 from './0009_lush_stryfe.sql';
+import m0010 from './0010_workable_shard.sql';
 
   export default {
     journal,
@@ -24,7 +25,8 @@ m0005,
 m0006,
 m0007,
 m0008,
-m0009
+m0009,
+m0010
     }
   }
   

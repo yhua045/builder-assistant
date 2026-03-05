@@ -32,6 +32,9 @@ export interface Task {
   dependencies?: string[]; // taskIds
   delayReasons?: DelayReason[];
 
+  // Cockpit: manual critical-path pin. User sets this to always show in Focus-3.
+  isCriticalPath?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
