@@ -43,3 +43,20 @@ export interface CockpitData {
   blockers: BlockerItem[];
   focus3: FocusItem[];
 }
+
+/**
+ * Discriminated union returned by `GetBlockerBarDataUseCase` and `useBlockerBar`.
+ *
+ * - `'blockers'` → at least one project has active blockers. Carries the
+ *   resolved projectId, projectName, and the blocker items to display.
+ * - `'winning'`  → no project has active blockers. The UI should show the
+ *   friendly "You're winning today" empty-state card.
+ */
+export type BlockerBarResult =
+  | {
+      kind: 'blockers';
+      projectId: string;
+      projectName: string;
+      blockers: BlockerItem[];
+    }
+  | { kind: 'winning' };

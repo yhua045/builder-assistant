@@ -1,11 +1,15 @@
 /**
  * Unit tests for BlockerCarousel (src/components/tasks/BlockerCarousel.tsx)
- * TDD — written before the component exists (red phase).
+ *
+ * Updated to use the new BlockerBarResult-based API (issue #123).
+ * Covers both kind='blockers' and kind='winning' states.
+ *
+ * Run: npx jest BlockerCarousel
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { BlockerCarousel } from '../../src/components/tasks/BlockerCarousel';
-import type { BlockerItem } from '../../src/domain/entities/CockpitData';
+import type { BlockerBarResult, BlockerItem } from '../../src/domain/entities/CockpitData';
 import type { Task } from '../../src/domain/entities/Task';
 
 // ---------------------------------------------------------------------------
@@ -20,7 +24,7 @@ const makeTask = (id: string, title: string, status: Task['status'] = 'in_progre
   updatedAt: '2024-01-01T00:00:00Z',
 });
 
-const makeBlocker = (
+const makeBlockerItem = (
   id: string,
   severity: 'red' | 'yellow',
   prereqs: Task[] = [],
@@ -32,6 +36,17 @@ const makeBlocker = (
   nextInLine,
 });
 
+/** Convenience: wrap one or more BlockerItems in a kind='blockers' result */
+function blockersResult(
+  items: BlockerItem[],
+  projectId = 'p1',
+  projectName = 'My Build',
+): BlockerBarResult {
+  return { kind: 'blockers', projectId, projectName, blockers: items };
+}
+
+const WINNING: BlockerBarResult = { kind: 'winning' };
+
 const mockOnCardPress = jest.fn();
 
 beforeEach(() => {
@@ -39,153 +54,207 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-1: Renders zero cards when blockers is empty
+// TC-1: kind='winning' — renders winning card, no blocker cards
 // ---------------------------------------------------------------------------
-describe('TC-1: hides when blockers is empty', () => {
-  it('returns null and renders nothing', async () => {
+describe('TC-1: kind=winning renders the winning empty-state card', () => {
+  it('shows the winning card with correct message text', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={[]} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={WINNING} onCardPress={mockOnCardPress} />);
     });
-    expect(tree!.toJSON()).toBeNull();
+    const winningCard = tree!.root.find(n => n.props.testID === 'blocker-winning-card');
+    expect(winningCard).toBeTruthy();
+
+    const allText = tree!.root
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain("You're winning today");
+    expect(allText).toContain('no active blockers');
+  });
+
+  it('does NOT render any blocker cards when kind=winning', async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<BlockerCarousel data={WINNING} onCardPress={mockOnCardPress} />);
+    });
+    const blockerCards = tree!.root.findAll(
+      n => typeof n.props.testID === 'string' && n.props.testID.startsWith('blocker-card-'),
+    );
+    expect(blockerCards).toHaveLength(0);
+  });
+
+  it('winning card is non-interactive (no onPress)', async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<BlockerCarousel data={WINNING} onCardPress={mockOnCardPress} />);
+    });
+    const winningCard = tree!.root.find(n => n.props.testID === 'blocker-winning-card');
+    expect(winningCard.props.onPress).toBeUndefined();
+    expect(mockOnCardPress).not.toHaveBeenCalled();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-2: Renders a card for each blocker
+// TC-2: kind='blockers' — renders a card per blocker, no winning card
 // ---------------------------------------------------------------------------
-describe('TC-2: renders a card per blocker', () => {
+describe('TC-2: kind=blockers renders a card per blocker', () => {
   it('renders two cards for two blockers', async () => {
-    const blockers = [
-      makeBlocker('b1', 'red'),
-      makeBlocker('b2', 'yellow'),
-    ];
+    const data = blockersResult([makeBlockerItem('b1', 'red'), makeBlockerItem('b2', 'yellow')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    // find() throws if not found — this confirms each card is rendered exactly once in the tree
-    expect(tree!.root.find((n) => n.props.testID === 'blocker-card-b1')).toBeTruthy();
-    expect(tree!.root.find((n) => n.props.testID === 'blocker-card-b2')).toBeTruthy();
+    expect(tree!.root.find(n => n.props.testID === 'blocker-card-b1')).toBeTruthy();
+    expect(tree!.root.find(n => n.props.testID === 'blocker-card-b2')).toBeTruthy();
   });
 
   it('shows the task title on each card', async () => {
-    const blockers = [makeBlocker('t1', 'red')];
+    const data = blockersResult([makeBlockerItem('t1', 'red')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
     const texts = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children));
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children));
     expect(texts.join(' ')).toContain('Task t1');
+  });
+
+  it('does NOT render a winning card when there are blockers', async () => {
+    const data = blockersResult([makeBlockerItem('b1', 'red')]);
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
+    });
+    const winningCards = tree!.root.findAll(n => n.props.testID === 'blocker-winning-card');
+    expect(winningCards).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-3: Severity badges
+// TC-3: Project name sub-label shown in header for kind=blockers
 // ---------------------------------------------------------------------------
-describe('TC-3: severity badges', () => {
-  it('shows 🔴 BLOCKED badge for red severity', async () => {
-    const blockers = [makeBlocker('x', 'red')];
+describe('TC-3: project name sub-label shown when falling back', () => {
+  it('shows project name in the section header area', async () => {
+    const data = blockersResult([makeBlockerItem('b1', 'red')], 'p2', 'Reno Project B');
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
     const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain('Reno Project B');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-4: Severity badges
+// ---------------------------------------------------------------------------
+describe('TC-4: severity badges', () => {
+  it('shows 🔴 BLOCKED badge for red severity', async () => {
+    const data = blockersResult([makeBlockerItem('x', 'red')]);
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
+    });
+    const allText = tree!.root
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
       .join(' ');
     expect(allText).toContain('🔴 BLOCKED');
   });
 
   it('shows 🟡 DELAYED badge for yellow severity', async () => {
-    const blockers = [makeBlocker('y', 'yellow')];
+    const data = blockersResult([makeBlockerItem('y', 'yellow')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
     const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
       .join(' ');
     expect(allText).toContain('🟡 DELAYED');
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-4: Blocked-by and next-in-line labels
+// TC-5: Blocked-by and next-in-line labels
 // ---------------------------------------------------------------------------
-describe('TC-4: prereq and next-in-line labels', () => {
+describe('TC-5: prereq and next-in-line labels', () => {
   it('shows "Blocked by: <prereq title>" for the first prereq', async () => {
     const prereq = makeTask('p1', 'Concrete pour');
-    const blockers = [makeBlocker('b1', 'red', [prereq])];
+    const data = blockersResult([makeBlockerItem('b1', 'red', [prereq])]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
     const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
       .join(' ');
     expect(allText).toContain('Concrete pour');
   });
 
   it('shows "+N tasks waiting" for nextInLine', async () => {
     const waiters = [makeTask('w1', 'W1'), makeTask('w2', 'W2')];
-    const blockers = [makeBlocker('b1', 'red', [], waiters)];
+    const data = blockersResult([makeBlockerItem('b1', 'red', [], waiters)]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
     const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
+      .findAll(n => String(n.type) === 'Text')
+      .map(n => String(n.props.children))
       .join(' ');
     expect(allText).toContain('+2 tasks waiting');
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-5: onCardPress callback
+// TC-6: onCardPress callback
 // ---------------------------------------------------------------------------
-describe('TC-5: onCardPress fires with correct arguments', () => {
+describe('TC-6: onCardPress fires with correct arguments', () => {
   it('calls onCardPress with task, prereqs and nextInLine when card is tapped', async () => {
     const prereq = makeTask('p1', 'Prereq');
     const next = makeTask('n1', 'Next');
-    const blocker = makeBlocker('t1', 'red', [prereq], [next]);
+    const item = makeBlockerItem('t1', 'red', [prereq], [next]);
+    const data = blockersResult([item]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={[blocker]} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-t1');
+    const card = tree!.root.find(n => n.props.testID === 'blocker-card-t1');
     await act(async () => { card.props.onPress(); });
     expect(mockOnCardPress).toHaveBeenCalledTimes(1);
-    expect(mockOnCardPress).toHaveBeenCalledWith(blocker.task, blocker.blockedPrereqs, blocker.nextInLine);
+    expect(mockOnCardPress).toHaveBeenCalledWith(item.task, item.blockedPrereqs, item.nextInLine);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-6: Accessibility
+// TC-7: Accessibility on blocker cards
 // ---------------------------------------------------------------------------
-describe('TC-6: accessibility', () => {
+describe('TC-7: accessibility on blocker cards', () => {
   it('card has accessibilityRole="button"', async () => {
-    const blockers = [makeBlocker('a1', 'red')];
+    const data = blockersResult([makeBlockerItem('a1', 'red')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-a1');
+    const card = tree!.root.find(n => n.props.testID === 'blocker-card-a1');
     expect(card.props.accessibilityRole).toBe('button');
   });
 
   it('card has non-empty accessibilityLabel', async () => {
-    const blockers = [makeBlocker('a1', 'red')];
+    const data = blockersResult([makeBlockerItem('a1', 'red')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<BlockerCarousel blockers={blockers} onCardPress={mockOnCardPress} />);
+      tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-a1');
+    const card = tree!.root.find(n => n.props.testID === 'blocker-card-a1');
     expect(card.props.accessibilityLabel).toBeTruthy();
     expect(card.props.accessibilityLabel).toContain('Task a1');
   });

@@ -513,11 +513,33 @@ cd ios && pod install
 - Full Jest suite: **739 tests pass, 0 failures** (up from 695; 7 pre-existing skips unchanged). `npx tsc --noEmit` clean.
 
 ### Trade-offs & Technical Debt
-- **Single-project cockpit**: The cockpit sections default to `projects[0]` — if a user has multiple active projects, only the first project's blockers and focus tasks are shown. Cross-project aggregation in `GetCockpitDataUseCase` was considered but deferred because the use case is designed around a single `projectId`. A future "multi-project cockpit" ticket would need a new aggregating use case or a `projectId=ALL` sentinel.
+- **Single-project cockpit**: The cockpit sections default to `projects[0]` — if a user has multiple active projects, only the first project's blockers and focus tasks are shown. Cross-project aggregation in `GetCockpitDataUseCase` was considered but deferred because the use case is designed around a single `projectId`. A future "multi-project cockpit" ticket would need a new aggregating use case or a `projectId=ALL` sentinel. **(Partially resolved by issue #123: `useBlockerBar` now iterates all projects for the Blocker Bar, but Focus-3 still uses `projects[0]`.)**
 - **Mark as Blocked navigates to full details page**: The `onMarkBlocked` button closes the sheet and navigates to `TaskDetailsPage` (which hosts `AddDelayReasonModal`). A future iteration could embed `AddDelayReasonModal` directly inside `TaskBottomSheet` for a single-sheet flow — deferred to avoid increasing the sheet's complexity and scope in this ticket.
 - **Android peek simulation via `maxHeight: '75%'`**: The `'75%'` string is cast with `as any` to satisfy TypeScript's `DimensionValue` (which accepts `number | string | undefined` but not `"${number}%"` as a literal in some RN typings). This is cosmetically correct at runtime; a future cleanup could replace it with a calculated `Dimensions.get('window').height * 0.75` number.
 
+---
+
+## Issue #123 — Blocker Bar: Fallback to Next Project With Blockers (2026-03-06)
+
+### Key Changes
+- **`BlockerBarResult` type** added to `src/domain/entities/CockpitData.ts`: discriminated union `{ kind: 'blockers'; projectId; projectName; blockers[] } | { kind: 'winning' }`.
+- **`GetBlockerBarDataUseCase`** (`src/application/usecases/task/GetBlockerBarDataUseCase.ts`) *(new)*: iterates `orderedProjects` sequentially, short-circuits at the first project with active blockers, returns `{ kind: 'winning' }` when none found. Reuses `computeBlockers` from `CockpitScorer`.
+- **`useBlockerBar`** (`src/hooks/useBlockerBar.ts`) *(new)*: wraps `GetBlockerBarDataUseCase`, resolves `TaskRepository` from DI container, re-runs when the ordered project id-list changes. Returns `{ result, loading, refresh }`.
+- **`BlockerCarousel`** (`src/components/tasks/BlockerCarousel.tsx`) *(updated)*: props changed from `blockers: BlockerItem[]` to `data: BlockerBarResult`. Renders existing blocker cards for `kind='blockers'` (with project name sub-label). Renders a non-interactive green "🎉 You're winning today — no active blockers" card for `kind='winning'`.
+- **`src/pages/tasks/index.tsx`** *(updated)*: added `useBlockerBar(projects)` hook call alongside existing `useCockpitData` (kept for Focus-3). Blocker Carousel now driven by `blockerBarResult`. Refresh handler and `handleSheetUpdate` both call `refreshBlockerBar()`.
+
+### Decisions & Trade-offs
+- **Separate use case**: `GetBlockerBarDataUseCase` was kept separate from `GetCockpitDataUseCase` (single responsibility — different query: "which project for the bar?" vs "full cockpit for one project?"), avoids fetching Focus-3 for every project.
+- **Sequential iteration with short-circuit**: acceptable for typical user (< 10 projects). Could be parallelised in future if needed.
+- **Focus-3 stays on `projects[0]`**: only the Blocker Bar received cross-project fallback logic in this ticket, keeping scope contained.
+- **Winning state always visible**: the carousel is no longer hidden when there are no blockers — it always renders either blocker cards OR the winning card, giving the user positive feedback.
+
+### Test Summary
+- 7 new unit tests — `GetBlockerBarDataUseCase` (all 7 scenarios from design doc pass).
+- 14 component tests — `BlockerCarousel` (existing 6 cases updated + 8 new winning / fallback cases).
+- 7 integration tests — `TasksScreen.cockpit` (IT-5 updated + IT-6 winning state + IT-7 fallback sanity added).
+- Full suite: **745 tests pass, 0 failures**. `npx tsc --noEmit` clean.
+
 ### Pending / Next Steps
-- **On-device QA**: Verify the carousel scrolls smoothly; the bottom sheet slides up/dismisses correctly; status/priority optimistic updates reflect immediately in the sheet; "See Full Details" navigates correctly — all on iOS and Android simulators.
-- **Refresh after mutation**: Currently `refreshCockpit()` is called after `onUpdateTask` completes. If the network is slow this may cause a brief stale cockpit. A follow-up could apply an optimistic cockpit update (remove a completed item from `focus3` immediately) before the refresh resolves.
-- **`isCriticalPath` toggle in the sheet**: `Task.isCriticalPath` can be toggled by the user but the bottom sheet does not currently expose this. Adding a small "⭐ Pin as critical" toggle would be a low-effort high-value addition for power users.
+- On-device QA: verify winning card renders correctly on both light/dark themes; verify project name label is readable when falling back.
+- Focus-3 cross-project fallback (out of scope for this ticket, separate issue).

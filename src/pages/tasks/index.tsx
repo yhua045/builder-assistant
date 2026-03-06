@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
 import { useCockpitData } from '../../hooks/useCockpitData';
+import { useBlockerBar } from '../../hooks/useBlockerBar';
 import { TasksList } from '../../components/tasks/TasksList';
 import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
 import { FocusList } from '../../components/tasks/FocusList';
@@ -34,12 +35,12 @@ export default function TasksScreen() {
   const [filter, setFilter] = useState<FilterValue>('all');
 
   // ── Cockpit data ──────────────────────────────────────────────────────────
-  // Default to the first project so the cockpit sections are meaningful even
-  // when TasksScreen shows a cross-project task list. If no projects exist,
-  // useCockpitData gracefully returns null.
+  // useBlockerBar iterates all projects to find the first with active blockers.
+  // useCockpitData drives the Focus-3 list for the default (first) project.
   const { projects } = useProjects();
   const defaultProjectId = useMemo(() => projects[0]?.id ?? '', [projects]);
   const { cockpit, refresh: refreshCockpit } = useCockpitData(defaultProjectId);
+  const { result: blockerBarResult, refresh: refreshBlockerBar } = useBlockerBar(projects);
 
   // ── Bottom sheet state ───────────────────────────────────────────────────
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -59,7 +60,8 @@ export default function TasksScreen() {
   const handleSheetUpdate = useCallback(async (updated: Task) => {
     await updateTask(updated);
     refreshCockpit();
-  }, [updateTask, refreshCockpit]);
+    refreshBlockerBar();
+  }, [updateTask, refreshCockpit, refreshBlockerBar]);
 
   const handleOpenFullDetails = useCallback((taskId: string) => {
     setSheetVisible(false);
@@ -73,8 +75,8 @@ export default function TasksScreen() {
 
   // ── Refresh coordination ─────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
-    await Promise.all([refreshTasks(), refreshCockpit()]);
-  }, [refreshTasks, refreshCockpit]);
+    await Promise.all([refreshTasks(), refreshCockpit(), refreshBlockerBar()]);
+  }, [refreshTasks, refreshCockpit, refreshBlockerBar]);
 
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -151,10 +153,10 @@ export default function TasksScreen() {
       </View>
 
       {/* Cockpit — Blocker Carousel */}
-      {cockpit && cockpit.blockers.length > 0 && (
+      {blockerBarResult && (
         <View className="pt-2">
           <BlockerCarousel
-            blockers={cockpit.blockers}
+            data={blockerBarResult}
             onCardPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
           />
         </View>
