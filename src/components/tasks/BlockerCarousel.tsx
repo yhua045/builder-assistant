@@ -2,7 +2,11 @@
  * BlockerCarousel — horizontally scrollable row of blocker cards.
  *
  * Consumed by TasksScreen (src/pages/tasks/index.tsx).
- * Data comes from useCockpitData → CockpitData.blockers.
+ * Data comes from useBlockerBar → BlockerBarResult.
+ *
+ * Renders two states:
+ *   - kind='blockers' → scrollable row of blocker cards (+ project name label when falling back)
+ *   - kind='winning'  → single non-interactive green "You're winning today" card
  */
 import React from 'react';
 import {
@@ -12,21 +16,46 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { BlockerItem } from '../../domain/entities/CockpitData';
+import { BlockerBarResult } from '../../domain/entities/CockpitData';
 import { Task } from '../../domain/entities/Task';
 
 export interface BlockerCarouselProps {
-  blockers: BlockerItem[];
-  /** Called when a card is tapped — passes task, its blocked prereqs, and next-in-line tasks. */
+  data: BlockerBarResult;
+  /** Called when a blocker card is tapped — not fired for the winning card. */
   onCardPress: (task: Task, prereqs: Task[], nextInLine: Task[]) => void;
 }
 
-export function BlockerCarousel({ blockers, onCardPress }: BlockerCarouselProps) {
-  if (blockers.length === 0) return null;
+export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
+  // ── Winning state ──────────────────────────────────────────────────────────
+  if (data.kind === 'winning') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.sectionHeader}>⛔ Blockers</Text>
+        <View style={styles.scrollContent}>
+          <View
+            testID="blocker-winning-card"
+            style={styles.winningCard}
+            accessible
+            accessibilityLabel="You're winning today — no active blockers"
+          >
+            <Text style={styles.winningEmoji}>🎉</Text>
+            <Text style={styles.winningTitle}>You're winning today</Text>
+            <Text style={styles.winningSubtitle}>no active blockers</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Blockers state ─────────────────────────────────────────────────────────
+  const { blockers, projectName } = data;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionHeader}>⛔ Blockers</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionHeader}>⛔ Blockers</Text>
+        <Text style={styles.projectLabel}>{projectName}</Text>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -89,15 +118,25 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 4,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+    paddingTop: 4,
+    gap: 8,
+  },
   sectionHeader: {
     fontSize: 13,
     fontWeight: '700',
     color: '#64748b',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: 24,
-    paddingBottom: 8,
-    paddingTop: 4,
+  },
+  projectLabel: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontStyle: 'italic',
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -155,4 +194,37 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     marginTop: 4,
   },
+  // ── Winning state ────────────────────────────────────────────────────────
+  winningCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#22c55e',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  winningEmoji: {
+    fontSize: 24,
+    marginBottom: 6,
+  },
+  winningTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#15803d',
+    textAlign: 'center',
+  },
+  winningSubtitle: {
+    fontSize: 12,
+    color: '#4ade80',
+    marginTop: 2,
+    textAlign: 'center',
+  },
 });
+

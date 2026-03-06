@@ -2,13 +2,16 @@
  * Integration smoke test: TasksScreen + cockpit components
  *
  * Verifies:
- *   1. TasksScreen renders BlockerCarousel when useCockpitData returns blockers.
+ *   1. TasksScreen renders BlockerCarousel when useBlockerBar returns kind=blockers.
  *   2. TasksScreen renders FocusList when useCockpitData returns focus items.
  *   3. Tapping a blocker card opens the TaskBottomSheet with the correct task title.
  *   4. Tapping "See Full Details" in the sheet navigates to TaskDetails.
+ *   5. No blocker-carousel when blockerBarResult is null (loading state).
+ *   6. Winning card is shown when useBlockerBar returns kind=winning.
+ *   7. Fallback sanity: blocker bar shows project B's tasks when project A has none.
  *
  * Mocking strategy:
- *   - useCockpitData, useTasks, useProjects → jest mocks (avoid DI container)
+ *   - useBlockerBar, useCockpitData, useTasks, useProjects → jest mocks (avoid DI container)
  *   - BlockerCarousel, FocusList, TaskBottomSheet → real components (integration value)
  *   - TasksList, ThemeToggle, lucide-react-native, nativewind → lightweight mocks
  */
@@ -17,7 +20,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import TasksScreen from '../../src/pages/tasks/index';
 import type { Task } from '../../src/domain/entities/Task';
-import type { CockpitData } from '../../src/domain/entities/CockpitData';
+import type { CockpitData, BlockerBarResult } from '../../src/domain/entities/CockpitData';
 
 // ─── Global mocks ─────────────────────────────────────────────────────────────
 
@@ -77,6 +80,17 @@ jest.mock('../../src/hooks/useCockpitData', () => ({
   }),
 }));
 
+const mockRefreshBlockerBar = jest.fn().mockResolvedValue(undefined);
+let mockBlockerBarResult: BlockerBarResult | null = null;
+
+jest.mock('../../src/hooks/useBlockerBar', () => ({
+  useBlockerBar: () => ({
+    result: mockBlockerBarResult,
+    loading: false,
+    refresh: mockRefreshBlockerBar,
+  }),
+}));
+
 jest.mock('../../src/hooks/useProjects', () => ({
   useProjects: () => ({
     projects: [{ id: 'proj-1', name: 'My Build' }],
@@ -128,12 +142,18 @@ const FIXTURE_COCKPIT: CockpitData = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCockpitData = FIXTURE_COCKPIT;
+  mockBlockerBarResult = {
+    kind: 'blockers',
+    projectId: 'proj-1',
+    projectName: 'My Build',
+    blockers: FIXTURE_COCKPIT.blockers,
+  };
 });
 
 // ---------------------------------------------------------------------------
-// IT-1: BlockerCarousel renders when cockpit has blockers
+// IT-1: BlockerCarousel renders when useBlockerBar returns blockers
 // ---------------------------------------------------------------------------
-describe('IT-1: BlockerCarousel is visible when cockpit has blockers', () => {
+describe('IT-1: BlockerCarousel is visible when useBlockerBar returns kind=blockers', () => {
   it('renders the blocker card for Scaffold Assembly', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
@@ -222,10 +242,11 @@ describe('IT-4: "See Full Details" button navigates to TaskDetails', () => {
 });
 
 // ---------------------------------------------------------------------------
-// IT-5: No cockpit sections when cockpit is null
+// IT-5: No blocker sections rendered when blockerBarResult is null (loading)
 // ---------------------------------------------------------------------------
-describe('IT-5: cockpit sections hidden when cockpit is null', () => {
-  it('does not render blocker-carousel or focus-list when cockpit is null', async () => {
+describe('IT-5: blocker sections hidden when blockerBarResult is null', () => {
+  it('does not render blocker-carousel when blockerBarResult is null', async () => {
+    mockBlockerBarResult = null;
     mockCockpitData = null;
 
     let tree: renderer.ReactTestRenderer;
@@ -234,8 +255,79 @@ describe('IT-5: cockpit sections hidden when cockpit is null', () => {
     });
 
     const carousels = tree!.root.findAll((n) => n.props.testID === 'blocker-carousel');
+    const winningCards = tree!.root.findAll((n) => n.props.testID === 'blocker-winning-card');
     const focusList = tree!.root.findAll((n) => n.props.testID === 'focus-list');
     expect(carousels).toHaveLength(0);
+    expect(winningCards).toHaveLength(0);
     expect(focusList).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IT-6: Winning card shown when useBlockerBar returns kind=winning
+// ---------------------------------------------------------------------------
+describe('IT-6: winning card shown when useBlockerBar returns kind=winning', () => {
+  it('renders the winning card with correct message', async () => {
+    mockBlockerBarResult = { kind: 'winning' };
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TasksScreen />);
+    });
+
+    const winningCard = tree!.root.find((n) => n.props.testID === 'blocker-winning-card');
+    expect(winningCard).toBeTruthy();
+
+    const allText = tree!.root
+      .findAll((n) => String(n.type) === 'Text')
+      .map((n) => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain("You're winning today");
+
+    // No blocker cards should be present
+    const blockerCards = tree!.root.findAll(
+      (n) => typeof n.props.testID === 'string' && n.props.testID.startsWith('blocker-card-'),
+    );
+    expect(blockerCards).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IT-7: Fallback — blocker bar shows project B's task when project A has none
+// ---------------------------------------------------------------------------
+describe('IT-7: fallback sanity — blocker bar shows the blocking project', () => {
+  it('renders the fallback project\'s blocker card when first project is healthy', async () => {
+    const p2BlockerTask = makeTask('t-p2-blocker', 'P2 Blocked Task', 'blocked');
+    mockBlockerBarResult = {
+      kind: 'blockers',
+      projectId: 'proj-2',
+      projectName: 'Reno Project B',
+      blockers: [{
+        task: p2BlockerTask,
+        severity: 'red',
+        blockedPrereqs: [],
+        nextInLine: [],
+      }],
+    };
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TasksScreen />);
+    });
+
+    // Carousel is visible
+    const carousel = tree!.root.find((n) => n.props.testID === 'blocker-carousel');
+    expect(carousel).toBeTruthy();
+
+    // The blocker card for the fallback project's task is shown
+    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-t-p2-blocker');
+    expect(card).toBeTruthy();
+
+    // Project name label is visible
+    const allText = tree!.root
+      .findAll((n) => String(n.type) === 'Text')
+      .map((n) => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain('Reno Project B');
   });
 });
