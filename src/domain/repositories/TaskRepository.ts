@@ -1,5 +1,6 @@
 import { Task } from '../entities/Task';
 import { DelayReason } from '../entities/DelayReason';
+import { ProgressLog } from '../entities/ProgressLog';
 
 export interface TaskRepository {
   save(task: Task): Promise<void>;
@@ -34,4 +35,7 @@ export interface TaskRepository {
   // Cascade helpers (used by DeleteTaskUseCase)
   deleteDependenciesByTaskId(taskId: string): Promise<void>;
   deleteDelayReasonsByTaskId(taskId: string): Promise<void>;
+
+  findProgressLogs(taskId: string): Promise<ProgressLog[]>;
+  addProgressLog(log: Omit<ProgressLog, 'id' | 'createdAt'>): Promise<ProgressLog>;
 }

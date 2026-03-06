@@ -584,3 +584,28 @@ cd ios && pod install
 - **Lightbox**: implement a full-screen image viewer as a dedicated future ticket.
 - **Subcontractor "Call" button**: wire phone-dialler action (requires Contact phone number lookup).
 - **Populate context fields**: add `location`, `fireZone`, `regulatoryFlags` inputs to the Project form; add `siteConstraints` to the Task form.
+
+
+�-
+
+## 10. Issue #129 — Task Detail Redesign & Progress Logs (2026-03-06)
+
+### Key Decisions
+- **Unified Progress Tracking:** Refactored the previous `task_delay_reasons` table into a generalized `task_progress_logs` table that handles normal progress, delays, inspection notes, issues, etc.
+- **Backwards Compatibility:** Legacy delay logic was updated to query the generic progress logs table with a `log_type = 'delay'` discriminant, preserving any existing delay models while broadening the domain capabilities.
+- **Interface Expansion:** Added `findProgressLogs` and `addProgressLog` port definitions to `TaskRepository` interface to decouple data reads and writes for the broader progress scope.
+- **Batch Mock Regeneration:** Wrote AST/RegEx based injection scripts to batch update all unit and integration test mock repositories (`makeMockRepo`, `InMemoryTaskRepository`) resolving massive TypeScript signature breakages and keeping TDD velocity high.
+- **Component Pruning:** Removed `TaskDelaySection` from `TaskDetailsPage` and wired up `TaskProgressSection` to reflect the new dynamic `ProgressLog` items list.
+
+### Completed
+- `task_progress_logs` schema table mapped; repository SQL statements updated in `DrizzleTaskRepository.ts` to utilize discriminant unions properly.
+- Extracted and modified `GetTaskDetailUseCase` to resolve and include real `task.progressLogs` dynamically via repository parallel fetches.
+- Extended React hook `useTasks.ts` to expose `addProgressLog`.
+- Repfrposed `TaskProgressSection.tsx` from static mock data to mapping live dynamic props (`progressLogs={taskDetail?.progressLogs ?? []}`).
+- Migrated out the standalone visual `TaskDelaySection`. All progress operations are now properly funneled under the generalized module logging.
+- Type safety passes smoothly (npx tsc --noEmit clean exit) following 100% update to test suite interfaces.
+
+### Pending / Next Steps
+- **Add Progress Log Modal:** Re-implement or map a shared `AddProgressLogModal` layout so the "+ Add Log" button natively captures inputs per schema specifications. 
+- **Type UI Mapping:** Tie actual DB log types (e.g. `info`, `inspection`, `completion`) to correct UI tags within the progress timeline section display.
+- **Cleanup End to End Testing:** Add comprehensive e2e tests connecting the React Native form submission all the way to DB insertion to prevent future regressions.

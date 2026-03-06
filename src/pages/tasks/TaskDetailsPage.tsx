@@ -375,7 +375,7 @@ export default function TaskDetailsPage() {
         />
 
         {/* Provide Mock Data for Progress logs per instruction */}
-        <TaskProgressSection />
+        <TaskProgressSection progressLogs={taskDetail?.progressLogs ?? []} onAddLog={() => setShowDelayModal(true)} />
 
         <TaskDocumentSection
           documents={documents}
@@ -383,12 +383,6 @@ export default function TaskDetailsPage() {
           uploading={uploadingDocument}
         />
 
-        <TaskDelaySection
-          delayReasons={taskDetail?.delayReasons ?? []}
-          onAddDelay={() => setShowDelayModal(true)}
-          onRemoveDelay={handleRemoveDelayReason}
-          onResolveDelay={handleResolveDelayReason}
-        />
       </ScrollView>
 
       {/* Bottom Action Button */}

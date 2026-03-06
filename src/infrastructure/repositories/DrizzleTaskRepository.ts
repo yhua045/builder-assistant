@@ -1,6 +1,7 @@
 import { Task } from '../../domain/entities/Task';
 import { TaskRepository } from '../../domain/repositories/TaskRepository';
 import { DelayReason } from '../../domain/entities/DelayReason';
+import { ProgressLog } from '../../domain/entities/ProgressLog';
 import { getDatabase, initDatabase } from '../../infrastructure/database/connection';
 
 export class DrizzleTaskRepository implements TaskRepository {
@@ -323,6 +324,53 @@ export class DrizzleTaskRepository implements TaskRepository {
     await db.executeSql('DELETE FROM task_delay_reasons WHERE id = ?', [delayReasonId]);
   }
 
+  async findProgressLogs(taskId: string): Promise<ProgressLog[]> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    const sql = `SELECT * FROM task_progress_logs WHERE task_id = ? ORDER BY date DESC, created_at DESC`;
+    const [result] = await db.executeSql(sql, [taskId]);
+    const logs: ProgressLog[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      logs.push({
+        id: row.id,
+        taskId: row.task_id,
+        notes: row.notes || undefined,
+        logType: row.log_type,
+        date: row.date || undefined,
+        actor: row.actor || undefined,
+        photos: row.photos ? JSON.parse(row.photos) : undefined,
+        reasonTypeId: row.reason_type_id || undefined,
+        delayDurationDays: row.delay_duration_days || undefined,
+        resolvedAt: row.resolved_at || undefined,
+        mitigationNotes: row.mitigation_notes || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at || undefined,
+      });
+    }
+    return logs;
+  }
+
+  async addProgressLog(log: Omit<ProgressLog, 'id' | 'createdAt'>): Promise<ProgressLog> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    const id = `prog_${Date.now()}`;
+    const createdAt = Date.now();
+    await db.executeSql(
+      `INSERT INTO task_progress_logs (
+        id, task_id, log_type, notes, date, actor, photos, 
+        reason_type_id, delay_duration_days, resolved_at, mitigation_notes, 
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, log.taskId, log.logType, log.notes || null, log.date || null, log.actor || null, log.photos ? JSON.stringify(log.photos) : null,
+        log.reasonTypeId || null, log.delayDurationDays || null, log.resolvedAt || null, log.mitigationNotes || null,
+        createdAt, null
+      ],
+    );
+    return { ...log, id, createdAt };
+  }
+
   async findDelayReasons(taskId: string): Promise<DelayReason[]> {
     await this.ensureInitialized();
     const { db } = getDatabase();
@@ -330,7 +378,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       `SELECT tdr.*, drt.label AS reason_type_label
        FROM task_delay_reasons tdr
        LEFT JOIN delay_reason_types drt ON drt.id = tdr.reason_type_id
-       WHERE tdr.task_id = ?
+       WHERE tdr.task_id = ? AND tdr.log_type = 'delay'
        ORDER BY tdr.created_at ASC`,
       [taskId],
     );
@@ -395,10 +443,11 @@ export class DrizzleTaskRepository implements TaskRepository {
     await this.ensureInitialized();
     const { db } = getDatabase();
     let sql = `SELECT reason_type_id, COUNT(*) AS cnt
-               FROM task_delay_reasons`;
+               FROM task_progress_logs
+               WHERE log_type = 'delay'`;
     const params: any[] = [];
     if (taskId) {
-      sql += ' WHERE task_id = ?';
+      sql += ' AND task_id = ?';
       params.push(taskId);
     }
     sql += ' GROUP BY reason_type_id ORDER BY cnt DESC';

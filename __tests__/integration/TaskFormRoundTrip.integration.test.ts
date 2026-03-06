@@ -25,6 +25,7 @@ class InMemoryTaskRepository implements TaskRepository {
   private tasks: Map<string, Task> = new Map();
   private deps: { taskId: string; dependsOnTaskId: string }[] = [];
   private delays: DelayReason[] = [];
+  private progressLogs: any[] = [];
 
   async save(task: Task): Promise<void> { this.tasks.set(task.id, { ...task }); }
   async findById(id: string): Promise<Task | null> { return this.tasks.get(id) ?? null; }
@@ -57,6 +58,8 @@ class InMemoryTaskRepository implements TaskRepository {
   }
   async removeDelayReason(id: string): Promise<void> { this.delays = this.delays.filter(d => d.id !== id); }
   async resolveDelayReason(): Promise<void> {}
+  async findProgressLogs(taskId: string): Promise<any[]> { return this.progressLogs.filter(l => l.taskId === taskId); }
+  async addProgressLog(log: any): Promise<any> { const pl = { ...log, id: `pl_1`, createdAt: Date.now() }; this.progressLogs.push(pl); return pl; }
   async findDelayReasons(taskId: string): Promise<DelayReason[]> { return this.delays.filter(d => d.taskId === taskId); }
   async summarizeDelayReasons(): Promise<{ reasonTypeId: string; count: number }[]> { return []; }
   async deleteDependenciesByTaskId(taskId: string): Promise<void> { this.deps = this.deps.filter(d => d.taskId !== taskId && d.dependsOnTaskId !== taskId); }
