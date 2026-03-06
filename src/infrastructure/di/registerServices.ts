@@ -28,6 +28,7 @@ import { MobileAudioRecorder } from '../voice/MobileAudioRecorder';
 import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
 import { GroqTranscriptParser } from '../voice/GroqTranscriptParser';
+import { StubSuggestionService } from '../ai/suggestionService';
 
 // Repository registrations
 if (typeof (container as any).registerSingleton === 'function') {
@@ -41,6 +42,8 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('DelayReasonTypeRepository', DrizzleDelayReasonTypeRepository);
 	container.registerSingleton('FileSystemAdapter', MobileFileSystemAdapter);
 	container.registerSingleton('CameraService', MobileCameraAdapter);
+	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
+	container.registerSingleton('SuggestionService', StubSuggestionService);
 
 	// ── Voice Services ────────────────────────────────────────────────────────────
 	//

@@ -29,8 +29,13 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
   // ── Winning state ──────────────────────────────────────────────────────────
   if (data.kind === 'winning') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.sectionHeader}>⛔ Blockers</Text>
+      <View style={[styles.container, styles.containerWinning]}>
+        <Text
+          style={styles.sectionHeader}
+          accessibilityRole="header"
+        >
+          No Active Blockers
+        </Text>
         <View style={styles.scrollContent}>
           <View
             testID="blocker-winning-card"
@@ -53,7 +58,12 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionHeader}>⛔ Blockers</Text>
+        <Text
+          style={styles.sectionHeader}
+          accessibilityRole="header"
+        >
+          ⛔ Blockers
+        </Text>
         <Text style={styles.projectLabel}>{projectName}</Text>
       </View>
       <ScrollView
@@ -117,6 +127,13 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 4,
+    // Hero section: subtle accent line at top so it reads as primary
+    borderTopWidth: 3,
+    borderTopColor: '#ef4444',
+    paddingTop: 10,
+  },
+  containerWinning: {
+    borderTopColor: '#22c55e',
   },
   headerRow: {
     flexDirection: 'row',
@@ -127,9 +144,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionHeader: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#64748b',
+    color: '#0f172a',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -144,18 +161,18 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   card: {
-    width: 200,
+    width: 220,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#fff',
-    padding: 12,
+    padding: 14,
     borderLeftWidth: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cardBorderRed: {
     borderLeftColor: '#ef4444',
@@ -215,15 +232,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   winningTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
     color: '#15803d',
     textAlign: 'center',
   },
   winningSubtitle: {
-    fontSize: 12,
-    color: '#4ade80',
-    marginTop: 2,
+    fontSize: 14,
+    color: '#16a34a',
+    marginTop: 4,
     textAlign: 'center',
   },
 });

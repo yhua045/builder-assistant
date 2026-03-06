@@ -35,6 +35,19 @@ export interface Task {
   // Cockpit: manual critical-path pin. User sets this to always show in Focus-3.
   isCriticalPath?: boolean;
 
+  /**
+   * URIs of photos attached to this task.
+   * Supports both local paths (file://) and remote URLs (https://).
+   * Stored as a JSON array in SQLite.
+   */
+  photos?: string[];
+
+  /**
+   * Free-text site constraint note surfaced to the AI suggestion engine.
+   * e.g. "Access via rear lane only — no heavy vehicles before 9 am"
+   */
+  siteConstraints?: string;
+
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;

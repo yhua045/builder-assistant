@@ -716,6 +716,20 @@ const migrations: RNMigration[] = [
       `ALTER TABLE "tasks" ADD COLUMN "is_critical_path" integer DEFAULT 0;`,
     ],
   },
+  {
+    tag: '0015_task_photos_project_context',
+    hash: '0015_task_photos_project_context',
+    folderMillis: 1741269600000, // 2026-03-06
+    sql: [
+      // issue #125 — Blocker Hero + AI Suggestions context fields
+      // All columns are nullable so existing rows are backward-compatible.
+      `ALTER TABLE "tasks"    ADD COLUMN "photos"           text;`,
+      `ALTER TABLE "tasks"    ADD COLUMN "site_constraints" text;`,
+      `ALTER TABLE "projects" ADD COLUMN "location"         text;`,
+      `ALTER TABLE "projects" ADD COLUMN "fire_zone"        text;`,
+      `ALTER TABLE "projects" ADD COLUMN "regulatory_flags" text;`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
