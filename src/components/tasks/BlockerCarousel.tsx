@@ -1,13 +1,3 @@
-/**
- * BlockerCarousel — horizontally scrollable row of blocker cards.
- *
- * Consumed by TasksScreen (src/pages/tasks/index.tsx).
- * Data comes from useBlockerBar → BlockerBarResult.
- *
- * Renders two states:
- *   - kind='blockers' → scrollable row of blocker cards (+ project name label when falling back)
- *   - kind='winning'  → single non-interactive green "You're winning today" card
- */
 import React from 'react';
 import {
   View,
@@ -15,7 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
+  useColorScheme
 } from 'react-native';
+import { AlertCircle, Calendar, Layers, ChevronRight, AlertTriangle } from 'lucide-react-native';
 import { BlockerBarResult } from '../../domain/entities/CockpitData';
 import { Task } from '../../domain/entities/Task';
 
@@ -26,16 +19,35 @@ export interface BlockerCarouselProps {
 }
 
 export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
+  const { width } = useWindowDimensions();
+  const isDark = useColorScheme() === 'dark';
+  
+  // Card width is screen width minus padding (24 on each side), 
+  // but minus a bit more so the next card peeks in
+  const cardWidth = width - 64;
+
+  const formatShortDate = (dateStr?: string) => {
+    if (!dateStr) return 'TBD';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return 'TBD';
+    }
+  };
+
   // ── Winning state ──────────────────────────────────────────────────────────
   if (data.kind === 'winning') {
     return (
-      <View style={[styles.container, styles.containerWinning]}>
-        <Text
-          style={styles.sectionHeader}
-          accessibilityRole="header"
-        >
-          No Active Blockers
-        </Text>
+      <View style={[styles.container]}>
+        <View style={styles.headerRow}>
+          <Text
+            style={[styles.sectionHeader, { color: isDark ? '#f8fafc' : '#0f172a' }]}
+            accessibilityRole="header"
+          >
+            No Active Blockers
+          </Text>
+        </View>
         <View style={styles.scrollContent}>
           <View
             testID="blocker-winning-card"
@@ -58,19 +70,25 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text
-          style={styles.sectionHeader}
-          accessibilityRole="header"
-        >
-          ⛔ Blockers
-        </Text>
-        <Text style={styles.projectLabel}>{projectName}</Text>
+        <View style={styles.headerTitleContainer}>
+          <AlertTriangle color="#ef4444" size={24} />
+          <Text
+            style={[styles.sectionHeader, { color: isDark ? '#f8fafc' : '#0f172a' }]}
+            accessibilityRole="header"
+          >
+            Critical Blockers
+          </Text>
+        </View>
+        <Text style={styles.headerCount}>{blockers.length} active</Text>
       </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         testID="blocker-carousel"
+        snapToInterval={cardWidth + 12}
+        decelerationRate="fast"
       >
         {blockers.map((item) => (
           <TouchableOpacity
@@ -84,39 +102,110 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
             }. Tap to open details.`}
             style={[
               styles.card,
-              item.severity === 'red' ? styles.cardBorderRed : styles.cardBorderYellow,
+              { width: cardWidth },
+              item.severity === 'red' ? styles.cardBgRed : styles.cardBgYellow,
             ]}
           >
-            {/* Severity badge */}
-            <View style={styles.cardHeader}>
-              <Text
+            {/* Top Indicator Line */}
+            <View style={styles.topIndicatorContainer}>
+              <View
                 style={[
-                  styles.severityBadge,
-                  item.severity === 'red' ? styles.badgeTextRed : styles.badgeTextYellow,
+                  styles.topIndicator,
+                  item.severity === 'red'
+                    ? { backgroundColor: '#ef4444', width: '85%' }
+                    : { backgroundColor: '#f59e0b', width: '70%' },
                 ]}
-              >
-                {item.severity === 'red' ? '🔴 BLOCKED' : '🟡 DELAYED'}
-              </Text>
+              />
             </View>
 
-            {/* Task title */}
-            <Text style={styles.taskTitle} numberOfLines={2}>
-              {item.task.title}
-            </Text>
-
-            {/* First blocked prereq */}
-            {item.blockedPrereqs.length > 0 && (
-              <Text style={styles.prereqText} numberOfLines={1}>
-                Blocked by: {item.blockedPrereqs[0].title}
+            <View style={styles.cardContent}>
+              {/* Task title */}
+              <Text style={[styles.taskTitle, { color: isDark ? '#f8fafc' : '#0f172a' }]} numberOfLines={2}>
+                {item.task.title}
               </Text>
-            )}
 
-            {/* Next-in-line count */}
-            {item.nextInLine.length > 0 && (
-              <Text style={styles.nextInLineText}>
-                {`+${item.nextInLine.length} tasks waiting`}
-              </Text>
-            )}
+              {/* Project line */}
+              <View style={styles.projectRow}>
+                <View
+                  style={[
+                    styles.projectDot,
+                    { backgroundColor: item.severity === 'red' ? '#3b82f6' : '#10b981' },
+                  ]}
+                />
+                <Text style={styles.projectText} numberOfLines={1}>
+                  {projectName || 'No Project'}
+                </Text>
+              </View>
+
+              {/* Blocker Reasons (Pills) */}
+              <View style={styles.reasonsContainer}>
+                {item.blockedPrereqs.length > 0 ? (
+                  item.blockedPrereqs.map((prereq) => (
+                    <View
+                      key={prereq.id}
+                      style={[
+                        styles.reasonPill,
+                        item.severity === 'red' ? styles.reasonPillRed : styles.reasonPillYellow,
+                      ]}
+                    >
+                      <AlertCircle
+                        size={14}
+                        color={item.severity === 'red' ? '#b91c1c' : '#b45309'}
+                      />
+                      <Text
+                        style={[
+                          styles.reasonText,
+                          item.severity === 'red' ? styles.reasonTextRed : styles.reasonTextYellow,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {prereq.title}
+                      </Text>
+                    </View>
+                  ))
+                ) : (
+                  <View
+                    style={[
+                      styles.reasonPill,
+                      item.severity === 'red' ? styles.reasonPillRed : styles.reasonPillYellow,
+                    ]}
+                  >
+                    <AlertCircle
+                      size={14}
+                      color={item.severity === 'red' ? '#b91c1c' : '#b45309'}
+                    />
+                    <Text
+                      style={[
+                        styles.reasonText,
+                        item.severity === 'red' ? styles.reasonTextRed : styles.reasonTextYellow,
+                      ]}
+                        numberOfLines={1}
+                    >
+                      {item.severity === 'red' ? 'Blocked' : 'Delayed'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Footer Details */}
+              <View style={styles.footerRow}>
+                <View style={styles.footerItem}>
+                  <Calendar size={14} color="#94a3b8" />
+                  <Text style={styles.footerText}>
+                    Starts: {formatShortDate(item.task.scheduledAt || item.task.scheduledStart)}
+                  </Text>
+                </View>
+                <View style={styles.footerItem}>
+                  <Layers size={14} color="#94a3b8" />
+                  <Text style={styles.footerText}>
+                    {item.nextInLine.length} tasks waiting
+                  </Text>
+                </View>
+                <View style={styles.footerRight}>
+                  <ChevronRight size={16} color="#94a3b8" />
+                </View>
+              </View>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -127,105 +216,146 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 4,
-    // Hero section: subtle accent line at top so it reads as primary
-    borderTopWidth: 3,
-    borderTopColor: '#ef4444',
-    paddingTop: 10,
-  },
-  containerWinning: {
-    borderTopColor: '#22c55e',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingBottom: 8,
-    paddingTop: 4,
+    paddingBottom: 16,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   sectionHeader: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  projectLabel: {
-    fontSize: 12,
+  headerCount: {
+    fontSize: 15,
     color: '#94a3b8',
-    fontStyle: 'italic',
+    fontWeight: '500',
   },
   scrollContent: {
     paddingHorizontal: 24,
     gap: 12,
-    paddingBottom: 4,
+    paddingBottom: 16,
   },
   card: {
-    width: 220,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#fff',
-    padding: 14,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    overflow: 'hidden',
   },
-  cardBorderRed: {
-    borderLeftColor: '#ef4444',
+  cardBgRed: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#fee2e2',
   },
-  cardBorderYellow: {
-    borderLeftColor: '#f59e0b',
+  cardBgYellow: {
+    backgroundColor: '#fffbf0',
+    borderColor: '#fef3c7',
   },
-  cardHeader: {
-    marginBottom: 6,
+  topIndicatorContainer: {
+    height: 4,
+    width: '100%',
+    backgroundColor: 'transparent',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
-  severityBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+  topIndicator: {
+    height: '100%',
   },
-  badgeTextRed: {
-    color: '#ef4444',
-  },
-  badgeTextYellow: {
-    color: '#d97706',
+  cardContent: {
+    padding: 16,
+    paddingTop: 20,
   },
   taskTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  projectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  projectDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  projectText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 4,
-    lineHeight: 19,
-  },
-  prereqText: {
-    fontSize: 12,
     color: '#64748b',
-    marginBottom: 2,
+    fontWeight: '500',
   },
-  nextInLineText: {
-    fontSize: 11,
+  reasonsContainer: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  reasonPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  reasonPillRed: {
+    backgroundColor: '#fee2e2',
+  },
+  reasonPillYellow: {
+    backgroundColor: '#fef3c7',
+  },
+  reasonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reasonTextRed: {
+    color: '#b91c1c',
+  },
+  reasonTextYellow: {
+    color: '#b45309',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  footerText: {
+    fontSize: 13,
     color: '#94a3b8',
-    marginTop: 4,
+    fontWeight: '500',
   },
-  // ── Winning state ────────────────────────────────────────────────────────
+  footerRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
   winningCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#bbf7d0',
     backgroundColor: '#f0fdf4',
     padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#22c55e',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    width: '100%',
   },
   winningEmoji: {
     fontSize: 24,
@@ -244,4 +374,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
