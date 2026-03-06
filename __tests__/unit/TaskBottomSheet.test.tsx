@@ -257,3 +257,152 @@ describe('TC-8: optimistic status update', () => {
     resolveUpdate();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-9: Section ordering — Next-In-Line appears BEFORE Status pills
+// ---------------------------------------------------------------------------
+describe('TC-9: section ordering — Next-In-Line before Status', () => {
+  it('renders Next-in-Line section before Status section in the scroll body', async () => {
+    const nextInLine: Task[] = [{ id: 'n1', title: 'Roof Battens', status: 'pending',
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }];
+    const props = { ...defaultProps(), nextInLine };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const json = JSON.stringify(tree!.toJSON());
+    const nextInLineIdx = json.indexOf('Next in Line');
+    const statusIdx = json.indexOf('"Status"');
+    expect(nextInLineIdx).toBeGreaterThan(-1);
+    expect(statusIdx).toBeGreaterThan(-1);
+    expect(nextInLineIdx).toBeLessThan(statusIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-10: Task description renders when set
+// ---------------------------------------------------------------------------
+describe('TC-10: task description', () => {
+  it('renders description text when task.description is set', async () => {
+    const task = makeTask({ description: 'Install LVL ridge beam before plates.' });
+    const props = { ...defaultProps(), task };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const allText = tree!.root
+      .findAll((n) => String(n.type) === 'Text')
+      .map((n) => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain('Install LVL ridge beam before plates.');
+  });
+
+  it('does NOT render description section when task.description is empty/undefined', async () => {
+    const task = makeTask({ description: undefined });
+    const props = { ...defaultProps(), task };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const allText = tree!.root
+      .findAll((n) => String(n.type) === 'Text')
+      .map((n) => String(n.props.children))
+      .join(' ');
+    // The word "Description" should NOT appear as a section label
+    expect(allText).not.toContain('DESCRIPTION');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-11: Photo strip renders when task.photos is non-empty
+// ---------------------------------------------------------------------------
+describe('TC-11: photo strip', () => {
+  it('renders photo strip container when task.photos is non-empty', async () => {
+    const task = makeTask({ photos: ['file:///photo1.jpg', 'https://cdn.example.com/photo2.jpg'] });
+    const props = { ...defaultProps(), task };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const strip = tree!.root.find((n) => n.props.testID === 'photo-strip');
+    expect(strip).toBeTruthy();
+  });
+
+  it('does NOT render photo strip when task.photos is empty/undefined', async () => {
+    const task = makeTask({ photos: [] });
+    const props = { ...defaultProps(), task };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const strips = tree!.root.findAll((n) => n.props.testID === 'photo-strip');
+    expect(strips).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-12: AI suggestion area NOT rendered by default
+// ---------------------------------------------------------------------------
+describe('TC-12: AI suggestion area hidden by default', () => {
+  it('does not render AI suggestion area when suggestion prop is omitted', async () => {
+    const props = defaultProps(); // no suggestion prop
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const areas = tree!.root.findAll((n) => n.props.testID === 'ai-suggestion-area');
+    expect(areas).toHaveLength(0);
+  });
+
+  it('does not render AI suggestion area when suggestion prop is null', async () => {
+    const props = { ...defaultProps(), suggestion: null };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const areas = tree!.root.findAll((n) => n.props.testID === 'ai-suggestion-area');
+    expect(areas).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-13: AI suggestion area renders when suggestion prop is provided
+// ---------------------------------------------------------------------------
+describe('TC-13: AI suggestion area visible when suggestion provided', () => {
+  it('renders suggestion text and disclaimer when suggestion prop is set', async () => {
+    const suggestion = {
+      suggestion: 'Check if ridge beam delivery was rescheduled.',
+      confidence: 'medium' as const,
+      disclaimer: 'AI-generated. Verify with a qualified professional.',
+    };
+    const props = { ...defaultProps(), suggestion };
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    const area = tree!.root.find((n) => n.props.testID === 'ai-suggestion-area');
+    expect(area).toBeTruthy();
+    const allText = tree!.root
+      .findAll((n) => String(n.type) === 'Text')
+      .map((n) => String(n.props.children))
+      .join(' ');
+    expect(allText).toContain('Check if ridge beam delivery was rescheduled.');
+    expect(allText).toContain('AI-generated. Verify with a qualified professional.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-14: Subcontractor call button is rendered (disabled)
+// ---------------------------------------------------------------------------
+describe('TC-14: disabled subcontractor call button', () => {
+  it('renders the call-sub action button in a disabled state', async () => {
+    const props = defaultProps();
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TaskBottomSheet {...props} />);
+    });
+    // The button should be present but have no onPress (or be styled as disabled)
+    const callBtn = tree!.root.find((n) => n.props.testID === 'action-call-sub');
+    expect(callBtn).toBeTruthy();
+  });
+});

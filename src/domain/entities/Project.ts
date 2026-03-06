@@ -20,6 +20,15 @@ export interface Project {
   materials: Material[];
   phases: ProjectPhase[];
   meta?: Record<string, any>;
+
+  // ── AI / context fields ─────────────────────────────────────────────────────
+  /** Street address or lat/lng string for the project site. */
+  location?: string;
+  /** Bushfire Attack Level or zone code, e.g. "BAL-29", "BAL-FZ". */
+  fireZone?: string;
+  /** Arbitrary regulatory constraint labels (e.g. heritage overlay codes). */
+  regulatoryFlags?: string[];
+
   createdAt?: Date;
   updatedAt?: Date;
 }

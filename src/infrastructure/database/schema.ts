@@ -16,6 +16,10 @@ export const projects = sqliteTable('projects', {
   budget: real('budget'),
   currency: text('currency'),
   meta: text('meta'), // JSON
+  // AI / contextual fields (issue #125)
+  location: text('location'),               // street address or lat/lng string
+  fireZone: text('fire_zone'),              // BAL rating or zone code
+  regulatoryFlags: text('regulatory_flags'), // JSON array of constraint labels
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
@@ -288,6 +292,9 @@ export const tasks = sqliteTable('tasks', {
   subcontractorId: text('subcontractor_id'), // FK (soft) to contacts.id
   isCriticalPath: integer('is_critical_path', { mode: 'boolean' }).default(false),
   completedDate: integer('completed_date'), // Unix timestamp
+  // AI / contextual fields (issue #125)
+  photos: text('photos'),           // JSON array of URIs (file:// or https://)
+  siteConstraints: text('site_constraints'), // free-text site note for AI context
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({

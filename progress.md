@@ -543,3 +543,44 @@ cd ios && pod install
 ### Pending / Next Steps
 - On-device QA: verify winning card renders correctly on both light/dark themes; verify project name label is readable when falling back.
 - Focus-3 cross-project fallback (out of scope for this ticket, separate issue).
+
+---
+
+## 9. Issue #125 — Blocker Hero, Bottom Sheet Reorder & AI Suggestions (2026-03-06)
+
+### Key Decisions
+- **Summary count cards removed**: The pending / in-progress numeric cards in the Task Index header are removed entirely. Builder feedback: they distract from what really matters (blockers). The filter-pills tab bar below the focus list still gives access to those views.
+- **BlockerCarousel as hero section**: The carousel is promoted to the first element under the task-screen header. A 3 px red accent top-border (green for winning state), larger section header font (16 vs 13), and wider cards (220 vs 200 px) give it clear visual priority without breaking the existing scrollable layout.
+- **Bottom Sheet section reorder (8-stage)**: New render order ensures the most actionable info hits the thumb first: (1) Next-In-Line, (2) Description, (3) Photo strip, (4) Quick Actions, (5) Prerequisites, (6) Status pills, (7) Priority pills, (8) AI Suggestion. Status/priority moved to bottom since they're rarely the first thing edited from the blocker carousel flow.
+- **Disabled "Call Sub" button**: Kept in the Quick Actions row as a disabled placeholder to hold the 3-button layout for future dial-out wiring. This avoids a later layout shift.
+- **Photo strip navigates to TaskDetails**: `task.photos[]` URIs (file:// or https://) render as 64×64 thumbnails; tapping any tile navigates to the full TaskDetailsPage. A `+` add-photo tile also navigates there. No lightbox is added — deferred to a separate ticket.
+- **AI Suggestion as purely additive**: `SuggestionService` is a port with a `StubSuggestionService` default (returns null). The feature flag `FEATURE_AI_SUGGESTIONS` defaults to false; the UI panel simply does not render when the prop is null. Swapping in a real LLM adapter requires only a DI registration change — zero UI changes.
+- **`useTaskDetail` hook for separation of concerns**: AI fetch logic lives in `src/hooks/useTaskDetail.ts`, not inside `TaskBottomSheet`. The component remains purely presentational; `TasksScreen` computes the suggestion and passes it as an optional prop.
+- **Context fields on domain entities**: `Task.photos`, `Task.siteConstraints`, `Project.location`, `Project.fireZone`, `Project.regulatoryFlags` — all optional, all null-safe. Migration 0015 adds the corresponding SQL columns via `ALTER TABLE … ADD COLUMN`.
+
+### Completed
+- Design doc at `design/issue-125-blocker-hero.md` (user story, scope, acceptance criteria, architecture, open questions — all resolved).
+- `src/config/featureFlags.ts` — new file; exports `FEATURE_AI_SUGGESTIONS` env-driven boolean.
+- `src/infrastructure/ai/suggestionService.ts` — new file; `SuggestionContext`, `SuggestionResult`, `SuggestionService` interface, `StubSuggestionService` default implementation.
+- `src/hooks/useTaskDetail.ts` — new hook; resolves `SuggestionService` from DI (or accepts `_overrideSvc` injection for tests); cancellation-safe `useEffect` with async suggestion fetch.
+- `src/domain/entities/Task.ts` — added `photos?: string[]`, `siteConstraints?: string`.
+- `src/domain/entities/Project.ts` — added `location?: string`, `fireZone?: string`, `regulatoryFlags?: string[]`.
+- `src/infrastructure/database/schema.ts` — added 5 nullable columns (`photos`, `site_constraints` on `tasks`; `location`, `fire_zone`, `regulatory_flags` on `projects`).
+- `src/infrastructure/database/migrations.ts` — migration `0015_task_photos_project_context` (5 `ALTER TABLE ADD COLUMN` statements).
+- `src/infrastructure/di/registerServices.ts` — registered `StubSuggestionService` as `'SuggestionService'` singleton.
+- `src/components/tasks/BlockerCarousel.tsx` — hero styling: red/green accent top-border, larger section header, wider cards, bigger winning-state text, `accessibilityRole="header"` on section label.
+- `src/components/tasks/TaskBottomSheet.tsx` — full section reorder; added description block, horizontal photo strip, disabled Call Sub button, AI suggestion panel (`testID="ai-suggestion-area"`); new `suggestion` and `loadingSuggestion` props.
+- `src/pages/tasks/index.tsx` — removed summary count cards and `Calendar`/`Clock` imports; `BlockerCarousel` moved to hero position immediately under header; `useTaskDetail` called with `sheetTask` + resolved project; `suggestion`/`loadingSuggestion` forwarded to `TaskBottomSheet`.
+- **14 new tests** (4 suites), 1 updated existing test — all green:
+  - `__tests__/unit/StubSuggestionService.test.ts` (4 tests) — null-return contract, sync resolution.
+  - `__tests__/unit/useTaskDetail.test.tsx` (5 tests) — context field mapping, result forwarding, null task, service errors.
+  - `__tests__/unit/TaskBottomSheet.test.tsx` — 6 new TCs (ordering, description, photo strip, AI area hidden/visible, disabled call button); all 8 existing TCs still pass.
+  - `__tests__/unit/TasksScreen.test.tsx` — TC-7 updated: now asserts summary count testIDs are **absent**.
+- Full Jest suite: **763 tests pass, 7 skipped, 0 failures**. `npx tsc --noEmit` clean.
+
+### Pending / Next Steps
+- **On-device QA**: verify hero blocker carousel renders with correct red/green accent on iOS and Android; verify photo strip thumbnail loading for both `file://` and `https://` URIs.
+- **Wire `FEATURE_AI_SUGGESTIONS=true`**: Add the env var to `.env` and implement `OpenAISuggestionService` (Groq/OpenAI) when the AI backend is ready; register it in `registerServices.ts`.
+- **Lightbox**: implement a full-screen image viewer as a dedicated future ticket.
+- **Subcontractor "Call" button**: wire phone-dialler action (requires Contact phone number lookup).
+- **Populate context fields**: add `location`, `fireZone`, `regulatoryFlags` inputs to the Project form; add `siteConstraints` to the Task form.

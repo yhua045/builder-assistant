@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, Clock, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { cssInterop, useColorScheme } from 'nativewind';
 import { useNavigation } from '@react-navigation/native';
@@ -9,14 +9,13 @@ import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
 import { useCockpitData } from '../../hooks/useCockpitData';
 import { useBlockerBar } from '../../hooks/useBlockerBar';
+import { useTaskDetail } from '../../hooks/useTaskDetail';
 import { TasksList } from '../../components/tasks/TasksList';
 import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
 import { FocusList } from '../../components/tasks/FocusList';
 import { TaskBottomSheet } from '../../components/tasks/TaskBottomSheet';
 import type { Task } from '../../domain/entities/Task';
 
-cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 type FilterValue = 'all' | 'pending' | 'in_progress' | 'completed' | 'blocked';
@@ -47,7 +46,12 @@ export default function TasksScreen() {
   const [sheetTask, setSheetTask] = useState<Task | null>(null);
   const [sheetPrereqs, setSheetPrereqs] = useState<Task[]>([]);
   const [sheetNextInLine, setSheetNextInLine] = useState<Task[]>([]);
-
+  // Resolve the project for the currently-open task (for AI suggestion context)
+  const sheetProject = useMemo(
+    () => projects.find((p) => p.id === sheetTask?.projectId) ?? projects[0] ?? null,
+    [projects, sheetTask],
+  );
+  const { suggestion, loadingSuggestion } = useTaskDetail(sheetTask, sheetProject);
   const openSheet = useCallback((task: Task, prereqs: Task[] = [], nextInLine: Task[] = []) => {
     setSheetTask(task);
     setSheetPrereqs(prereqs);
@@ -86,15 +90,6 @@ export default function TasksScreen() {
     return tasks.filter((t) => t.status === filter);
   }, [tasks, filter]);
 
-  const pendingCount = useMemo(
-    () => tasks.filter((t) => t.status === 'pending').length,
-    [tasks],
-  );
-  const inProgressCount = useMemo(
-    () => tasks.filter((t) => t.status === 'in_progress').length,
-    [tasks],
-  );
-
   const containerBg = isDark ? styles.darkBg : styles.lightBg;
 
   return (
@@ -121,40 +116,9 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      {/* Summary Cards */}
-      <View className="px-6 pt-4 pb-2">
-        <View className="flex-row gap-4">
-          <View className="flex-1 bg-card rounded-2xl p-4 border border-border">
-            <View className="flex-row items-center justify-between mb-2">
-              <Calendar className="text-primary" size={24} />
-              <View className="bg-blue-100 px-3 py-1 rounded-full">
-                <Text className="text-blue-700 font-bold text-xs">PENDING</Text>
-              </View>
-            </View>
-            <Text testID="summary-pending-count" className="text-3xl font-bold text-foreground">
-              {pendingCount}
-            </Text>
-            <Text className="text-sm text-muted-foreground mt-1">Pending Tasks</Text>
-          </View>
-
-          <View className="flex-1 bg-card rounded-2xl p-4 border border-border">
-            <View className="flex-row items-center justify-between mb-2">
-              <Clock className="text-amber-500" size={24} />
-              <View className="bg-amber-100 px-3 py-1 rounded-full">
-                <Text className="text-amber-700 font-bold text-xs">IN PROGRESS</Text>
-              </View>
-            </View>
-            <Text testID="summary-in-progress-count" className="text-3xl font-bold text-foreground">
-              {inProgressCount}
-            </Text>
-            <Text className="text-sm text-muted-foreground mt-1">In Progress</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Cockpit — Blocker Carousel */}
+      {/* Hero: Blocker Carousel (primary section, top of screen) */}
       {blockerBarResult && (
-        <View className="pt-2">
+        <View className="pt-4">
           <BlockerCarousel
             data={blockerBarResult}
             onCardPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
@@ -230,6 +194,8 @@ export default function TasksScreen() {
         onUpdateTask={handleSheetUpdate}
         onOpenFullDetails={handleOpenFullDetails}
         onMarkBlocked={handleMarkBlocked}
+        suggestion={suggestion}
+        loadingSuggestion={loadingSuggestion}
       />
     </SafeAreaView>
   );

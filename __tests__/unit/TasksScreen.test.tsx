@@ -234,10 +234,10 @@ describe('TC-6: pull-to-refresh calls refreshTasks', () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-7: Summary counts reflect real data
+// TC-7: Summary count cards removed (issue #125 — Blocker Hero)
 // ---------------------------------------------------------------------------
-describe('TC-7: summary cards show real counts', () => {
-  it('shows correct pending and in_progress counts', async () => {
+describe('TC-7: summary count cards are no longer rendered', () => {
+  it('does NOT render summary-pending-count or summary-in-progress-count testIDs', async () => {
     const tasks = [
       makeTask({ id: '1', title: 'A', status: 'pending' }),
       makeTask({ id: '2', title: 'B', status: 'pending' }),
@@ -250,11 +250,11 @@ describe('TC-7: summary cards show real counts', () => {
       tree = renderer.create(<TasksScreen />);
     });
 
-    // Summary cards should surface a "2" (pending) and a "1" (in_progress)
-    const pendingCountEl = tree!.root.findByProps({ testID: 'summary-pending-count' });
-    const inProgressCountEl = tree!.root.findByProps({ testID: 'summary-in-progress-count' });
+    // Issue #125: numeric summary cards (pending/in-progress count) have been removed.
+    const pendingEls = tree!.root.findAll((n) => n.props.testID === 'summary-pending-count');
+    const inProgressEls = tree!.root.findAll((n) => n.props.testID === 'summary-in-progress-count');
 
-    expect(pendingCountEl.props.children).toBe(2);
-    expect(inProgressCountEl.props.children).toBe(1);
+    expect(pendingEls).toHaveLength(0);
+    expect(inProgressEls).toHaveLength(0);
   });
 });

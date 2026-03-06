@@ -15,10 +15,12 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  Image,
   StyleSheet,
   Platform,
 } from 'react-native';
 import { Task } from '../../domain/entities/Task';
+import type { SuggestionResult } from '../../infrastructure/ai/suggestionService';
 
 export interface TaskBottomSheetProps {
   visible: boolean;
@@ -34,6 +36,13 @@ export interface TaskBottomSheetProps {
   onOpenFullDetails: (taskId: string) => void;
   /** Nudge: closes sheet and triggers AddDelayReason flow (navigates to TaskDetails). */
   onMarkBlocked: (taskId: string) => void;
+  /**
+   * Optional AI suggestion for the task (from useTaskDetail hook).
+   * When null/undefined the AI panel is hidden.
+   */
+  suggestion?: SuggestionResult | null;
+  /** True while the AI suggestion is being fetched. */
+  loadingSuggestion?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -72,6 +81,8 @@ export function TaskBottomSheet({
   onUpdateTask,
   onOpenFullDetails,
   onMarkBlocked,
+  suggestion,
+  loadingSuggestion = false,
 }: TaskBottomSheetProps) {
   // Local copy of task for optimistic updates.
   const [localTask, setLocalTask] = useState<Task | null>(task);
@@ -127,7 +138,119 @@ export function TaskBottomSheet({
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-        {/* Status pills */}
+
+        {/* ── 1. Next in Line (primary — most actionable info) ─────────────── */}
+        {nextInLine.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Next in Line</Text>
+            <View style={styles.listSection}>
+              {nextInLine.slice(0, MAX_NEXT_SHOWN).map((t) => (
+                <View key={t.id} style={styles.listRow}>
+                  <Text style={styles.listIcon}>→</Text>
+                  <Text style={styles.listItemText} numberOfLines={1}>
+                    {t.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* ── 2. Task description ──────────────────────────────────────────── */}
+        {!!localTask.description && (
+          <>
+            <Text style={styles.sectionLabel}>Description</Text>
+            <Text style={styles.descriptionText}>{localTask.description}</Text>
+          </>
+        )}
+
+        {/* ── 3. Photo strip ───────────────────────────────────────────────── */}
+        {localTask.photos && localTask.photos.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Photos</Text>
+            <ScrollView
+              testID="photo-strip"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.photoStripContent}
+            >
+              {localTask.photos.map((uri, idx) => (
+                <TouchableOpacity
+                  key={`${uri}-${idx}`}
+                  testID={`photo-thumb-${idx}`}
+                  onPress={() => onOpenFullDetails(localTask.id)}
+                  accessibilityLabel={`Photo ${idx + 1}. Tap to view in full details.`}
+                >
+                  <Image
+                    source={{ uri }}
+                    style={styles.photoThumb}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+              {/* Add Photo shortcut */}
+              <TouchableOpacity
+                testID="photo-add-btn"
+                onPress={() => onOpenFullDetails(localTask.id)}
+                style={styles.photoAddTile}
+                accessibilityLabel="Add photo — opens full task details"
+              >
+                <Text style={styles.photoAddIcon}>+</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </>
+        )}
+
+        {/* ── 4. Quick actions ─────────────────────────────────────────────── */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            testID="action-mark-blocked"
+            onPress={() => onMarkBlocked(localTask.id)}
+            style={[styles.actionBtn, styles.actionBtnDestructive]}
+          >
+            <Text style={styles.actionBtnTextDestructive}>⚠ Mark as Blocked</Text>
+          </TouchableOpacity>
+          {/* Call Sub — kept in layout as disabled placeholder; dial-out wiring is a future ticket */}
+          <TouchableOpacity
+            testID="action-call-sub"
+            disabled
+            style={[styles.actionBtn, styles.actionBtnDisabled]}
+            accessibilityLabel="Call subcontractor — coming soon"
+          >
+            <Text style={styles.actionBtnTextDisabled}>📞 Call Sub</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="action-full-details"
+            onPress={() => onOpenFullDetails(localTask.id)}
+            style={[styles.actionBtn, styles.actionBtnPrimary]}
+          >
+            <Text style={styles.actionBtnTextPrimary}>📋 Details</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── 5. Prerequisites (secondary info) ────────────────────────────── */}
+        {prereqs.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Prerequisites</Text>
+            <View style={styles.listSection}>
+              {prereqs.slice(0, MAX_PREREQS_SHOWN).map((p) => (
+                <View key={p.id} style={styles.listRow}>
+                  <Text style={styles.listIcon}>{prereqIcon(p.status)}</Text>
+                  <Text style={styles.listItemText} numberOfLines={1}>
+                    {p.title}
+                  </Text>
+                </View>
+              ))}
+              {prereqs.length > MAX_PREREQS_SHOWN && (
+                <Text style={styles.overflowText}>
+                  +{prereqs.length - MAX_PREREQS_SHOWN} more
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* ── 6. Status pills ──────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Status</Text>
         <View style={styles.pillRow}>
           {STATUS_PILLS.map(({ value, label }) => (
@@ -152,7 +275,7 @@ export function TaskBottomSheet({
           ))}
         </View>
 
-        {/* Priority pills */}
+        {/* ── 7. Priority pills ────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Priority</Text>
         <View style={styles.pillRow}>
           {PRIORITY_PILLS.map(({ value, label }) => (
@@ -177,62 +300,27 @@ export function TaskBottomSheet({
           ))}
         </View>
 
-        {/* Prerequisites */}
-        {prereqs.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>Prerequisites</Text>
-            <View style={styles.listSection}>
-              {prereqs.slice(0, MAX_PREREQS_SHOWN).map((p) => (
-                <View key={p.id} style={styles.listRow}>
-                  <Text style={styles.listIcon}>{prereqIcon(p.status)}</Text>
-                  <Text style={styles.listItemText} numberOfLines={1}>
-                    {p.title}
-                  </Text>
-                </View>
-              ))}
-              {prereqs.length > MAX_PREREQS_SHOWN && (
-                <Text style={styles.overflowText}>
-                  +{prereqs.length - MAX_PREREQS_SHOWN} more
-                </Text>
+        {/* ── 8. AI Suggestion area (optional, gated by suggestion prop) ───── */}
+        {!!suggestion && (
+          <View
+            testID="ai-suggestion-area"
+            style={styles.aiSuggestionBox}
+            accessible
+            accessibilityLabel="AI suggestion area"
+          >
+            <View style={styles.aiHeader}>
+              <Text style={styles.aiTitle}>🤖 AI Insight</Text>
+              <View style={styles.aiBetaBadge}>
+                <Text style={styles.aiBetaText}>BETA</Text>
+              </View>
+              {loadingSuggestion && (
+                <Text style={styles.aiLoadingText}>updating…</Text>
               )}
             </View>
-          </>
+            <Text style={styles.aiSuggestionText}>{suggestion.suggestion}</Text>
+            <Text style={styles.aiDisclaimer}>⚠ {suggestion.disclaimer}</Text>
+          </View>
         )}
-
-        {/* Next in line */}
-        {nextInLine.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>Next in Line</Text>
-            <View style={styles.listSection}>
-              {nextInLine.slice(0, MAX_NEXT_SHOWN).map((t) => (
-                <View key={t.id} style={styles.listRow}>
-                  <Text style={styles.listIcon}>→</Text>
-                  <Text style={styles.listItemText} numberOfLines={1}>
-                    {t.title}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Quick actions */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            testID="action-mark-blocked"
-            onPress={() => onMarkBlocked(localTask.id)}
-            style={[styles.actionBtn, styles.actionBtnDestructive]}
-          >
-            <Text style={styles.actionBtnTextDestructive}>⚠ Mark as Blocked</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="action-full-details"
-            onPress={() => onOpenFullDetails(localTask.id)}
-            style={[styles.actionBtn, styles.actionBtnPrimary]}
-          >
-            <Text style={styles.actionBtnTextPrimary}>📋 See Full Details</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   );
@@ -389,12 +477,12 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     marginTop: 24,
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 13,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -407,14 +495,107 @@ const styles = StyleSheet.create({
   actionBtnPrimary: {
     backgroundColor: '#3b82f6',
   },
+  actionBtnDisabled: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    opacity: 0.5,
+  },
   actionBtnTextDestructive: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#dc2626',
   },
   actionBtnTextPrimary: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#fff',
+  },
+  actionBtnTextDisabled: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  // Description
+  descriptionText: {
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 20,
+  },
+  // Photo strip
+  photoStripContent: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  photoThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  photoAddTile: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  photoAddIcon: {
+    fontSize: 22,
+    color: '#94a3b8',
+    fontWeight: '300',
+  },
+  // AI Suggestion
+  aiSuggestionBox: {
+    marginTop: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    padding: 14,
+    gap: 8,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  aiBetaBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  aiBetaText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1d4ed8',
+    letterSpacing: 0.5,
+  },
+  aiLoadingText: {
+    fontSize: 11,
+    color: '#60a5fa',
+    fontStyle: 'italic',
+    marginLeft: 'auto' as any,
+  },
+  aiSuggestionText: {
+    fontSize: 13,
+    color: '#1e3a5f',
+    lineHeight: 19,
+  },
+  aiDisclaimer: {
+    fontSize: 11,
+    color: '#64748b',
+    fontStyle: 'italic',
+    lineHeight: 16,
   },
 });
