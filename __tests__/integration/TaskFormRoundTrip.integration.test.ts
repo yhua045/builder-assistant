@@ -60,6 +60,8 @@ class InMemoryTaskRepository implements TaskRepository {
   async resolveDelayReason(): Promise<void> {}
   async findProgressLogs(taskId: string): Promise<any[]> { return this.progressLogs.filter(l => l.taskId === taskId); }
   async addProgressLog(log: any): Promise<any> { const pl = { ...log, id: `pl_1`, createdAt: Date.now() }; this.progressLogs.push(pl); return pl; }
+  async updateProgressLog(logId: string, patch: any): Promise<any> { const idx = this.progressLogs.findIndex((l: any) => l.id === logId); if (idx !== -1) this.progressLogs[idx] = { ...this.progressLogs[idx], ...patch }; return this.progressLogs[idx]; }
+  async deleteProgressLog(logId: string): Promise<void> { this.progressLogs = this.progressLogs.filter((l: any) => l.id !== logId); }
   async findDelayReasons(taskId: string): Promise<DelayReason[]> { return this.delays.filter(d => d.taskId === taskId); }
   async summarizeDelayReasons(): Promise<{ reasonTypeId: string; count: number }[]> { return []; }
   async deleteDependenciesByTaskId(taskId: string): Promise<void> { this.deps = this.deps.filter(d => d.taskId !== taskId && d.dependsOnTaskId !== taskId); }

@@ -15,12 +15,15 @@ import { AddTaskDependencyUseCase } from '../application/usecases/task/AddTaskDe
 import { RemoveTaskDependencyUseCase } from '../application/usecases/task/RemoveTaskDependencyUseCase';
 import { AddDelayReasonUseCase, AddDelayReasonInput } from '../application/usecases/task/AddDelayReasonUseCase';
 import { AddProgressLogUseCase, AddProgressLogInput } from '../application/usecases/task/AddProgressLogUseCase';
+import { UpdateProgressLogUseCase, UpdateProgressLogInput } from '../application/usecases/task/UpdateProgressLogUseCase';
+import { DeleteProgressLogUseCase } from '../application/usecases/task/DeleteProgressLogUseCase';
 import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
 
 export type { TaskDetail } from '../application/usecases/task/GetTaskDetailUseCase';
 export type { AddDelayReasonInput } from '../application/usecases/task/AddDelayReasonUseCase';
+export type { UpdateProgressLogInput } from '../application/usecases/task/UpdateProgressLogUseCase';
 
 export interface UseTasksReturn {
   tasks: Task[];
@@ -37,6 +40,8 @@ export interface UseTasksReturn {
   addDelayReason: (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>) => Promise<DelayReason>;
   removeDelayReason: (delayReasonId: string) => Promise<void>;
   addProgressLog: (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => Promise<ProgressLog>;
+  updateProgressLog: (logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
+  deleteProgressLog: (logId: string) => Promise<void>;
   resolveDelayReason: (delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
 }
 
@@ -57,6 +62,8 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const removeDependencyUseCase = useMemo(() => new RemoveTaskDependencyUseCase(taskRepository), [taskRepository]);
   const addDelayReasonUseCase = useMemo(() => new AddDelayReasonUseCase(taskRepository, delayReasonTypeRepository), [taskRepository, delayReasonTypeRepository]);
   const addProgressLogUseCase = useMemo(() => new AddProgressLogUseCase(taskRepository), [taskRepository]);
+  const updateProgressLogUseCase = useMemo(() => new UpdateProgressLogUseCase(taskRepository), [taskRepository]);
+  const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
 
@@ -129,6 +136,14 @@ export function useTasks(projectId?: string): UseTasksReturn {
     return res;
   }, [addProgressLogUseCase, loadTasks]);
 
+  const updateProgressLog = useCallback(async (logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => {
+    return updateProgressLogUseCase.execute({ logId, ...patch });
+  }, [updateProgressLogUseCase]);
+
+  const deleteProgressLog = useCallback(async (logId: string) => {
+    return deleteProgressLogUseCase.execute({ logId });
+  }, [deleteProgressLogUseCase]);
+
   const removeDelayReason = useCallback(async (delayReasonId: string) => {
     await removeDelayReasonUseCase.execute({ delayReasonId });
   }, [removeDelayReasonUseCase]);
@@ -152,5 +167,7 @@ export function useTasks(projectId?: string): UseTasksReturn {
     removeDelayReason,
     resolveDelayReason,
     addProgressLog,
-  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog]);
+    updateProgressLog,
+    deleteProgressLog,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog]);
 }

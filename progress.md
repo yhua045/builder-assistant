@@ -609,3 +609,35 @@ cd ios && pod install
 - **Add Progress Log Modal:** Re-implement or map a shared `AddProgressLogModal` layout so the "+ Add Log" button natively captures inputs per schema specifications. 
 - **Type UI Mapping:** Tie actual DB log types (e.g. `info`, `inspection`, `completion`) to correct UI tags within the progress timeline section display.
 - **Cleanup End to End Testing:** Add comprehensive e2e tests connecting the React Native form submission all the way to DB insertion to prevent future regressions.
+
+---
+
+## 11. Issue #133 — Progress Log Modal, UI Mapping, Edit & Delete (2026-03-07)
+
+### Key Decisions
+- **Edit and delete in scope:** User requested edit and delete of progress logs alongside the add modal, so all CRUD operations are covered in one ticket.
+- **Thin use case delegation:** `UpdateProgressLogUseCase` and `DeleteProgressLogUseCase` are thin delegators to the repository — business logic (validation, auth) can be added later without touching the UI layer.
+- **`COALESCE` update pattern:** `DrizzleTaskRepository.updateProgressLog` uses `COALESCE(?, column)` so callers can supply only the fields they want to change — the row is re-fetched after update to return the full updated entity.
+- **`accessibilityLabel` for interactivity:** All interactive elements in the new components use `accessibilityLabel` props. Tests query via `getByLabelText` (RNTL v13+ API — `getByAccessibilityLabel` was removed).
+- **`testID` for kebab-menu items:** In `TaskProgressSection`, the options button, Edit action and Delete action each get deterministic `testID` values (`log-options-{id}`, `log-edit-{id}`, `log-delete-{id}`) so integration tests can drive the flow without relying on text content.
+- **Edit mode via `initialValues` prop:** `AddProgressLogModal` accepts an optional `initialValues` prop (includes `id`). When present the modal header and submit button change; `useEffect` pre-populates form fields. This keeps the modal reusable for both create and edit flows from `TaskDetailsPage`.
+- **Two modal instances in `TaskDetailsPage`:** Rather than a single modal with conditional behaviour driven by parent state, two `AddProgressLogModal` instances are rendered — one for create (`visible={showAddLogModal}`) and one for edit (`visible={editingLog !== null}`, `initialValues` from `editingLog`). This avoids accidental state bleed between the two flows.
+
+### Completed
+- `src/domain/repositories/TaskRepository.ts` — added `updateProgressLog(logId, patch)` and `deleteProgressLog(logId)` port definitions.
+- `src/application/usecases/task/UpdateProgressLogUseCase.ts` — new thin use case; exports `UpdateProgressLogInput` interface.
+- `src/application/usecases/task/DeleteProgressLogUseCase.ts` — new thin use case.
+- `src/infrastructure/repositories/DrizzleTaskRepository.ts` — implemented `updateProgressLog` (UPDATE … COALESCE + re-fetch) and `deleteProgressLog` (DELETE by id).
+- `src/hooks/useTasks.ts` — imports new use cases; exposes `updateProgressLog(logId, patch)` and `deleteProgressLog(logId)` methods; re-exports `UpdateProgressLogInput`.
+- `src/components/tasks/AddProgressLogModal.tsx` — new component; create + edit mode; 7-type chip picker; photo selection via `react-native-image-picker`; form resets on close.
+- `src/components/tasks/TaskProgressSection.tsx` — full rewrite; `LogTypeBadge` with correct colours for all 7 types; `LogCard` with kebab menu for edit/delete; `formatRelativeTime` utility; empty state.
+- `src/pages/tasks/TaskDetailsPage.tsx` — wired `addProgressLog`, `updateProgressLog`, `deleteProgressLog` from `useTasks`; `showAddLogModal` and `editingLog` state; two `AddProgressLogModal` instances.
+- **All 11 existing unit-test mock repos** patched to add `updateProgressLog: jest.fn()` and `deleteProgressLog: jest.fn()`.
+- **`TaskFormRoundTrip.integration.test.ts`** `InMemoryTaskRepository` patched with `updateProgressLog` and `deleteProgressLog` implementations.
+- **31 new tests** across 3 suites — all green:
+  - `__tests__/unit/AddProgressLogModal.test.tsx` (9 tests) — create mode (render, disabled state, enabled after type selected, submit data, close, reset on reopen); edit mode (title, pre-population, updated data).
+  - `__tests__/unit/TaskProgressSection.test.tsx` (18 tests) — badge labels × 7 (`test.each`); add-log callback; empty state; relative time; edit handler; delete Alert; delete confirmation callback; `formatRelativeTime` (4 edge cases).
+  - `__tests__/integration/TaskProgressFlow.integration.test.tsx` (5 tests) — add inspection log, add with photos, edit log, delete log, empty state.
+- `npx tsc --noEmit` clean. Full Jest suite: 31 new passing tests, 0 regressions introduced (pre-existing 7-suite/29-test failures confirmed unrelated to this ticket).
+- Design doc at `design/issue-133-progress-log-modal.md` — status updated to IMPLEMENTED.
+
