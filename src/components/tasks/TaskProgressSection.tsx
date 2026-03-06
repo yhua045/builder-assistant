@@ -24,8 +24,9 @@ const mockProgressLogs = [
   }
 ];
 
-export function TaskProgressSection() {
-  const renderProgressLog = ({ item, index }: { item: typeof mockProgressLogs[0]; index: number }) => (
+import { ProgressLog } from "../../domain/entities/ProgressLog";
+export function TaskProgressSection({ progressLogs = [], onAddLog }: { progressLogs?: ProgressLog[]; onAddLog?: () => void }) {
+  const renderProgressLog = ({ item, index }: { item: any; index: number }) => (
     <View key={item.id} className="flex-row gap-4">
       {/* Timeline Line */}
       <View className="items-center">
@@ -71,7 +72,7 @@ export function TaskProgressSection() {
       </View>
 
       <View className="pl-2">
-        {mockProgressLogs.map((log, index) => renderProgressLog({ item: log, index }))}
+        {(progressLogs && progressLogs.length > 0 ? progressLogs : mockProgressLogs).map((log, index) => renderProgressLog({ item: log, index }))}
       </View>
     </View>
   );

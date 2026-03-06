@@ -14,6 +14,8 @@ import { GetTaskDetailUseCase, TaskDetail } from '../application/usecases/task/G
 import { AddTaskDependencyUseCase } from '../application/usecases/task/AddTaskDependencyUseCase';
 import { RemoveTaskDependencyUseCase } from '../application/usecases/task/RemoveTaskDependencyUseCase';
 import { AddDelayReasonUseCase, AddDelayReasonInput } from '../application/usecases/task/AddDelayReasonUseCase';
+import { AddProgressLogUseCase, AddProgressLogInput } from '../application/usecases/task/AddProgressLogUseCase';
+import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
 
@@ -34,6 +36,7 @@ export interface UseTasksReturn {
   removeDependency: (taskId: string, dependsOnTaskId: string) => Promise<void>;
   addDelayReason: (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>) => Promise<DelayReason>;
   removeDelayReason: (delayReasonId: string) => Promise<void>;
+  addProgressLog: (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => Promise<ProgressLog>;
   resolveDelayReason: (delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
 }
 
@@ -53,6 +56,7 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const addDependencyUseCase = useMemo(() => new AddTaskDependencyUseCase(taskRepository), [taskRepository]);
   const removeDependencyUseCase = useMemo(() => new RemoveTaskDependencyUseCase(taskRepository), [taskRepository]);
   const addDelayReasonUseCase = useMemo(() => new AddDelayReasonUseCase(taskRepository, delayReasonTypeRepository), [taskRepository, delayReasonTypeRepository]);
+  const addProgressLogUseCase = useMemo(() => new AddProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
 
@@ -119,6 +123,12 @@ export function useTasks(projectId?: string): UseTasksReturn {
     return addDelayReasonUseCase.execute({ taskId, ...input });
   }, [addDelayReasonUseCase]);
 
+  const addProgressLog = useCallback(async (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => {
+    const res = await addProgressLogUseCase.execute({ taskId, ...input });
+    await loadTasks();
+    return res;
+  }, [addProgressLogUseCase, loadTasks]);
+
   const removeDelayReason = useCallback(async (delayReasonId: string) => {
     await removeDelayReasonUseCase.execute({ delayReasonId });
   }, [removeDelayReasonUseCase]);
@@ -141,5 +151,6 @@ export function useTasks(projectId?: string): UseTasksReturn {
     addDelayReason,
     removeDelayReason,
     resolveDelayReason,
-  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason]);
+    addProgressLog,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog]);
 }
