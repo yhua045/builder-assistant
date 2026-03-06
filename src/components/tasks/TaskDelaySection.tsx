@@ -17,23 +17,26 @@ interface Props {
 
 export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay, onResolveDelay }: Props) {
   return (
-    <View className="bg-card p-4 rounded-lg border border-border">
-      <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-sm font-semibold text-muted-foreground">DELAY LOG</Text>
+    <View className="px-6 mb-6">
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Delay Logs
+        </Text>
         {onAddDelay && (
-          <TouchableOpacity onPress={onAddDelay} className="flex-row items-center gap-1">
+          <TouchableOpacity onPress={onAddDelay} className="p-1">
             <Plus size={16} className="text-primary" />
-            <Text className="text-sm text-primary font-medium">Add</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {delayReasons.length === 0 ? (
-        <Text className="text-sm text-muted-foreground">No delays recorded</Text>
+        <View className="bg-card border border-border rounded-2xl p-4">
+          <Text className="text-sm text-muted-foreground text-center">No delays recorded</Text>
+        </View>
       ) : (
         <View className="gap-3">
           {delayReasons.map((reason) => (
-            <View key={reason.id} className="bg-muted p-3 rounded-lg">
+            <View key={reason.id} className="bg-card border border-border rounded-2xl p-4">
               <View className="flex-row justify-between items-start">
                 <View className="flex-row items-center gap-2 flex-1">
                   <Clock size={14} className="text-muted-foreground" />
@@ -85,7 +88,7 @@ export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay, onRe
                 </Text>
               </View>
 
-              <View className="flex-row gap-3 mt-2 ml-6">
+              <View className="flex-row gap-3 mt-3 ml-6">
                 {!reason.resolvedAt && onResolveDelay && (
                   <TouchableOpacity onPress={() => onResolveDelay(reason.id)}>
                     <Text className="text-xs text-green-600 font-medium">Mark Resolved</Text>
@@ -93,7 +96,7 @@ export function TaskDelaySection({ delayReasons, onAddDelay, onRemoveDelay, onRe
                 )}
                 {onRemoveDelay && (
                   <TouchableOpacity onPress={() => onRemoveDelay(reason.id)}>
-                    <Text className="text-xs text-destructive">Remove</Text>
+                    <Text className="text-xs text-destructive font-medium">Remove</Text>
                   </TouchableOpacity>
                 )}
               </View>

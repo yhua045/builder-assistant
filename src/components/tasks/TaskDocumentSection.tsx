@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Document } from '../../domain/entities/Document';
-import { FileText, Plus } from 'lucide-react-native';
+import { File, Plus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
-cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(File, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 interface Props {
@@ -16,22 +16,53 @@ interface Props {
 }
 
 export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress, uploading }: Props) {
+  const renderAttachment = (item: Document) => {
+    const isImage = item.mimeType?.startsWith('image/');
+    
+    return (
+      <TouchableOpacity 
+        key={item.id} 
+        className="mr-3"
+        onPress={() => onDocumentPress?.(item)}
+      >
+        <View className="w-24 h-24 bg-card border border-border rounded-xl overflow-hidden">
+          {isImage && (item.uri || item.localPath || item.cloudUrl) ? (
+            <Image 
+              source={{ uri: item.uri || item.localPath || item.cloudUrl }} 
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+          ) : (
+            <View className="w-full h-full items-center justify-center bg-muted/30">
+              <File className="text-muted-foreground" size={32} />
+            </View>
+          )}
+        </View>
+        <Text className="text-xs text-muted-foreground mt-2 w-24" numberOfLines={2}>
+          {item.title || item.filename || 'Untitled'}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <View className="bg-card p-4 rounded-lg border border-border">
-      <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-sm font-semibold text-muted-foreground">DOCUMENTS</Text>
+    <View className="px-6 mb-6">
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Images & Documents
+        </Text>
         {onAddDocument && (
           <TouchableOpacity
             onPress={uploading ? undefined : onAddDocument}
             disabled={uploading}
-            className="flex-row items-center gap-1"
+            className="flex-row items-center gap-2 bg-primary/10 px-3 py-2 rounded-full"
           >
             {uploading ? (
-              <ActivityIndicator size="small" />
+              <ActivityIndicator size="small" color="#2563eb" />
             ) : (
               <>
                 <Plus size={16} className="text-primary" />
-                <Text className="text-sm text-primary font-medium">Add</Text>
+                <Text className="text-xs text-primary font-semibold">Add</Text>
               </>
             )}
           </TouchableOpacity>
@@ -39,23 +70,12 @@ export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress,
       </View>
 
       {documents.length === 0 ? (
-        <Text className="text-sm text-muted-foreground">No documents attached</Text>
+        <View className="bg-card border border-border rounded-2xl p-4">
+          <Text className="text-sm text-muted-foreground text-center">No documents attached</Text>
+        </View>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-3">
-            {documents.map((doc) => (
-              <TouchableOpacity
-                key={doc.id}
-                onPress={() => onDocumentPress?.(doc)}
-                className="flex-row items-center gap-2 bg-muted px-3 py-2 rounded-lg"
-              >
-                <FileText size={16} className="text-muted-foreground" />
-                <Text className="text-sm text-foreground" numberOfLines={1}>
-                  {doc.title || doc.filename || 'Untitled'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 2 }}>
+          {documents.map(renderAttachment)}
         </ScrollView>
       )}
     </View>

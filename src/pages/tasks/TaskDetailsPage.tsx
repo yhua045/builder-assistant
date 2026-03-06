@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Pressable, Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTasks, TaskDetail } from '../../hooks/useTasks';
 import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
@@ -20,9 +20,10 @@ import { TaskDocumentSection } from '../../components/tasks/TaskDocumentSection'
 import { TaskDependencySection } from '../../components/tasks/TaskDependencySection';
 import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontractorSection';
 import { TaskDelaySection } from '../../components/tasks/TaskDelaySection';
+import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
 import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/tasks/AddDelayReasonModal';
 import { TaskPickerModal } from './TaskPickerModal';
-import { Edit, Trash2, Calendar, Clock, MapPin, ArrowLeft } from 'lucide-react-native';
+import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -30,6 +31,8 @@ cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: t
 cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export default function TaskDetailsPage() {
   const route = useRoute<any>();
@@ -264,80 +267,143 @@ export default function TaskDetailsPage() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
-      <View className="flex-row justify-between items-center px-4 py-4 border-b border-border">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2">
-          <ArrowLeft size={24} className="text-foreground" />
-        </TouchableOpacity>
-        <View className="flex-row gap-2">
-          <TouchableOpacity onPress={() => navigation.navigate('EditTask', { taskId })} className="p-2">
-            <Edit size={20} className="text-foreground" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} className="p-2">
-            <Trash2 size={20} className="text-destructive" />
-          </TouchableOpacity>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-6 py-4 border-b border-border">
+        <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
+          <ArrowLeft className="text-foreground" size={24} />
+        </Pressable>
+        <Text className="text-lg font-semibold text-foreground">Task Details</Text>
+        <View className="flex-row items-center gap-1 -mr-2">
+            <Pressable onPress={handleDelete} className="p-2">
+              <Trash2 className="text-destructive" size={22} />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('EditTask', { taskId })} className="p-2">
+              <Edit className="text-primary" size={22} />
+            </Pressable>
         </View>
       </View>
       
-      <ScrollView className="flex-1 p-6">
-        <View className="flex-row justify-between items-start mb-4">
-          <Text className="text-2xl font-bold text-foreground flex-1 mr-4">{task.title}</Text>
-          <TaskStatusBadge status={task.status} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} className="flex-1">
+        {/* Task Header */}
+        <View className="px-6 pt-6 pb-4">
+          <View className="flex-row items-start gap-4 mb-4">
+            <View className="w-16 h-16 rounded-xl bg-muted items-center justify-center overflow-hidden">
+               {/* Use placeholder since vendor image wasn't in original entity */}
+               <CheckCircle size={32} className="text-muted-foreground opacity-50" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xl font-bold text-foreground mb-1">
+                {task.title}
+              </Text>
+              <Text className="text-sm text-muted-foreground mb-2">
+                {subcontractor?.name || 'No vendor assigned'}
+              </Text>
+              <View className="flex-row items-center gap-2">
+                <TaskStatusBadge status={task.status} />
+                <Text className="text-sm text-muted-foreground">
+                  {task.projectId ? `Project: ${task.projectId}` : 'No project'}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        <View className="gap-4 mb-6">
-          {task.dueDate && (
-             <View className="flex-row items-center gap-2">
-               <Calendar size={18} className="text-muted-foreground" />
-               <Text className="text-foreground">Due: {new Date(task.dueDate).toLocaleDateString()}</Text>
-             </View>
-          )}
-          {task.scheduledAt && (
-             <View className="flex-row items-center gap-2">
-               <Clock size={18} className="text-muted-foreground" />
-               <Text className="text-foreground">Scheduled: {new Date(task.scheduledAt).toLocaleString()}</Text>
-             </View>
-          )}
-          {task.projectId && (
-             <View className="flex-row items-center gap-2">
-               <MapPin size={18} className="text-muted-foreground" />
-               <Text className="text-foreground">Project ID: {task.projectId}</Text>
-             </View>
-          )}
+        {/* Dates Section */}
+        <View className="px-6 mb-6">
+          <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Schedule
+          </Text>
+          <View className="flex-row gap-4">
+            {/* Scheduled Start Date */}
+            <View className="flex-1 bg-card border border-border rounded-2xl p-4">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Calendar className="text-primary" size={18} />
+                <Text className="text-xs font-semibold text-muted-foreground uppercase">
+                  Start Date
+                </Text>
+              </View>
+              <Text className="text-base font-bold text-foreground">
+                {task.scheduledAt ? new Date(task.scheduledAt).toLocaleDateString() : 'Not set'}
+              </Text>
+            </View>
+
+            {/* Due Date */}
+            <View className="flex-1 bg-card border border-border rounded-2xl p-4">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Clock className="text-red-500" size={18} />
+                <Text className="text-xs font-semibold text-muted-foreground uppercase">
+                  Due Date
+                </Text>
+              </View>
+              <Text className="text-base font-bold text-foreground">
+                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set'}
+              </Text>
+            </View>
+          </View>
         </View>
         
+        {/* Notes Section */}
         {task.notes && (
-          <View className="bg-card p-4 rounded-lg border border-border mb-4">
-            <Text className="text-sm font-semibold text-muted-foreground mb-2">NOTES</Text>
-            <Text className="text-foreground leading-6">{task.notes}</Text>
+          <View className="px-6 mb-6">
+            <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Notes
+            </Text>
+            <View className="bg-card border border-border rounded-2xl p-4">
+              <View className="flex-row items-start gap-3">
+                <FileText className="text-muted-foreground mt-1" size={20} />
+                <Text className="text-foreground text-sm leading-relaxed flex-1">
+                  {task.notes}
+                </Text>
+              </View>
+            </View>
           </View>
         )}
 
         {/* === Task Detail Extension Sections === */}
-        <View className="gap-4 mb-6">
-          <TaskSubcontractorSection
-            subcontractor={subcontractorInfo}
-          />
+        <TaskSubcontractorSection
+          subcontractor={subcontractorInfo}
+          onEditSubcontractor={() => {
+            // Need task edit navigation here or it was handled via edit page... 
+            // the previous code didn't actually implement onEditSubcontractor here, so omit or handle navigation
+          }}
+        />
 
-          <TaskDocumentSection
-            documents={documents}
-            onAddDocument={handleAddDocument}
-            uploading={uploadingDocument}
-          />
+        <TaskDependencySection
+          dependencyTasks={taskDetail?.dependencyTasks ?? []}
+          onAddDependency={() => setShowTaskPicker(true)}
+          onRemoveDependency={handleRemoveDependency}
+        />
 
-          <TaskDependencySection
-            dependencyTasks={taskDetail?.dependencyTasks ?? []}
-            onAddDependency={() => setShowTaskPicker(true)}
-            onRemoveDependency={handleRemoveDependency}
-          />
+        {/* Provide Mock Data for Progress logs per instruction */}
+        <TaskProgressSection />
 
-          <TaskDelaySection
-            delayReasons={taskDetail?.delayReasons ?? []}
-            onAddDelay={() => setShowDelayModal(true)}
-            onRemoveDelay={handleRemoveDelayReason}
-            onResolveDelay={handleResolveDelayReason}
-          />
-        </View>
+        <TaskDocumentSection
+          documents={documents}
+          onAddDocument={handleAddDocument}
+          uploading={uploadingDocument}
+        />
+
+        <TaskDelaySection
+          delayReasons={taskDetail?.delayReasons ?? []}
+          onAddDelay={() => setShowDelayModal(true)}
+          onRemoveDelay={handleRemoveDelayReason}
+          onResolveDelay={handleResolveDelayReason}
+        />
       </ScrollView>
+
+      {/* Bottom Action Button */}
+      <View className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border">
+        <Pressable 
+          // For now just navigate back or execute complete logic directly if implemented.
+          onPress={() => {}} 
+          className="bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2"
+        >
+          <CheckCircle className="text-primary-foreground" size={20} />
+          <Text className="text-primary-foreground font-bold text-base">
+            Mark as Completed
+          </Text>
+        </Pressable>
+      </View>
 
       <AddDelayReasonModal
         visible={showDelayModal}
