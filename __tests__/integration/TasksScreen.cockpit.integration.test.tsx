@@ -1,18 +1,18 @@
 /**
  * Integration smoke test: TasksScreen + cockpit components
  *
- * Verifies:
+ * Verifies (post issue #131 — TaskBottomSheet removed):
  *   1. TasksScreen renders BlockerCarousel when useBlockerBar returns kind=blockers.
  *   2. TasksScreen renders FocusList when useCockpitData returns focus items.
- *   3. Tapping a blocker card opens the TaskBottomSheet with the correct task title.
- *   4. Tapping "See Full Details" in the sheet navigates to TaskDetails.
+ *   3. Tapping a blocker card navigates directly to TaskDetails (no sheet).
+ *   4. Tapping a FocusList item navigates directly to TaskDetails.
  *   5. No blocker-carousel when blockerBarResult is null (loading state).
  *   6. Winning card is shown when useBlockerBar returns kind=winning.
  *   7. Fallback sanity: blocker bar shows project B's tasks when project A has none.
  *
  * Mocking strategy:
  *   - useBlockerBar, useCockpitData, useTasks, useProjects → jest mocks (avoid DI container)
- *   - BlockerCarousel, FocusList, TaskBottomSheet → real components (integration value)
+ *   - BlockerCarousel, FocusList → real components (integration value)
  *   - TasksList, ThemeToggle, lucide-react-native, nativewind → lightweight mocks
  */
 
@@ -33,6 +33,10 @@ jest.mock('lucide-react-native', () => ({
   Calendar: 'Calendar',
   Clock: 'Clock',
   Plus: 'Plus',
+  AlertCircle: 'AlertCircle',
+  AlertTriangle: 'AlertTriangle',
+  ChevronRight: 'ChevronRight',
+  Layers: 'Layers',
 }));
 
 jest.mock('../../src/components/ThemeToggle', () => ({
@@ -65,6 +69,7 @@ jest.mock('../../src/hooks/useTasks', () => ({
     removeDependency: jest.fn(),
     addDelayReason: jest.fn(),
     removeDelayReason: jest.fn(),
+    addProgressLog: jest.fn(),
     resolveDelayReason: jest.fn(),
   }),
 }));
@@ -194,50 +199,49 @@ describe('IT-2: FocusList is visible when cockpit has focus items', () => {
 });
 
 // ---------------------------------------------------------------------------
-// IT-3: Tapping a blocker card opens the TaskBottomSheet
+// IT-3: Tapping a blocker card navigates directly to TaskDetails (issue #131)
 // ---------------------------------------------------------------------------
-describe('IT-3: tapping a blocker card opens the bottom sheet', () => {
-  it('shows the task title in the sheet after card tap', async () => {
+describe('IT-3: tapping a blocker card navigates directly to TaskDetails', () => {
+  it('calls navigate("TaskDetails", { taskId }) — no sheet', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<TasksScreen />);
     });
 
-    // Tap the blocker card
     const card = tree!.root.find((n) => n.props.testID === 'blocker-card-t-blocker');
     await act(async () => { card.props.onPress(); });
 
-    // Sheet content: task title should now appear
-    const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
-      .join(' ');
-    expect(allText).toContain('Scaffold Assembly');
+    expect(mockNavigate).toHaveBeenCalledWith('TaskDetails', { taskId: 't-blocker' });
+  });
 
-    // Status pills should be visible
-    expect(tree!.root.find((n) => n.props.testID === 'status-pill-pending')).toBeTruthy();
+  it('does NOT show any sheet close button after card tap', async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TasksScreen />);
+    });
+
+    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-t-blocker');
+    await act(async () => { card.props.onPress(); });
+
+    const sheetCloseBtn = tree!.root.findAll((n) => n.props.testID === 'sheet-close-btn');
+    expect(sheetCloseBtn).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// IT-4: "See Full Details" in the sheet navigates to TaskDetails
+// IT-4: Tapping a FocusList item navigates directly to TaskDetails (issue #131)
 // ---------------------------------------------------------------------------
-describe('IT-4: "See Full Details" button navigates to TaskDetails', () => {
-  it('navigates to TaskDetails with the correct taskId', async () => {
+describe('IT-4: tapping a FocusList item navigates to TaskDetails', () => {
+  it('calls navigate("TaskDetails", { taskId }) when a focus row is tapped', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<TasksScreen />);
     });
 
-    // Open sheet via blocker card
-    const card = tree!.root.find((n) => n.props.testID === 'blocker-card-t-blocker');
-    await act(async () => { card.props.onPress(); });
+    const row = tree!.root.find((n) => n.props.testID === 'focus-item-t-focus');
+    await act(async () => { row.props.onPress(); });
 
-    // Tap "See Full Details"
-    const detailsBtn = tree!.root.find((n) => n.props.testID === 'action-full-details');
-    await act(async () => { detailsBtn.props.onPress(); });
-
-    expect(mockNavigate).toHaveBeenCalledWith('TaskDetails', { taskId: 't-blocker' });
+    expect(mockNavigate).toHaveBeenCalledWith('TaskDetails', { taskId: 't-focus' });
   });
 });
 

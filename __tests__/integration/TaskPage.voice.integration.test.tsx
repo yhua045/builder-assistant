@@ -42,6 +42,7 @@ jest.mock('lucide-react-native', () => ({
   Plus: 'Plus',
   Link2: 'Link2',
   AlertTriangle: 'AlertTriangle',
+  Users: 'Users',
 }));
 
 // ── Safe area stub ────────────────────────────────────────────────────────────

@@ -504,7 +504,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     await this.ensureInitialized();
     const { db } = getDatabase();
     let sql = `SELECT reason_type_id, COUNT(*) AS cnt
-               FROM task_progress_logs
+               FROM task_delay_reasons
                WHERE log_type = 'delay'`;
     const params: any[] = [];
     if (taskId) {

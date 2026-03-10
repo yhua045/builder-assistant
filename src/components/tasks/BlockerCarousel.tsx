@@ -8,15 +8,74 @@ import {
   useWindowDimensions,
   useColorScheme
 } from 'react-native';
-import { AlertCircle, Calendar, Layers, ChevronRight, AlertTriangle } from 'lucide-react-native';
+import { AlertCircle, Calendar, ChevronRight, AlertTriangle } from 'lucide-react-native';
 import { BlockerBarResult } from '../../domain/entities/CockpitData';
 import { Task } from '../../domain/entities/Task';
 
 export interface BlockerCarouselProps {
   data: BlockerBarResult;
   /** Called when a blocker card is tapped — not fired for the winning card. */
-  onCardPress: (task: Task, prereqs: Task[], nextInLine: Task[]) => void;
+  onCardPress: (task: Task) => void;
 }
+
+// ── NextInLinePreview ─────────────────────────────────────────────────────────
+
+/**
+ * Lightweight inline preview of downstream tasks (1–3 items).
+ * Read-only — data already present in BlockerBarResult.blockers[n].nextInLine.
+ */
+function NextInLinePreview({ tasks }: { tasks: Task[] }) {
+  if (!tasks.length) return null;
+  const shown = tasks.slice(0, 3);
+  return (
+    <View style={nextInLineStyles.container}>
+      <Text style={nextInLineStyles.label}>Next in line</Text>
+      {shown.map((t) => (
+        <View key={t.id} style={nextInLineStyles.row}>
+          <Text style={nextInLineStyles.dot}>
+            {t.status === 'completed' ? '✅' : t.status === 'blocked' ? '🔴' : '⏳'}
+          </Text>
+          <Text style={nextInLineStyles.title} numberOfLines={1}>
+            {t.title}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const nextInLineStyles = StyleSheet.create({
+  container: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e2e8f0',
+    gap: 4,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dot: {
+    fontSize: 12,
+    width: 18,
+    textAlign: 'center',
+  },
+  title: {
+    flex: 1,
+    fontSize: 13,
+    color: '#475569',
+  },
+});
 
 export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
   const { width } = useWindowDimensions();
@@ -94,7 +153,7 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
           <TouchableOpacity
             key={item.task.id}
             testID={`blocker-card-${item.task.id}`}
-            onPress={() => onCardPress(item.task, item.blockedPrereqs, item.nextInLine)}
+            onPress={() => onCardPress(item.task)}
             accessible
             accessibilityRole="button"
             accessibilityLabel={`${item.task.title} - ${
@@ -187,18 +246,15 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
                 )}
               </View>
 
+              {/* Next-In-Line inline preview */}
+              <NextInLinePreview tasks={item.nextInLine} />
+
               {/* Footer Details */}
               <View style={styles.footerRow}>
                 <View style={styles.footerItem}>
                   <Calendar size={14} color="#94a3b8" />
                   <Text style={styles.footerText}>
                     Starts: {formatShortDate(item.task.scheduledAt || item.task.scheduledStart)}
-                  </Text>
-                </View>
-                <View style={styles.footerItem}>
-                  <Layers size={14} color="#94a3b8" />
-                  <Text style={styles.footerText}>
-                    {item.nextInLine.length} tasks waiting
                   </Text>
                 </View>
                 <View style={styles.footerRight}>

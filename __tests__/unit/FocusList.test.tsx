@@ -178,10 +178,10 @@ describe('TC-6: rank badges', () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-7: onItemPress callback
+// TC-7: onItemPress callback — simplified signature (issue #131)
 // ---------------------------------------------------------------------------
-describe('TC-7: onItemPress fires with correct task', () => {
-  it('calls onItemPress with the task when row is tapped', async () => {
+describe('TC-7: onItemPress fires with only (task) argument', () => {
+  it('calls onItemPress with only the task when row is tapped', async () => {
     const item = makeFocusItem('f1', '', 100);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
@@ -190,6 +190,7 @@ describe('TC-7: onItemPress fires with correct task', () => {
     const row = tree!.root.find((n) => n.props.testID === 'focus-item-f1');
     await act(async () => { row.props.onPress(); });
     expect(mockOnItemPress).toHaveBeenCalledTimes(1);
-    expect(mockOnItemPress).toHaveBeenCalledWith(item.task, [], item.nextInLine);
+    expect(mockOnItemPress).toHaveBeenCalledWith(item.task);
+    expect(mockOnItemPress.mock.calls[0]).toHaveLength(1);
   });
 });

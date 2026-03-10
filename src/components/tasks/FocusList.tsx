@@ -12,8 +12,8 @@ import { Task } from '../../domain/entities/Task';
 export interface FocusListProps {
   /** Max 3 items from useCockpitData focus3. */
   focusItems: FocusItem[];
-  /** Called when a row is tapped — passes task, empty prereqs array, and nextInLine tasks. */
-  onItemPress: (task: Task, prereqs: Task[], nextInLine: Task[]) => void;
+  /** Called when a row is tapped — passes only the task (issue #131: simplified signature). */
+  onItemPress: (task: Task) => void;
 }
 
 const RANK_LABELS = ['#1', '#2', '#3'] as const;
@@ -29,7 +29,7 @@ export function FocusList({ focusItems, onItemPress }: FocusListProps) {
           <TouchableOpacity
             key={item.task.id}
             testID={`focus-item-${item.task.id}`}
-            onPress={() => onItemPress(item.task, [], item.nextInLine)}
+            onPress={() => onItemPress(item.task)}
             style={[styles.row, index < focusItems.length - 1 && styles.rowBorder]}
             accessible
             accessibilityRole="button"
