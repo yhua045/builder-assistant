@@ -209,38 +209,6 @@ export default function TaskDetailsPage() {
     [task, updateTask],
   );
 
-  const handleStatusChange = useCallback(
-    async (status: Task['status']) => {
-      if (!task) return;
-      const updated: Task = { ...task, status };
-      setTask(updated); // optimistic
-      try {
-        const { updateTask } = useTasks();
-        await updateTask(updated);
-      } catch {
-        // revert on failure
-        setTask(task);
-      }
-    },
-    [task],
-  );
-
-  const handlePriorityChange = useCallback(
-    async (priority: NonNullable<Task['priority']>) => {
-      if (!task) return;
-      const updated: Task = { ...task, priority };
-      setTask(updated); // optimistic
-      try {
-        const { updateTask } = useTasks();
-        await updateTask(updated);
-      } catch {
-        setTask(task);
-      }
-    },
-    [task],
-  );
-
-
   const handleAddDelayReason = async (data: AddDelayReasonFormData) => {
     try {
       await addDelayReason(taskId, data);
