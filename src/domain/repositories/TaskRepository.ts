@@ -38,4 +38,6 @@ export interface TaskRepository {
 
   findProgressLogs(taskId: string): Promise<ProgressLog[]>;
   addProgressLog(log: Omit<ProgressLog, 'id' | 'createdAt'>): Promise<ProgressLog>;
+  updateProgressLog(logId: string, patch: Partial<Omit<ProgressLog, 'id' | 'taskId' | 'createdAt'>>): Promise<ProgressLog>;
+  deleteProgressLog(logId: string): Promise<void>;
 }

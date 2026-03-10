@@ -24,6 +24,8 @@ import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontract
 import { TaskDelaySection } from '../../components/tasks/TaskDelaySection';
 import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
 import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/tasks/AddDelayReasonModal';
+import { AddProgressLogModal, AddProgressLogFormData } from '../../components/tasks/AddProgressLogModal';
+import { ProgressLog } from '../../domain/entities/ProgressLog';
 import { TaskPickerModal } from './TaskPickerModal';
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
@@ -50,6 +52,9 @@ export default function TaskDetailsPage() {
     addDelayReason,
     removeDelayReason,
     resolveDelayReason,
+    addProgressLog,
+    updateProgressLog,
+    deleteProgressLog,
   } = useTasks();
   const { delayReasonTypes } = useDelayReasonTypes();
   const { confirm } = useConfirm();
@@ -63,6 +68,8 @@ export default function TaskDetailsPage() {
   const [showDelayModal, setShowDelayModal] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [showAddLogModal, setShowAddLogModal] = useState(false);
+  const [editingLog, setEditingLog] = useState<ProgressLog | null>(null);
 
   const documentRepository = useMemo(() => {
     try {
@@ -269,6 +276,36 @@ export default function TaskDetailsPage() {
     }
   };
 
+  const handleAddProgressLog = async (data: AddProgressLogFormData) => {
+    try {
+      await addProgressLog(taskId, data);
+      setShowAddLogModal(false);
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to add progress log');
+    }
+  };
+
+  const handleUpdateProgressLog = async (data: AddProgressLogFormData) => {
+    if (!editingLog) return;
+    try {
+      await updateProgressLog(editingLog.id, data);
+      setEditingLog(null);
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to update progress log');
+    }
+  };
+
+  const handleDeleteProgressLog = async (logId: string) => {
+    try {
+      await deleteProgressLog(logId);
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to delete progress log');
+    }
+  };
+
   const handleAddDocument = async () => {
     if (!filePickerAdapter || !fileSystemAdapter || !documentRepository) return;
     try {
@@ -463,8 +500,12 @@ export default function TaskDetailsPage() {
           onRemoveDependency={handleRemoveDependency}
         />
 
-        {/* Provide Mock Data for Progress logs per instruction */}
-        <TaskProgressSection progressLogs={taskDetail?.progressLogs ?? []} onAddLog={() => setShowDelayModal(true)} />
+        <TaskProgressSection
+          progressLogs={taskDetail?.progressLogs ?? []}
+          onAddLog={() => setShowAddLogModal(true)}
+          onEditLog={(log) => setEditingLog(log)}
+          onDeleteLog={handleDeleteProgressLog}
+        />
 
         <TaskDocumentSection
           documents={documents}
@@ -493,6 +534,31 @@ export default function TaskDetailsPage() {
         delayReasonTypes={delayReasonTypes}
         onSubmit={handleAddDelayReason}
         onClose={() => setShowDelayModal(false)}
+      />
+
+      {/* Progress Log — create */}
+      <AddProgressLogModal
+        visible={showAddLogModal}
+        onClose={() => setShowAddLogModal(false)}
+        onSubmit={handleAddProgressLog}
+      />
+
+      {/* Progress Log — edit */}
+      <AddProgressLogModal
+        visible={editingLog !== null}
+        initialValues={
+          editingLog
+            ? {
+                id: editingLog.id,
+                logType: editingLog.logType,
+                notes: editingLog.notes,
+                photos: editingLog.photos,
+                actor: editingLog.actor,
+              }
+            : undefined
+        }
+        onClose={() => setEditingLog(null)}
+        onSubmit={handleUpdateProgressLog}
       />
 
       {task?.projectId && (

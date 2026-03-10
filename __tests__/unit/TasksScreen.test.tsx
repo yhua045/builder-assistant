@@ -88,6 +88,8 @@ function buildHookReturn(
     addDelayReason: jest.fn(),
     removeDelayReason: jest.fn(),
     addProgressLog: jest.fn(),
+    updateProgressLog: jest.fn(),
+    deleteProgressLog: jest.fn(),
     resolveDelayReason: jest.fn(),
   };
 }

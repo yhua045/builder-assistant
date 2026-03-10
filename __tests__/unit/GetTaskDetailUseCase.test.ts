@@ -24,6 +24,8 @@ function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
     deleteDelayReasonsByTaskId: jest.fn().mockResolvedValue(undefined),
     findProgressLogs: jest.fn().mockResolvedValue([]),
     addProgressLog: jest.fn(),
+    updateProgressLog: jest.fn(),
+    deleteProgressLog: jest.fn(),
     findAllDependencies: jest.fn().mockResolvedValue([]),
     resolveDelayReason: jest.fn().mockResolvedValue(undefined),
     summarizeDelayReasons: jest.fn().mockResolvedValue([]),

@@ -371,6 +371,67 @@ export class DrizzleTaskRepository implements TaskRepository {
     return { ...log, id, createdAt };
   }
 
+  async updateProgressLog(
+    logId: string,
+    patch: Partial<Omit<ProgressLog, 'id' | 'taskId' | 'createdAt'>>,
+  ): Promise<ProgressLog> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    const updatedAt = Date.now();
+    await db.executeSql(
+      `UPDATE task_progress_logs SET
+        log_type           = COALESCE(?, log_type),
+        notes              = ?,
+        date               = COALESCE(?, date),
+        actor              = ?,
+        photos             = ?,
+        reason_type_id     = COALESCE(?, reason_type_id),
+        delay_duration_days = COALESCE(?, delay_duration_days),
+        updated_at         = ?
+      WHERE id = ?`,
+      [
+        patch.logType ?? null,
+        patch.notes !== undefined ? patch.notes || null : null,
+        patch.date ?? null,
+        patch.actor !== undefined ? patch.actor || null : null,
+        patch.photos !== undefined ? (patch.photos ? JSON.stringify(patch.photos) : null) : null,
+        patch.reasonTypeId ?? null,
+        patch.delayDurationDays ?? null,
+        updatedAt,
+        logId,
+      ],
+    );
+    const [result] = await db.executeSql(
+      'SELECT * FROM task_progress_logs WHERE id = ?',
+      [logId],
+    );
+    if (result.rows.length === 0) {
+      throw new Error(`ProgressLog not found: ${logId}`);
+    }
+    const row = result.rows.item(0);
+    return {
+      id: row.id,
+      taskId: row.task_id,
+      notes: row.notes || undefined,
+      logType: row.log_type,
+      date: row.date || undefined,
+      actor: row.actor || undefined,
+      photos: row.photos ? JSON.parse(row.photos) : undefined,
+      reasonTypeId: row.reason_type_id || undefined,
+      delayDurationDays: row.delay_duration_days || undefined,
+      resolvedAt: row.resolved_at || undefined,
+      mitigationNotes: row.mitigation_notes || undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at || undefined,
+    };
+  }
+
+  async deleteProgressLog(logId: string): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    await db.executeSql('DELETE FROM task_progress_logs WHERE id = ?', [logId]);
+  }
+
   async findDelayReasons(taskId: string): Promise<DelayReason[]> {
     await this.ensureInitialized();
     const { db } = getDatabase();
