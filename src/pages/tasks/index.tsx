@@ -9,11 +9,9 @@ import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
 import { useCockpitData } from '../../hooks/useCockpitData';
 import { useBlockerBar } from '../../hooks/useBlockerBar';
-import { useTaskDetail } from '../../hooks/useTaskDetail';
 import { TasksList } from '../../components/tasks/TasksList';
 import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
 import { FocusList } from '../../components/tasks/FocusList';
-import { TaskBottomSheet } from '../../components/tasks/TaskBottomSheet';
 import type { Task } from '../../domain/entities/Task';
 
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -33,7 +31,7 @@ export default function TasksScreen() {
   const navigation = useNavigation<any>();
   const [filter, setFilter] = useState<FilterValue>('all');
 
-  // ── Cockpit data ──────────────────────────────────────────────────────────
+  // ── Cockpit data ────────────────────────────────────────────────
   // useBlockerBar iterates all projects to find the first with active blockers.
   // useCockpitData drives the Focus-3 list for the default (first) project.
   const { projects } = useProjects();
@@ -41,43 +39,13 @@ export default function TasksScreen() {
   const { cockpit, refresh: refreshCockpit } = useCockpitData(defaultProjectId);
   const { result: blockerBarResult, refresh: refreshBlockerBar } = useBlockerBar(projects);
 
-  // ── Bottom sheet state ───────────────────────────────────────────────────
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const [sheetTask, setSheetTask] = useState<Task | null>(null);
-  const [sheetPrereqs, setSheetPrereqs] = useState<Task[]>([]);
-  const [sheetNextInLine, setSheetNextInLine] = useState<Task[]>([]);
-  // Resolve the project for the currently-open task (for AI suggestion context)
-  const sheetProject = useMemo(
-    () => projects.find((p) => p.id === sheetTask?.projectId) ?? projects[0] ?? null,
-    [projects, sheetTask],
-  );
-  const { suggestion, loadingSuggestion } = useTaskDetail(sheetTask, sheetProject);
-  const openSheet = useCallback((task: Task, prereqs: Task[] = [], nextInLine: Task[] = []) => {
-    setSheetTask(task);
-    setSheetPrereqs(prereqs);
-    setSheetNextInLine(nextInLine);
-    setSheetVisible(true);
-  }, []);
-
-  const closeSheet = useCallback(() => setSheetVisible(false), []);
-
-  const handleSheetUpdate = useCallback(async (updated: Task) => {
-    await updateTask(updated);
-    refreshCockpit();
-    refreshBlockerBar();
-  }, [updateTask, refreshCockpit, refreshBlockerBar]);
-
-  const handleOpenFullDetails = useCallback((taskId: string) => {
-    setSheetVisible(false);
-    navigation.navigate('TaskDetails', { taskId });
+  // ── Navigation handler ──────────────────────────────────────────
+  // Directly navigate to TaskDetails — no intermediate bottom sheet (issue #131)
+  const handleBlockerCardPress = useCallback((task: Task) => {
+    navigation.navigate('TaskDetails', { taskId: task.id });
   }, [navigation]);
 
-  const handleMarkBlocked = useCallback((taskId: string) => {
-    setSheetVisible(false);
-    navigation.navigate('TaskDetails', { taskId });
-  }, [navigation]);
-
-  // ── Refresh coordination ─────────────────────────────────────────────────
+  // ── Refresh coordination ─────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
     await Promise.all([refreshTasks(), refreshCockpit(), refreshBlockerBar()]);
   }, [refreshTasks, refreshCockpit, refreshBlockerBar]);
@@ -121,7 +89,7 @@ export default function TasksScreen() {
         <View className="pt-4">
           <BlockerCarousel
             data={blockerBarResult}
-            onCardPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
+            onCardPress={handleBlockerCardPress}
           />
         </View>
       )}
@@ -131,7 +99,7 @@ export default function TasksScreen() {
         <View className="pt-1 pb-2">
           <FocusList
             focusItems={cockpit.focus3}
-            onItemPress={(task, prereqs, nextInLine) => openSheet(task, prereqs, nextInLine)}
+            onItemPress={handleBlockerCardPress}
           />
         </View>
       )}
@@ -183,20 +151,6 @@ export default function TasksScreen() {
           />
         </View>
       </ScrollView>
-
-      {/* Task Bottom Sheet */}
-      <TaskBottomSheet
-        visible={sheetVisible}
-        task={sheetTask}
-        prereqs={sheetPrereqs}
-        nextInLine={sheetNextInLine}
-        onClose={closeSheet}
-        onUpdateTask={handleSheetUpdate}
-        onOpenFullDetails={handleOpenFullDetails}
-        onMarkBlocked={handleMarkBlocked}
-        suggestion={suggestion}
-        loadingSuggestion={loadingSuggestion}
-      />
     </SafeAreaView>
   );
 }

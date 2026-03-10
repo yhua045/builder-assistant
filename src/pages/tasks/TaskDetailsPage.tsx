@@ -10,12 +10,14 @@ import { Document } from '../../domain/entities/Document';
 import { Contact } from '../../domain/entities/Contact';
 import { DocumentRepository } from '../../domain/repositories/DocumentRepository';
 import { ContactRepository } from '../../domain/repositories/ContactRepository';
+import { TaskRepository } from '../../domain/repositories/TaskRepository';
 import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
 import { AddTaskDocumentUseCase } from '../../application/usecases/document/AddTaskDocumentUseCase';
 import { container } from 'tsyringe';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TaskStatusBadge } from '../../components/tasks/TaskStatusBadge';
+import { StatusPriorityRow } from '../../components/tasks/StatusPriorityRow';
 import { TaskDocumentSection } from '../../components/tasks/TaskDocumentSection';
 import { TaskDependencySection } from '../../components/tasks/TaskDependencySection';
 import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontractorSection';
@@ -42,6 +44,7 @@ export default function TaskDetailsPage() {
     getTask,
     deleteTask,
     getTaskDetail,
+    updateTask,
     addDependency,
     removeDependency,
     addDelayReason,
@@ -53,6 +56,7 @@ export default function TaskDetailsPage() {
 
   const [task, setTask] = useState<Task | null>(null);
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
+  const [nextInLine, setNextInLine] = useState<Task[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [subcontractor, setSubcontractor] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +67,14 @@ export default function TaskDetailsPage() {
   const documentRepository = useMemo(() => {
     try {
       return container.resolve<DocumentRepository>('DocumentRepository');
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const taskRepository = useMemo(() => {
+    try {
+      return container.resolve<TaskRepository>('TaskRepository');
     } catch {
       return null;
     }
@@ -102,6 +114,16 @@ export default function TaskDetailsPage() {
       setTask(t);
       setTaskDetail(detail);
 
+      // Load next-in-line: tasks that depend on this task (downstream)
+      if (taskRepository) {
+        try {
+          const dependents = await taskRepository.findDependents(taskId);
+          setNextInLine(dependents.slice(0, 3));
+        } catch {
+          setNextInLine([]);
+        }
+      }
+
       // Load documents linked to this task
       if (documentRepository) {
         try {
@@ -128,7 +150,7 @@ export default function TaskDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [taskId, getTask, getTaskDetail, documentRepository, contactRepository]);
+  }, [taskId, getTask, getTaskDetail, documentRepository, contactRepository, taskRepository]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -154,6 +176,70 @@ export default function TaskDetailsPage() {
       Alert.alert('Error', 'Failed to delete task');
     }
   };
+
+  // ── Status / Priority quick-edit handlers (issue #131) ────────────────────
+  // Optimistic updates: update local state immediately, persist in background.
+
+
+  const handleStatusChange = useCallback(
+    async (status: Task['status']) => {
+      if (!task) return;
+      const updated: Task = { ...task, status };
+      setTask(updated);
+      try {
+        await updateTask(updated);
+      } catch {
+        setTask(task); // revert on failure
+      }
+    },
+    [task, updateTask],
+  );
+
+  const handlePriorityChange = useCallback(
+    async (priority: NonNullable<Task['priority']>) => {
+      if (!task) return;
+      const updated: Task = { ...task, priority };
+      setTask(updated);
+      try {
+        await updateTask(updated);
+      } catch {
+        setTask(task);
+      }
+    },
+    [task, updateTask],
+  );
+
+  const handleStatusChange = useCallback(
+    async (status: Task['status']) => {
+      if (!task) return;
+      const updated: Task = { ...task, status };
+      setTask(updated); // optimistic
+      try {
+        const { updateTask } = useTasks();
+        await updateTask(updated);
+      } catch {
+        // revert on failure
+        setTask(task);
+      }
+    },
+    [task],
+  );
+
+  const handlePriorityChange = useCallback(
+    async (priority: NonNullable<Task['priority']>) => {
+      if (!task) return;
+      const updated: Task = { ...task, priority };
+      setTask(updated); // optimistic
+      try {
+        const { updateTask } = useTasks();
+        await updateTask(updated);
+      } catch {
+        setTask(task);
+      }
+    },
+    [task],
+  );
+
 
   const handleAddDelayReason = async (data: AddDelayReasonFormData) => {
     try {
@@ -307,6 +393,41 @@ export default function TaskDetailsPage() {
             </View>
           </View>
         </View>
+
+        {/* ── Status & Priority quick-edit (issue #131) ── */}
+        <StatusPriorityRow
+          status={task.status}
+          priority={task.priority ?? 'medium'}
+          onStatusChange={handleStatusChange}
+          onPriorityChange={handlePriorityChange}
+        />
+
+        {/* ── Next-In-Line (issue #131): downstream tasks waiting on this one ── */}
+        {nextInLine.length > 0 && (
+          <View className="px-6 pt-4 pb-2">
+            <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Next in Line
+            </Text>
+            <View className="bg-card border border-border rounded-2xl overflow-hidden">
+              {nextInLine.map((t, index) => (
+                <View
+                  key={t.id}
+                  testID={`next-in-line-item-${t.id}`}
+                  className={`flex-row items-center px-4 py-3 gap-3 ${
+                    index < nextInLine.length - 1 ? 'border-b border-border' : ''
+                  }`}
+                >
+                  <Text className="text-base">
+                    {t.status === 'completed' ? '✅' : t.status === 'blocked' ? '🔴' : '⏳'}
+                  </Text>
+                  <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+                    {t.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Dates Section */}
         <View className="px-6 mb-6">

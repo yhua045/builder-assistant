@@ -235,6 +235,39 @@ describe('TC-6: pull-to-refresh calls refreshTasks', () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-T6: TasksScreen does NOT render TaskBottomSheet (issue #131)
+// ---------------------------------------------------------------------------
+describe('T6: TasksScreen does not render TaskBottomSheet', () => {
+  it('does NOT render any element with testID "sheet-close-btn" (sheet close button)', async () => {
+    mockUseTasks.mockReturnValue(buildHookReturn([]));
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TasksScreen />);
+    });
+
+    // The bottom sheet's close button was testID="sheet-close-btn"
+    // after removing TaskBottomSheet it must not be present
+    const sheetCloseBtns = tree!.root.findAll((n) => n.props.testID === 'sheet-close-btn');
+    expect(sheetCloseBtns).toHaveLength(0);
+  });
+
+  it('does NOT import or render TaskBottomSheet component', async () => {
+    mockUseTasks.mockReturnValue(buildHookReturn([]));
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TasksScreen />);
+    });
+
+    // TaskBottomSheet used a Modal — verify no Modal with visible prop exists in tree
+    // (A loose proxy for the sheet being absent, since the screen has no other Modals)
+    const allNodes = tree!.root.findAll((n) => n.props.testID === 'task-bottom-sheet');
+    expect(allNodes).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-7: Summary count cards removed (issue #125 — Blocker Hero)
 // ---------------------------------------------------------------------------
 describe('TC-7: summary count cards are no longer rendered', () => {

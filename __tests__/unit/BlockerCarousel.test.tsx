@@ -154,30 +154,27 @@ describe('TC-3: project name sub-label shown when falling back', () => {
 // TC-4: Severity badges
 // ---------------------------------------------------------------------------
 describe('TC-4: severity badges', () => {
-  it('shows 🔴 BLOCKED badge for red severity', async () => {
+  it('shows severity-related indicator for red severity card', async () => {
     const data = blockersResult([makeBlockerItem('x', 'red')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    const allText = tree!.root
-      .findAll(n => String(n.type) === 'Text')
-      .map(n => String(n.props.children))
-      .join(' ');
-    expect(allText).toContain('🔴 BLOCKED');
+    // Red card renders — verify through testID / accessibility label
+    const card = tree!.root.find(n => n.props.testID === 'blocker-card-x');
+    expect(card).toBeTruthy();
+    expect(card.props.accessibilityLabel).toMatch(/critically blocked/i);
   });
 
-  it('shows 🟡 DELAYED badge for yellow severity', async () => {
+  it('shows severity-related indicator for yellow severity card', async () => {
     const data = blockersResult([makeBlockerItem('y', 'yellow')]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<BlockerCarousel data={data} onCardPress={mockOnCardPress} />);
     });
-    const allText = tree!.root
-      .findAll(n => String(n.type) === 'Text')
-      .map(n => String(n.props.children))
-      .join(' ');
-    expect(allText).toContain('🟡 DELAYED');
+    const card = tree!.root.find(n => n.props.testID === 'blocker-card-y');
+    expect(card).toBeTruthy();
+    expect(card.props.accessibilityLabel).toMatch(/delayed/i);
   });
 });
 
@@ -199,8 +196,8 @@ describe('TC-5: prereq and next-in-line labels', () => {
     expect(allText).toContain('Concrete pour');
   });
 
-  it('shows "+N tasks waiting" for nextInLine', async () => {
-    const waiters = [makeTask('w1', 'W1'), makeTask('w2', 'W2')];
+  it('shows nextInLine task names for nextInLine items', async () => {
+    const waiters = [makeTask('w1', 'Waiter Task W1'), makeTask('w2', 'Waiter Task W2')];
     const data = blockersResult([makeBlockerItem('b1', 'red', [], waiters)]);
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
@@ -210,15 +207,17 @@ describe('TC-5: prereq and next-in-line labels', () => {
       .findAll(n => String(n.type) === 'Text')
       .map(n => String(n.props.children))
       .join(' ');
-    expect(allText).toContain('+2 tasks waiting');
+    // New: nextInLine items are rendered inline within the card
+    expect(allText).toContain('Waiter Task W1');
+    expect(allText).toContain('Waiter Task W2');
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-6: onCardPress callback
+// TC-6: onCardPress callback — simplified to (task) only (issue #131)
 // ---------------------------------------------------------------------------
-describe('TC-6: onCardPress fires with correct arguments', () => {
-  it('calls onCardPress with task, prereqs and nextInLine when card is tapped', async () => {
+describe('TC-6: onCardPress fires with only (task) argument', () => {
+  it('calls onCardPress with just the task when card is tapped', async () => {
     const prereq = makeTask('p1', 'Prereq');
     const next = makeTask('n1', 'Next');
     const item = makeBlockerItem('t1', 'red', [prereq], [next]);
@@ -230,7 +229,9 @@ describe('TC-6: onCardPress fires with correct arguments', () => {
     const card = tree!.root.find(n => n.props.testID === 'blocker-card-t1');
     await act(async () => { card.props.onPress(); });
     expect(mockOnCardPress).toHaveBeenCalledTimes(1);
-    expect(mockOnCardPress).toHaveBeenCalledWith(item.task, item.blockedPrereqs, item.nextInLine);
+    // New simplified signature: only the task is passed, no prereqs/nextInLine
+    expect(mockOnCardPress).toHaveBeenCalledWith(item.task);
+    expect(mockOnCardPress.mock.calls[0]).toHaveLength(1);
   });
 });
 
