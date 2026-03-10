@@ -609,3 +609,59 @@ cd ios && pod install
 - **Add Progress Log Modal:** Re-implement or map a shared `AddProgressLogModal` layout so the "+ Add Log" button natively captures inputs per schema specifications. 
 - **Type UI Mapping:** Tie actual DB log types (e.g. `info`, `inspection`, `completion`) to correct UI tags within the progress timeline section display.
 - **Cleanup End to End Testing:** Add comprehensive e2e tests connecting the React Native form submission all the way to DB insertion to prevent future regressions.
+
+
+
+---
+
+## Issue #131 — Remove TaskBottomSheet: Inline NextInLine, Direct Navigation, StatusPriorityRow (2026-03-10)
+
+**Branch**: `issue-131-remove-bottom-sheet` | **Design doc**: `design/issue-131-remove-bottom-sheet.md` | **PR**: [#135](https://github.com/yhua045/builder-assistant/pull/135)
+
+### Key Decisions
+- **Remove the intermediate bottom sheet entirely**: The `TaskBottomSheet` modal was a detour between the Blocker Carousel and the full `TaskDetailsPage`. Tapping a blocker card or focus item now calls `navigation.navigate('TaskDetails', { taskId })` directly — one tap instead of two. The full detail page already contains all the information the sheet surfaced, so nothing is lost.
+- **Next-In-Line preview moved inline into BlockerCard**: Each `BlockerCarousel` card now renders a `NextInLinePreview` sub-component showing up to 3 downstream task names with status dots. This gives builders the same "what's waiting?" glanceable info that previously required opening the sheet, without any interaction cost.
+- **`onCardPress(task)` single-argument API**: The former triple `(task, prereqs, nextInLine)` signature was a leaky abstraction; the card already has `item.nextInLine` internally so prereqs/nextInLine never needed to be passed back out. Simplifying to `(task)` removes the coupling between `BlockerCarousel` and the now-deleted sheet.
+- **`StatusPriorityRow` as a new extracted component**: Status (Pending / In Progress / Blocked / Done) and Priority (Urgent / High / Medium / Low) quick-edit pills are extracted into `StatusPriorityRow.tsx`. The component is purely presentational and fires optimistic updates via `handleStatusChange` / `handlePriorityChange` in `TaskDetailsPage`, which delegate to `useTasks().updateTask()`.
+- **Optimistic updates in `TaskDetailsPage`**: `handleStatusChange` and `handlePriorityChange` apply the state change to the local `task` copy immediately before awaiting `updateTask()`. On failure the original task is restored. This matches the app's existing best-effort mutation pattern (previously inside `TaskBottomSheet`).
+- **`findDependents` for Next-In-Line on `TaskDetailsPage`**: `loadData` resolves `TaskRepository` from the DI container (via `useMemo`) and calls `findDependents(taskId)` to populate the Next-In-Line section (top 3 downstream tasks). The existing `TaskRepository` interface already carried this method — no schema or domain changes were required.
+- **Pre-existing test failures fixed in the same PR**: Four integration suites failing due to `SqliteError: no such column: tdr.log_type` and `no such table: task_progress_logs`, and one voice integration suite failing due to a missing `Users` icon in its lucide mock, were all fixed in follow-up commits on the same branch.
+
+### Completed
+- Design doc at `design/issue-131-remove-bottom-sheet.md` (user story, component changes, acceptance criteria).
+- **Deleted** `src/components/tasks/TaskBottomSheet.tsx` and `__tests__/unit/TaskBottomSheet.test.tsx`.
+- **`src/components/tasks/StatusPriorityRow.tsx`** *(new)*: Pill rows for status and priority with `testID="status-pill-{value}"` and `testID="priority-pill-{value}"` on each pill; `onStatusChange` / `onPriorityChange` callbacks.
+- **`src/components/tasks/BlockerCarousel.tsx`** *(updated)*: `onCardPress` simplified to `(task: Task) => void` (was `(task, prereqs, nextInLine)`); added `NextInLinePreview` inline sub-component rendering up to 3 downstream task names; removed unused `Layers` import.
+- **`src/components/tasks/FocusList.tsx`** *(updated)*: `onItemPress` simplified to `(task: Task) => void`.
+- **`src/pages/tasks/index.tsx`** *(rewritten)*: Removed all sheet state, all sheet callbacks, `useTaskDetail` import, and `<TaskBottomSheet>` JSX. Added `handleBlockerCardPress = (task) => navigation.navigate('TaskDetails', { taskId: task.id })`; wired to both `BlockerCarousel.onCardPress` and `FocusList.onItemPress`.
+- **`src/pages/tasks/TaskDetailsPage.tsx`** *(updated)*: Added `updateTask` to `useTasks()` destructure; `nextInLine` state from `taskRepository.findDependents(taskId)`; `handleStatusChange` and `handlePriorityChange` with optimistic update + revert; `<StatusPriorityRow>` rendered after task header; Next-In-Line section with `testID="next-in-line-item-{id}"`; duplicate handler declarations removed (TS2451 fixed).
+- **Migration `0016_task_progress_logs`** added to `src/infrastructure/database/migrations.ts`: adds `log_type TEXT NOT NULL DEFAULT 'delay'` column to `task_delay_reasons` and creates `task_progress_logs` table.
+- **`src/infrastructure/database/schema.ts`** *(updated)*: Added `logType`, `resolvedAt`, `mitigationNotes` to `taskDelayReasons`; added `taskProgressLogs` table definition.
+- **`DrizzleTaskRepository.summarizeDelayReasons`** *(fixed)*: Changed source table from `task_progress_logs` to `task_delay_reasons` — consistent with `addDelayReason`. Previously always returned an empty array even when delay records existed.
+- **`__tests__/integration/TaskPage.voice.integration.test.tsx`** *(fixed)*: Added `Users: 'Users'` to the lucide mock to prevent `TypeError: Cannot read properties of undefined (reading 'displayName')`.
+- **New tests**: `__tests__/unit/StatusPriorityRow.test.tsx` (T4, T5) and `__tests__/unit/BlockerCarousel.NextInLine.test.tsx` (T1, T2, T3).
+- **Updated tests**: `BlockerCarousel.test.tsx`, `FocusList.test.tsx`, `TasksScreen.test.tsx`, `TasksScreen.cockpit.integration.test.tsx`.
+- Full Jest suite: **757 tests pass, 7 skipped, 0 failures** (117 / 117 suites). `npx tsc --noEmit` clean.
+
+### Acceptance Criteria
+
+| ID | Criterion | Status |
+|----|-----------|--------|
+| T1 | `BlockerCard` renders next-in-line task names inline via `NextInLinePreview` | ✅ |
+| T2 | `onCardPress` receives only the tapped task (1 arg) | ✅ |
+| T3 | Winning-state card still renders (regression free) | ✅ |
+| T4 | `TaskDetailsPage` renders status pills and calls `updateTask` on change | ✅ |
+| T5 | `TaskDetailsPage` renders priority pills and calls `updateTask` on change | ✅ |
+| T6 | `TasksScreen` renders no `TaskBottomSheet` (`sheet-close-btn` absent) | ✅ |
+| T7 | `TaskBottomSheet.tsx` is deleted (import causes compile error) | ✅ |
+
+### Trade-offs & Technical Debt
+- **`useTaskDetail` AI suggestion not wired into `TaskDetailsPage`**: The hook exists and is still consumed by `TasksScreen`. Wiring its output into `TaskDetailsPage` was explicitly deferred in the design doc as a follow-up ticket.
+- **`TaskDelaySection` imported but not rendered**: `TaskDetailsPage` still imports `TaskDelaySection`; the JSX was removed in issue #129 and not re-added here. Dead import to clean up in a future ticket.
+- **Focus-3 still uses `projects[0]`**: Cross-project Focus-3 fallback (analogous to the Blocker Bar fallback added in #123) remains deferred.
+
+### Pending / Next Steps
+- **On-device QA**: Verify direct-navigation flow on iOS and Android; confirm `StatusPriorityRow` pill taps feel snappy and the optimistic revert on failure is invisible in the happy path.
+- **Wire `useTaskDetail` AI suggestion into `TaskDetailsPage`**: Pass `suggestion` and `loadingSuggestion` as props to a new AI suggestion panel on the detail page.
+- **Remove dead `TaskDelaySection` import** from `TaskDetailsPage.tsx`.
+- **Lightbox for `task.photos`**: photo thumbnails currently navigate to the same page — deliver a full-screen viewer as a separate ticket.
