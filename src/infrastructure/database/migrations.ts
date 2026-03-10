@@ -730,6 +730,33 @@ const migrations: RNMigration[] = [
       `ALTER TABLE "projects" ADD COLUMN "regulatory_flags" text;`,
     ],
   },
+  {
+    tag: '0016_task_progress_logs',
+    hash: '0016_task_progress_logs',
+    folderMillis: 1741356000000, // 2026-03-07
+    sql: [
+      // Add log_type discriminator to task_delay_reasons (default 'delay')
+      `ALTER TABLE "task_delay_reasons" ADD COLUMN "log_type" text NOT NULL DEFAULT 'delay';`,
+      // Create unified task_progress_logs table for general progress entries
+      `CREATE TABLE IF NOT EXISTS "task_progress_logs" (
+        "local_id" integer PRIMARY KEY AUTOINCREMENT,
+        "id" text NOT NULL UNIQUE,
+        "task_id" text NOT NULL,
+        "log_type" text NOT NULL,
+        "notes" text,
+        "date" integer,
+        "actor" text,
+        "photos" text,
+        "reason_type_id" text,
+        "delay_duration_days" real,
+        "resolved_at" integer,
+        "mitigation_notes" text,
+        "created_at" integer NOT NULL,
+        "updated_at" integer
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_progress_logs_task" ON "task_progress_logs" ("task_id");`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

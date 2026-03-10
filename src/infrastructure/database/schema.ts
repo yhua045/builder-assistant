@@ -332,9 +332,32 @@ export const taskDelayReasons = sqliteTable('task_delay_reasons', {
   delayDurationDays: real('delay_duration_days'),
   delayDate: integer('delay_date'), // Unix ms
   actor: text('actor'),
+  logType: text('log_type').notNull().default('delay'),
+  resolvedAt: integer('resolved_at'),
+  mitigationNotes: text('mitigation_notes'),
   createdAt: integer('created_at').notNull(),
 }, (table) => ({
   taskIdx: index('idx_task_delays_task').on(table.taskId),
+}));
+
+// Task Progress Logs (general progress notes, distinct from delay reasons)
+export const taskProgressLogs = sqliteTable('task_progress_logs', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  taskId: text('task_id').notNull(),
+  logType: text('log_type').notNull(),
+  notes: text('notes'),
+  date: integer('date'),
+  actor: text('actor'),
+  photos: text('photos'), // JSON-encoded string[]
+  reasonTypeId: text('reason_type_id'),
+  delayDurationDays: real('delay_duration_days'),
+  resolvedAt: integer('resolved_at'),
+  mitigationNotes: text('mitigation_notes'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at'),
+}, (table) => ({
+  taskIdx: index('idx_progress_logs_task').on(table.taskId),
 }));
 
 // Inspections Table
