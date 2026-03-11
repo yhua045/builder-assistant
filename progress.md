@@ -696,3 +696,16 @@ cd ios && pod install
 - `npx tsc --noEmit` clean. Full Jest suite: 31 new passing tests, 0 regressions introduced (pre-existing 7-suite/29-test failures confirmed unrelated to this ticket).
 - Design doc at `design/issue-133-progress-log-modal.md` — status updated to IMPLEMENTED.
 
+
+---
+
+## 12. Issue #137 — Task Index — Critical Tasks
+
+**Goal**: Replace the horizontal blocked task carousel with a vertically stacked timeline showing the top 2 blockers per project ordered globally by .
+
+**Status**: IMPLEMENTED. All tests green (804 tests passed). TypeScript compilation passes.
+
+---
+## 12. Issue #137 — Task Index — Critical Tasks
+**Goal**: Replace the horizontal blocked task carousel with a vertically stacked timeline showing the top 2 blockers per project ordered globally by `scheduledAt`.
+**Status**: IMPLEMENTED. All tests green (804 tests passed). TypeScript compilation passes.

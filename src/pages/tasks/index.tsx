@@ -11,8 +11,10 @@ import { useCockpitData } from '../../hooks/useCockpitData';
 import { useBlockerBar } from '../../hooks/useBlockerBar';
 import { TasksList } from '../../components/tasks/TasksList';
 import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
+import { CriticalTasksTimeline } from '../../components/tasks/CriticalTasksTimeline';
 import { FocusList } from '../../components/tasks/FocusList';
 import type { Task } from '../../domain/entities/Task';
+import { selectTopBlockedTasks, BlockedTaskItem } from '../../utils/selectTopBlockedTasks';
 
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
@@ -60,6 +62,26 @@ export default function TasksScreen() {
 
   const containerBg = isDark ? styles.darkBg : styles.lightBg;
 
+  // Derive timeline items from tasks
+  const timelineItems = useMemo(() => {
+    // Map Task to BlockedTaskItem
+    const rawItems: BlockedTaskItem[] = tasks.map(t => {
+      const project = projects.find(p => p.id === t.projectId);
+      return {
+        id: t.id,
+        title: t.title,
+        projectId: t.projectId || 'unassigned',
+        projectName: project?.name || 'No Project',
+        scheduledAt: t.scheduledAt,
+        status: t.status as 'blocked' | 'pending', // domain type allows other statuses but util filters 'blocked'
+        severity: t.priority === 'urgent' ? 'critical' : t.priority || 'medium', // fallback mapping
+      };
+    });
+    return selectTopBlockedTasks(rawItems, 2);
+  }, [tasks, projects]);
+
+  const blockBarOrWinning = blockerBarResult?.kind === 'winning' ? blockerBarResult : null;
+
   return (
     <SafeAreaView
       className="flex-1 bg-background"
@@ -84,12 +106,26 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      {/* Hero: Blocker Carousel (primary section, top of screen) */}
-      {blockerBarResult && (
+      {/* Hero: Winning Card */}
+      {blockBarOrWinning && (
         <View className="pt-4">
           <BlockerCarousel
-            data={blockerBarResult}
+            data={blockBarOrWinning}
             onCardPress={handleBlockerCardPress}
+          />
+        </View>
+      )}
+
+      {/* Hero: Critical Timeline (primary section, top of screen) */}
+      {timelineItems.length > 0 && !blockBarOrWinning && (
+        <View className="px-6 py-4">
+          <View className="flex-row items-center gap-2 mb-4">
+            <Text className="text-lg font-bold text-foreground">Critical Tasks</Text>
+          </View>
+          <CriticalTasksTimeline
+            testID="critical-tasks-timeline"
+            items={timelineItems}
+            onItemPress={(item) => navigation.navigate('TaskDetails', { taskId: item.id })}
           />
         </View>
       )}
