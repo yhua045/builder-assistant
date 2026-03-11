@@ -3,6 +3,7 @@ export type RNMigration = {
   hash: string;
   folderMillis: number;
   sql: string[];
+  run?: (db: import('react-native-sqlite-storage').SQLiteDatabase) => Promise<void>;
 };
 
 const rawMigration0000 = `CREATE TABLE \`change_orders\` (
@@ -709,7 +710,7 @@ const migrations: RNMigration[] = [
   {
     tag: '0014_task_cockpit_critical_path',
     hash: '0014_task_cockpit_critical_path',
-    folderMillis: 1741183200000, // 2026-03-05
+    folderMillis: 1773000000000, // 2026-03-08
     sql: [
       // Add manual critical-path pin flag used by the cockpit heuristic scorer.
       // DEFAULT 0 (false) ensures existing rows are backward-compatible.
@@ -719,7 +720,7 @@ const migrations: RNMigration[] = [
   {
     tag: '0015_task_photos_project_context',
     hash: '0015_task_photos_project_context',
-    folderMillis: 1741269600000, // 2026-03-06
+    folderMillis: 1773086400000, // 2026-03-09
     sql: [
       // issue #125 — Blocker Hero + AI Suggestions context fields
       // All columns are nullable so existing rows are backward-compatible.
@@ -733,7 +734,7 @@ const migrations: RNMigration[] = [
   {
     tag: '0016_task_progress_logs',
     hash: '0016_task_progress_logs',
-    folderMillis: 1741356000000, // 2026-03-07
+    folderMillis: 1773172800000, // 2026-03-10
     sql: [
       // Add log_type discriminator to task_delay_reasons (default 'delay')
       `ALTER TABLE "task_delay_reasons" ADD COLUMN "log_type" text NOT NULL DEFAULT 'delay';`,
@@ -756,6 +757,27 @@ const migrations: RNMigration[] = [
       );`,
       `CREATE INDEX IF NOT EXISTS "idx_progress_logs_task" ON "task_progress_logs" ("task_id");`,
     ],
+  },
+  {
+    tag: '0017_repair_task_delay_reason_log_type',
+    hash: '0017_repair_task_delay_reason_log_type',
+    folderMillis: 1773259200000, // 2026-03-11
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(
+        `SELECT name FROM pragma_table_info('task_delay_reasons')`
+      );
+
+      for (let i = 0; i < result.rows.length; i++) {
+        if (result.rows.item(i).name === 'log_type') {
+          return;
+        }
+      }
+
+      await db.executeSql(
+        `ALTER TABLE "task_delay_reasons" ADD COLUMN "log_type" text NOT NULL DEFAULT 'delay'`
+      );
+    },
   },
 ];
 

@@ -7,6 +7,27 @@ SQLite.enablePromise(true);
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 let drizzleInstance: ReturnType<typeof drizzle> | null = null;
+let initPromise: Promise<{ db: SQLite.SQLiteDatabase; drizzle: ReturnType<typeof drizzle> }> | null = null;
+
+async function columnExists(
+  db: SQLite.SQLiteDatabase,
+  tableName: string,
+  columnName: string,
+): Promise<boolean> {
+  // Use SELECT from pragma_table_info so test adapters that only
+  // return rows for SELECT statements will work correctly.
+  const [result] = await db.executeSql(
+    `SELECT name FROM pragma_table_info('${tableName}')`
+  );
+
+  for (let i = 0; i < result.rows.length; i++) {
+    if (result.rows.item(i).name === columnName) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 /**
  * Initialize the database connection and run migrations
@@ -16,44 +37,59 @@ export async function initDatabase() {
     return { db: dbInstance, drizzle: drizzleInstance };
   }
 
-  // Open SQLite database
-  dbInstance = await SQLite.openDatabase({
-    name: 'builder_assistant.db',
-    location: 'default',
-  });
+  if (initPromise) {
+    return initPromise;
+  }
 
-  // Create Drizzle instance with proxy
-  drizzleInstance = drizzle(async (sql, params, method) => {
+  initPromise = (async () => {
     try {
-      if (method === 'run' || method === 'all' || method === 'get') {
-        const [results] = await dbInstance!.executeSql(sql, params);
-        
-        if (method === 'all') {
-          const rows: any[] = [];
-          for (let i = 0; i < results.rows.length; i++) {
-            rows.push(results.rows.item(i));
+      // Open SQLite database
+      dbInstance = await SQLite.openDatabase({
+        name: 'builder_assistant.db',
+        location: 'default',
+      });
+
+      // Create Drizzle instance with proxy
+      drizzleInstance = drizzle(async (sql, params, method) => {
+        try {
+          if (method === 'run' || method === 'all' || method === 'get') {
+            const [results] = await dbInstance!.executeSql(sql, params);
+
+            if (method === 'all') {
+              const rows: any[] = [];
+              for (let i = 0; i < results.rows.length; i++) {
+                rows.push(results.rows.item(i));
+              }
+              return { rows };
+            }
+
+            if (method === 'get') {
+              return { rows: results.rows.length > 0 ? [results.rows.item(0)] : [] };
+            }
+
+            return { rows: [] };
           }
-          return { rows };
+
+          throw new Error(`Unsupported method: ${method}`);
+        } catch (error) {
+          console.error('Database query error:', error);
+          throw error;
         }
-        
-        if (method === 'get') {
-          return { rows: results.rows.length > 0 ? [results.rows.item(0)] : [] };
-        }
-        
-        return { rows: [] };
-      }
-      
-      throw new Error(`Unsupported method: ${method}`);
+      }, { schema });
+
+      // Run migrations
+      await runMigrations(drizzleInstance, dbInstance);
+
+      return { db: dbInstance, drizzle: drizzleInstance };
     } catch (error) {
-      console.error('Database query error:', error);
+      initPromise = null;
+      dbInstance = null;
+      drizzleInstance = null;
       throw error;
     }
-  }, { schema });
+  })();
 
-  // Run migrations
-  await runMigrations(drizzleInstance, dbInstance);
-
-  return { db: dbInstance, drizzle: drizzleInstance };
+  return initPromise;
 }
 
 /**
@@ -90,6 +126,9 @@ async function runMigrations(
       for (const query of migration.sql) {
         await db.executeSql(query);
       }
+      if (migration.run) {
+        await migration.run(db);
+      }
       await db.executeSql(
         'INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)',
         [migration.hash, migration.folderMillis]
@@ -121,5 +160,6 @@ export async function closeDatabase() {
     await dbInstance.close();
     dbInstance = null;
     drizzleInstance = null;
+    initPromise = null;
   }
 }
