@@ -390,8 +390,6 @@ cd ios && pod install
 - DB-level `ON DELETE CASCADE` for `task_dependencies` and `task_delay_reasons` was deferred. Application-level cascade in `DeleteTaskUseCase` is correct but requires remembering to extend it if new related tables are added in future. A future migration (`0013_cascade_deletes.sql`) can add proper FK CASCADE constraints once the migration tooling supports SQLite table recreation safely.
 - `TaskDetailsPage` now resolves 4 repositories/adapters with individual `try/catch` blocks in `useMemo`. If all 4 are registered in DI, this is transparent. An unregistered adapter silently disables the related feature (document upload, contact lookup) rather than crashing — intentional graceful degradation.
 
-```
-
 ---
 
 ## Issue #114 — Extend Task Form: Documents, Subcontractor & Dependencies (2026-03-05)
@@ -709,3 +707,5 @@ cd ios && pod install
 ## 12. Issue #137 — Task Index — Critical Tasks
 **Goal**: Replace the horizontal blocked task carousel with a vertically stacked timeline showing the top 2 blockers per project ordered globally by `scheduledAt`.
 **Status**: IMPLEMENTED. All tests green (804 tests passed). TypeScript compilation passes.
+
+- **PR**: https://github.com/yhua045/builder-assistant/pull/140
