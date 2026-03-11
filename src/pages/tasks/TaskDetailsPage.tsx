@@ -399,40 +399,7 @@ export default function TaskDetailsPage() {
           </View>
         </View>
 
-        {/* ── Status & Priority quick-edit (issue #131) ── */}
-        <StatusPriorityRow
-          status={task.status}
-          priority={task.priority ?? 'medium'}
-          onStatusChange={handleStatusChange}
-          onPriorityChange={handlePriorityChange}
-        />
-
-        {/* ── Next-In-Line (issue #131): downstream tasks waiting on this one ── */}
-        {nextInLine.length > 0 && (
-          <View className="px-6 pt-4 pb-2">
-            <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Next in Line
-            </Text>
-            <View className="bg-card border border-border rounded-2xl overflow-hidden">
-              {nextInLine.map((t, index) => (
-                <View
-                  key={t.id}
-                  testID={`next-in-line-item-${t.id}`}
-                  className={`flex-row items-center px-4 py-3 gap-3 ${
-                    index < nextInLine.length - 1 ? 'border-b border-border' : ''
-                  }`}
-                >
-                  <Text className="text-base">
-                    {t.status === 'completed' ? '✅' : t.status === 'blocked' ? '🔴' : '⏳'}
-                  </Text>
-                  <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
-                    {t.title}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
+        {/* Status / Priority and Next-in-line moved below Documents per issue #136 */}
 
         {/* Dates Section */}
         <View className="px-6 mb-6">
@@ -500,17 +467,53 @@ export default function TaskDetailsPage() {
           onRemoveDependency={handleRemoveDependency}
         />
 
+        <TaskDocumentSection
+          documents={documents}
+          onAddDocument={handleAddDocument}
+          uploading={uploadingDocument}
+        />
+
+        {/* Status & Priority quick-edit (moved below Images & Documents per #136) */}
+        <StatusPriorityRow
+          status={task.status}
+          priority={task.priority ?? 'medium'}
+          onStatusChange={handleStatusChange}
+          onPriorityChange={handlePriorityChange}
+        />
+
+        {/* Next-In-Line (moved below Images & Documents per #136) */}
+        {nextInLine.length > 0 && (
+          <View className="px-6 pt-4 pb-2">
+            <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Next in Line
+            </Text>
+            <View className="bg-card border border-border rounded-2xl overflow-hidden">
+              {nextInLine.map((t, index) => (
+                <View
+                  key={t.id}
+                  testID={`next-in-line-item-${t.id}`}
+                  className={`flex-row items-center px-4 py-3 gap-3 ${
+                    index < nextInLine.length - 1 ? 'border-b border-border' : ''
+                  }`}
+                >
+                  <Text className="text-base">
+                    {t.status === 'completed' ? '✅' : t.status === 'blocked' ? '🔴' : '⏳'}
+                  </Text>
+                  <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+                    {t.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Progress Logs (moved to appear under Notes per #136) */}
         <TaskProgressSection
           progressLogs={taskDetail?.progressLogs ?? []}
           onAddLog={() => setShowAddLogModal(true)}
           onEditLog={(log) => setEditingLog(log)}
           onDeleteLog={handleDeleteProgressLog}
-        />
-
-        <TaskDocumentSection
-          documents={documents}
-          onAddDocument={handleAddDocument}
-          uploading={uploadingDocument}
         />
 
       </ScrollView>

@@ -246,9 +246,6 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
                 )}
               </View>
 
-              {/* Next-In-Line inline preview */}
-              <NextInLinePreview tasks={item.nextInLine} />
-
               {/* Footer Details */}
               <View style={styles.footerRow}>
                 <View style={styles.footerItem}>
@@ -261,6 +258,9 @@ export function BlockerCarousel({ data, onCardPress }: BlockerCarouselProps) {
                   <ChevronRight size={16} color="#94a3b8" />
                 </View>
               </View>
+
+              {/* Next-In-Line inline preview (moved below date per issue #136) */}
+              <NextInLinePreview tasks={item.nextInLine} />
             </View>
           </TouchableOpacity>
         ))}
