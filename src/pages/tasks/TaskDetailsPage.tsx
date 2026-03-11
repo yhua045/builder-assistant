@@ -452,6 +452,14 @@ export default function TaskDetailsPage() {
           </View>
         )}
 
+        {/* Progress Logs — directly under Notes per #136 */}
+        <TaskProgressSection
+          progressLogs={taskDetail?.progressLogs ?? []}
+          onAddLog={() => setShowAddLogModal(true)}
+          onEditLog={(log) => setEditingLog(log)}
+          onDeleteLog={handleDeleteProgressLog}
+        />
+
         {/* === Task Detail Extension Sections === */}
         <TaskSubcontractorSection
           subcontractor={subcontractorInfo}
@@ -507,14 +515,6 @@ export default function TaskDetailsPage() {
             </View>
           </View>
         )}
-
-        {/* Progress Logs (moved to appear under Notes per #136) */}
-        <TaskProgressSection
-          progressLogs={taskDetail?.progressLogs ?? []}
-          onAddLog={() => setShowAddLogModal(true)}
-          onEditLog={(log) => setEditingLog(log)}
-          onDeleteLog={handleDeleteProgressLog}
-        />
 
       </ScrollView>
 

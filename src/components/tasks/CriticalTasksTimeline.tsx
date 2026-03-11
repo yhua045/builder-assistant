@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Calendar } from 'lucide-react-native';
 import { BlockedTaskItem } from '../../utils/selectTopBlockedTasks';
+import formatDate from '../../utils/formatDate';
 
 export interface CriticalTasksTimelineProps {
   items: BlockedTaskItem[];
@@ -10,6 +11,11 @@ export interface CriticalTasksTimelineProps {
 }
 
 const SEVERITY_CONFIG = {
+  urgent: {
+    badgeBg: "bg-red-100",
+    textColor: "text-red-700",
+    dotColor: "bg-red-500",
+  },
   critical: {
     badgeBg: "bg-red-100",
     textColor: "text-red-700",
@@ -29,20 +35,22 @@ const SEVERITY_CONFIG = {
     badgeBg: "bg-blue-100",
     textColor: "text-blue-700",
     dotColor: "bg-blue-500",
-  }
+  },
 };
 
 export function CriticalTasksTimeline({ items, onItemPress, testID }: CriticalTasksTimelineProps) {
   if (!items || items.length === 0) {
     return (
-      <View className="py-4" testID={testID}>
+      <View className="py-4">
         <Text className="text-muted-foreground text-center">No critical blocked tasks.</Text>
       </View>
     );
   }
 
+  const outerTestID = testID ?? "critical-tasks-timeline";
+
   return (
-    <View className="pl-2" testID={testID} testID="critical-tasks-timeline">
+    <View className="pl-2" testID={outerTestID}>
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         const severityConfig = item.severity ? SEVERITY_CONFIG[item.severity] : SEVERITY_CONFIG.medium;
@@ -93,7 +101,7 @@ export function CriticalTasksTimeline({ items, onItemPress, testID }: CriticalTa
                         className="text-muted-foreground"
                       />
                       <Text className="text-xs text-muted-foreground">
-                        {item.scheduledAt || 'TBD'}
+                        {formatDate(item.scheduledAt)}
                       </Text>
                     </View>
                   </View>

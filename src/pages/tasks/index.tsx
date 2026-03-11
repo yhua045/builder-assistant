@@ -31,7 +31,9 @@ const FILTER_PILLS: { label: string; value: FilterValue }[] = [
 export default function TasksScreen() {
   const { tasks, loading, refreshTasks, updateTask } = useTasks();
   const navigation = useNavigation<any>();
-  const [filter, setFilter] = useState<FilterValue>('all');
+  const [selectedFilters, setSelectedFilters] = useState<Set<FilterValue>>(
+    new Set(['all'])
+  );
 
   // ── Cockpit data ────────────────────────────────────────────────
   // useBlockerBar iterates all projects to find the first with active blockers.
@@ -56,9 +58,9 @@ export default function TasksScreen() {
   const isDark = colorScheme === 'dark';
 
   const filteredTasks = useMemo(() => {
-    if (filter === 'all') return tasks;
-    return tasks.filter((t) => t.status === filter);
-  }, [tasks, filter]);
+    if (selectedFilters.has('all') || selectedFilters.size === 0) return tasks;
+    return tasks.filter((t) => selectedFilters.has(t.status as FilterValue));
+  }, [tasks, selectedFilters]);
 
   const containerBg = isDark ? styles.darkBg : styles.lightBg;
 
@@ -74,7 +76,7 @@ export default function TasksScreen() {
         projectName: project?.name || 'No Project',
         scheduledAt: t.scheduledAt,
         status: t.status as 'blocked' | 'pending', // domain type allows other statuses but util filters 'blocked'
-        severity: t.priority === 'urgent' ? 'critical' : t.priority || 'medium', // fallback mapping
+        severity: (t.priority as BlockedTaskItem['severity']) || 'medium',
       };
     });
     return selectTopBlockedTasks(rawItems, 2);
@@ -147,24 +149,46 @@ export default function TasksScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={filterContentStyle}
         >
-          {FILTER_PILLS.map(({ label, value }) => (
-            <TouchableOpacity
-              key={value}
-              testID={`filter-pill-${value}`}
-              onPress={() => setFilter(value)}
-              className={`px-4 py-2 rounded-full border ${
-                filter === value ? 'bg-primary border-primary' : 'bg-card border-border'
-              }`}
-            >
-              <Text
-                className={`text-xs font-semibold ${
-                  filter === value ? 'text-primary-foreground' : 'text-foreground'
+          {FILTER_PILLS.map(({ label, value }) => {
+            const selected = selectedFilters.has(value);
+            return (
+              <TouchableOpacity
+                key={value}
+                testID={`filter-pill-${value}`}
+                onPress={() => {
+                  setSelectedFilters((prev) => {
+                    const next = new Set(prev);
+                    if (value === 'all') {
+                      // Toggle 'all' — if enabling, clear others; if disabling, remove it
+                      if (next.has('all')) {
+                        next.delete('all');
+                      } else {
+                        next.clear();
+                        next.add('all');
+                      }
+                    } else {
+                      // If 'all' was selected, remove it when selecting specific filters
+                      if (next.has('all')) next.delete('all');
+                      if (next.has(value)) next.delete(value);
+                      else next.add(value);
+                    }
+                    return next;
+                  });
+                }}
+                className={`px-4 py-2 rounded-full border ${
+                  selected ? 'bg-primary border-primary' : 'bg-card border-border'
                 }`}
               >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  className={`text-xs font-semibold ${
+                    selected ? 'text-primary-foreground' : 'text-foreground'
+                  }`}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 

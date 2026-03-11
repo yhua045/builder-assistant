@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { useProjects } from '../../hooks/useProjects';
 import HeroSection from './components/HeroSection';
 import CashOutflow from './components/CashOutflow';
 import ActiveTasks from './components/ActiveTasks';
@@ -23,7 +24,6 @@ import {
 } from 'lucide-react-native';
 
 // Mock data
-const hasProjects = false; // Change to true to hide hero section
 const urgentAlerts = [
   {
     id: '1',
@@ -116,6 +116,8 @@ const quickActions = [
 ];
 
 export default function DashboardScreen() {
+  const { projects } = useProjects();
+  const hasProjects = (projects?.length ?? 0) > 0;
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);

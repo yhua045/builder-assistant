@@ -5,7 +5,7 @@ export interface BlockedTaskItem {
   projectName: string;
   projectColor?: string;
   scheduledAt?: string;   // ISO date string — used for ordering
-  severity?: 'critical' | 'high' | 'medium' | 'low';
+  severity?: 'urgent' | 'critical' | 'high' | 'medium' | 'low';
   status: 'blocked' | 'pending';
 }
 
