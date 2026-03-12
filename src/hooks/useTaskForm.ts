@@ -9,6 +9,20 @@ import { DocumentRepository } from '../domain/repositories/DocumentRepository';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
+
+/**
+ * Auto-compute quoteStatus on save based on what data is present.
+ * Preserves 'accepted' and 'rejected' finaled states.
+ */
+function computeQuoteStatus(
+  taskType: NonNullable<Task['taskType']>,
+  quoteAmount: number | undefined,
+  existing: Task['quoteStatus'],
+): Task['quoteStatus'] {
+  if (taskType === 'standard') return undefined;
+  if (existing === 'accepted' || existing === 'rejected') return existing;
+  return quoteAmount !== undefined && quoteAmount !== null ? 'issued' : 'pending';
+}
 import { UpdateTaskUseCase } from '../application/usecases/task/UpdateTaskUseCase';
 import { AddTaskDependencyUseCase } from '../application/usecases/task/AddTaskDependencyUseCase';
 import { RemoveTaskDependencyUseCase } from '../application/usecases/task/RemoveTaskDependencyUseCase';
@@ -51,6 +65,14 @@ export interface UseTaskFormReturn {
   // ── Subcontractor ─────────────────────────────────────────────────────────
   subcontractorId: string | undefined;
   setSubcontractorId(id: string | undefined): void;
+
+  // ── Task Classification (issue #141) ──────────────────────────────────────
+  taskType: NonNullable<Task['taskType']>;
+  setTaskType(v: NonNullable<Task['taskType']>): void;
+  workType: string | undefined;
+  setWorkType(v: string | undefined): void;
+  quoteAmount: number | undefined;
+  setQuoteAmount(v: number | undefined): void;
 
   // ── Documents ─────────────────────────────────────────────────────────────
   /** Documents picked this session — not yet written to DB */
@@ -101,6 +123,17 @@ export function useTaskForm({
   // ── Subcontractor ─────────────────────────────────────────────────────────
   const [subcontractorId, setSubcontractorId] = useState<string | undefined>(
     initialTask?.subcontractorId,
+  );
+
+  // ── Task Classification (issue #141) ──────────────────────────────────────
+  const [taskType, setTaskType] = useState<NonNullable<Task['taskType']>>(
+    initialTask?.taskType ?? 'variation',
+  );
+  const [workType, setWorkType] = useState<string | undefined>(
+    initialTask?.workType,
+  );
+  const [quoteAmount, setQuoteAmount] = useState<number | undefined>(
+    initialTask?.quoteAmount,
   );
 
   // ── Documents ─────────────────────────────────────────────────────────────
@@ -207,6 +240,11 @@ export function useTaskForm({
     try {
       if (isEditMode && selfId) {
         // ── Update mode ───────────────────────────────────────────────────
+        const computedQuoteStatus = computeQuoteStatus(
+          taskType,
+          quoteAmount,
+          (initialTask as Task | undefined)?.quoteStatus,
+        );
         const updatedTask: Task = {
           ...(initialTask as Task),
           title: title.trim(),
@@ -217,6 +255,10 @@ export function useTaskForm({
           priority,
           subcontractorId,
           isScheduled: !!dueDate,
+          taskType,
+          workType,
+          quoteAmount,
+          quoteStatus: computedQuoteStatus,
           updatedAt: new Date().toISOString(),
         };
         await updateTaskUseCase.execute(updatedTask);
@@ -250,6 +292,7 @@ export function useTaskForm({
         onSuccess?.(updatedTask);
       } else {
         // ── Create mode ───────────────────────────────────────────────────
+        const computedQuoteStatus = computeQuoteStatus(taskType, quoteAmount, undefined);
         const newTask = await createTaskUseCase.execute({
           title: title.trim(),
           notes: notes.trim() || undefined,
@@ -259,6 +302,10 @@ export function useTaskForm({
           priority,
           subcontractorId,
           isScheduled: !!dueDate,
+          taskType,
+          workType,
+          quoteAmount,
+          quoteStatus: computedQuoteStatus,
         });
 
         // Attach documents now that we have a taskId
@@ -292,6 +339,9 @@ export function useTaskForm({
     status,
     priority,
     subcontractorId,
+    taskType,
+    workType,
+    quoteAmount,
     pendingDocuments,
     dependencyTaskIds,
     initialTask,
@@ -319,6 +369,12 @@ export function useTaskForm({
     setPriority,
     subcontractorId,
     setSubcontractorId,
+    taskType,
+    setTaskType,
+    workType,
+    setWorkType,
+    quoteAmount,
+    setQuoteAmount,
     pendingDocuments,
     addPendingDocument,
     removePendingDocument,

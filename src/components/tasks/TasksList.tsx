@@ -40,7 +40,24 @@ export function TasksList({ tasks, onPress }: Props) {
               <Text className="text-foreground font-semibold text-base flex-1 mr-2" numberOfLines={1}>
                 {task.title}
               </Text>
-              <TaskStatusBadge status={task.status} />
+              <View className="flex-row items-center gap-1">
+                {task.taskType === 'variation' && (
+                  <View className="bg-amber-100 border border-amber-400 rounded px-1">
+                    <Text className="text-amber-700 text-xs font-bold">V</Text>
+                  </View>
+                )}
+                {task.taskType === 'contract_work' && !task.quoteInvoiceId && (
+                  <View className="bg-blue-100 border border-blue-400 rounded px-1">
+                    <Text className="text-blue-700 text-xs font-bold">CW</Text>
+                  </View>
+                )}
+                {task.quoteInvoiceId && (
+                  <View className="bg-green-100 border border-green-500 rounded px-1">
+                    <Text className="text-green-700 text-xs font-bold">Invoice ✓</Text>
+                  </View>
+                )}
+                <TaskStatusBadge status={task.status} />
+              </View>
             </View>
             
             <View className="flex-row items-center gap-4">

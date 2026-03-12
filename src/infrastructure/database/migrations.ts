@@ -779,6 +779,20 @@ const migrations: RNMigration[] = [
       );
     },
   },
+  {
+    tag: '0018_task_type_work_type_quote',
+    hash: '0018_task_type_work_type_quote',
+    folderMillis: 1773345600000, // 2026-03-12
+    sql: [
+      // issue #141 — Task type toggle, work-type tracking, quote-to-invoice
+      // All columns are nullable / have defaults so existing rows stay backward-compatible.
+      `ALTER TABLE "tasks" ADD COLUMN "task_type"       text NOT NULL DEFAULT 'variation';`,
+      `ALTER TABLE "tasks" ADD COLUMN "work_type"        text;`,
+      `ALTER TABLE "tasks" ADD COLUMN "quote_amount"     real;`,
+      `ALTER TABLE "tasks" ADD COLUMN "quote_status"     text;`,
+      `ALTER TABLE "tasks" ADD COLUMN "quote_invoice_id" text;`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

@@ -30,6 +30,12 @@ export class DrizzleTaskRepository implements TaskRepository {
       status: (row.status as Task['status']) || 'pending',
       priority: row.priority as Task['priority'] || undefined,
       completedAt: row.completed_date ? new Date(row.completed_date).toISOString() : undefined,
+      // Task classification (issue #141)
+      taskType: (row.task_type as Task['taskType']) || 'variation',
+      workType: row.work_type || undefined,
+      quoteAmount: row.quote_amount ?? undefined,
+      quoteStatus: (row.quote_status as Task['quoteStatus']) || undefined,
+      quoteInvoiceId: row.quote_invoice_id || undefined,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
     };
@@ -51,6 +57,12 @@ export class DrizzleTaskRepository implements TaskRepository {
       status: task.status || 'pending',
       priority: task.priority || null,
       completed_date: task.completedAt ? new Date(task.completedAt).getTime() : null,
+      // Task classification (issue #141)
+      task_type: task.taskType ?? 'variation',
+      work_type: task.workType ?? null,
+      quote_amount: task.quoteAmount ?? null,
+      quote_status: task.quoteStatus ?? null,
+      quote_invoice_id: task.quoteInvoiceId ?? null,
       created_at: task.createdAt ? new Date(task.createdAt).getTime() : Date.now(),
       updated_at: Date.now(),
     };
@@ -71,8 +83,10 @@ export class DrizzleTaskRepository implements TaskRepository {
       `INSERT INTO tasks (
         id, project_id, title, description, notes,
         is_scheduled, scheduled_at, due_date, assigned_to, subcontractor_id,
-        is_critical_path, status, priority, completed_date, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        is_critical_path, status, priority, completed_date,
+        task_type, work_type, quote_amount, quote_status, quote_invoice_id,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       , [
         values.id,
         values.project_id,
@@ -88,6 +102,11 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.status,
         values.priority,
         values.completed_date,
+        values.task_type,
+        values.work_type,
+        values.quote_amount,
+        values.quote_status,
+        values.quote_invoice_id,
         values.created_at,
         values.updated_at,
       ]
@@ -173,6 +192,11 @@ export class DrizzleTaskRepository implements TaskRepository {
         status = ?,
         priority = ?,
         completed_date = ?,
+        task_type = ?,
+        work_type = ?,
+        quote_amount = ?,
+        quote_status = ?,
+        quote_invoice_id = ?,
         created_at = ?,
         updated_at = ?
       WHERE id = ?`,
@@ -190,6 +214,11 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.status,
         values.priority,
         values.completed_date,
+        values.task_type,
+        values.work_type,
+        values.quote_amount,
+        values.quote_status,
+        values.quote_invoice_id,
         values.created_at,
         values.updated_at,
         values.id,
