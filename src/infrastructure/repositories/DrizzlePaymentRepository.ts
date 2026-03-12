@@ -15,8 +15,10 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const { db } = await initDatabase();
     const now = Date.now();
     const stmt = `INSERT INTO payments (
-      id, project_id, invoice_id, amount, currency, payment_date, due_date, status, payment_method, reference, notes, created_at, updated_at
-    ) VALUES (${new Array(13).fill('?').join(',')})`;
+      id, project_id, invoice_id, amount, currency, payment_date, due_date, status, payment_method, reference, notes,
+      contact_id, contractor_name, payment_category, stage_label,
+      created_at, updated_at
+    ) VALUES (${new Array(17).fill('?').join(',')})`;
 
     const params = [
       payment.id,
@@ -30,6 +32,10 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       payment.method ?? null,
       payment.reference ?? null,
       payment.notes ?? null,
+      payment.contactId ?? null,
+      payment.contractorName ?? null,
+      payment.paymentCategory ?? 'other',
+      payment.stageLabel ?? null,
       now,
       now,
     ];
@@ -37,11 +43,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     await db.executeSql(stmt, params);
   }
 
-  async findById(id: string): Promise<Payment | null> {
-    const { db } = await initDatabase();
-    const [res] = await db.executeSql('SELECT * FROM payments WHERE id = ? LIMIT 1', [id]);
-    if (res.rows.length === 0) return null;
-    const row = res.rows.item(0);
+  private rowToPayment(row: any): Payment {
     return {
       id: row.id,
       projectId: row.project_id,
@@ -54,9 +56,20 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       method: row.payment_method,
       reference: row.reference,
       notes: row.notes,
+      contactId: row.contact_id ?? undefined,
+      contractorName: row.contractor_name ?? undefined,
+      paymentCategory: row.payment_category ?? 'other',
+      stageLabel: row.stage_label ?? undefined,
       createdAt: millisToIso(row.created_at),
       updatedAt: millisToIso(row.updated_at),
     } as Payment;
+  }
+
+  async findById(id: string): Promise<Payment | null> {
+    const { db } = await initDatabase();
+    const [res] = await db.executeSql('SELECT * FROM payments WHERE id = ? LIMIT 1', [id]);
+    if (res.rows.length === 0) return null;
+    return this.rowToPayment(res.rows.item(0));
   }
 
   async findAll(): Promise<Payment[]> {
@@ -64,8 +77,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const [res] = await db.executeSql('SELECT * FROM payments ORDER BY created_at DESC');
     const items: Payment[] = [];
     for (let i = 0; i < res.rows.length; i++) {
-      const row = res.rows.item(i);
-      items.push(await this.findById(row.id) as Payment);
+      items.push(this.rowToPayment(res.rows.item(i)));
     }
     return items;
   }
@@ -75,8 +87,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const [res] = await db.executeSql('SELECT * FROM payments WHERE project_id = ? ORDER BY created_at DESC', [projectId]);
     const items: Payment[] = [];
     for (let i = 0; i < res.rows.length; i++) {
-      const row = res.rows.item(i);
-      items.push(await this.findById(row.id) as Payment);
+      items.push(this.rowToPayment(res.rows.item(i)));
     }
     return items;
   }
@@ -86,19 +97,17 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const [res] = await db.executeSql('SELECT * FROM payments WHERE invoice_id = ? ORDER BY created_at DESC', [invoiceId]);
     const items: Payment[] = [];
     for (let i = 0; i < res.rows.length; i++) {
-      const row = res.rows.item(i);
-      items.push(await this.findById(row.id) as Payment);
+      items.push(this.rowToPayment(res.rows.item(i)));
     }
     return items;
   }
 
   async findPendingByProject(projectId: string): Promise<Payment[]> {
     const { db } = await initDatabase();
-    const [res] = await db.executeSql('SELECT * FROM payments WHERE project_id = ? AND (notes IS NULL OR notes = "") ORDER BY created_at DESC', [projectId]);
+    const [res] = await db.executeSql('SELECT * FROM payments WHERE project_id = ? AND status = \'pending\' ORDER BY created_at DESC', [projectId]);
     const items: Payment[] = [];
     for (let i = 0; i < res.rows.length; i++) {
-      const row = res.rows.item(i);
-      items.push(await this.findById(row.id) as Payment);
+      items.push(this.rowToPayment(res.rows.item(i)));
     }
     return items;
   }
@@ -107,7 +116,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const { db } = await initDatabase();
     const now = Date.now();
     await db.executeSql(
-      `UPDATE payments SET project_id = ?, invoice_id = ?, amount = ?, currency = ?, payment_date = ?, due_date = ?, status = ?, payment_method = ?, reference = ?, notes = ?, updated_at = ? WHERE id = ?`,
+      `UPDATE payments SET project_id = ?, invoice_id = ?, amount = ?, currency = ?, payment_date = ?, due_date = ?, status = ?, payment_method = ?, reference = ?, notes = ?, contact_id = ?, contractor_name = ?, payment_category = ?, stage_label = ?, updated_at = ? WHERE id = ?`,
       [
         payment.projectId ?? null,
         payment.invoiceId ?? null,
@@ -119,6 +128,10 @@ export class DrizzlePaymentRepository implements PaymentRepository {
         payment.method ?? null,
         payment.reference ?? null,
         payment.notes ?? null,
+        payment.contactId ?? null,
+        payment.contractorName ?? null,
+        payment.paymentCategory ?? 'other',
+        payment.stageLabel ?? null,
         now,
         payment.id,
       ]
@@ -143,8 +156,8 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       params.push(filters.status);
     }
 
-    // projectId
-    if (filters?.projectId) {
+    // projectId — only applied when allProjects is not set
+    if (filters?.projectId && !filters?.allProjects) {
       where.push('project_id = ?');
       params.push(filters.projectId);
     }
@@ -174,6 +187,18 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       params.push(Date.now());
     }
 
+    // contractorSearch: case-insensitive partial match
+    if (filters?.contractorSearch) {
+      where.push('(contractor_name LIKE ? COLLATE NOCASE)');
+      params.push(`%${filters.contractorSearch}%`);
+    }
+
+    // paymentCategory filter
+    if (filters?.paymentCategory) {
+      where.push('payment_category = ?');
+      params.push(filters.paymentCategory);
+    }
+
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     // Count total
@@ -181,8 +206,13 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const [countRes] = await db.executeSql(countSql, params);
     const total = countRes.rows.length ? (countRes.rows.item(0).cnt as number) : 0;
 
+    // Urgency sort when querying global pending list
+    const orderBy = filters?.allProjects
+      ? `ORDER BY CASE WHEN (status = 'pending' AND due_date IS NOT NULL AND due_date < ${Date.now()}) THEN 0 ELSE 1 END, due_date ASC`
+      : 'ORDER BY created_at DESC';
+
     // Fetch items with ordering and pagination
-    let listSql = `SELECT * FROM payments ${whereSql} ORDER BY created_at DESC`;
+    let listSql = `SELECT * FROM payments ${whereSql} ${orderBy}`;
     if (typeof filters?.limit === 'number') {
       listSql += ' LIMIT ?';
       params.push(filters.limit);
@@ -194,22 +224,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const [res] = await db.executeSql(listSql, params);
     const items: Payment[] = [];
     for (let i = 0; i < res.rows.length; i++) {
-      const row = res.rows.item(i);
-      items.push({
-        id: row.id,
-        projectId: row.project_id,
-        invoiceId: row.invoice_id,
-        amount: row.amount,
-        currency: row.currency,
-        date: millisToIso(row.payment_date),
-        dueDate: millisToIso(row.due_date),
-        status: row.status,
-        method: row.payment_method,
-        reference: row.reference,
-        notes: row.notes,
-        createdAt: millisToIso(row.created_at),
-        updatedAt: millisToIso(row.updated_at),
-      } as Payment);
+      items.push(this.rowToPayment(res.rows.item(i)));
     }
 
     return { items, meta: { total, limit: filters?.limit, offset: filters?.offset } };
@@ -240,5 +255,17 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       const overdueCount = overdueRes.rows.length ? (overdueRes.rows.item(0).cnt as number) : 0;
 
       return { pendingTotalNext7Days, overdueCount };
+  }
+
+  async getGlobalAmountPayable(contractorSearch?: string): Promise<number> {
+    const { db } = await initDatabase();
+    const params: any[] = [];
+    let sql = `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'pending'`;
+    if (contractorSearch) {
+      sql += ' AND (contractor_name LIKE ? COLLATE NOCASE)';
+      params.push(`%${contractorSearch}%`);
+    }
+    const [res] = await db.executeSql(sql, params);
+    return res.rows.length ? (res.rows.item(0).total as number) : 0;
   }
 }

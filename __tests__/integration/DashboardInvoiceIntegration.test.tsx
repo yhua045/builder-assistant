@@ -7,6 +7,8 @@ import React from 'react';
 import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import DashboardScreen from '../../src/pages/dashboard';
 import { useInvoices } from '../../src/hooks/useInvoices';
+import { useProjects } from '../../src/hooks/useProjects';
+import { usePayments } from '../../src/hooks/usePayments';
 
 // Mock dependencies
 jest.mock('../../src/hooks/useInvoices');
@@ -97,6 +99,8 @@ jest.mock('../../src/pages/dashboard/components/UrgentAlerts', () => {
 });
 
 const mockUseInvoices = useInvoices as jest.MockedFunction<typeof useInvoices>;
+const mockUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
+const mockUsePayments = usePayments as jest.MockedFunction<typeof usePayments>;
 
 describe('Dashboard Invoice Integration', () => {
   const defaultInvoiceHookReturn = {
@@ -113,6 +117,25 @@ describe('Dashboard Invoice Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseInvoices.mockReturnValue(defaultInvoiceHookReturn);
+    mockUseProjects.mockReturnValue({
+      projects: [],
+      loading: false,
+      error: null,
+      createProject: jest.fn().mockResolvedValue({ success: true }),
+      getProjectAnalysis: jest.fn().mockResolvedValue({}),
+      refreshProjects: jest.fn().mockResolvedValue(undefined),
+    });
+    mockUsePayments.mockReturnValue({
+      globalPayments: [],
+      globalAmountPayable: 0,
+      contractPayments: [],
+      variationPayments: [],
+      contractTotal: 0,
+      variationTotal: 0,
+      metrics: { pendingTotalNext7Days: 0, overdueCount: 0 },
+      loading: false,
+      refresh: jest.fn(),
+    });
   });
 
   it('completes full invoice creation flow from dashboard', async () => {

@@ -13,6 +13,10 @@ export interface Payment {
   method?: 'bank' | 'cash' | 'check' | 'card' | 'other';
   status?: 'pending' | 'settled';
   reference?: string;
+  // Display / grouping fields added in #142
+  contractorName?: string;       // denormalized from Contact.name for list performance
+  paymentCategory?: 'contract' | 'variation' | 'other'; // grouping discriminator
+  stageLabel?: string;           // e.g. "Frame Stage", "Patching"
   createdAt?: string;
   updatedAt?: string;
 }

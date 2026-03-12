@@ -242,6 +242,11 @@ export const payments = sqliteTable('payments', {
   paymentMethod: text('payment_method'),
   reference: text('reference'),
   notes: text('notes'),
+  // Display / grouping fields added in #142
+  contactId: text('contact_id'),
+  contractorName: text('contractor_name'),
+  paymentCategory: text('payment_category', { enum: ['contract', 'variation', 'other'] }).default('other'),
+  stageLabel: text('stage_label'),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({

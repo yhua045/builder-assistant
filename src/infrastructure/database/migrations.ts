@@ -793,6 +793,33 @@ const migrations: RNMigration[] = [
       `ALTER TABLE "tasks" ADD COLUMN "quote_invoice_id" text;`,
     ],
   },
+  {
+    tag: '0019_payments_card_fields',
+    hash: '0019_payments_card_fields',
+    folderMillis: 1773432000000, // 2026-03-13
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(
+        `SELECT name FROM pragma_table_info('payments')`
+      );
+      const existing = new Set<string>();
+      for (let i = 0; i < result.rows.length; i++) {
+        existing.add(result.rows.item(i).name);
+      }
+      if (!existing.has('contact_id')) {
+        await db.executeSql(`ALTER TABLE "payments" ADD COLUMN "contact_id" text`);
+      }
+      if (!existing.has('contractor_name')) {
+        await db.executeSql(`ALTER TABLE "payments" ADD COLUMN "contractor_name" text`);
+      }
+      if (!existing.has('payment_category')) {
+        await db.executeSql(`ALTER TABLE "payments" ADD COLUMN "payment_category" text NOT NULL DEFAULT 'other'`);
+      }
+      if (!existing.has('stage_label')) {
+        await db.executeSql(`ALTER TABLE "payments" ADD COLUMN "stage_label" text`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
