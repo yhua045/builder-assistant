@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { TaskDependencySection } from './TaskDependencySection';
 import { AddDelayReasonModal, AddDelayReasonFormData } from './AddDelayReasonModal';
 import { SubcontractorPickerModal, SubcontractorContact } from './SubcontractorPickerModal';
 import { TaskPickerModal } from '../../pages/tasks/TaskPickerModal';
+import useContacts from '../../hooks/useContacts';
 import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
 import { useTasks } from '../../hooks/useTasks';
 
@@ -99,9 +100,27 @@ export function TaskForm({
   };
 
   // ── Subcontractor picker modal ────────────────────────────────────────────
+  const { contacts: allContacts } = useContacts();
   const [showSubcontractorPicker, setShowSubcontractorPicker] = useState(false);
   const [selectedSubcontractor, setSelectedSubcontractor] =
     useState<SubcontractorContact | undefined>(undefined);
+
+  // Populate display state when editing a task that already has a subcontractor
+  useEffect(() => {
+    const initId = initialAsTask?.subcontractorId;
+    if (!initId) return;
+    const found = allContacts.find((c: any) => c.id === initId);
+    if (found) {
+      setSelectedSubcontractor({
+        id: found.id,
+        name: found.name,
+        trade: (found as any).trade ?? (found as any).title,
+        phone: (found as any).phone,
+        email: (found as any).email,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount
 
   const handleSubcontractorSelect = (contact: SubcontractorContact | undefined) => {
     setSelectedSubcontractor(contact);

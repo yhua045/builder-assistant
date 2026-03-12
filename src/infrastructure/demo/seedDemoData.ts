@@ -15,6 +15,8 @@ import {
   taskDependencies,
   taskDelayReasons,
   documents,
+  invoices,
+  payments,
 } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { DEMO_FIXTURES, DEMO_PROJECT_ID } from './demoFixtures';
@@ -53,6 +55,12 @@ export async function seedDemoData(): Promise<void> {
 
     await db.insert(documents).values(DEMO_FIXTURES.documents);
     console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.documents.length} documents`);
+
+    await db.insert(invoices).values(DEMO_FIXTURES.invoices);
+    console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.invoices.length} invoices`);
+
+    await db.insert(payments).values(DEMO_FIXTURES.payments);
+    console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.payments.length} payments`);
 
     console.log('[seed] ✅ Demo data seeded successfully!');
   } catch (error) {

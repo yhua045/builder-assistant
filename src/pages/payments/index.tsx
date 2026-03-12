@@ -4,22 +4,19 @@ import {
   ActivityIndicator, RefreshControl, StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { cssInterop, useColorScheme } from 'nativewind';
+import { Search, ChevronDown, ChevronUp, Layers, Filter } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import PaymentsSegmentedControl from '../../components/payments/PaymentsSegmentedControl';
 import AmountPayableBanner from '../../components/payments/AmountPayableBanner';
 import PaymentCard, { PaymentCardPayment } from '../../components/payments/PaymentCard';
 import { usePayments, PaymentsMode } from '../../hooks/usePayments';
 import { useProjects } from '../../hooks/useProjects';
 
-cssInterop(Search, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(ChevronDown, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(ChevronUp, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-
 export default function PaymentsScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const iconPrimary = isDark ? '#3b82f6' : '#2563eb';
+  const iconMuted = isDark ? '#a1a1aa' : '#71717a';
 
   const [mode, setMode] = useState<PaymentsMode>('firefighter');
   const [contractorSearch, setContractorSearch] = useState('');
@@ -56,7 +53,7 @@ export default function PaymentsScreen() {
   const firefighterContent = (
     <>
       <View className="flex-row items-center bg-card border border-border rounded-xl px-3 mb-3" style={styles.searchBar}>
-        <Search className="text-muted-foreground mr-2" size={16} />
+        <Search color={iconMuted} size={16} style={{ marginRight: 8 }} />
         <TextInput
           value={contractorSearch}
           onChangeText={setContractorSearch}
@@ -170,7 +167,34 @@ export default function PaymentsScreen() {
           <Text className="text-2xl font-bold text-foreground">Payments</Text>
           <ThemeToggle />
         </View>
-        <PaymentsSegmentedControl value={mode} onChange={handleModeChange} />
+        <View className="flex-row bg-muted p-1 rounded-lg">
+          <TouchableOpacity
+            onPress={() => handleModeChange('firefighter')}
+            className={`flex-1 py-2 rounded-md flex-row items-center justify-center gap-2 ${
+              mode === 'firefighter' ? 'bg-background shadow-sm' : ''
+            }`}
+          >
+            <Layers size={16} color={mode === 'firefighter' ? iconPrimary : iconMuted} />
+            <Text className={`font-semibold text-sm ${
+              mode === 'firefighter' ? 'text-foreground' : 'text-muted-foreground'
+            }`}>
+              All Projects
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleModeChange('site_manager')}
+            className={`flex-1 py-2 rounded-md flex-row items-center justify-center gap-2 ${
+              mode === 'site_manager' ? 'bg-background shadow-sm' : ''
+            }`}
+          >
+            <Filter size={16} color={mode === 'site_manager' ? iconPrimary : iconMuted} />
+            <Text className={`font-semibold text-sm ${
+              mode === 'site_manager' ? 'text-foreground' : 'text-muted-foreground'
+            }`}>
+              Single Project
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -180,7 +204,8 @@ export default function PaymentsScreen() {
         }
         keyboardShouldPersistTaps="handled"
       >
-        {mode === 'firefighter' ? firefighterContent : siteManagerContent}
+        <View style={{ display: mode === 'firefighter' ? 'flex' : 'none' }}>{firefighterContent}</View>
+        <View style={{ display: mode === 'site_manager' ? 'flex' : 'none' }}>{siteManagerContent}</View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -197,6 +222,8 @@ interface CollapsibleSectionProps {
 }
 
 function CollapsibleSection({ title, total, collapsed, onToggle, children }: CollapsibleSectionProps) {
+  const { colorScheme } = useColorScheme();
+  const chevronColor = colorScheme === 'dark' ? '#a1a1aa' : '#71717a';
   const formattedTotal = new Intl.NumberFormat('en-AU', {
     style: 'currency', currency: 'AUD', minimumFractionDigits: 0,
   }).format(total);
@@ -213,8 +240,8 @@ function CollapsibleSection({ title, total, collapsed, onToggle, children }: Col
           <Text className="text-xs text-muted-foreground">{formattedTotal} pending</Text>
         </View>
         {collapsed
-          ? <ChevronDown className="text-muted-foreground" size={18} />
-          : <ChevronUp className="text-muted-foreground" size={18} />}
+          ? <ChevronDown color={chevronColor} size={18} />
+          : <ChevronUp color={chevronColor} size={18} />}
       </TouchableOpacity>
       {!collapsed && children}
     </View>

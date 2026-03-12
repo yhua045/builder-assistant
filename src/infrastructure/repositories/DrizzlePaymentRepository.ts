@@ -188,7 +188,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     }
 
     // contractorSearch: case-insensitive partial match
-    if (filters?.contractorSearch) {
+    if (filters?.contractorSearch && filters.contractorSearch.trim() !== '') {
       where.push('(contractor_name LIKE ? COLLATE NOCASE)');
       params.push(`%${filters.contractorSearch}%`);
     }
@@ -266,6 +266,8 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       params.push(`%${contractorSearch}%`);
     }
     const [res] = await db.executeSql(sql, params);
-    return res.rows.length ? (res.rows.item(0).total as number) : 0;
+    const row = res.rows.length ? res.rows.item(0) : null;
+    const total = row ? (row.total as number) : 0;
+    return total;
   }
 }

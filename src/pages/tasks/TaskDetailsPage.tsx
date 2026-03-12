@@ -5,12 +5,14 @@ import { useTasks, TaskDetail } from '../../hooks/useTasks';
 import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Task } from '../../domain/entities/Task';
+import { Invoice } from '../../domain/entities/Invoice';
 import { DelayReason } from '../../domain/entities/DelayReason';
 import { Document } from '../../domain/entities/Document';
 import { Contact } from '../../domain/entities/Contact';
 import { DocumentRepository } from '../../domain/repositories/DocumentRepository';
-import { ContactRepository } from '../../domain/repositories/ContactRepository';
 import { TaskRepository } from '../../domain/repositories/TaskRepository';
+import useContacts from '../../hooks/useContacts';
+import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
 import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
 import { AddTaskDocumentUseCase } from '../../application/usecases/document/AddTaskDocumentUseCase';
@@ -23,6 +25,7 @@ import { TaskDependencySection } from '../../components/tasks/TaskDependencySect
 import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontractorSection';
 import { TaskDelaySection } from '../../components/tasks/TaskDelaySection';
 import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
+import { TaskQuotationSection } from '../../components/tasks/TaskQuotationSection';
 import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/tasks/AddDelayReasonModal';
 import { AddProgressLogModal, AddProgressLogFormData } from '../../components/tasks/AddProgressLogModal';
 import { ProgressLog } from '../../domain/entities/ProgressLog';
@@ -58,12 +61,14 @@ export default function TaskDetailsPage() {
   } = useTasks();
   const { delayReasonTypes } = useDelayReasonTypes();
   const { confirm } = useConfirm();
+  const { contacts: allContacts } = useContacts();
 
   const [task, setTask] = useState<Task | null>(null);
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
   const [nextInLine, setNextInLine] = useState<Task[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [subcontractor, setSubcontractor] = useState<Contact | null>(null);
+  const [linkedInvoice, setLinkedInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDelayModal, setShowDelayModal] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
@@ -87,14 +92,6 @@ export default function TaskDetailsPage() {
     }
   }, []);
 
-  const contactRepository = useMemo(() => {
-    try {
-      return container.resolve<ContactRepository>('ContactRepository');
-    } catch {
-      return null;
-    }
-  }, []);
-
   const filePickerAdapter = useMemo(() => {
     try {
       return container.resolve<IFilePickerAdapter>('IFilePickerAdapter');
@@ -106,6 +103,14 @@ export default function TaskDetailsPage() {
   const fileSystemAdapter = useMemo(() => {
     try {
       return container.resolve<IFileSystemAdapter>('IFileSystemAdapter');
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const invoiceRepository = useMemo(() => {
+    try {
+      return container.resolve<InvoiceRepository>('InvoiceRepository');
     } catch {
       return null;
     }
@@ -141,14 +146,32 @@ export default function TaskDetailsPage() {
         }
       }
 
-      // Resolve subcontractor contact details
-      if (t?.subcontractorId && contactRepository) {
+      // Fetch the linked invoice when the quote has been accepted
+      if (t?.quoteInvoiceId && invoiceRepository) {
         try {
-          const contact = await contactRepository.findById(t.subcontractorId);
-          setSubcontractor(contact);
+          const inv = await invoiceRepository.getInvoice(t.quoteInvoiceId);
+          setLinkedInvoice(inv);
         } catch {
-          setSubcontractor(null);
+          setLinkedInvoice(null);
         }
+      } else {
+        setLinkedInvoice(null);
+      }
+
+      // Resolve subcontractor contact details from the contacts list
+      if (t?.subcontractorId) {
+        const found = allContacts.find((c: any) => c.id === t.subcontractorId);
+        setSubcontractor(
+          found
+            ? ({
+                id: found.id,
+                name: found.name,
+                trade: (found as any).trade ?? (found as any).title,
+                phone: (found as any).phone,
+                email: (found as any).email,
+              } as Contact)
+            : null,
+        );
       } else {
         setSubcontractor(null);
       }
@@ -157,7 +180,7 @@ export default function TaskDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [taskId, getTask, getTaskDetail, documentRepository, contactRepository, taskRepository]);
+  }, [taskId, getTask, getTaskDetail, documentRepository, taskRepository, invoiceRepository, allContacts]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -451,6 +474,9 @@ export default function TaskDetailsPage() {
             </View>
           </View>
         )}
+
+        {/* Quotation / Invoice — shows for variation & contract_work tasks */}
+        <TaskQuotationSection task={task} invoice={linkedInvoice} />
 
         {/* Progress Logs — directly under Notes per #136 */}
         <TaskProgressSection

@@ -132,15 +132,15 @@ export default function TasksScreen() {
         </View>
       )}
 
-      {/* Cockpit — Focus List */}
-      {cockpit && cockpit.focus3.length > 0 && (
+      {/* Cockpit — Focus List (hidden: duplicate of task list; FocusList component preserved for future reuse) */}
+      {/* {cockpit && cockpit.focus3.length > 0 && (
         <View className="pt-1 pb-2">
           <FocusList
             focusItems={cockpit.focus3}
             onItemPress={handleBlockerCardPress}
           />
         </View>
-      )}
+      )} */}
 
       {/* Filter Pills */}
       <View className="px-6 pb-2">

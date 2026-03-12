@@ -16,7 +16,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "seed:demo": "SEED_DEMO_DATA=true npm run ios",
+    "seed:demo": "SEED_DEMO_DATA=true npm run ios-15",
     "seed:reset": "RESET_DEMO_DATA=true npm run ios",
     "seed:demo:android": "SEED_DEMO_DATA=true npm run android",
     "seed:reset:android": "RESET_DEMO_DATA=true npm run android"
