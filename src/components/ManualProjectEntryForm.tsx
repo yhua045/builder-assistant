@@ -154,7 +154,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">Start Date</Text>
         <DatePickerInput
-          label="Start Date"
+          label=""
           value={startDate}
           onChange={setStartDate}
         />
@@ -164,7 +164,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
       <View className="mb-4">
         <Text className="mb-1 font-semibold text-foreground">End Date</Text>
         <DatePickerInput
-          label="End Date"
+          label=""
           value={endDate}
           onChange={setEndDate}
           error={errors.dates}

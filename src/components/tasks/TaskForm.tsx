@@ -410,7 +410,7 @@ export function TaskForm({
           <View className="gap-2">
             <Text className="text-sm font-medium text-foreground">Due Date</Text>
             <DatePickerInput
-              label="Due Date"
+              label=""
               value={form.dueDate}
               onChange={form.setDueDate}
             />

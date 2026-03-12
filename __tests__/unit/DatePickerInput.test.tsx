@@ -1,20 +1,37 @@
 import React from 'react';
-import renderer, { act } from 'react-test-renderer';
+import { fireEvent, render } from '@testing-library/react-native';
 import DatePickerInput from '../../src/components/inputs/DatePickerInput';
 
 describe('DatePickerInput', () => {
-  it('renders with label and calls onChange when a date is selected', async () => {
+  it('opens the picker and calls onChange when a date is confirmed', () => {
+    const onChange = jest.fn();
+    const selectedDate = new Date('2026-03-12T00:00:00.000Z');
+
+    const screen = render(
+      <DatePickerInput label="Start Date" value={null} onChange={onChange} />
+    );
+
+    fireEvent.press(screen.getByTestId('date-picker-input-button'));
+    fireEvent(screen.getByTestId('date-picker-native'), 'onChange', { type: 'set' }, selectedDate);
+    fireEvent.press(screen.getByText('Done'));
+
+    expect(onChange).toHaveBeenCalledWith(selectedDate);
+  });
+
+  it('clears an existing date', () => {
     const onChange = jest.fn();
 
-    let testRenderer: renderer.ReactTestRenderer | undefined;
+    const screen = render(
+      <DatePickerInput
+        label="Start Date"
+        value={new Date('2026-03-10T00:00:00.000Z')}
+        onChange={onChange}
+      />
+    );
 
-    await act(async () => {
-      testRenderer = renderer.create(
-        <DatePickerInput label="Start Date" value={null} onChange={onChange} />
-      );
-    });
+    fireEvent.press(screen.getByTestId('date-picker-input-button'));
+    fireEvent.press(screen.getByText('Clear'));
 
-    const root = testRenderer!.root;
-    expect(root).toBeDefined();
+    expect(onChange).toHaveBeenCalledWith(null);
   });
 });

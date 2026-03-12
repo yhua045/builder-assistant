@@ -25,3 +25,4 @@ jest.mock('react-native', () => {
 // Use manual mocks to avoid NativeWind and SafeAreaContext async effects in Jest
 jest.mock('nativewind');
 jest.mock('react-native-safe-area-context');
+jest.mock('@react-native-community/datetimepicker');
