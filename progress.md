@@ -748,3 +748,51 @@ cd ios && pod install
 - **No `RejectQuoteUseCase` unit tests** — rejection is a single-field patch; covered by the integration test for `quotefields`.
 - **`task.photos` and `task.siteConstraints` not mapped in `DrizzleTaskRepository`** — these were pre-existing gaps in the mapper, out of scope for this ticket.
 - **`CriticalTasksTimeline.tsx` TS17001 error** — pre-existing duplicate JSX attribute; not introduced by this ticket, deferred to a dedicated fix.
+
+---
+
+## 14. Issue #142 — Payments Index: Dual-Mode View, Payment Card UI & Grouping (2026-03-12)
+
+**Goal**: Replace the flat single-project payments list with a dual-mode screen — "The Firefighter" (global cross-project pending payments sorted by urgency) and "The Site Manager" (per-project payments grouped into Contract vs. Variation collapsible sections) — and introduce a rich `PaymentCard` component with due-status colouring and a Pay Now action.
+
+**Status**: IMPLEMENTED. All new tests pass (10 integration + 3 unit). Full suite: 838 passing (4 pre-existing failures in `DashboardInvoiceIntegration` unrelated to this ticket). `npx tsc --noEmit` clean.
+
+### Key Decisions
+
+- **Dual mode on a single screen, not two screens**: A segmented control (`PaymentsSegmentedControl`) toggles between modes. Both modes share the same `usePayments` hook, which branches internally on `mode: 'firefighter' | 'site_manager'`. This avoids duplicating navigation or screen registration.
+- **`allProjects` filter flag in repository**: Rather than a second repository method, `PaymentFilters.allProjects` was added to the existing `list()` interface. When `true`, the `WHERE project_id = ?` clause is omitted entirely so results span all projects.
+- **Urgency sort in SQL, not JS**: `ORDER BY CASE WHEN (status='pending' AND due_date < {now}) THEN 0 ELSE 1 END, due_date ASC` computed at query time — avoids fetching all rows into JS just to sort.
+- **`getDueStatus` as standalone pure utility**: Due-status logic (`overdue / due-soon / on-time` thresholds) lives in `src/utils/getDueStatus.ts` so it is independently unit-testable without rendering any component.
+- **Project name resolved at hook level, not entity level**: `PaymentWithProject = Payment & { projectName? }` is assembled in `usePayments` by calling `projectRepo.findById()` for each unique `projectId` in the result set. The domain `Payment` entity remains free of display concerns.
+- **Collapsible sections in scope**: `CollapsibleSection` is a local sub-component inside `payments/index.tsx` (not extracted to a global component), using a simple `useState` chevron toggle — sufficient for two groups per project.
+- **Pay Now button in scope**: `PaymentCard` accepts an optional `onPayNow` callback; when provided a "Pay Now" button is shown in the card footer. The screen wires it to a `// TODO: open payment modal` stub for now.
+- **Migration bundled as `0019_payments_card_fields`**: The existing bundled migration sequence already had an `0011` entry (`0011_add_property_coords`). The new migration was therefore numbered `0019` and uses a `pragma_table_info` idempotency guard (checks column existence before each `ALTER TABLE`) so it is safe to apply on any database state.
+- **`usePayments` replaces `usePaymentsV2`**: The hook was initially created as `usePaymentsV2` to avoid breaking the old `usePayments.tsx`. After confirming the old hook had no consumers, `usePaymentsV2.ts` was renamed to `usePayments.ts` and the old `.tsx` file deleted. All exported interface names were updated accordingly.
+
+### Completed
+
+- `design/issue-142-payments-dual-mode-card-ui.md` — design doc created (PENDING APPROVAL → APPROVED → IMPLEMENTED).
+- `drizzle/migrations/0019_payments_card_fields.sql` — new SQL migration file (4 `ALTER TABLE payments ADD COLUMN` statements).
+- `src/infrastructure/database/migrations.ts` — migration `0019_payments_card_fields` appended with idempotent `pragma_table_info` guard.
+- `src/infrastructure/database/schema.ts` — 4 new columns on `payments` table: `contactId`, `contractorName`, `paymentCategory` (enum `contract | variation | other`, default `other`), `stageLabel`.
+- `src/domain/entities/Payment.ts` — 3 new optional fields: `contractorName`, `paymentCategory`, `stageLabel` (joining the pre-existing `contactId`).
+- `src/domain/repositories/PaymentRepository.ts` — `PaymentFilters` extended with `allProjects?`, `contractorSearch?`, `paymentCategory?`; `getGlobalAmountPayable(contractorSearch?)` method added to interface.
+- `src/application/usecases/payment/ListGlobalPaymentsUseCase.ts` — new use case; calls `repo.list({ allProjects: true, status: 'pending', contractorSearch })`.
+- `src/application/usecases/payment/GetGlobalAmountPayableUseCase.ts` — new use case; delegates to `repo.getGlobalAmountPayable(contractorSearch)`.
+- `src/infrastructure/repositories/DrizzlePaymentRepository.ts` — `save()` and `update()` updated for 4 new columns; private `rowToPayment()` helper extracted (was duplicated inline in 5 methods); `list()` updated for `allProjects`, `contractorSearch` LIKE, `paymentCategory` filter, and urgency sort; `getGlobalAmountPayable()` implemented; `findPendingByProject` bug fixed (was filtering on `notes IS NULL` — corrected to `status = 'pending'`).
+- `src/hooks/usePayments.ts` — new dual-mode hook (renamed from `usePaymentsV2.ts`); exports `PaymentsMode`, `PaymentWithProject`, `UsePaymentsOptions`, `UsePaymentsReturn`.
+- `src/utils/getDueStatus.ts` — pure utility: `diffDays < 0` → overdue (red); `≤ 3` → due-soon (amber); else → on-time (green).
+- `src/components/payments/PaymentCard.tsx` — card component; project name header, contractor + amount body, due-status footer with optional Pay Now button.
+- `src/components/payments/PaymentsSegmentedControl.tsx` — two-segment toggle: "🔥 The Firefighter" | "📋 The Site Manager".
+- `src/components/payments/AmountPayableBanner.tsx` — prominent total-payable banner; formats as AUD currency.
+- `src/pages/payments/index.tsx` — fully redesigned; segmented control → Firefighter (search + banner + urgency-sorted flat list) or Site Manager (project pill picker + two collapsible groups with subtotals).
+- `__tests__/unit/payment/getDueStatus.test.ts` — 8 tests covering all 3 branches, edge cases, singular/plural labels.
+- `__tests__/unit/payment/ListGlobalPaymentsUseCase.test.ts` — 3 tests: `allProjects: true` flag, `status: 'pending'` always set, `contractorSearch` forwarded.
+- `__tests__/unit/payment/GetGlobalAmountPayableUseCase.test.ts` — 3 tests: sum returned, zero on empty, `contractorSearch` forwarded.
+- `__tests__/integration/DrizzlePaymentRepository.cardFields.integration.test.ts` — 10 integration tests: cross-project list, settled exclusion, case-insensitive `contractorSearch`, category filtering (contract / variation), `getGlobalAmountPayable` sum + empty + filtered, new-field round-trip.
+
+### Trade-offs & Technical Debt
+
+- **Pay Now action is a stub**: `onPayNow` on `PaymentCard` calls `console.log` — a payment-recording modal is out of scope for this ticket.
+- **Project pill picker in Site Manager mode is not persisted**: Selected `projectId` resets on screen unmount; no deep-link support yet.
+- **`contractTotal` / `variationTotal` computed in JS**: Sums are derived client-side in the hook via `Array.reduce` rather than in SQL — acceptable at current data scale but worth moving to a `SUM()` query if performance becomes an issue.

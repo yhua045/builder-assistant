@@ -1,284 +1,232 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
+import {
+  View, Text, ScrollView, TextInput, TouchableOpacity,
+  ActivityIndicator, RefreshControl, StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeToggle } from '../../components/ThemeToggle';
-import { AlertCircle, Calendar, DollarSign, Filter, CheckCircle, Clock } from 'lucide-react-native';
+import { Search, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
-import { usePayments } from '../../hooks/usePayments';
-import type { Payment as PaymentEntity } from '../../domain/entities/Payment';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import PaymentsSegmentedControl from '../../components/payments/PaymentsSegmentedControl';
+import AmountPayableBanner from '../../components/payments/AmountPayableBanner';
+import PaymentCard, { PaymentCardPayment } from '../../components/payments/PaymentCard';
+import { usePayments, PaymentsMode } from '../../hooks/usePayments';
+import { useProjects } from '../../hooks/useProjects';
 
-cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(DollarSign, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Filter, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-
-type PaymentStatus = 'overdue' | 'upcoming' | 'paid';
-
-type Payment = {
-  id: string;
-  vendor: string;
-  vendorImage: string;
-  project: string;
-  amount: number;
-  dueDate: string;
-  status: PaymentStatus;
-  invoiceNumber: string;
-  description: string;
-};
-
-// Helper to map PaymentEntity to UI Payment format
-const mapPaymentEntityToUI = (entity: PaymentEntity, status: PaymentStatus): Payment => {
-  return {
-    id: entity.id,
-    vendor: entity.contactId || 'Unknown Vendor',
-    vendorImage: 'https://images.unsplash.com/photo-1600249324369-cf81f82f441b?w=900&auto=format&fit=crop&q=60',
-    project: entity.projectId || 'Unassigned',
-    amount: entity.amount,
-    dueDate: entity.dueDate || entity.date || new Date().toISOString(),
-    status,
-    invoiceNumber: entity.invoiceId || 'N/A',
-    description: `Payment for ${entity.invoiceId || 'invoice'}`,
-  };
-};
+cssInterop(Search, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(ChevronDown, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(ChevronUp, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export default function PaymentsScreen() {
-  const [activeFilter, setActiveFilter] = useState<PaymentStatus | 'all'>('all');
-
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
-  
-  const { overdue, upcoming, paid, metrics, loading, refresh } = usePayments();
 
-  // Combine all payments with their status
-  const allPayments = useMemo(() => [
-    ...overdue.map(p => mapPaymentEntityToUI(p, 'overdue')),
-    ...upcoming.map(p => mapPaymentEntityToUI(p, 'upcoming')),
-    ...paid.map(p => mapPaymentEntityToUI(p, 'paid')),
-  ], [overdue, upcoming, paid]);
+  const [mode, setMode] = useState<PaymentsMode>('firefighter');
+  const [contractorSearch, setContractorSearch] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  const [contractCollapsed, setContractCollapsed] = useState(false);
+  const [variationCollapsed, setVariationCollapsed] = useState(false);
 
-  const filteredPayments = activeFilter === 'all' 
-    ? allPayments 
-    : allPayments.filter(p => p.status === activeFilter);
+  const { projects } = useProjects();
 
-  const getStatusConfig = (status: PaymentStatus) => {
-    switch (status) {
-      case 'overdue':
-        return {
-          label: 'Overdue',
-          bgClass: 'bg-red-100 dark:bg-red-950',
-          textClass: 'text-red-700 dark:text-red-400',
-          icon: AlertCircle,
-          iconColor: '#ef4444',
-        };
-      case 'upcoming':
-        return {
-          label: 'Upcoming',
-          bgClass: 'bg-amber-100 dark:bg-amber-950',
-          textClass: 'text-amber-700 dark:text-amber-400',
-          icon: Clock,
-          iconColor: '#f59e0b',
-        };
-      case 'paid':
-        return {
-          label: 'Paid',
-          bgClass: 'bg-emerald-100 dark:bg-emerald-950',
-          textClass: 'text-emerald-700 dark:text-emerald-400',
-          icon: CheckCircle,
-          iconColor: '#10b981',
-        };
+  const {
+    globalPayments,
+    globalAmountPayable,
+    contractPayments,
+    variationPayments,
+    contractTotal,
+    variationTotal,
+    loading,
+    refresh,
+  } = usePayments({
+    mode,
+    projectId: selectedProjectId,
+    contractorSearch: mode === 'firefighter' ? contractorSearch : undefined,
+  });
+
+  const handleModeChange = (newMode: PaymentsMode) => {
+    setMode(newMode);
+    setContractorSearch('');
+    if (newMode === 'site_manager' && !selectedProjectId && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  // ── Firefighter content ───────────────────────────────────────────
+  const firefighterContent = (
+    <>
+      <View className="flex-row items-center bg-card border border-border rounded-xl px-3 mb-3" style={styles.searchBar}>
+        <Search className="text-muted-foreground mr-2" size={16} />
+        <TextInput
+          value={contractorSearch}
+          onChangeText={setContractorSearch}
+          placeholder="Search contractor..."
+          placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
+          className="flex-1 text-foreground text-sm py-2"
+          returnKeyType="search"
+          autoCorrect={false}
+        />
+        {contractorSearch.length > 0 && (
+          <TouchableOpacity onPress={() => setContractorSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text className="text-muted-foreground text-xs">✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+      <AmountPayableBanner total={globalAmountPayable} />
 
-  const totalPending = metrics.pendingTotalNext7Days || 0;
-  const overdueCount = metrics.overdueCount || 0;
+      {loading && globalPayments.length === 0 ? (
+        <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} style={styles.loader} />
+      ) : globalPayments.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text className="text-lg font-semibold text-foreground mb-1">No pending payments</Text>
+          <Text className="text-muted-foreground text-sm text-center">
+            {contractorSearch
+              ? 'No payments match that contractor name.'
+              : 'All clear — no pending payments right now.'}
+          </Text>
+        </View>
+      ) : (
+        globalPayments.map((p) => <PaymentCard key={p.id} payment={p} />)
+      )}
+    </>
+  );
+
+  // ── Site Manager content ──────────────────────────────────────────
+  const siteManagerContent = (
+    <>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.projectPicker}
+        className="mb-4"
+      >
+        {projects.map((proj) => (
+          <TouchableOpacity
+            key={proj.id}
+            onPress={() => setSelectedProjectId(proj.id)}
+            className={`px-4 py-2 rounded-full border mr-2 ${
+              selectedProjectId === proj.id
+                ? 'bg-primary border-primary'
+                : 'bg-card border-border'
+            }`}
+          >
+            <Text
+              className={`text-sm font-semibold ${
+                selectedProjectId === proj.id ? 'text-primary-foreground' : 'text-foreground'
+              }`}
+            >
+              {proj.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {!selectedProjectId ? (
+        <View style={styles.emptyState}>
+          <Text className="text-muted-foreground text-sm">Select a project above to view payments.</Text>
+        </View>
+      ) : loading && contractPayments.length === 0 && variationPayments.length === 0 ? (
+        <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} style={styles.loader} />
+      ) : (
+        <>
+          <CollapsibleSection
+            title="Contract"
+            total={contractTotal}
+            collapsed={contractCollapsed}
+            onToggle={() => setContractCollapsed((v) => !v)}
+          >
+            {contractPayments.length === 0 ? (
+              <Text className="text-muted-foreground text-xs px-1 pb-2">No contract payments.</Text>
+            ) : (
+              contractPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} />)
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Variations"
+            total={variationTotal}
+            collapsed={variationCollapsed}
+            onToggle={() => setVariationCollapsed((v) => !v)}
+          >
+            {variationPayments.length === 0 ? (
+              <Text className="text-muted-foreground text-xs px-1 pb-2">No variation payments.</Text>
+            ) : (
+              variationPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} />)
+            )}
+          </CollapsibleSection>
+        </>
+      )}
+    </>
+  );
 
   return (
     <SafeAreaView
       className="flex-1 bg-background"
       style={isDark ? styles.darkBg : styles.lightBg}
     >
-      {/* Header */}
-      <View className="px-6 py-4 border-b border-border">
+      <View className="px-6 pt-4 pb-3 border-b border-border">
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-2xl font-bold text-foreground">Payments</Text>
           <ThemeToggle />
         </View>
-
-        {/* Summary Cards */}
-        <View className="flex-row gap-3">
-          <View className="flex-1 bg-card rounded-xl p-4 border border-border">
-            <View className="flex-row items-center gap-2 mb-1">
-              <DollarSign className="text-primary" size={18} />
-              <Text className="text-xs font-medium text-muted-foreground">Total Pending</Text>
-            </View>
-            <Text className="text-xl font-bold text-foreground">{formatCurrency(totalPending)}</Text>
-          </View>
-
-          <View className="flex-1 bg-card rounded-xl p-4 border border-border">
-            <View className="flex-row items-center gap-2 mb-1">
-              <AlertCircle className="text-red-500" size={18} />
-              <Text className="text-xs font-medium text-muted-foreground">Overdue</Text>
-            </View>
-            <Text className="text-xl font-bold text-red-600 dark:text-red-400">{overdueCount}</Text>
-          </View>
-        </View>
+        <PaymentsSegmentedControl value={mode} onChange={handleModeChange} />
       </View>
 
-      {/* Filter Tabs */}
-      <View className="px-6 py-4 border-b border-border">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
-          {(['all', 'overdue', 'upcoming', 'paid'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              onPress={() => setActiveFilter(filter)}
-              className={`px-4 py-2 rounded-full border ${
-                activeFilter === filter
-                  ? 'bg-primary border-primary'
-                  : 'bg-card border-border'
-              }`}
-            >
-              <Text
-                className={`font-semibold capitalize ${
-                  activeFilter === filter
-                    ? 'text-primary-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Payments List */}
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={refresh}
-            tintColor={isDark ? '#fff' : '#000'}
-          />
+          <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={isDark ? '#fff' : '#000'} />
         }
+        keyboardShouldPersistTaps="handled"
       >
-        {loading && allPayments.length === 0 ? (
-          <View className="items-center py-16">
-            <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} />
-            <Text className="text-muted-foreground mt-4">Loading payments...</Text>
-          </View>
-        ) : filteredPayments.length === 0 ? (
-          <View className="items-center py-12">
-            <Filter className="text-muted-foreground mb-3" size={48} />
-            <Text className="text-lg font-semibold text-foreground">
-              {activeFilter === 'all' ? 'No payments yet' : `No ${activeFilter} payments`}
-            </Text>
-            <Text className="text-muted-foreground text-center mt-1">
-              {activeFilter === 'all' 
-                ? 'Payments will appear here when added'
-                : activeFilter === 'overdue'
-                ? 'No overdue payments at the moment'
-                : activeFilter === 'upcoming'
-                ? 'No upcoming payments scheduled'
-                : 'No paid payments in the last 7 days'
-              }
-            </Text>
-          </View>
-        ) : (
-          filteredPayments.map((payment) => {
-            const statusConfig = getStatusConfig(payment.status);
-            const StatusIcon = statusConfig.icon;
-
-            return (
-              <TouchableOpacity
-                key={payment.id}
-                className="bg-card rounded-xl border border-border overflow-hidden"
-                activeOpacity={0.7}
-              >
-                <View className="p-4">
-                  {/* Vendor Header */}
-                  <View className="flex-row items-center gap-3 mb-3">
-                    <Image
-                      source={{ uri: payment.vendorImage }}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <View className="flex-1">
-                      <Text className="text-base font-bold text-foreground">{payment.vendor}</Text>
-                      <Text className="text-sm text-muted-foreground">{payment.project}</Text>
-                    </View>
-                    <View className={`px-3 py-1 rounded-full ${statusConfig.bgClass}`}>
-                      <Text className={`text-xs font-semibold ${statusConfig.textClass}`}>
-                        {statusConfig.label}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Description */}
-                  <Text className="text-sm text-muted-foreground mb-3">{payment.description}</Text>
-
-                  {/* Details Row */}
-                  <View className="flex-row items-center justify-between pt-3 border-t border-border">
-                    <View>
-                      <Text className="text-xs text-muted-foreground mb-1">Invoice</Text>
-                      <Text className="text-sm font-semibold text-foreground">{payment.invoiceNumber}</Text>
-                    </View>
-
-                    <View className="items-center">
-                      <View className="flex-row items-center gap-1 mb-1">
-                        <Calendar className="text-muted-foreground" size={12} />
-                        <Text className="text-xs text-muted-foreground">Due Date</Text>
-                      </View>
-                      <Text className="text-sm font-semibold text-foreground">{formatDate(payment.dueDate)}</Text>
-                    </View>
-
-                    <View className="items-end">
-                      <Text className="text-xs text-muted-foreground mb-1">Amount</Text>
-                      <Text className="text-lg font-bold text-primary">{formatCurrency(payment.amount)}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Action Footer */}
-                {payment.status !== 'paid' && (
-                  <View className="bg-muted px-4 py-3 flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-2">
-                      <StatusIcon color={statusConfig.iconColor} size={16} />
-                      <Text className="text-sm font-medium text-foreground">
-                        {payment.status === 'overdue' ? 'Payment overdue' : 'Payment scheduled'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity className="bg-primary px-4 py-2 rounded-lg">
-                      <Text className="text-primary-foreground font-semibold text-sm">Pay Now</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })
-        )}
+        {mode === 'firefighter' ? firefighterContent : siteManagerContent}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// ── CollapsibleSection ────────────────────────────────────────────
+
+interface CollapsibleSectionProps {
+  title: string;
+  total: number;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function CollapsibleSection({ title, total, collapsed, onToggle, children }: CollapsibleSectionProps) {
+  const formattedTotal = new Intl.NumberFormat('en-AU', {
+    style: 'currency', currency: 'AUD', minimumFractionDigits: 0,
+  }).format(total);
+
+  return (
+    <View className="mb-4">
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        className="flex-row items-center justify-between bg-muted rounded-xl px-4 py-3 mb-2"
+      >
+        <View>
+          <Text className="text-base font-bold text-foreground">{title}</Text>
+          <Text className="text-xs text-muted-foreground">{formattedTotal} pending</Text>
+        </View>
+        {collapsed
+          ? <ChevronDown className="text-muted-foreground" size={18} />
+          : <ChevronUp className="text-muted-foreground" size={18} />}
+      </TouchableOpacity>
+      {!collapsed && children}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   darkBg: { backgroundColor: '#0f172a' },
   lightBg: { backgroundColor: '#fafbfc' },
-  scrollContent: { paddingHorizontal: 24, paddingBottom: 128, gap: 12, paddingTop: 16 },
-  tabsContent: { gap: 8 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 128, paddingTop: 16 },
+  searchBar: { height: 44 },
+  projectPicker: { paddingBottom: 4 },
+  loader: { marginTop: 48 },
+  emptyState: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 16 },
 });

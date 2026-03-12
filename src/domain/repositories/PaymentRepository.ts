@@ -9,6 +9,10 @@ export interface PaymentFilters {
   isOverdue?: boolean; // special filter: status = pending and dueDate < now
   limit?: number;
   offset?: number;
+  // Added in #142
+  allProjects?: boolean;        // if true, projectId is ignored — queries across all projects
+  contractorSearch?: string;    // case-insensitive partial match on contractor_name
+  paymentCategory?: 'contract' | 'variation' | 'other';
 }
 
 export interface PaymentListResult {
@@ -36,4 +40,7 @@ export interface PaymentRepository {
 
   // Aggregates needed by KPIs
   getMetrics(projectId?: string): Promise<PaymentMetrics>;
+
+  /** Sum of all pending payment amounts globally, optionally filtered by contractor name. */
+  getGlobalAmountPayable(contractorSearch?: string): Promise<number>;
 }
