@@ -48,10 +48,29 @@ export interface Task {
    */
   siteConstraints?: string;
 
+  // Task classification (issue #141)
+  taskType?: 'standard' | 'variation' | 'contract_work';
+
+  // Work/trade category for cost-roll-up reporting (issue #141)
+  workType?: string;
+
+  // Quote fields — only meaningful for variation/contract_work tasks (issue #141)
+  quoteAmount?: number;     // quoted cost in AUD
+  /** pending=no quote data yet; issued=amount captured; accepted/rejected=builder decision */
+  quoteStatus?: 'pending' | 'issued' | 'accepted' | 'rejected';
+  quoteInvoiceId?: string; // soft FK to invoices.id; set on acceptance
+
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
 }
+
+/** Default list of work types for the Work Type selector. */
+export const PREDEFINED_WORK_TYPES = [
+  'Demolition', 'Storm Water', 'Pool', 'Framing', 'Roofing',
+  'Electrical', 'Plumbing', 'Tiling', 'Plastering', 'Painting',
+  'Landscaping', 'Concrete', 'Brickwork', 'Carpentry',
+] as const;
 
 export class TaskEntity {
   constructor(private readonly task: Task) {}

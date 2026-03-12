@@ -390,7 +390,6 @@ cd ios && pod install
 - DB-level `ON DELETE CASCADE` for `task_dependencies` and `task_delay_reasons` was deferred. Application-level cascade in `DeleteTaskUseCase` is correct but requires remembering to extend it if new related tables are added in future. A future migration (`0013_cascade_deletes.sql`) can add proper FK CASCADE constraints once the migration tooling supports SQLite table recreation safely.
 - `TaskDetailsPage` now resolves 4 repositories/adapters with individual `try/catch` blocks in `useMemo`. If all 4 are registered in DI, this is transparent. An unregistered adapter silently disables the related feature (document upload, contact lookup) rather than crashing — intentional graceful degradation.
 
-```
 
 ---
 
@@ -709,3 +708,43 @@ cd ios && pod install
 ## 12. Issue #137 — Task Index — Critical Tasks
 **Goal**: Replace the horizontal blocked task carousel with a vertically stacked timeline showing the top 2 blockers per project ordered globally by `scheduledAt`.
 **Status**: IMPLEMENTED. All tests green (804 tests passed). TypeScript compilation passes.
+
+---
+
+## 13. Issue #141 — Task Form: Variation/Contract Work Toggle, Work-Type, Quote-to-Invoice (2026-03-12)
+
+**Goal**: Extend the Task form with a 3-way task-type toggle (Standard / Variation / Contract Work), a work-type chip picker (with custom entry), a quote amount field for contract work, and an Accept/Reject Quote flow that auto-generates a linked Invoice.
+
+**Status**: IMPLEMENTED. All 13 new tests pass. Full suite: 817 tests passed (7 pre-existing skips). `npx tsc --noEmit` clean (one pre-existing error in `CriticalTasksTimeline.tsx`, unrelated to this ticket).
+
+### Key Decisions
+
+- **Task type as new field, not reusing `status`**: `taskType` and `task.status` have orthogonal lifecycles (work execution vs. commercial decision). They are stored and managed independently.
+- **`quoteStatus` 4-value enum**: `'pending' | 'issued' | 'accepted' | 'rejected'`. Auto-computed on save via `computeQuoteStatus()` in `useTaskForm`: once a `quoteAmount` is entered the status becomes `'issued'`; prior to that it stays `'pending'`; accepted/rejected states are preserved from the hook's local state.
+- **Single-select work type** — one selection at a time from 14 predefined trades (Demolition, Roofing, etc.) plus a free-text "Other" entry.
+- **Quote document attachment via existing `TaskDocumentSection`** — camera capture wired through `launchCamera`; no new document section created.
+- **Accept Quote → Invoice auto-generated** — `AcceptQuoteUseCase` creates an Invoice (status `'issued'`, paymentStatus `'unpaid'`, amount = `quoteAmount`, note = task title) and updates `task.quoteStatus → 'accepted'` and `task.quoteInvoiceId`. Reject sets `quoteStatus → 'rejected'` only.
+- **Post-accept UX**: Alert with "View Invoice" button (calls `onAcceptSuccess(invoiceId)`) + "Close" button; user stays on the task page.
+- **Migration 0018** added as a bundled migration (`folderMillis: 1773345600000`): 5 `ALTER TABLE` statements with safe defaults.
+
+### Completed
+
+- `src/domain/entities/Task.ts` — 5 new optional fields (`taskType`, `workType`, `quoteAmount`, `quoteStatus`, `quoteInvoiceId`) + `PREDEFINED_WORK_TYPES` constant exported.
+- `src/infrastructure/database/schema.ts` — 5 new columns in `tasks` table.
+- `src/infrastructure/database/migrations.ts` — migration `0018_task_type_work_type_quote` appended.
+- `src/infrastructure/repositories/DrizzleTaskRepository.ts` — `mapRowToEntity`, `mapToDb`, `save()` INSERT, and `update()` SET all updated to include the 5 new fields.
+- `src/application/usecases/task/AcceptQuoteUseCase.ts` — new use case; validates task type and idempotency guard; creates Invoice via `InvoiceRepository`; returns `{ task, invoice }`.
+- `src/hooks/useAcceptQuote.ts` — new hook wrapping `AcceptQuoteUseCase`; also exposes `rejectQuote(taskId)` which patches `quoteStatus → 'rejected'` directly via `TaskRepository`.
+- `src/hooks/useTaskForm.ts` — `computeQuoteStatus()` helper; 3 new state fields (`taskType`, `workType`, `quoteAmount`); interface extended; `submit()` passes new fields in both create and update paths.
+- `src/components/tasks/TaskForm.tsx` — 3-way task type toggle, work-type chip grid with custom entry, quote amount `TextInput`, quote document attachment buttons (camera/file, contract_work only), Accept/Reject Quote buttons (edit + contract_work + not-finalized), Invoice Generated badge, Rejected badge.
+- `src/components/tasks/TasksList.tsx` — task-type badges in card header row: amber `V` (variation), blue `CW` (contract work without invoice), green `Invoice ✓` (any task with `quoteInvoiceId`).
+- `__tests__/unit/AcceptQuoteUseCase.test.ts` — 9 new unit tests (happy path, idempotency guard, error cases).
+- `__tests__/integration/DrizzleTaskRepository.quotefields.integration.test.ts` — 4 new integration tests (round-trip save/read, update, defaults, null fields).
+- `design/issue-141-task-type-worktype-quote.md` — status updated to IMPLEMENTED.
+
+### Trade-offs & Technical Debt
+
+- **`rejectQuote` is inline in `useAcceptQuote`** rather than a dedicated `RejectQuoteUseCase` — the rejection path has no business logic beyond setting a status flag, so a use case was not warranted at this stage.
+- **No `RejectQuoteUseCase` unit tests** — rejection is a single-field patch; covered by the integration test for `quotefields`.
+- **`task.photos` and `task.siteConstraints` not mapped in `DrizzleTaskRepository`** — these were pre-existing gaps in the mapper, out of scope for this ticket.
+- **`CriticalTasksTimeline.tsx` TS17001 error** — pre-existing duplicate JSX attribute; not introduced by this ticket, deferred to a dedicated fix.

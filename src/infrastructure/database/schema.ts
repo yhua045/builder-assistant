@@ -295,6 +295,16 @@ export const tasks = sqliteTable('tasks', {
   // AI / contextual fields (issue #125)
   photos: text('photos'),           // JSON array of URIs (file:// or https://)
   siteConstraints: text('site_constraints'), // free-text site note for AI context
+  // Task classification fields (issue #141)
+  taskType: text('task_type', {
+    enum: ['standard', 'variation', 'contract_work'],
+  }).default('variation'),
+  workType: text('work_type'),
+  quoteAmount: real('quote_amount'),
+  quoteStatus: text('quote_status', {
+    enum: ['pending', 'issued', 'accepted', 'rejected'],
+  }),
+  quoteInvoiceId: text('quote_invoice_id'),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
