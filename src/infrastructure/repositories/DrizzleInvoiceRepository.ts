@@ -64,6 +64,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
             paymentDate: (r.paymentDate ?? r.payment_date) ? new Date(r.paymentDate ?? r.payment_date).toISOString() : undefined,
             
             documentId: (r.documentId ?? r.document_id) || undefined,
+            taskId: (r.taskId ?? r.task_id) || undefined,
+            quoteId: (r.quoteId ?? r.quote_id) || undefined,
             lineItems: this.parseJson(r.lineItems ?? r.line_items, undefined),
             tags: this.parseJson(r.tags ?? r.tags, undefined),
             notes: (r.notes ?? r.notes) || undefined,
@@ -107,6 +109,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
             dateDue: invoice.dateDue ? new Date(invoice.dateDue).getTime() : null,
             paymentDate: invoice.paymentDate ? new Date(invoice.paymentDate).getTime() : null,
             documentId: invoice.documentId,
+            taskId: invoice.taskId,
+            quoteId: invoice.quoteId,
             lineItems: invoice.lineItems ? JSON.stringify(invoice.lineItems) : null,
             tags: invoice.tags ? JSON.stringify(invoice.tags) : null,
             notes: invoice.notes,
@@ -152,6 +156,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
         if (updates.dateDue !== undefined) updateData.dateDue = updates.dateDue ? new Date(updates.dateDue).getTime() : null;
         if (updates.paymentDate !== undefined) updateData.paymentDate = updates.paymentDate ? new Date(updates.paymentDate).getTime() : null;
         if (updates.documentId !== undefined) updateData.documentId = updates.documentId;
+        if (updates.taskId !== undefined) updateData.taskId = updates.taskId;
+        if (updates.quoteId !== undefined) updateData.quoteId = updates.quoteId;
         if (updates.lineItems !== undefined) updateData.lineItems = updates.lineItems ? JSON.stringify(updates.lineItems) : null;
         if (updates.tags !== undefined) updateData.tags = updates.tags ? JSON.stringify(updates.tags) : null;
         if (updates.notes !== undefined) updateData.notes = updates.notes;

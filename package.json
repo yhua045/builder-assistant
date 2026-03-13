@@ -16,10 +16,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "seed:demo": "SEED_DEMO_DATA=true npm run ios-15",
-    "seed:reset": "RESET_DEMO_DATA=true npm run ios",
-    "seed:demo:android": "SEED_DEMO_DATA=true npm run android",
-    "seed:reset:android": "RESET_DEMO_DATA=true npm run android"
+    "seed:demo": "npm run ios-15",
+    "seed:reset": "APP_ENV=reset react-native run-ios --simulator='iPhone 15 Pro'",
+    "seed:demo:android": "npm run android",
+    "seed:reset:android": "APP_ENV=reset react-native run-android"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

@@ -28,8 +28,7 @@ import { verifyInstallation } from 'nativewind';
 import { initDatabase } from './src/infrastructure/database/connection';
 import { seedDemoData } from './src/infrastructure/demo/seedDemoData';
 import { resetDemoData } from './src/infrastructure/demo/resetDemoData';
-// Allow process.env access consistent with registerServices.ts
-declare const process: any;
+import { SEED_DEMO_DATA, RESET_DEMO_DATA } from '@env';
 
 if (__DEV__) {
   verifyInstallation();
@@ -46,11 +45,11 @@ function App() {
 
         if (__DEV__) {
           // Reset demo data if environment variable is set
-          if (process.env.RESET_DEMO_DATA === 'true') {
+          if (RESET_DEMO_DATA === 'true') {
             console.log('[app] Resetting demo data...');
             await resetDemoData();
             await seedDemoData();
-          } else if (process.env.SEED_DEMO_DATA === 'true') {
+          } else if (SEED_DEMO_DATA === 'true') {
             // Seed demo data if environment variable is set
             console.log('[app] Seeding demo data...');
             await seedDemoData();

@@ -3,13 +3,15 @@ import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 
 import { Task } from '../domain/entities/Task';
-import { Invoice } from '../domain/entities/Invoice';
 import { Document } from '../domain/entities/Document';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
 import { DocumentRepository } from '../domain/repositories/DocumentRepository';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { PaymentRepository } from '../domain/repositories/PaymentRepository';
+import { ContactRepository } from '../domain/repositories/ContactRepository';
+import { QuotationRepository } from '../domain/repositories/QuotationRepository';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
+import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
 
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
 
@@ -229,6 +231,25 @@ export function useTaskForm({
     catch { return null; }
   }, []);
 
+  const contactRepository = useMemo(() => {
+    try { return container.resolve<ContactRepository>('ContactRepository'); }
+    catch { return null; }
+  }, []);
+
+  const quotationRepository = useMemo(() => {
+    try { return container.resolve<QuotationRepository>('QuotationRepository'); }
+    catch { return null; }
+  }, []);
+
+  const acceptQuotationUseCase = useMemo(() => {
+    if (!invoiceRepository) return null;
+    return new AcceptQuotationUseCase(
+      invoiceRepository,
+      taskRepository,
+      quotationRepository ?? undefined,
+    );
+  }, [invoiceRepository, taskRepository, quotationRepository]);
+
   // ── Remove saved document (eager, edit mode) ──────────────────────────────
   const removeSavedDocument = useCallback(
     async (docId: string) => {
@@ -325,25 +346,24 @@ export function useTaskForm({
           }
         }
 
-        // ── Variation: auto-create invoice the first time a positive amount is saved ──
-        if (isVariation && hasValidAmount && !existingInvoiceId && invoiceRepository) {
-          const now = new Date().toISOString();
-          const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          const createdInvoice = await invoiceRepository.createInvoice({
-            id: invoiceId,
-            projectId: projectId || undefined,
-            status: 'issued',
-            paymentStatus: 'unpaid',
-            total: quoteAmount!,
-            subtotal: quoteAmount,
-            currency: 'AUD',
-            notes: `Auto-generated from variation task: ${title.trim()}`,
-            dateIssued: now,
-            createdAt: now,
-            updatedAt: now,
-          } as Invoice);
-          const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: createdInvoice.id };
-          await updateTaskUseCase.execute(taskWithInvoice);
+        // ── Variation: auto-create invoice via AcceptQuotationUseCase ──────────
+        if (isVariation && hasValidAmount && !existingInvoiceId && acceptQuotationUseCase) {
+          const contact = subcontractorId && contactRepository
+            ? await contactRepository.findById(subcontractorId)
+            : null;
+          const result = await acceptQuotationUseCase.execute({
+            taskId: selfId,
+            task: {
+              title: title.trim(),
+              projectId: projectId || undefined,
+              quoteAmount: quoteAmount!,
+              taskType,
+              workType,
+              subcontractorId,
+            },
+            contact,
+          });
+          const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
           onSuccess?.(taskWithInvoice);
           return;
         }
@@ -393,25 +413,24 @@ export function useTaskForm({
           await addDependencyUseCase.execute({ taskId: newTask.id, dependsOnTaskId: depId });
         }
 
-        // ── Variation: auto-create invoice when a positive amount is provided on creation ──
-        if (taskType === 'variation' && quoteAmount != null && quoteAmount > 0 && invoiceRepository) {
-          const now = new Date().toISOString();
-          const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          const createdInvoice = await invoiceRepository.createInvoice({
-            id: invoiceId,
-            projectId: newTask.projectId,
-            status: 'issued',
-            paymentStatus: 'unpaid',
-            total: quoteAmount,
-            subtotal: quoteAmount,
-            currency: 'AUD',
-            notes: `Auto-generated from variation task: ${newTask.title}`,
-            dateIssued: now,
-            createdAt: now,
-            updatedAt: now,
-          } as Invoice);
-          const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: createdInvoice.id };
-          await updateTaskUseCase.execute(taskWithInvoice);
+        // ── Variation: auto-create invoice via AcceptQuotationUseCase ──────────
+        if (taskType === 'variation' && quoteAmount != null && quoteAmount > 0 && acceptQuotationUseCase) {
+          const contact = subcontractorId && contactRepository
+            ? await contactRepository.findById(subcontractorId)
+            : null;
+          const result = await acceptQuotationUseCase.execute({
+            taskId: newTask.id,
+            task: {
+              title: newTask.title,
+              projectId: newTask.projectId,
+              quoteAmount,
+              taskType,
+              workType,
+              subcontractorId,
+            },
+            contact,
+          });
+          const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
           onSuccess?.(taskWithInvoice);
           return;
         }
@@ -443,6 +462,8 @@ export function useTaskForm({
     removeDependencyUseCase,
     invoiceRepository,
     paymentRepository,
+    acceptQuotationUseCase,
+    contactRepository,
     onSuccess,
   ]);
 

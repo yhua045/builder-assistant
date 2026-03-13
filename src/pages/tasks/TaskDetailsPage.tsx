@@ -26,6 +26,7 @@ import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontract
 import { TaskDelaySection } from '../../components/tasks/TaskDelaySection';
 import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
 import { TaskQuotationSection } from '../../components/tasks/TaskQuotationSection';
+import { useQuotations } from '../../hooks/useQuotations';
 import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/tasks/AddDelayReasonModal';
 import { AddProgressLogModal, AddProgressLogFormData } from '../../components/tasks/AddProgressLogModal';
 import { ProgressLog } from '../../domain/entities/ProgressLog';
@@ -69,6 +70,7 @@ export default function TaskDetailsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [subcontractor, setSubcontractor] = useState<Contact | null>(null);
   const [linkedInvoice, setLinkedInvoice] = useState<Invoice | null>(null);
+  const [hasQuotationRecord, setHasQuotationRecord] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showDelayModal, setShowDelayModal] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
@@ -116,6 +118,8 @@ export default function TaskDetailsPage() {
     }
   }, []);
 
+  const { listQuotations } = useQuotations();
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -156,6 +160,19 @@ export default function TaskDetailsPage() {
         }
       } else {
         setLinkedInvoice(null);
+      }
+
+      // Check for a matching quotation record if no invoice linked
+      if (!t?.quoteInvoiceId && t?.projectId && t?.quoteAmount != null) {
+        try {
+          const res = await listQuotations({ projectId: t.projectId, limit: 50 });
+          const match = res.items.find((q) => typeof q.total === 'number' && q.total === t.quoteAmount);
+          setHasQuotationRecord(Boolean(match));
+        } catch {
+          setHasQuotationRecord(false);
+        }
+      } else {
+        setHasQuotationRecord(false);
       }
 
       // Resolve subcontractor contact details from the contacts list
@@ -475,8 +492,10 @@ export default function TaskDetailsPage() {
           </View>
         )}
 
-        {/* Quotation / Invoice — shows for variation & contract_work tasks */}
-        <TaskQuotationSection task={task} invoice={linkedInvoice} />
+        {/* Quotation / Invoice — shows only when linked invoice or quotation record exists */}
+        {(linkedInvoice || hasQuotationRecord) && (
+          <TaskQuotationSection task={task} invoice={linkedInvoice} />
+        )}
 
         {/* Progress Logs — directly under Notes per #136 */}
         <TaskProgressSection

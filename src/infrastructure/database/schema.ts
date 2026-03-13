@@ -212,6 +212,10 @@ export const invoices = sqliteTable('invoices', {
   status: text('status').notNull().default('draft'),
   paymentStatus: text('payment_status').default('unpaid'),
 
+  // Relations
+  taskId: text('task_id'),          // Soft FK to tasks.id
+  quoteId: text('quote_id'),        // Soft FK to quotations.id
+
   // Content
   documentId: text('document_id'),
   lineItems: text('line_items'),
@@ -223,9 +227,11 @@ export const invoices = sqliteTable('invoices', {
   updatedAt: integer('updated_at').notNull(),
   deletedAt: integer('deleted_at'),
 }, (table) => ({
-  projectIdx: index('idx_invoices_project').on(table.projectId),
+  projectIdx:    index('idx_invoices_project').on(table.projectId),
+  taskIdx:       index('idx_invoices_task').on(table.taskId),
+  quoteIdx:      index('idx_invoices_quote').on(table.quoteId),
   externalKeyIdx: uniqueIndex('idx_invoices_external_key').on(table.externalId, table.externalReference),
-  statusIdx: index('idx_invoices_status').on(table.status),
+  statusIdx:     index('idx_invoices_status').on(table.status),
 }));
 
 // Payments Table
@@ -439,8 +445,10 @@ export const quotations = sqliteTable('quotations', {
   
   // Relations
   projectId: text('project_id'),
+  taskId: text('task_id'),          // Soft FK to tasks.id
+  documentId: text('document_id'),  // Soft FK to documents.id (uploaded PDF/scan)
   vendorId: text('vendor_id'),
-  
+
   // Metadata
   vendorName: text('vendor_name'),
   vendorAddress: text('vendor_address'),
@@ -471,7 +479,8 @@ export const quotations = sqliteTable('quotations', {
   deletedAt: integer('deleted_at'),
 }, (table) => ({
   projectIdx: index('idx_quotations_project').on(table.projectId),
-  vendorIdx: index('idx_quotations_vendor').on(table.vendorId),
-  statusIdx: index('idx_quotations_status').on(table.status),
-  dateIdx: index('idx_quotations_date').on(table.date),
+  taskIdx:    index('idx_quotations_task').on(table.taskId),
+  vendorIdx:  index('idx_quotations_vendor').on(table.vendorId),
+  statusIdx:  index('idx_quotations_status').on(table.status),
+  dateIdx:    index('idx_quotations_date').on(table.date),
 }));

@@ -820,6 +820,42 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0020_vendor_details_fks',
+    hash: '0020_vendor_details_fks',
+    folderMillis: 1741824000000, // 2026-03-13
+    sql: [],
+    run: async (db) => {
+      // quotations: task_id, document_id
+      const [quotCols] = await db.executeSql(`SELECT name FROM pragma_table_info('quotations')`);
+      const quotExisting = new Set<string>();
+      for (let i = 0; i < quotCols.rows.length; i++) {
+        quotExisting.add(quotCols.rows.item(i).name);
+      }
+      if (!quotExisting.has('task_id')) {
+        await db.executeSql(`ALTER TABLE "quotations" ADD COLUMN "task_id" text`);
+        await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_quotations_task" ON "quotations" ("task_id")`);
+      }
+      if (!quotExisting.has('document_id')) {
+        await db.executeSql(`ALTER TABLE "quotations" ADD COLUMN "document_id" text`);
+      }
+
+      // invoices: task_id, quote_id
+      const [invCols] = await db.executeSql(`SELECT name FROM pragma_table_info('invoices')`);
+      const invExisting = new Set<string>();
+      for (let i = 0; i < invCols.rows.length; i++) {
+        invExisting.add(invCols.rows.item(i).name);
+      }
+      if (!invExisting.has('task_id')) {
+        await db.executeSql(`ALTER TABLE "invoices" ADD COLUMN "task_id" text`);
+        await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_invoices_task" ON "invoices" ("task_id")`);
+      }
+      if (!invExisting.has('quote_id')) {
+        await db.executeSql(`ALTER TABLE "invoices" ADD COLUMN "quote_id" text`);
+        await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_invoices_quote" ON "invoices" ("quote_id")`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

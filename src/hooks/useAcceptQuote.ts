@@ -3,7 +3,9 @@ import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
-import { AcceptQuoteUseCase } from '../application/usecases/task/AcceptQuoteUseCase';
+import { ContactRepository } from '../domain/repositories/ContactRepository';
+import { QuotationRepository } from '../domain/repositories/QuotationRepository';
+import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
 
 export interface UseAcceptQuoteReturn {
   acceptQuote: (taskId: string) => Promise<{ invoiceId: string }>;
@@ -24,10 +26,22 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
     () => container.resolve<InvoiceRepository>('InvoiceRepository'),
     [],
   );
+  const contactRepository = useMemo(() => {
+    try { return container.resolve<ContactRepository>('ContactRepository'); }
+    catch { return null; }
+  }, []);
+  const quotationRepository = useMemo(() => {
+    try { return container.resolve<QuotationRepository>('QuotationRepository'); }
+    catch { return null; }
+  }, []);
 
-  const acceptQuoteUseCase = useMemo(
-    () => new AcceptQuoteUseCase(taskRepository, invoiceRepository),
-    [taskRepository, invoiceRepository],
+  const acceptQuotationUseCase = useMemo(
+    () => new AcceptQuotationUseCase(
+      invoiceRepository,
+      taskRepository,
+      quotationRepository ?? undefined,
+    ),
+    [invoiceRepository, taskRepository, quotationRepository],
   );
 
   const acceptQuote = useCallback(
@@ -35,7 +49,27 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
       setIsLoading(true);
       setError(null);
       try {
-        const { invoice } = await acceptQuoteUseCase.execute(taskId);
+        const task = await taskRepository.findById(taskId);
+        if (!task) throw new Error('TASK_NOT_FOUND');
+        if (task.taskType !== 'contract_work') throw new Error('NOT_CONTRACT_WORK');
+        if (task.quoteStatus === 'accepted') throw new Error('QUOTE_ALREADY_ACCEPTED');
+
+        const contact = task.subcontractorId && contactRepository
+          ? await contactRepository.findById(task.subcontractorId)
+          : null;
+
+        const { invoice } = await acceptQuotationUseCase.execute({
+          taskId,
+          task: {
+            title: task.title,
+            projectId: task.projectId,
+            quoteAmount: task.quoteAmount ?? 0,
+            taskType: task.taskType,
+            workType: task.workType,
+            subcontractorId: task.subcontractorId,
+          },
+          contact,
+        });
         return { invoiceId: invoice.id };
       } catch (e: any) {
         const msg = e?.message ?? 'Failed to accept quote';
@@ -45,7 +79,7 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
         setIsLoading(false);
       }
     },
-    [acceptQuoteUseCase],
+    [taskRepository, contactRepository, acceptQuotationUseCase],
   );
 
   const rejectQuote = useCallback(

@@ -14,6 +14,8 @@ export interface Quotation {
   
   // Relations
   projectId?: string;            // Optional link to Project
+  taskId?: string;               // Soft FK to Task; set when quotation is linked to a task
+  documentId?: string;           // Soft FK to Document (uploaded PDF/scan)
   vendorId?: string;             // Link to Contact (vendor)
   contactId?: string;            // Alias for vendorId (compatibility)
   

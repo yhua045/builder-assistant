@@ -53,9 +53,12 @@ export interface Invoice {
   notes?: string;
   metadata?: Record<string, any>;
   
+  // Relations
+  taskId?: string;            // Soft FK to Task that generated this invoice
+
   // Legacy / Compatibility fields
   contactId?: string; 
-  quoteId?: string; 
+  quoteId?: string;           // Soft FK to Quotation (persisted in DB)
   relatedExpenseIds?: string[];
   attachments?: string[];
 

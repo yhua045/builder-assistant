@@ -40,6 +40,8 @@ export class DrizzleQuotationRepository implements QuotationRepository {
       reference: r.reference ?? r.reference,
 
       projectId: (r.projectId ?? r.project_id) || undefined,
+      taskId: (r.taskId ?? r.task_id) || undefined,
+      documentId: (r.documentId ?? r.document_id) || undefined,
       vendorId: (r.vendorId ?? r.vendor_id) || undefined,
       contactId: (r.vendorId ?? r.vendor_id) || undefined, // Alias
 
@@ -86,6 +88,8 @@ export class DrizzleQuotationRepository implements QuotationRepository {
       id: quotation.id,
       reference: quotation.reference,
       projectId: quotation.projectId,
+      taskId: quotation.taskId,
+      documentId: quotation.documentId,
       vendorId: quotation.vendorId || quotation.contactId, // Support both fields
       vendorName: quotation.vendorName,
       vendorAddress: quotation.vendorAddress,
@@ -129,6 +133,8 @@ export class DrizzleQuotationRepository implements QuotationRepository {
 
     if (updates.reference !== undefined) updateData.reference = updates.reference;
     if (updates.projectId !== undefined) updateData.projectId = updates.projectId;
+    if (updates.taskId !== undefined) updateData.taskId = updates.taskId;
+    if (updates.documentId !== undefined) updateData.documentId = updates.documentId;
     if (updates.vendorId !== undefined) updateData.vendorId = updates.vendorId;
     if (updates.contactId !== undefined) updateData.vendorId = updates.contactId; // Map contactId to vendorId
     if (updates.vendorName !== undefined) updateData.vendorName = updates.vendorName;
@@ -182,6 +188,19 @@ export class DrizzleQuotationRepository implements QuotationRepository {
     );
     if (result.rows.length === 0) return null;
     return this.mapToEntity(result.rows.item(0) as any);
+  }
+
+  async findByTask(taskId: string): Promise<Quotation[]> {
+    const db = await this.getSqlDb();
+    const [result] = await db.executeSql(
+      'SELECT * FROM quotations WHERE task_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+      [taskId],
+    );
+    const items: Quotation[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      items.push(this.mapToEntity(result.rows.item(i) as any));
+    }
+    return items;
   }
 
   async listQuotations(

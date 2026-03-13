@@ -85,3 +85,5 @@ ios/build/
 .env.local
 .env.*.local
 /.env.development
+#.env.reset is a local helper file used during development — do not commit
+.env.reset

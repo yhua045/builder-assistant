@@ -15,6 +15,7 @@ import {
   taskDependencies,
   taskDelayReasons,
   documents,
+  quotations,
   invoices,
   payments,
 } from '../database/schema';
@@ -55,6 +56,9 @@ export async function seedDemoData(): Promise<void> {
 
     await db.insert(documents).values(DEMO_FIXTURES.documents);
     console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.documents.length} documents`);
+
+    await db.insert(quotations).values(DEMO_FIXTURES.quotations);
+    console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.quotations.length} quotations`);
 
     await db.insert(invoices).values(DEMO_FIXTURES.invoices);
     console.log(`[seed] ✓ Inserted ${DEMO_FIXTURES.invoices.length} invoices`);
