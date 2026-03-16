@@ -13,6 +13,7 @@ import { ListGlobalPaymentsUseCase } from '../application/usecases/payment/ListG
 import { GetGlobalAmountPayableUseCase } from '../application/usecases/payment/GetGlobalAmountPayableUseCase';
 import { ListPaymentsUseCase } from '../application/usecases/payment/ListPaymentsUseCase';
 import { GetPaymentMetricsUseCase } from '../application/usecases/payment/GetPaymentMetricsUseCase';
+import { resolveInvoiceDueDate } from '../utils/resolveInvoiceDueDate';
 import '../infrastructure/di/registerServices';
 
 export type PaymentsMode = 'firefighter' | 'site_manager';
@@ -58,6 +59,7 @@ async function buildInvoicePayables(
   paymentRepo: PaymentRepository,
   taskRepo?: TaskRepository | null,
   contactRepo?: ContactRepository | null,
+  projectMap?: Map<string, Project>,
 ): Promise<Payment[]> {
   const payableRows: Payment[] = [];
 
@@ -76,17 +78,27 @@ async function buildInvoicePayables(
     if (outstanding <= 0) continue;
 
     let contractorName = deriveContractorNameFromInvoice(inv);
+    let taskStartDate: string | null = null;
 
-    // Fallback: derive name from linked task's subcontractor when all other fields are empty
-    if (contractorName === 'Invoice Payable' && inv.taskId && taskRepo && contactRepo) {
+    // Fetch linked task once — used for contractor name fallback AND due date anchor
+    if (inv.taskId && taskRepo) {
       try {
         const task = await taskRepo.findById(inv.taskId);
-        if (task?.subcontractorId) {
-          const contact = await contactRepo.findById(task.subcontractorId);
-          if (contact?.name) contractorName = contact.name;
+        if (task) {
+          // Use scheduled start as the due-date anchor
+          taskStartDate = task.scheduledAt ?? task.scheduledStart ?? null;
+          // Contractor name fallback via subcontractor contact
+          if (contractorName === 'Invoice Payable' && contactRepo && task.subcontractorId) {
+            const contact = await contactRepo.findById(task.subcontractorId);
+            if (contact?.name) contractorName = contact.name;
+          }
         }
       } catch { /* ignore — non-critical enrichment */ }
     }
+
+    const project = inv.projectId ? projectMap?.get(inv.projectId) : undefined;
+    const dueDatePeriodDays = project?.defaultDueDateDays ?? 5;
+    const dueDate = resolveInvoiceDueDate(inv, taskStartDate, dueDatePeriodDays);
 
     payableRows.push({
       id: `invoice-payable:${inv.id}`,
@@ -95,8 +107,9 @@ async function buildInvoicePayables(
       amount: outstanding,
       currency: inv.currency,
       date: inv.dateIssued ?? inv.issueDate,
-      dueDate: inv.dateDue ?? inv.dueDate,
+      dueDate,
       status: 'pending',
+      invoiceStatus: inv.status,
       contractorName,
       paymentCategory: deriveCategoryFromInvoice(inv),
       stageLabel: inv.externalReference ?? inv.invoiceNumber,
@@ -186,7 +199,22 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
           invoiceRepo.listInvoices({ limit: 500 }),
         ]);
 
-        const invoicePayablesRaw = await buildInvoicePayables(invoiceResult.items, paymentRepo, taskRepo, contactRepo);
+        // Build project map from invoice project IDs so buildInvoicePayables can resolve
+        // per-project defaultDueDateDays for due date computation.
+        const invoiceProjectIds = [
+          ...new Set(invoiceResult.items.map((inv) => inv.projectId).filter(Boolean)),
+        ] as string[];
+        const projectMap = new Map<string, Project>();
+        await Promise.all(
+          invoiceProjectIds.map(async (id) => {
+            try {
+              const proj = await projectRepo.findById(id);
+              if (proj) projectMap.set(id, proj);
+            } catch (_) { /* ignore missing projects */ }
+          }),
+        );
+
+        const invoicePayablesRaw = await buildInvoicePayables(invoiceResult.items, paymentRepo, taskRepo, contactRepo, projectMap);
         const invoicePayables = contractorSearch
           ? invoicePayablesRaw.filter((p) =>
               (p.contractorName ?? '').toLowerCase().includes(contractorSearch.toLowerCase()),
@@ -195,21 +223,24 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
 
         const mergedGlobalItems = [...result.items, ...invoicePayables];
 
-        // Resolve project names for display
-        const projectMap = new Map<string, string>();
-        const projectIds = [...new Set(mergedGlobalItems.map(p => p.projectId).filter(Boolean))] as string[];
+        // Ensure payment-only project IDs are also resolved (for display names)
+        const additionalProjectIds = [
+          ...new Set(result.items.map((p) => p.projectId).filter(Boolean)),
+        ] as string[];
         await Promise.all(
-          projectIds.map(async (id) => {
-            try {
-              const proj: Project | null = await projectRepo.findById(id);
-              if (proj) projectMap.set(id, proj.name);
-            } catch (_) { /* ignore missing projects */ }
-          }),
+          additionalProjectIds
+            .filter((id) => !projectMap.has(id))
+            .map(async (id) => {
+              try {
+                const proj = await projectRepo.findById(id);
+                if (proj) projectMap.set(id, proj);
+              } catch (_) { /* ignore missing projects */ }
+            }),
         );
 
         const enriched: PaymentWithProject[] = mergedGlobalItems.map(p => ({
           ...p,
-          projectName: p.projectId ? (projectMap.get(p.projectId) ?? p.projectId) : undefined,
+          projectName: p.projectId ? (projectMap.get(p.projectId)?.name ?? p.projectId) : undefined,
         }));
 
         setGlobalPayments(enriched);
@@ -224,7 +255,16 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
           invoiceRepo.listInvoices({ projectId, limit: 500 }),
         ]);
 
-        const invoicePayables = await buildInvoicePayables(invoiceResult.items, paymentRepo, taskRepo, contactRepo);
+        // Load the current project for defaultDueDateDays resolution
+        const projectMap = new Map<string, Project>();
+        if (projectId) {
+          try {
+            const proj = await projectRepo.findById(projectId);
+            if (proj) projectMap.set(projectId, proj);
+          } catch (_) { /* ignore */ }
+        }
+
+        const invoicePayables = await buildInvoicePayables(invoiceResult.items, paymentRepo, taskRepo, contactRepo, projectMap);
         const invoiceContracts = invoicePayables.filter((p) => p.paymentCategory === 'contract');
         const invoiceVariations = invoicePayables.filter((p) => p.paymentCategory === 'variation');
 

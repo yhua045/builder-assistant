@@ -107,8 +107,8 @@ export class DrizzleProjectRepository implements ProjectRepository {
         `INSERT INTO projects (
           id, property_id, owner_id, name, description, status,
           start_date, expected_end_date, budget, currency, meta,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          default_due_date_days, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           project.id,
           project.propertyId || null,
@@ -121,6 +121,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
           project.budget || null,
           project.currency || null,
           project.meta ? JSON.stringify(project.meta) : null,
+          project.defaultDueDateDays ?? null,
           project.createdAt ? project.createdAt.getTime() : null,
           project.updatedAt ? project.updatedAt.getTime() : null,
         ]
@@ -318,8 +319,8 @@ export class DrizzleProjectRepository implements ProjectRepository {
       const txRepo = {
         save: async (project: Project) => {
           await tx.executeSql(
-            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, default_due_date_days, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET
              property_id=excluded.property_id,
              owner_id=excluded.owner_id,
@@ -331,6 +332,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
              budget=excluded.budget,
              currency=excluded.currency,
              meta=excluded.meta,
+             default_due_date_days=excluded.default_due_date_days,
              updated_at=excluded.updated_at`,
             [
               project.id,
@@ -344,6 +346,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
               project.budget,
               project.currency,
               project.meta ? JSON.stringify(project.meta) : null,
+              project.defaultDueDateDays ?? null,
               project.createdAt?.getTime() || Date.now(),
               project.updatedAt?.getTime() || Date.now()
             ]
@@ -429,7 +432,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
         `UPDATE projects SET
           property_id = ?, owner_id = ?, name = ?, description = ?, status = ?,
           start_date = ?, expected_end_date = ?, budget = ?, currency = ?,
-          meta = ?, updated_at = ?
+          meta = ?, default_due_date_days = ?, updated_at = ?
          WHERE id = ?`,
         [
           project.propertyId || null,
@@ -442,6 +445,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
           project.budget || null,
           project.currency || null,
           project.meta ? JSON.stringify(project.meta) : null,
+          project.defaultDueDateDays ?? null,
           project.updatedAt ? project.updatedAt.getTime() : Date.now(),
           project.id,
         ]
@@ -562,6 +566,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       materials,
       phases,
       meta: row.meta ? JSON.parse(row.meta) : undefined,
+      defaultDueDateDays: row.default_due_date_days ?? undefined,
       createdAt: row.created_at ? new Date(row.created_at) : undefined,
       updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
     };

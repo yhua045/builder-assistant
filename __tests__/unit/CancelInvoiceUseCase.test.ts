@@ -1,5 +1,6 @@
 import { Invoice } from '../../src/domain/entities/Invoice';
 import { InvoiceRepository } from '../../src/domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
 import { CancelInvoiceUseCase } from '../../src/application/usecases/invoice/CancelInvoiceUseCase';
 
 describe('CancelInvoiceUseCase', () => {
@@ -325,6 +326,42 @@ describe('CancelInvoiceUseCase', () => {
         actor: 'user_002',
         reason: 'Not needed',
       });
+    });
+  });
+
+  describe('settled-payment guard', () => {
+    const baseInvoice: Invoice = {
+      id: 'inv_guard',
+      total: 1000,
+      currency: 'AUD',
+      status: 'issued',
+      paymentStatus: 'partial',
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z',
+    } as Invoice;
+
+    it('cancels successfully when paymentRepo is provided but no settled payments exist', async () => {
+      const mockPaymentRepo: PaymentRepository = {
+        findByInvoice: jest.fn().mockResolvedValue([{ id: 'pay_1', status: 'pending', amount: 500 }]),
+      } as unknown as PaymentRepository;
+
+      (mockRepo.getInvoice as jest.Mock).mockResolvedValue(baseInvoice);
+      (mockRepo.updateInvoice as jest.Mock).mockResolvedValue({ ...baseInvoice, status: 'cancelled' });
+
+      const guardedUseCase = new CancelInvoiceUseCase(mockRepo, mockPaymentRepo);
+      await expect(guardedUseCase.execute('inv_guard')).resolves.not.toThrow();
+    });
+
+    it('throws when a settled payment is linked to the invoice', async () => {
+      const mockPaymentRepo: PaymentRepository = {
+        findByInvoice: jest.fn().mockResolvedValue([{ id: 'pay_1', status: 'settled', amount: 500 }]),
+      } as unknown as PaymentRepository;
+
+      (mockRepo.getInvoice as jest.Mock).mockResolvedValue(baseInvoice);
+
+      const guardedUseCase = new CancelInvoiceUseCase(mockRepo, mockPaymentRepo);
+      await expect(guardedUseCase.execute('inv_guard')).rejects.toThrow(/settled/i);
+      expect(mockRepo.updateInvoice).not.toHaveBeenCalled();
     });
   });
 });

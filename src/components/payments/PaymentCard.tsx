@@ -21,7 +21,10 @@ const formatCurrency = (amount: number): string =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: 0 }).format(amount);
 
 export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardProps) {
-  const dueStatus = payment.dueDate ? getDueStatus(payment.dueDate) : null;
+  const isDeadInvoice =
+    payment.invoiceStatus === 'cancelled' || payment.invoiceStatus === 'draft';
+
+  const dueStatus = !isDeadInvoice && payment.dueDate ? getDueStatus(payment.dueDate) : null;
   const label = categoryLabel(payment.paymentCategory, payment.stageLabel);
 
   const footerBg =
@@ -68,8 +71,16 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
         <Text className="text-lg font-bold text-foreground">{formatCurrency(payment.amount)}</Text>
       </View>
 
-      {/* Footer — due status */}
-      {dueStatus ? (
+      {/* Footer — dead-invoice banner or due status */}
+      {isDeadInvoice ? (
+        <View style={styles.footerDeadInvoice} className="px-4 py-2 flex-row items-center">
+          <Text style={styles.footerTextDeadInvoice} className="text-xs font-semibold">
+            {payment.invoiceStatus === 'cancelled'
+              ? 'Invoice cancelled'
+              : 'Invoice draft — not yet issued'}
+          </Text>
+        </View>
+      ) : dueStatus ? (
         <View style={[styles.footer, footerBg]} className="px-4 py-2 flex-row items-center justify-between">
           <Text style={footerText} className="text-xs font-semibold">
             {dueStatus.text}
@@ -96,7 +107,9 @@ const styles = StyleSheet.create({
   footerOverdue: { backgroundColor: '#fef2f2' },
   footerDueSoon: { backgroundColor: '#fffbeb' },
   footerOnTime: { backgroundColor: '#f0fdf4' },
+  footerDeadInvoice: { backgroundColor: '#fef2f2', minHeight: 36 },
   footerTextOverdue: { color: '#dc2626' },
   footerTextDueSoon: { color: '#d97706' },
   footerTextOnTime: { color: '#16a34a' },
+  footerTextDeadInvoice: { color: '#6b7280' },
 });

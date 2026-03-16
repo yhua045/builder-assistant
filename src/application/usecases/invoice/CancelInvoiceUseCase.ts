@@ -1,5 +1,6 @@
-import { Invoice } from '../../../domain/entities/Invoice';
+import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
 import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
 
 export interface CancelInvoiceOptions {
   reason?: string;
@@ -7,7 +8,10 @@ export interface CancelInvoiceOptions {
 }
 
 export class CancelInvoiceUseCase {
-  constructor(private readonly repo: InvoiceRepository) {}
+  constructor(
+    private readonly repo: InvoiceRepository,
+    private readonly paymentRepo?: PaymentRepository,
+  ) {}
 
   async execute(
     invoiceId: string,
@@ -29,7 +33,14 @@ export class CancelInvoiceUseCase {
       throw new Error('Cannot cancel a paid invoice');
     }
 
-    // 3. Prepare audit trail entry
+    // 3. Guard: reject if any settled payment is linked to this invoice
+    if (this.paymentRepo) {
+      const linkedPayments = await this.paymentRepo.findByInvoice(invoiceId);
+      const entity = new InvoiceEntity(invoice);
+      entity.cancel(linkedPayments); // throws if settled payments exist
+    }
+
+    // 4. Prepare audit trail entry
     const now = new Date().toISOString();
     const statusChange = {
       from: invoice.status,
@@ -39,7 +50,7 @@ export class CancelInvoiceUseCase {
       ...(options?.reason && { reason: options.reason }),
     };
 
-    // 4. Preserve existing metadata and append to status history
+    // 5. Preserve existing metadata and append to status history
     const existingMetadata = invoice.metadata || {};
     const existingHistory = (existingMetadata.statusHistory as any[]) || [];
     
@@ -49,7 +60,7 @@ export class CancelInvoiceUseCase {
       ...(options?.reason && { cancellationReason: options.reason }),
     };
 
-    // 5. Update the invoice
+    // 6. Update the invoice
     const updates: Partial<Invoice> = {
       status: 'cancelled',
       metadata: updatedMetadata,

@@ -4,7 +4,7 @@ import { Home, CreditCard, CheckSquare, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { cssInterop } from 'nativewind';
 import DashboardScreen from '../dashboard';
-import PaymentsScreen from '../payments';
+import PaymentsNavigator from '../payments/PaymentsNavigator';
 import TasksNavigator from '../tasks/TasksNavigator';
 import ProjectsPage from '../projects/ProjectsPage';
 
@@ -47,7 +47,7 @@ export default function TabsLayout() {
       />
       <Tab.Screen
         name="Finances"
-        component={PaymentsScreen}
+        component={PaymentsNavigator}
         options={{
           title: 'Finances',
           tabBarIcon: FinancesIcon,
