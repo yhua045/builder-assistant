@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useQueryClient, QueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
@@ -17,6 +18,13 @@ export interface UseAcceptQuoteReturn {
 export function useAcceptQuote(): UseAcceptQuoteReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  let queryClient: QueryClient | null = null;
+  try {
+    queryClient = useQueryClient();
+  } catch (e) {
+    // No QueryClientProvider in this render environment (tests). Fall back to no-op.
+    queryClient = null;
+  }
 
   const taskRepository = useMemo(
     () => container.resolve<TaskRepository>('TaskRepository'),
@@ -70,6 +78,12 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
           },
           contact,
         });
+        if (queryClient) {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['payments'] }),
+            queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+          ]);
+        }
         return { invoiceId: invoice.id };
       } catch (e: any) {
         const msg = e?.message ?? 'Failed to accept quote';
@@ -79,7 +93,7 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
         setIsLoading(false);
       }
     },
-    [taskRepository, contactRepository, acceptQuotationUseCase],
+    [taskRepository, contactRepository, acceptQuotationUseCase, queryClient],
   );
 
   const rejectQuote = useCallback(
@@ -94,6 +108,7 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
           quoteStatus: 'rejected',
           updatedAt: new Date().toISOString(),
         });
+        if (queryClient) await queryClient.invalidateQueries({ queryKey: ['payments'] });
       } catch (e: any) {
         const msg = e?.message ?? 'Failed to reject quote';
         setError(msg);
@@ -102,7 +117,7 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
         setIsLoading(false);
       }
     },
-    [taskRepository],
+    [taskRepository, queryClient],
   );
 
   return { acceptQuote, rejectQuote, isLoading, error };
