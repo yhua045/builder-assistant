@@ -856,6 +856,22 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0021_project_due_date_days',
+    hash: '0021_project_due_date_days',
+    folderMillis: 1748736000000, // 2025-06-01
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('projects')`);
+      const existing = new Set<string>();
+      for (let i = 0; i < result.rows.length; i++) {
+        existing.add(result.rows.item(i).name);
+      }
+      if (!existing.has('default_due_date_days')) {
+        await db.executeSql(`ALTER TABLE "projects" ADD COLUMN "default_due_date_days" integer DEFAULT 5`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

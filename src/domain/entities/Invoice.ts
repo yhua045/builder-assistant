@@ -1,3 +1,5 @@
+import { Payment } from './Payment';
+
 export interface InvoiceLineItem {
   id?: string;
   description: string;
@@ -130,4 +132,25 @@ export class InvoiceEntity {
   }
 
   data(): Invoice { return { ...this._data }; }
+
+  /** Returns whether this invoice can be cancelled given its linked payments. */
+  canBeCancelled(linkedPayments: Payment[]): { allowed: boolean; reason?: string } {
+    const hasSettled = linkedPayments.some((p) => p.status === 'settled');
+    if (hasSettled) {
+      return {
+        allowed: false,
+        reason: 'Invoice has one or more settled payments. Reverse all payments before cancelling.',
+      };
+    }
+    return { allowed: true };
+  }
+
+  /**
+   * Marks the invoice as cancelled.
+   * Throws a domain error if the invoice has settled payments.
+   */
+  cancel(linkedPayments: Payment[]): void {
+    const check = this.canBeCancelled(linkedPayments);
+    if (!check.allowed) throw new Error(check.reason);
+  }
 }

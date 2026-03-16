@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, ChevronDown, ChevronUp, Layers, Filter } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
+import { useNavigation } from '@react-navigation/native';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import AmountPayableBanner from '../../components/payments/AmountPayableBanner';
 import PaymentCard, { PaymentCardPayment } from '../../components/payments/PaymentCard';
@@ -17,6 +18,15 @@ export default function PaymentsScreen() {
   const isDark = colorScheme === 'dark';
   const iconPrimary = isDark ? '#3b82f6' : '#2563eb';
   const iconMuted = isDark ? '#a1a1aa' : '#71717a';
+  const navigation = useNavigation<any>();
+
+  const handlePaymentPress = (p: PaymentCardPayment) => {
+    if (p.id.startsWith('invoice-payable:')) {
+      navigation.navigate('PaymentDetails', { syntheticRow: p });
+    } else {
+      navigation.navigate('PaymentDetails', { paymentId: p.id });
+    }
+  };
 
   const [mode, setMode] = useState<PaymentsMode>('firefighter');
   const [contractorSearch, setContractorSearch] = useState('');
@@ -84,7 +94,7 @@ export default function PaymentsScreen() {
           </Text>
         </View>
       ) : (
-        globalPayments.map((p) => <PaymentCard key={p.id} payment={p} />)
+        globalPayments.map((p) => <PaymentCard key={p.id} payment={p} onPress={() => handlePaymentPress(p)} />)
       )}
     </>
   );
@@ -136,7 +146,7 @@ export default function PaymentsScreen() {
             {contractPayments.length === 0 ? (
               <Text className="text-muted-foreground text-xs px-1 pb-2">No contract payments.</Text>
             ) : (
-              contractPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} />)
+              contractPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} onPress={() => handlePaymentPress(p as PaymentCardPayment)} />)
             )}
           </CollapsibleSection>
 
@@ -149,7 +159,7 @@ export default function PaymentsScreen() {
             {variationPayments.length === 0 ? (
               <Text className="text-muted-foreground text-xs px-1 pb-2">No variation payments.</Text>
             ) : (
-              variationPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} />)
+              variationPayments.map((p) => <PaymentCard key={p.id} payment={p as PaymentCardPayment} onPress={() => handlePaymentPress(p as PaymentCardPayment)} />)
             )}
           </CollapsibleSection>
         </>

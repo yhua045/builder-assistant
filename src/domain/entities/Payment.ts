@@ -17,6 +17,8 @@ export interface Payment {
   contractorName?: string;       // denormalized from Contact.name for list performance
   paymentCategory?: 'contract' | 'variation' | 'other'; // grouping discriminator
   stageLabel?: string;           // e.g. "Frame Stage", "Patching"
+  /** Snapshot of the parent invoice status — display-only, not persisted on payment rows */
+  invoiceStatus?: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
   createdAt?: string;
   updatedAt?: string;
 }

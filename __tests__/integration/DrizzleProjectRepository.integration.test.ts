@@ -198,6 +198,33 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
     await closeDatabase();
   }, 15000);
 
+  it('persists and retrieves defaultDueDateDays via save/findById', async () => {
+    const repo = new DrizzleProjectRepository();
+    await repo.init();
+
+    const projectData = ProjectEntity.create({
+      name: 'Due Date Project',
+      status: ProjectStatus.PLANNING,
+      defaultDueDateDays: 10,
+      materials: [],
+      phases: [],
+    }).data;
+
+    await repo.save(projectData);
+    const found = await repo.findById(projectData.id);
+
+    expect(found).not.toBeNull();
+    expect(found!.defaultDueDateDays).toBe(10);
+
+    // Update and verify the field is persisted
+    await repo.save({ ...found!, defaultDueDateDays: 14 });
+    const updated = await repo.findById(projectData.id);
+    expect(updated!.defaultDueDateDays).toBe(14);
+
+    await repo.delete(projectData.id);
+    await closeDatabase();
+  }, 15000);
+
 });
   // End of contract tests
 

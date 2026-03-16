@@ -29,6 +29,9 @@ export interface Project {
   /** Arbitrary regulatory constraint labels (e.g. heritage overlay codes). */
   regulatoryFlags?: string[];
 
+  /** Default calendar days to add from invoice issue date when dateDue is absent. Defaults to 5. */
+  defaultDueDateDays?: number;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

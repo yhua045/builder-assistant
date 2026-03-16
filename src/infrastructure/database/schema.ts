@@ -20,6 +20,8 @@ export const projects = sqliteTable('projects', {
   location: text('location'),               // street address or lat/lng string
   fireZone: text('fire_zone'),              // BAL rating or zone code
   regulatoryFlags: text('regulatory_flags'), // JSON array of constraint labels
+  // Default days to add from invoice issue date when dateDue is absent (issue #146)
+  defaultDueDateDays: integer('default_due_date_days').default(5),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
