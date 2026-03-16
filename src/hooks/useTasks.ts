@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Task } from '../domain/entities/Task';
 import { DelayReason } from '../domain/entities/DelayReason';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
 import { DelayReasonTypeRepository } from '../domain/repositories/DelayReasonTypeRepository';
+import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
@@ -20,6 +22,7 @@ import { DeleteProgressLogUseCase } from '../application/usecases/task/DeletePro
 import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
+import { AcceptQuoteUseCase } from '../application/usecases/task/AcceptQuoteUseCase';
 
 export type { TaskDetail } from '../application/usecases/task/GetTaskDetailUseCase';
 export type { AddDelayReasonInput } from '../application/usecases/task/AddDelayReasonUseCase';
@@ -43,14 +46,18 @@ export interface UseTasksReturn {
   updateProgressLog: (logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
   deleteProgressLog: (logId: string) => Promise<void>;
   resolveDelayReason: (delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
+  acceptQuote: (taskId: string) => Promise<void>;
 }
 
 export function useTasks(projectId?: string): UseTasksReturn {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const queryClient = useQueryClient();
+
   const taskRepository = useMemo(() => container.resolve<TaskRepository>('TaskRepository'), []);
   const delayReasonTypeRepository = useMemo(() => container.resolve<DelayReasonTypeRepository>('DelayReasonTypeRepository'), []);
+  const invoiceRepo = useMemo(() => container.resolve<InvoiceRepository>('InvoiceRepository' as any), []);
   
   const createUseCase = useMemo(() => new CreateTaskUseCase(taskRepository), [taskRepository]);
   const updateUseCase = useMemo(() => new UpdateTaskUseCase(taskRepository), [taskRepository]);
@@ -66,6 +73,7 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
+  const acceptQuoteUseCase = useMemo(() => new AcceptQuoteUseCase(taskRepository, invoiceRepo), [taskRepository, invoiceRepo]);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -152,6 +160,16 @@ export function useTasks(projectId?: string): UseTasksReturn {
     await resolveDelayReasonUseCase.execute({ delayReasonId, resolvedAt, mitigationNotes });
   }, [resolveDelayReasonUseCase]);
 
+  const acceptQuote = useCallback(async (taskId: string) => {
+    await acceptQuoteUseCase.execute(taskId);
+    // Invalidate across domains so Payments and Invoices screens update automatically
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] }),
+      queryClient.invalidateQueries({ queryKey: ['payments'] }),
+      queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+    ]);
+  }, [acceptQuoteUseCase, projectId, queryClient]);
+
   return useMemo(() => ({
     tasks,
     loading,
@@ -169,5 +187,6 @@ export function useTasks(projectId?: string): UseTasksReturn {
     addProgressLog,
     updateProgressLog,
     deleteProgressLog,
-  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog]);
+    acceptQuote,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog, acceptQuote]);
 }

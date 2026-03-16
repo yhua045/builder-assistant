@@ -24,6 +24,9 @@ import { useColorScheme as nwUseColorScheme } from 'nativewind';
 import 'react-native-get-random-values';
 import { verifyInstallation } from 'nativewind';
 
+// TanStack Query
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 // Demo data imports (dev only)
 import { initDatabase } from './src/infrastructure/database/connection';
 import { seedDemoData } from './src/infrastructure/demo/seedDemoData';
@@ -33,6 +36,18 @@ import { SEED_DEMO_DATA, RESET_DEMO_DATA } from '@env';
 if (__DEV__) {
   verifyInstallation();
 }
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity,        // No auto-refetch — only explicit invalidateQueries() triggers refetches
+      refetchOnWindowFocus: false, // Don't refetch when app returns to foreground
+      refetchOnReconnect: false,   // App is fully local (SQLite); network reconnect is irrelevant
+      gcTime: 5 * 60_000,         // Keep cache entries for 5 min after last subscriber unmounts
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   const isDarkMode = rnUseColorScheme() === 'dark';
@@ -70,14 +85,16 @@ function App() {
   const containerStyle = [isDark ? darkTheme : lightTheme, styles.container, { backgroundColor }];
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <NavigationContainer>
-        <View style={containerStyle}>
-          <TabsLayout />
-        </View>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <NavigationContainer>
+          <View style={containerStyle}>
+            <TabsLayout />
+          </View>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
 
