@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { PaymentRepository } from '../domain/repositories/PaymentRepository';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
@@ -10,8 +11,6 @@ import { Project } from '../domain/entities/Project';
 import { PaymentMetrics } from '../domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { ListGlobalPaymentsUseCase } from '../application/usecases/payment/ListGlobalPaymentsUseCase';
-import { GetGlobalAmountPayableUseCase } from '../application/usecases/payment/GetGlobalAmountPayableUseCase';
-import { ListPaymentsUseCase } from '../application/usecases/payment/ListPaymentsUseCase';
 import { GetPaymentMetricsUseCase } from '../application/usecases/payment/GetPaymentMetricsUseCase';
 import { resolveInvoiceDueDate } from '../utils/resolveInvoiceDueDate';
 import '../infrastructure/di/registerServices';
@@ -157,6 +156,8 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
     invoiceRepoOverride,
   } = options;
 
+  const queryClient = useQueryClient();
+
   const paymentRepo = useMemo(
     () => paymentRepoOverride ?? container.resolve<PaymentRepository>('PaymentRepository' as any),
     [paymentRepoOverride],
@@ -178,20 +179,16 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
   }, []);
 
   const listGlobalUc = useMemo(() => new ListGlobalPaymentsUseCase(paymentRepo), [paymentRepo]);
-  const globalAmountUc = useMemo(() => new GetGlobalAmountPayableUseCase(paymentRepo), [paymentRepo]);
-  const listUc = useMemo(() => new ListPaymentsUseCase(paymentRepo), [paymentRepo]);
   const metricsUc = useMemo(() => new GetPaymentMetricsUseCase(paymentRepo), [paymentRepo]);
 
-  const [globalPayments, setGlobalPayments] = useState<PaymentWithProject[]>([]);
-  const [globalAmountPayable, setGlobalAmountPayable] = useState(0);
-  const [contractPayments, setContractPayments] = useState<Payment[]>([]);
-  const [variationPayments, setVariationPayments] = useState<Payment[]>([]);
-  const [metrics, setMetrics] = useState<PaymentMetrics>({ pendingTotalNext7Days: 0, overdueCount: 0 });
-  const [loading, setLoading] = useState(false);
+  // Stable query key — changes when the scope changes, causing a fresh fetch
+  const queryKey = mode === 'firefighter'
+    ? ['payments', 'firefighter', contractorSearch ?? ''] as const
+    : ['payments', 'site_manager', projectId ?? ''] as const;
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data, isFetching, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
       if (mode === 'firefighter') {
         const [result, met, invoiceResult] = await Promise.all([
           listGlobalUc.execute({ contractorSearch }),
@@ -199,8 +196,6 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
           invoiceRepo.listInvoices({ limit: 500 }),
         ]);
 
-        // Build project map from invoice project IDs so buildInvoicePayables can resolve
-        // per-project defaultDueDateDays for due date computation.
         const invoiceProjectIds = [
           ...new Set(invoiceResult.items.map((inv) => inv.projectId).filter(Boolean)),
         ] as string[];
@@ -223,7 +218,6 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
 
         const mergedGlobalItems = [...result.items, ...invoicePayables];
 
-        // Ensure payment-only project IDs are also resolved (for display names)
         const additionalProjectIds = [
           ...new Set(result.items.map((p) => p.projectId).filter(Boolean)),
         ] as string[];
@@ -243,9 +237,13 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
           projectName: p.projectId ? (projectMap.get(p.projectId)?.name ?? p.projectId) : undefined,
         }));
 
-        setGlobalPayments(enriched);
-        setGlobalAmountPayable(enriched.reduce((sum, p) => sum + (p.amount ?? 0), 0));
-        setMetrics(met);
+        return {
+          globalPayments: enriched,
+          globalAmountPayable: enriched.reduce((sum, p) => sum + (p.amount ?? 0), 0),
+          contractPayments: [] as Payment[],
+          variationPayments: [] as Payment[],
+          metrics: met,
+        };
       } else {
         // site_manager mode — scoped to a project
         const [contracts, variations, met, invoiceResult] = await Promise.all([
@@ -255,7 +253,6 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
           invoiceRepo.listInvoices({ projectId, limit: 500 }),
         ]);
 
-        // Load the current project for defaultDueDateDays resolution
         const projectMap = new Map<string, Project>();
         if (projectId) {
           try {
@@ -268,31 +265,22 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
         const invoiceContracts = invoicePayables.filter((p) => p.paymentCategory === 'contract');
         const invoiceVariations = invoicePayables.filter((p) => p.paymentCategory === 'variation');
 
-        setContractPayments([...contracts.items, ...invoiceContracts]);
-        setVariationPayments([...variations.items, ...invoiceVariations]);
-        setMetrics(met);
+        return {
+          globalPayments: [] as PaymentWithProject[],
+          globalAmountPayable: 0,
+          contractPayments: [...contracts.items, ...invoiceContracts],
+          variationPayments: [...variations.items, ...invoiceVariations],
+          metrics: met,
+        };
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    mode,
-    projectId,
-    contractorSearch,
-    listGlobalUc,
-    globalAmountUc,
-    listUc,
-    metricsUc,
-    paymentRepo,
-    projectRepo,
-    invoiceRepo,
-    taskRepo,
-    contactRepo,
-  ]);
+    },
+  });
 
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  const globalPayments = data?.globalPayments ?? [];
+  const globalAmountPayable = data?.globalAmountPayable ?? 0;
+  const contractPayments = data?.contractPayments ?? [];
+  const variationPayments = data?.variationPayments ?? [];
+  const metrics = data?.metrics ?? { pendingTotalNext7Days: 0, overdueCount: 0 };
 
   const contractTotal = useMemo(
     () => contractPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0),
@@ -311,7 +299,9 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
     contractTotal,
     variationTotal,
     metrics,
-    loading,
-    refresh: loadAll,
+    loading: isFetching,
+    refresh: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+    },
   };
 }

@@ -91,6 +91,7 @@ function buildHookReturn(
     updateProgressLog: jest.fn(),
     deleteProgressLog: jest.fn(),
     resolveDelayReason: jest.fn(),
+    acceptQuote: jest.fn(),
   };
 }
 
