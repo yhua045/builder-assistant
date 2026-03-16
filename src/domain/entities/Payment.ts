@@ -11,7 +11,7 @@ export interface Payment {
   currency?: string;
   notes?: string;
   method?: 'bank' | 'cash' | 'check' | 'card' | 'other';
-  status?: 'pending' | 'settled';
+  status?: 'pending' | 'settled' | 'cancelled' | 'reverse_payment';
   reference?: string;
   // Display / grouping fields added in #142
   contractorName?: string;       // denormalized from Contact.name for list performance

@@ -246,7 +246,7 @@ export const payments = sqliteTable('payments', {
   currency: text('currency'),
   paymentDate: integer('payment_date'), // Unix timestamp
   dueDate: integer('due_date'), // Unix timestamp for due date
-  status: text('status', { enum: ['pending', 'settled'] }),
+  status: text('status', { enum: ['pending', 'settled', 'cancelled', 'reverse_payment'] }),
   paymentMethod: text('payment_method'),
   reference: text('reference'),
   notes: text('notes'),
