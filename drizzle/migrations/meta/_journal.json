@@ -78,6 +78,13 @@
       "when": 1772673774915,
       "tag": "0010_workable_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1773628573498,
+      "tag": "0011_jittery_quicksilver",
+      "breakpoints": true
     }
   ]
 }

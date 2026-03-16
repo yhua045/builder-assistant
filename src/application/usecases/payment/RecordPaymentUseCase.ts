@@ -15,7 +15,9 @@ export class RecordPaymentUseCase {
       if (!invoice) return;
 
       const payments = await this.paymentRepo.findByInvoice(payment.invoiceId);
-      const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+      const paid = payments
+        .filter(p => p.status !== 'cancelled' && p.status !== 'reverse_payment')
+        .reduce((s, p) => s + (p.amount || 0), 0);
 
       const newPaymentStatus = paid >= invoice.total ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
       const updates: any = { paymentStatus: newPaymentStatus };

@@ -120,4 +120,37 @@ describe('RecordPaymentUseCase integration', () => {
     expect(updated?.paymentStatus).toBe('partial');
     expect(updated?.status).not.toBe('paid');
   });
+
+  it('does not count a cancelled payment toward invoice totalSettled', async () => {
+    const inv = InvoiceEntity.create({ total: 500, status: 'issued' }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    // Record a large payment then cancel it (simulate by saving directly with cancelled status)
+    const cancelled = PaymentEntity.create({ invoiceId: inv.id, amount: 500, status: 'cancelled' }).data();
+    await paymentRepo.save(cancelled);
+
+    // Now record a small partial payment via the use case
+    const partial = PaymentEntity.create({ invoiceId: inv.id, amount: 100 }).data();
+    await uc.execute({ ...partial, status: 'settled' });
+
+    const updated = await invoiceRepo.getInvoice(inv.id);
+    expect(updated?.paymentStatus).toBe('partial');
+    expect(updated?.status).not.toBe('paid');
+  });
+
+  it('accumulates multiple partial payments and transitions invoice to paid', async () => {
+    const inv = InvoiceEntity.create({ total: 300, status: 'issued' }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    const p1 = PaymentEntity.create({ invoiceId: inv.id, amount: 100 }).data();
+    await uc.execute({ ...p1, status: 'settled' });
+    const after1 = await invoiceRepo.getInvoice(inv.id);
+    expect(after1?.paymentStatus).toBe('partial');
+
+    const p2 = PaymentEntity.create({ invoiceId: inv.id, amount: 200 }).data();
+    await uc.execute({ ...p2, status: 'settled' });
+    const after2 = await invoiceRepo.getInvoice(inv.id);
+    expect(after2?.paymentStatus).toBe('paid');
+    expect(after2?.status).toBe('paid');
+  });
 });

@@ -175,25 +175,25 @@ describe('IT-1: CriticalTasksTimeline is visible when there are blocked tasks', 
 });
 
 // ---------------------------------------------------------------------------
-// IT-2: FocusList renders when cockpit has focus items
+// IT-2: FocusList — intentionally hidden in TasksScreen (commit 9d84e20)
+//   The FocusList component is preserved for future reuse but is no longer
+//   rendered in the TasksScreen (it duplicated the task list). Tests verify
+//   it is absent from the rendered tree.
 // ---------------------------------------------------------------------------
-describe('IT-2: FocusList is visible when cockpit has focus items', () => {
-  it('renders the focus row for Frame Roof Plates', async () => {
+describe('IT-2: FocusList is NOT rendered in TasksScreen (intentionally hidden)', () => {
+  it('does not render any focus-list testID in the current screen', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<TasksScreen />);
     });
 
-    const row = tree!.root.find((n) => n.props.testID === 'focus-item-t-focus');
-    expect(row).toBeTruthy();
+    const focusListNodes = tree!.root.findAll((n) => n.props.testID === 'focus-list');
+    expect(focusListNodes).toHaveLength(0);
 
-    // The task title and urgency label appear in the rendered text
-    const allText = tree!.root
-      .findAll((n) => String(n.type) === 'Text')
-      .map((n) => String(n.props.children))
-      .join(' ');
-    expect(allText).toContain('Frame Roof Plates');
-    expect(allText).toContain('🔴 3d overdue');
+    const focusItemNodes = tree!.root.findAll((n) =>
+      typeof n.props.testID === 'string' && n.props.testID.startsWith('focus-item-'),
+    );
+    expect(focusItemNodes).toHaveLength(0);
   });
 });
 
@@ -231,20 +231,12 @@ describe('IT-3: tapping a timeline item navigates directly to TaskDetails', () =
 });
 
 // ---------------------------------------------------------------------------
-// IT-4: Tapping a FocusList item navigates directly to TaskDetails (issue #131)
+// IT-4: FocusList navigation — skipped because FocusList is intentionally
+//   hidden in TasksScreen (commit 9d84e20). Navigation wiring is covered by
+//   the FocusList unit tests in FocusList.test.tsx.
 // ---------------------------------------------------------------------------
-describe('IT-4: tapping a FocusList item navigates to TaskDetails', () => {
-  it('calls navigate("TaskDetails", { taskId }) when a focus row is tapped', async () => {
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<TasksScreen />);
-    });
-
-    const row = tree!.root.find((n) => n.props.testID === 'focus-item-t-focus');
-    await act(async () => { row.props.onPress(); });
-
-    expect(mockNavigate).toHaveBeenCalledWith('TaskDetails', { taskId: 't-focus' });
-  });
+describe('IT-4: FocusList tap navigation (skipped — component hidden in TasksScreen)', () => {
+  it.todo('re-enable when FocusList is restored to TasksScreen');
 });
 
 // ---------------------------------------------------------------------------

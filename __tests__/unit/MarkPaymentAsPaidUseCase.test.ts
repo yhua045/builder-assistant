@@ -119,21 +119,42 @@ describe('MarkPaymentAsPaidUseCase', () => {
     expect(result.invoicePaymentStatus).toBe('partial');
   });
 
-  it('does not update invoice status to paid when invoice is draft', async () => {
-    const payment = makePayment({ amount: 1000 });
-    const invoice = makeInvoice({ total: 1000, status: 'draft' });
+  it('does not count cancelled payments when recalculating invoice totalSettled', async () => {
+    const payment = makePayment({ amount: 400 });
+    const invoice = makeInvoice({ total: 1000 });
     paymentRepo.findById.mockResolvedValue(payment);
     paymentRepo.update.mockResolvedValue(undefined);
     invoiceRepo.getInvoice.mockResolvedValue(invoice);
-    paymentRepo.findByInvoice.mockResolvedValue([{ ...payment, status: 'settled' }]);
-    invoiceRepo.updateInvoice.mockResolvedValue({ ...invoice, paymentStatus: 'paid' });
+    // The settled payment (400) + a cancelled one (800) — only 400 should count
+    paymentRepo.findByInvoice.mockResolvedValue([
+      { ...payment, status: 'settled' },
+      { id: 'pay_cancelled', invoiceId: 'inv_1', amount: 800, status: 'cancelled' } as any,
+    ]);
+    invoiceRepo.updateInvoice.mockResolvedValue({ ...invoice, paymentStatus: 'partial' });
 
-    await useCase.execute({ paymentId: 'pay_1' });
+    const result = await useCase.execute({ paymentId: 'pay_1' });
 
-    // Should update paymentStatus but NOT set status to 'paid' for a draft invoice
-    expect(invoiceRepo.updateInvoice).toHaveBeenCalledWith(
+    expect(result.invoicePaymentStatus).toBe('partial');
+    expect(invoiceRepo.updateInvoice).not.toHaveBeenCalledWith(
       'inv_1',
-      expect.not.objectContaining({ status: 'paid' }),
+      expect.objectContaining({ paymentStatus: 'paid' }),
     );
+  });
+
+  it('does not count reverse_payment records when recalculating invoice totalSettled', async () => {
+    const payment = makePayment({ amount: 400 });
+    const invoice = makeInvoice({ total: 1000 });
+    paymentRepo.findById.mockResolvedValue(payment);
+    paymentRepo.update.mockResolvedValue(undefined);
+    invoiceRepo.getInvoice.mockResolvedValue(invoice);
+    paymentRepo.findByInvoice.mockResolvedValue([
+      { ...payment, status: 'settled' },
+      { id: 'pay_rev', invoiceId: 'inv_1', amount: 700, status: 'reverse_payment' } as any,
+    ]);
+    invoiceRepo.updateInvoice.mockResolvedValue({ ...invoice, paymentStatus: 'partial' });
+
+    const result = await useCase.execute({ paymentId: 'pay_1' });
+
+    expect(result.invoicePaymentStatus).toBe('partial');
   });
 });

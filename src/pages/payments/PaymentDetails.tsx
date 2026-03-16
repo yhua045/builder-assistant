@@ -7,10 +7,14 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, X, DollarSign } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { container } from 'tsyringe';
 import { Payment } from '../../domain/entities/Payment';
@@ -18,6 +22,7 @@ import { Invoice } from '../../domain/entities/Invoice';
 import { PaymentRepository } from '../../domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
 import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
+import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
 import '../../infrastructure/di/registerServices';
 
@@ -58,6 +63,10 @@ export default function PaymentDetails() {
   const [linkedPayments, setLinkedPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(!syntheticRow);
   const [marking, setMarking] = useState(false);
+  const [partialModalVisible, setPartialModalVisible] = useState(false);
+  const [partialAmount, setPartialAmount] = useState('');
+  const [partialAmountError, setPartialAmountError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const paymentRepo = React.useMemo(
     () => container.resolve<PaymentRepository>('PaymentRepository' as any),
@@ -69,6 +78,10 @@ export default function PaymentDetails() {
   );
   const markPaidUc = React.useMemo(
     () => new MarkPaymentAsPaidUseCase(paymentRepo, invoiceRepo),
+    [paymentRepo, invoiceRepo],
+  );
+  const recordPaymentUc = React.useMemo(
+    () => new RecordPaymentUseCase(paymentRepo, invoiceRepo),
     [paymentRepo, invoiceRepo],
   );
 
@@ -107,14 +120,46 @@ export default function PaymentDetails() {
   }, [loadData]);
 
   const handleMarkAsPaid = () => {
-    if (!payment || payment.id.startsWith('invoice-payable:')) {
-      Alert.alert(
-        'Record Payment',
-        'This obligation is derived from an invoice. Please record a payment against the invoice directly.',
-      );
+    // Invoice-linked path: record a new settled payment against the invoice
+    if (invoice && invoice.status !== 'cancelled' &&
+        (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial')) {
+      const settled = linkedPayments
+        .filter(p => p.status === 'settled')
+        .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+      const balance = invoice.total - settled;
+      if (balance <= 0) return;
+
+      Alert.alert('Mark as Paid', `Confirm full payment of ${formatCurrency(balance)}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setMarking(true);
+            try {
+              const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+              await recordPaymentUc.execute({
+                id,
+                invoiceId: invoice.id,
+                amount: balance,
+                status: 'settled',
+                date: new Date().toISOString(),
+              });
+              Alert.alert('Done', 'Payment recorded.', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            } catch (e: any) {
+              Alert.alert('Error', e?.message ?? 'Failed to record payment');
+            } finally {
+              setMarking(false);
+            }
+          },
+        },
+      ]);
       return;
     }
 
+    // Fallback: standalone payment record (no linked invoice)
+    if (!payment || payment.id.startsWith('invoice-payable:')) return;
     Alert.alert('Mark as Paid', `Confirm payment of ${formatCurrency(payment.amount ?? 0)}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -124,7 +169,7 @@ export default function PaymentDetails() {
           try {
             await markPaidUc.execute({ paymentId: payment.id });
             Alert.alert('Done', 'Payment marked as settled.', [
-              { text: 'OK', onPress: () => { navigation.goBack(); } },
+              { text: 'OK', onPress: () => navigation.goBack() },
             ]);
           } catch (e: any) {
             Alert.alert('Error', e?.message ?? 'Failed to mark payment as paid');
@@ -134,6 +179,37 @@ export default function PaymentDetails() {
         },
       },
     ]);
+  };
+
+  const handlePartialPaymentSubmit = async () => {
+    const settled = linkedPayments
+      .filter(p => p.status === 'settled')
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+    const balance = invoice ? invoice.total - settled : 0;
+    const amountNum = parseFloat(partialAmount);
+    if (!amountNum || amountNum <= 0 || amountNum > balance) {
+      setPartialAmountError(`Enter a valid amount between $0.01 and ${formatCurrency(balance)}.`);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await recordPaymentUc.execute({
+        id,
+        invoiceId: invoice!.id,
+        amount: amountNum,
+        status: 'settled',
+        date: new Date().toISOString(),
+      });
+      setPartialModalVisible(false);
+      setPartialAmount('');
+      setPartialAmountError('');
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Payment failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -157,6 +233,14 @@ export default function PaymentDetails() {
   const totalSettled = linkedPayments
     .filter((p) => p.status === 'settled')
     .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const remainingBalance = invoice ? invoice.total - totalSettled : 0;
+  const canRecordPayment =
+    invoice !== null &&
+    invoice.status !== 'cancelled' &&
+    (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial') &&
+    remainingBalance > 0;
+  const showMarkAsPaidFallback =
+    !invoice && payment.status === 'pending' && !isSynthetic;
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -183,18 +267,27 @@ export default function PaymentDetails() {
           <View className="flex-row items-center gap-2">
             <View
               className={`px-2 py-0.5 rounded ${
-                payment.status === 'settled' ? 'bg-green-100' : 'bg-amber-100'
+                payment.status === 'settled' ? 'bg-green-100' :
+                payment.status === 'cancelled' ? 'bg-red-100' :
+                payment.status === 'reverse_payment' ? 'bg-purple-100' :
+                'bg-amber-100'
               }`}
             >
               <Text
                 className={`text-xs font-semibold ${
-                  payment.status === 'settled' ? 'text-green-700' : 'text-amber-700'
+                  payment.status === 'settled' ? 'text-green-700' :
+                  payment.status === 'cancelled' ? 'text-red-700' :
+                  payment.status === 'reverse_payment' ? 'text-purple-700' :
+                  'text-amber-700'
                 }`}
               >
-                {payment.status === 'settled' ? 'Settled' : 'Pending'}
+                {payment.status === 'settled' ? 'Settled' :
+                 payment.status === 'cancelled' ? 'Cancelled' :
+                 payment.status === 'reverse_payment' ? 'Reversed' :
+                 'Pending'}
               </Text>
             </View>
-            {dueStatus && payment.status !== 'settled' && (
+            {dueStatus && payment.status === 'pending' && (
               <Text style={{ color: dueStatus.style === 'overdue' ? '#dc2626' : dueStatus.style === 'due-soon' ? '#d97706' : '#16a34a' }} className="text-xs font-semibold">
                 {dueStatus.text}
               </Text>
@@ -259,24 +352,154 @@ export default function PaymentDetails() {
           </View>
         )}
 
-        {/* Mark as paid CTA */}
-        {payment.status === 'pending' && !isSynthetic && (
-          <TouchableOpacity
-            onPress={handleMarkAsPaid}
-            disabled={marking}
-            className="bg-primary rounded-xl py-4 items-center mb-6"
-            activeOpacity={0.8}
-          >
-            {marking ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-primary-foreground font-bold text-base">
-                Mark as Paid
-              </Text>
+        {/* CTAs */}
+        {(canRecordPayment || showMarkAsPaidFallback) && (
+          <View className="gap-3 mb-6">
+            <TouchableOpacity
+              onPress={handleMarkAsPaid}
+              disabled={marking}
+              className="bg-primary rounded-xl py-4 items-center"
+              activeOpacity={0.8}
+            >
+              {marking ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-primary-foreground font-bold text-base">Mark as Paid</Text>
+              )}
+            </TouchableOpacity>
+
+            {canRecordPayment && (
+              <TouchableOpacity
+                onPress={() => {
+                  setPartialAmount(remainingBalance.toString());
+                  setPartialAmountError('');
+                  setPartialModalVisible(true);
+                }}
+                className="border border-primary rounded-xl py-4 items-center"
+                activeOpacity={0.8}
+              >
+                <Text className="text-primary font-bold text-base">Make Partial Payment</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
+
+      {/* Partial Payment Modal */}
+      <Modal
+        visible={partialModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setPartialModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <TouchableOpacity
+            className="flex-1 bg-black/50"
+            activeOpacity={1}
+            onPress={() => setPartialModalVisible(false)}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              className="w-full bg-white dark:bg-gray-900 rounded-t-3xl mt-auto border-t border-gray-200 dark:border-gray-800"
+            >
+              {/* Handle bar */}
+              <View className="w-full items-center pt-3 pb-1">
+                <View className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
+              </View>
+
+              <View className="p-6">
+                {/* Header */}
+                <View className="flex-row items-center justify-between mb-6">
+                  <Text className="text-xl font-bold text-gray-900 dark:text-white">Partial Payment</Text>
+                  <TouchableOpacity onPress={() => setPartialModalVisible(false)}>
+                    <X size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Invoice info */}
+                {invoice && (
+                  <View className="mb-6">
+                    <View className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-4 border border-gray-200 dark:border-gray-700">
+                      <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Invoice</Text>
+                      <Text className="text-base font-bold text-gray-900 dark:text-white mb-3">
+                        {invoice.externalReference ?? invoice.invoiceNumber ?? invoice.id}
+                      </Text>
+                      <View className="flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-3">
+                        <View>
+                          <Text className="text-xs text-gray-500 dark:text-gray-400">Issued by</Text>
+                          <Text className="text-sm font-medium text-gray-900 dark:text-white">{invoice.issuerName ?? '—'}</Text>
+                        </View>
+                        <View className="items-end">
+                          <Text className="text-xs text-gray-500 dark:text-gray-400">Due date</Text>
+                          <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                            {formatDate(invoice.dateDue ?? invoice.dueDate)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-end justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <View>
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Invoice</Text>
+                        <Text className="text-base text-gray-400 dark:text-gray-500 line-through">
+                          {formatCurrency(invoice.total)}
+                        </Text>
+                      </View>
+                      <View className="items-end">
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Remaining Balance</Text>
+                        <Text className="text-xl font-bold text-primary">{formatCurrency(remainingBalance)}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Amount input */}
+                <View className="mb-6">
+                  <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Payment Amount</Text>
+                  <View className="flex-row items-center bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3">
+                    <DollarSign size={20} color={isDark ? '#9CA3AF' : '#6B7280'} style={{ marginRight: 8 }} />
+                    <TextInput
+                      className="flex-1 text-2xl font-bold text-gray-900 dark:text-white"
+                      placeholder="0.00"
+                      value={partialAmount}
+                      onChangeText={(t) => { setPartialAmount(t); setPartialAmountError(''); }}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {!!partialAmountError && (
+                    <Text className="text-xs text-red-500 mt-1">{partialAmountError}</Text>
+                  )}
+                </View>
+
+                {/* Actions */}
+                <View className="flex-row gap-3">
+                  <TouchableOpacity
+                    onPress={() => setPartialModalVisible(false)}
+                    className="flex-1 py-3.5 rounded-xl border border-gray-300 dark:border-gray-600 items-center justify-center"
+                  >
+                    <Text className="font-semibold text-gray-700 dark:text-gray-300">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handlePartialPaymentSubmit}
+                    disabled={submitting}
+                    className="flex-1 py-3.5 rounded-xl bg-primary items-center justify-center"
+                  >
+                    {submitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text className="font-semibold text-white">Mark as Paid</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
