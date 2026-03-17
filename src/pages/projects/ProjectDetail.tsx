@@ -8,7 +8,7 @@
  * Navigation: pushed from ProjectsNavigator → ProjectDetail { projectId }.
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -26,7 +29,6 @@ import {
   Phone,
   Calendar,
   Clock,
-  Layers,
 } from 'lucide-react-native';
 import { useProjectTimeline } from '../../hooks/useProjectTimeline';
 import { TimelineDayGroup } from '../../components/projects/TimelineDayGroup';
@@ -37,7 +39,11 @@ cssInterop(MapPin, { className: { target: 'style', nativeStyleToProp: { color: t
 cssInterop(Phone, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Layers, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+
+// Enable LayoutAnimation on Android.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -57,11 +63,52 @@ export default function ProjectDetailScreen() {
   const navigation = useNavigation<any>();
   const { projectId } = route.params as { projectId: string };
 
-  const { project, dayGroups, loading, error, markComplete } =
+  const { project, dayGroups, loading, error, markComplete, invalidateTimeline } =
     useProjectTimeline(projectId);
 
   // Scroll to today's group on first data load
   const scrollRef = useRef<ScrollView>(null);
+
+  // ── Expand / collapse state ─────────────────────────────────────────────
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const groupsInitialised = useRef(false);
+
+  // Initialise once when dayGroups first arrive.
+  // Past groups (date < today local) start collapsed; today/future start expanded.
+  useEffect(() => {
+    if (!dayGroups.length || groupsInitialised.current) return;
+    const todayStr = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+    const init: Record<string, boolean> = {};
+    for (const g of dayGroups) {
+      init[g.date] = g.date === '__nodate__' || g.date >= todayStr;
+    }
+    setExpandedGroups(init);
+    groupsInitialised.current = true;
+  }, [dayGroups]);
+
+  const allExpanded = dayGroups.length > 0 && dayGroups.every((g) => expandedGroups[g.date] !== false);
+
+  const handleToggleAll = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const next = !allExpanded;
+    setExpandedGroups(Object.fromEntries(dayGroups.map((g) => [g.date, next])));
+  }, [allExpanded, dayGroups]);
+
+  const handleGroupToggle = useCallback((date: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedGroups((prev) => ({ ...prev, [date]: !prev[date] }));
+  }, []);
+
+  // ── Invalidate timeline on screen focus (picks up mutations done in TaskDetailsPage) ──
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      invalidateTimeline();
+    });
+    return unsubscribe;
+  }, [navigation, invalidateTimeline]);
 
   const handleOpenTask = useCallback(
     (task: Task) => {
@@ -118,10 +165,13 @@ export default function ProjectDetailScreen() {
         <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
           <ArrowLeft className="text-foreground" size={24} />
         </Pressable>
-        <View className="flex-row items-center gap-2">
-          <Layers className="text-primary" size={20} />
-          <Text className="text-lg font-bold text-foreground">Project Details</Text>
-        </View>
+        <Text
+          className="text-lg font-bold text-foreground flex-1 text-center"
+          numberOfLines={1}
+          testID="project-detail-heading"
+        >
+          {loading ? 'Loading…' : (project?.name ?? '—')}
+        </Text>
         <View className="w-8" />
       </View>
 
@@ -221,9 +271,22 @@ export default function ProjectDetailScreen() {
         {/* ── Task timeline ───────────────────────────────────────── */}
         {!loading && !error && (
           <View className="p-6">
-            <Text className="text-xl font-bold text-foreground mb-4">
-              Task Timeline
-            </Text>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-xl font-bold text-foreground">
+                Task Timeline
+              </Text>
+              {dayGroups.length > 0 && (
+                <Pressable
+                  onPress={handleToggleAll}
+                  className="px-3 py-1 bg-muted rounded-full active:opacity-70"
+                  testID="timeline-toggle-all"
+                >
+                  <Text className="text-xs font-semibold text-muted-foreground">
+                    {allExpanded ? 'Collapse All' : 'Expand All'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
 
             {dayGroups.length === 0 && (
               <Text
@@ -239,6 +302,8 @@ export default function ProjectDetailScreen() {
                 key={group.date}
                 group={group}
                 isLast={idx === dayGroups.length - 1}
+                expanded={expandedGroups[group.date] !== false}
+                onToggle={() => handleGroupToggle(group.date)}
                 onOpenTask={handleOpenTask}
                 onAddProgressLog={handleAddProgressLog}
                 onAttachDocument={handleAttachDocument}

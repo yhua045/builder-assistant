@@ -13,8 +13,8 @@
  * the first task card, regardless of card heights.
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { Task } from '../../domain/entities/Task';
@@ -24,14 +24,13 @@ import { TimelineTaskCard } from './TimelineTaskCard';
 cssInterop(ChevronDown, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(ChevronRight, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
-// Enable LayoutAnimation on Android.
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export interface TimelineDayGroupProps {
   group: DayGroup;
   isLast: boolean;
+  /** Controlled expanded state — managed by ProjectDetail */
+  expanded: boolean;
+  /** Called when the group's toggle row is pressed */
+  onToggle: () => void;
   onOpenTask: (task: Task) => void;
   onAddProgressLog: (task: Task) => void;
   onAttachDocument: (task: Task) => void;
@@ -42,18 +41,14 @@ export interface TimelineDayGroupProps {
 export function TimelineDayGroup({
   group,
   isLast,
+  expanded,
+  onToggle,
   onOpenTask,
   onAddProgressLog,
   onAttachDocument,
   onMarkComplete,
   testID,
 }: TimelineDayGroupProps) {
-  const [expanded, setExpanded] = useState(true);
-
-  const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((prev) => !prev);
-  }, []);
 
   return (
     <View className="flex-row" testID={testID}>
@@ -86,7 +81,7 @@ export function TimelineDayGroup({
 
         {/* Timeline dot + collapse toggle */}
         <Pressable
-          onPress={toggleExpanded}
+          onPress={onToggle}
           className="flex-row items-center gap-2 pb-2 active:opacity-70"
           testID={testID ? `${testID}-toggle` : undefined}
         >

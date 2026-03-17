@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Pressable, Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,7 +47,11 @@ cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { col
 export default function TaskDetailsPage() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { taskId } = route.params;
+  const { taskId, openProgressLog, openDocument } = route.params as {
+    taskId: string;
+    openProgressLog?: boolean;
+    openDocument?: boolean;
+  };
   const queryClient = useQueryClient();
   const {
     getTask,
@@ -202,6 +206,8 @@ export default function TaskDetailsPage() {
     }
   }, [taskId, getTask, getTaskDetail, documentRepository, taskRepository, invoiceRepository, allContacts]);
 
+  const autoTriggered = useRef(false);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       loadData();
@@ -210,6 +216,19 @@ export default function TaskDetailsPage() {
     loadData();
     return unsubscribe;
   }, [navigation, loadData]);
+
+  // Auto-open modal / picker from navigation params (one-shot, fired after first load)
+  useEffect(() => {
+    if (loading) return;
+    if (autoTriggered.current) return;
+    autoTriggered.current = true;
+    if (openProgressLog) {
+      setShowAddLogModal(true);
+    } else if (openDocument) {
+      handleAddDocument();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const handleDelete = async () => {
     const confirmed = await confirm({
