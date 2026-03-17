@@ -1,8 +1,10 @@
 import renderer, { act } from 'react-test-renderer';
 import React, { useEffect } from 'react';
+import { waitFor } from '@testing-library/react-native';
 import { container } from 'tsyringe';
 import { useInvoices } from '../../src/hooks/useInvoices';
 import { Invoice } from '../../src/domain/entities/Invoice';
+import { wrapWithQuery, renderHookWithQuery } from '../utils/queryClientWrapper';
 
 describe('useInvoices hook', () => {
   const mockRepo: any = {
@@ -47,55 +49,25 @@ describe('useInvoices hook', () => {
 
       mockRepo.listInvoices.mockResolvedValueOnce({ items: invoices, total: 2 });
 
-      let latest: any = null;
+      const { result } = renderHookWithQuery(() => useInvoices());
 
-      function TestHarness() {
-        const state = useInvoices();
-        useEffect(() => {
-          latest = state;
-        }, [state]);
-        return null;
-      }
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      await act(async () => {
-        renderer.create(<TestHarness />);
-        for (let i = 0; i < 20; i++) {
-          if (latest && latest.loading === false) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
-      });
-
-      expect(latest.loading).toBe(false);
-      expect(latest.error).toBeNull();
-      expect(latest.invoices).toHaveLength(2);
-      expect(latest.invoices[0].id).toBe('inv_1');
+      expect(result.current.error).toBeNull();
+      expect(result.current.invoices).toHaveLength(2);
+      expect(result.current.invoices[0].id).toBe('inv_1');
       expect(mockRepo.listInvoices).toHaveBeenCalledTimes(1);
     });
 
     it('sets error when initial load fails', async () => {
       mockRepo.listInvoices.mockRejectedValueOnce(new Error('Database error'));
 
-      let latest: any = null;
+      const { result } = renderHookWithQuery(() => useInvoices());
 
-      function TestHarness() {
-        const state = useInvoices();
-        useEffect(() => {
-          latest = state;
-        }, [state]);
-        return null;
-      }
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      await act(async () => {
-        renderer.create(<TestHarness />);
-        for (let i = 0; i < 20; i++) {
-          if (latest && latest.loading === false) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
-      });
-
-      expect(latest.loading).toBe(false);
-      expect(latest.invoices).toHaveLength(0);
-      expect(latest.error).toContain('Database error');
+      expect(result.current.invoices).toHaveLength(0);
+      expect(result.current.error).toContain('Database error');
     });
 
     it('filters invoices by status', async () => {
@@ -128,27 +100,12 @@ describe('useInvoices hook', () => {
         return Promise.resolve({ items: filtered, total: filtered.length });
       });
 
-      let latest: any = null;
+      const { result } = renderHookWithQuery(() => useInvoices({ status: 'paid' }));
 
-      function TestHarness() {
-        const state = useInvoices({ status: 'paid' });
-        useEffect(() => {
-          latest = state;
-        }, [state]);
-        return null;
-      }
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      await act(async () => {
-        renderer.create(<TestHarness />);
-        for (let i = 0; i < 20; i++) {
-          if (latest && latest.loading === false) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
-      });
-
-      expect(latest.loading).toBe(false);
-      expect(latest.invoices).toHaveLength(1);
-      expect(latest.invoices[0].status).toBe('paid');
+      expect(result.current.invoices).toHaveLength(1);
+      expect(result.current.invoices[0].status).toBe('paid');
     });
   });
 
@@ -184,7 +141,7 @@ describe('useInvoices hook', () => {
       }
 
       await act(async () => {
-        renderer.create(<TestHarness />);
+        renderer.create(wrapWithQuery(<TestHarness />));
         for (let i = 0; i < 20; i++) {
           if (latest && latest.loading === false) break;
           await new Promise<void>(resolve => setTimeout(resolve, 50));
@@ -228,7 +185,7 @@ describe('useInvoices hook', () => {
       }
 
       await act(async () => {
-        renderer.create(<TestHarness />);
+        renderer.create(wrapWithQuery(<TestHarness />));
         for (let i = 0; i < 20; i++) {
           if (latest && latest.loading === false) break;
           await new Promise<void>(resolve => setTimeout(resolve, 50));
@@ -274,42 +231,19 @@ describe('useInvoices hook', () => {
 
       mockRepo.updateInvoice.mockResolvedValueOnce(undefined);
 
-      let latest: any = null;
+      const { result } = renderHookWithQuery(() => useInvoices());
 
-      function TestHarness() {
-        const state = useInvoices();
-        useEffect(() => {
-          latest = state;
-        }, [state]);
-        return null;
-      }
+      await waitFor(() => expect(result.current.invoices[0]?.total).toBe(1000));
 
       await act(async () => {
-        renderer.create(<TestHarness />);
-        for (let i = 0; i < 20; i++) {
-          if (latest && latest.loading === false) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
-      });
-
-      expect(latest.invoices[0].total).toBe(1000);
-
-      await act(async () => {
-        const result = await latest.updateInvoice({
+        const updateResult = await result.current.updateInvoice({
           ...invoice,
           total: 1500,
         });
-
-        expect(result.success).toBe(true);
-
-        // Wait for list to refresh
-        for (let i = 0; i < 20; i++) {
-          if (latest.invoices[0].total === 1500) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
+        expect(updateResult.success).toBe(true);
       });
 
-      expect(latest.invoices[0].total).toBe(1500);
+      await waitFor(() => expect(result.current.invoices[0]?.total).toBe(1500));
     });
   });
 
@@ -331,39 +265,16 @@ describe('useInvoices hook', () => {
 
       mockRepo.deleteInvoice.mockResolvedValueOnce(undefined);
 
-      let latest: any = null;
+      const { result } = renderHookWithQuery(() => useInvoices());
 
-      function TestHarness() {
-        const state = useInvoices();
-        useEffect(() => {
-          latest = state;
-        }, [state]);
-        return null;
-      }
+      await waitFor(() => expect(result.current.invoices).toHaveLength(1));
 
       await act(async () => {
-        renderer.create(<TestHarness />);
-        for (let i = 0; i < 20; i++) {
-          if (latest && latest.loading === false) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
+        const deleteResult = await result.current.deleteInvoice('inv_1');
+        expect(deleteResult.success).toBe(true);
       });
 
-      expect(latest.invoices).toHaveLength(1);
-
-      await act(async () => {
-        const result = await latest.deleteInvoice('inv_1');
-
-        expect(result.success).toBe(true);
-
-        // Wait for list to refresh
-        for (let i = 0; i < 20; i++) {
-          if (latest.invoices.length === 0) break;
-          await new Promise<void>(resolve => setTimeout(resolve, 50));
-        }
-      });
-
-      expect(latest.invoices).toHaveLength(0);
+      await waitFor(() => expect(result.current.invoices).toHaveLength(0));
       expect(mockRepo.deleteInvoice).toHaveBeenCalledWith('inv_1');
     });
   });
@@ -394,7 +305,7 @@ describe('useInvoices hook', () => {
       }
 
       await act(async () => {
-        renderer.create(<TestHarness />);
+        renderer.create(wrapWithQuery(<TestHarness />));
         for (let i = 0; i < 20; i++) {
           if (latest && latest.loading === false) break;
           await new Promise<void>(resolve => setTimeout(resolve, 50));
@@ -429,7 +340,7 @@ describe('useInvoices hook', () => {
       }
 
       await act(async () => {
-        renderer.create(<TestHarness />);
+        renderer.create(wrapWithQuery(<TestHarness />));
         for (let i = 0; i < 20; i++) {
           if (latest && latest.loading === false) break;
           await new Promise<void>(resolve => setTimeout(resolve, 50));
@@ -476,7 +387,7 @@ describe('useInvoices hook', () => {
       }
 
       await act(async () => {
-        renderer.create(<TestHarness />);
+        renderer.create(wrapWithQuery(<TestHarness />));
         for (let i = 0; i < 20; i++) {
           if (latest && latest.loading === false) break;
           await new Promise<void>(resolve => setTimeout(resolve, 50));

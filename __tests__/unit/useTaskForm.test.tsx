@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { container } from 'tsyringe';
 import { useTaskForm } from '../../src/hooks/useTaskForm';
 import { Task } from '../../src/domain/entities/Task';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ async function renderForm(opts: Parameters<typeof useTaskForm>[0] = {}) {
   }
 
   await act(async () => {
-    renderer.create(<TestHarness />);
+    renderer.create(wrapWithQuery(<TestHarness />));
     await new Promise<void>((r) => setTimeout(r, 0));
   });
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Quotation } from '../domain/entities/Quotation';
 import { QuotationRepository, QuotationFilterParams } from '../domain/repositories/QuotationRepository';
 import { CreateQuotationUseCase } from '../application/usecases/quotation/CreateQuotationUseCase';
@@ -7,10 +8,17 @@ import { GetQuotationByIdUseCase } from '../application/usecases/quotation/GetQu
 import { UpdateQuotationUseCase } from '../application/usecases/quotation/UpdateQuotationUseCase';
 import { DeleteQuotationUseCase } from '../application/usecases/quotation/DeleteQuotationUseCase';
 import { DrizzleQuotationRepository } from '../infrastructure/repositories/DrizzleQuotationRepository';
+import { queryKeys } from './queryKeys';
 
-export const useQuotations = () => {
+export interface UseQuotationsOptions {
+  /** When provided, subscribes reactively to quotations for this task */
+  taskId?: string;
+}
+
+export const useQuotations = (options?: UseQuotationsOptions) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const repository = useMemo<QuotationRepository>(() => new DrizzleQuotationRepository(), []);
 
@@ -20,11 +28,27 @@ export const useQuotations = () => {
   const updateQuotationUC = useMemo(() => new UpdateQuotationUseCase(repository), [repository]);
   const deleteQuotationUC = useMemo(() => new DeleteQuotationUseCase(repository), [repository]);
 
+  /**
+   * Reactive quotation list for a specific task. Only active when taskId is
+   * provided — otherwise undefined. Invalidated by acceptQuotation / rejectQuotation.
+   */
+  const { data: taskQuotations } = useQuery<Quotation[]>({
+    queryKey: queryKeys.quotations(options?.taskId),
+    queryFn: async () => {
+      const taskId = options?.taskId;
+      if (!taskId) return [];
+      return repository.findByTask(taskId);
+    },
+    enabled: Boolean(options?.taskId),
+    staleTime: 60_000,
+  });
+
   const createQuotation = async (quotation: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Quotation> => {
     setLoading(true);
     setError(null);
     try {
       const created = await createQuotationUC.execute(quotation as Quotation);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
       return created;
     } catch (e: any) {
       const msg = e?.message || 'Failed to create quotation';
@@ -70,6 +94,7 @@ export const useQuotations = () => {
     setError(null);
     try {
       const updated = await updateQuotationUC.execute(id, updates);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
       return updated;
     } catch (e: any) {
       const msg = e?.message || 'Failed to update quotation';
@@ -85,6 +110,7 @@ export const useQuotations = () => {
     setError(null);
     try {
       await deleteQuotationUC.execute(id);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
     } catch (e: any) {
       const msg = e?.message || 'Failed to delete quotation';
       setError(msg);
@@ -100,6 +126,8 @@ export const useQuotations = () => {
     getQuotation,
     updateQuotation,
     deleteQuotation,
+    /** Reactive quotations list — only populated when taskId option is provided */
+    taskQuotations,
     loading,
     error,
   };

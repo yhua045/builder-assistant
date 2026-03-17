@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Pressable, Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTasks, TaskDetail } from '../../hooks/useTasks';
 import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -33,6 +34,7 @@ import { ProgressLog } from '../../domain/entities/ProgressLog';
 import { TaskPickerModal } from './TaskPickerModal';
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
+import { invalidations } from '../../hooks/queryKeys';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -46,6 +48,7 @@ export default function TaskDetailsPage() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { taskId } = route.params;
+  const queryClient = useQueryClient();
   const {
     getTask,
     deleteTask,
@@ -275,7 +278,7 @@ export default function TaskDetailsPage() {
     });
     if (!confirmed) return;
     try {
-      await removeDelayReason(delayReasonId);
+      await removeDelayReason(taskId, delayReasonId);
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to remove delay reason');
@@ -284,7 +287,7 @@ export default function TaskDetailsPage() {
 
   const handleResolveDelayReason = async (delayReasonId: string) => {
     try {
-      await resolveDelayReason(delayReasonId);
+      await resolveDelayReason(taskId, delayReasonId);
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to resolve delay reason');
@@ -329,7 +332,7 @@ export default function TaskDetailsPage() {
   const handleUpdateProgressLog = async (data: AddProgressLogFormData) => {
     if (!editingLog) return;
     try {
-      await updateProgressLog(editingLog.id, data);
+      await updateProgressLog(taskId, editingLog.id, data);
       setEditingLog(null);
       await loadData();
     } catch (e: any) {
@@ -339,7 +342,7 @@ export default function TaskDetailsPage() {
 
   const handleDeleteProgressLog = async (logId: string) => {
     try {
-      await deleteProgressLog(logId);
+      await deleteProgressLog(taskId, logId);
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to delete progress log');
@@ -361,6 +364,10 @@ export default function TaskDetailsPage() {
         mimeType: result.type,
         size: result.size,
       });
+      await Promise.all(
+        invalidations.documentMutated({ taskId })
+          .map(key => queryClient.invalidateQueries({ queryKey: key }))
+      );
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to add document');

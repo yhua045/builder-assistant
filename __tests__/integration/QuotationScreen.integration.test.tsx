@@ -19,6 +19,7 @@ describe('QuotationScreen Integration', () => {
       getQuotation: jest.fn(),
       updateQuotation: jest.fn(),
       deleteQuotation: jest.fn(),
+      taskQuotations: undefined,
       loading: false,
       error: null,
     });
