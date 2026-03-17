@@ -4,6 +4,11 @@ import ProjectsPage from '../../src/pages/projects/ProjectsPage';
 import { useProjects } from '../../src/hooks/useProjects';
 import { ProjectStatus } from '../../src/domain/entities/Project';
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
+  useRoute: () => ({ params: {} }),
+}));
+
 jest.mock('../../src/hooks/useProjects');
 
 const mockedUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;

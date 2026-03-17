@@ -31,7 +31,6 @@ import {
 import { useProjectTimeline } from '../../hooks/useProjectTimeline';
 import { TimelineDayGroup } from '../../components/projects/TimelineDayGroup';
 import { Task } from '../../domain/entities/Task';
-import { ProjectsStackParamList } from './ProjectsNavigator';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(MapPin, { className: { target: 'style', nativeStyleToProp: { color: true } } });

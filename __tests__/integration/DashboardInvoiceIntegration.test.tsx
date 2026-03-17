@@ -89,6 +89,12 @@ jest.mock('../../src/pages/dashboard/components/ActiveTasks', () => {
   };
 });
 
+jest.mock('../../src/pages/quotations/QuotationScreen', () => ({
+  __esModule: true,
+  default: () => null,
+  QuotationScreen: () => null,
+}));
+
 jest.mock('../../src/pages/dashboard/components/UrgentAlerts', () => {
   const MockUrgentAlerts = () => null;
 
