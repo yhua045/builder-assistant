@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet as RNStyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
@@ -8,9 +9,18 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { Layers } from 'lucide-react-native';
 import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
 import { Project } from '../../domain/entities/Project';
+import { ProjectsStackParamList } from './ProjectsNavigator';
 
 const ProjectsPage: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { projects, loading, error } = useProjects();
+
+  const handleProjectPress = useCallback(
+    (project: ProjectCardDto) => {
+      navigation.navigate('ProjectDetail', { projectId: project.id });
+    },
+    [navigation],
+  );
 
   const projectDtos = useMemo((): ProjectCardDto[] => {
     if (!projects) return [];
@@ -66,7 +76,7 @@ const ProjectsPage: React.FC = () => {
           {/* Projects List */}
           <View className="px-6 gap-4">
             {projectDtos.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} onPress={handleProjectPress} />
             ))}
           </View>
         </ScrollView>

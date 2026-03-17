@@ -61,6 +61,9 @@ export const queryKeys = {
 
   /** Contact / subcontractor list */
   contacts: () => ['contacts'] as const,
+
+  /** Hydrated project detail (ProjectDetails — includes owner Contact) */
+  projectDetail: (projectId: string) => ['projectDetail', projectId] as const,
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────
