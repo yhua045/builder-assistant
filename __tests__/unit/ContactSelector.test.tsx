@@ -2,6 +2,15 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import ContactSelector from '../../src/components/inputs/ContactSelector';
 
+jest.mock('../../src/hooks/useContacts', () => {
+  const mockSearch = jest.fn().mockResolvedValue([]);
+  return {
+    __esModule: true,
+    default: () => ({ contacts: [], loading: false, search: mockSearch, refresh: jest.fn() }),
+    useContacts: () => ({ contacts: [], loading: false, search: mockSearch, refresh: jest.fn() }),
+  };
+});
+
 describe('ContactSelector', () => {
   it('renders and allows selecting a contact', async () => {
     const onChange = jest.fn();

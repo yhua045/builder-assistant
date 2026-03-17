@@ -11,6 +11,19 @@ import {
   NormalizedInvoice,
 } from '../../src/application/ai/IInvoiceNormalizer';
 
+jest.mock('../../src/hooks/useInvoices', () => ({
+  useInvoices: () => ({
+    invoices: [],
+    loading: false,
+    error: null,
+    createInvoice: jest.fn().mockResolvedValue({ success: true }),
+    updateInvoice: jest.fn().mockResolvedValue({ success: true }),
+    deleteInvoice: jest.fn().mockResolvedValue({ success: true }),
+    getInvoiceById: jest.fn().mockResolvedValue(null),
+    refreshInvoices: jest.fn(),
+  }),
+}));
+
 // Mock Alert
 jest.spyOn(Alert, 'alert');
 

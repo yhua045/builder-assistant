@@ -3,6 +3,15 @@ import renderer, { act } from 'react-test-renderer';
 import ManualProjectEntry from '../../src/components/ManualProjectEntry';
 import { useProjects } from '../../src/hooks/useProjects';
 
+jest.mock('../../src/hooks/useContacts', () => {
+  const mockSearch = jest.fn().mockResolvedValue([]);
+  return {
+    __esModule: true,
+    default: () => ({ contacts: [], loading: false, search: mockSearch, refresh: jest.fn() }),
+    useContacts: () => ({ contacts: [], loading: false, search: mockSearch, refresh: jest.fn() }),
+  };
+});
+
 jest.mock('../../src/hooks/useProjects');
 const mockedUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
 

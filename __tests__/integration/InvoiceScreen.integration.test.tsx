@@ -52,6 +52,19 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
+jest.mock('../../src/hooks/useInvoices', () => ({
+  useInvoices: () => ({
+    invoices: [],
+    loading: false,
+    error: null,
+    createInvoice: jest.fn().mockResolvedValue({ success: true }),
+    updateInvoice: jest.fn().mockResolvedValue({ success: true }),
+    deleteInvoice: jest.fn().mockResolvedValue({ success: true }),
+    getInvoiceById: jest.fn().mockResolvedValue(null),
+    refreshInvoices: jest.fn(),
+  }),
+}));
+
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { InvoiceScreen } from '../../src/pages/invoices/InvoiceScreen';

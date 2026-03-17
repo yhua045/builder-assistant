@@ -108,6 +108,7 @@ jest.mock('../../src/hooks/useVoiceTask', () => {
 // ── Pages under test ──────────────────────────────────────────────────────────
 import CreateTaskPage from '../../src/pages/tasks/CreateTaskPage';
 import EditTaskPage from '../../src/pages/tasks/EditTaskPage';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -136,12 +137,12 @@ describe('CreateTaskPage — voice task entry', () => {
   beforeEach(resetVoiceState);
 
   it('renders the Voice button', () => {
-    const { getByLabelText } = render(<CreateTaskPage />);
+    const { getByLabelText } = render(wrapWithQuery(<CreateTaskPage />));
     expect(getByLabelText('Start voice recording')).toBeTruthy();
   });
 
   it('calls startRecording when Voice button is tapped', async () => {
-    const { getByLabelText } = render(<CreateTaskPage />);
+    const { getByLabelText } = render(wrapWithQuery(<CreateTaskPage />));
     await act(async () => {
       fireEvent.press(getByLabelText('Start voice recording'));
     });
@@ -150,20 +151,20 @@ describe('CreateTaskPage — voice task entry', () => {
 
   it('shows the overlay when phase is recording', () => {
     mockVoiceControl.state = { phase: 'recording' };
-    const { getByLabelText } = render(<CreateTaskPage />);
+    const { getByLabelText } = render(wrapWithQuery(<CreateTaskPage />));
     expect(getByLabelText('Stop and transcribe')).toBeTruthy();
     expect(getByLabelText('Cancel recording')).toBeTruthy();
   });
 
   it('shows the overlay when phase is parsing', () => {
     mockVoiceControl.state = { phase: 'parsing' };
-    const { queryByText } = render(<CreateTaskPage />);
+    const { queryByText } = render(wrapWithQuery(<CreateTaskPage />));
     expect(queryByText(/Analysing/)).toBeTruthy();
   });
 
   it('pre-fills the form with the voice draft once phase is done', async () => {
     mockVoiceControl.state = { phase: 'done', draft: { title: 'Install plumbing', priority: 'high' } };
-    const { getByDisplayValue } = render(<CreateTaskPage />);
+    const { getByDisplayValue } = render(wrapWithQuery(<CreateTaskPage />));
     await waitFor(() => {
       expect(getByDisplayValue('Install plumbing')).toBeTruthy();
     });
@@ -175,14 +176,14 @@ describe('EditTaskPage — voice task entry', () => {
   beforeEach(resetVoiceState);
 
   it('renders the Voice button', async () => {
-    const { getByLabelText } = render(<EditTaskPage />);
+    const { getByLabelText } = render(wrapWithQuery(<EditTaskPage />));
     // Wait for the existing task to load
     await waitFor(() => getByLabelText('Start voice recording'));
     expect(getByLabelText('Start voice recording')).toBeTruthy();
   });
 
   it('calls startRecording when Voice button is tapped', async () => {
-    const { getByLabelText } = render(<EditTaskPage />);
+    const { getByLabelText } = render(wrapWithQuery(<EditTaskPage />));
     await waitFor(() => getByLabelText('Start voice recording'));
 
     await act(async () => {
@@ -193,12 +194,12 @@ describe('EditTaskPage — voice task entry', () => {
 
   it('pre-fills the form with merged values once voice is done', async () => {
     // Update voiceStateMock to 'done' AFTER the page has rendered + loaded the task
-    const { getByLabelText, rerender, getByDisplayValue } = render(<EditTaskPage />);
+    const { getByLabelText, rerender, getByDisplayValue } = render(wrapWithQuery(<EditTaskPage />));
     await waitFor(() => getByLabelText('Start voice recording'));
 
     // Simulate voice draft arriving
     mockVoiceControl.state = { phase: 'done', draft: { title: 'Updated by voice', priority: 'urgent' } };
-    rerender(<EditTaskPage />);
+    rerender(wrapWithQuery(<EditTaskPage />));
 
     await waitFor(() => {
       expect(getByDisplayValue('Updated by voice')).toBeTruthy();
