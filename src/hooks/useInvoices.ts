@@ -2,7 +2,8 @@
  * Custom hook for managing invoice data and operations
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Invoice, InvoiceEntity } from '../domain/entities/Invoice';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { container } from 'tsyringe';
@@ -12,6 +13,7 @@ import { UpdateInvoiceUseCase } from '../application/usecases/invoice/UpdateInvo
 import { DeleteInvoiceUseCase } from '../application/usecases/invoice/DeleteInvoiceUseCase';
 import { GetInvoiceByIdUseCase } from '../application/usecases/invoice/GetInvoiceByIdUseCase';
 import { ListInvoicesUseCase } from '../application/usecases/invoice/ListInvoicesUseCase';
+import { queryKeys, invalidations } from './queryKeys';
 
 export interface UseInvoicesOptions {
   status?: Invoice['status'];
@@ -32,9 +34,7 @@ export interface UseInvoicesReturn {
 }
 
 export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Resolve repository via DI container and construct use cases
   const repository = useMemo(
@@ -63,24 +63,26 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
     [repository]
   );
 
-  const loadInvoices = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const queryKey = queryKeys.invoices(options?.projectId);
 
-      // Call list use case with optional filters
+  const {
+    data: invoices = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery<Invoice[]>({
+    queryKey,
+    queryFn: async () => {
       const result = await listInvoicesUseCase.execute({
         status: options?.status ? [options.status] : undefined,
         projectId: options?.projectId,
       });
+      return result.items;
+    },
+    staleTime: 60_000,
+  });
 
-      setInvoices(result.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load invoices');
-    } finally {
-      setLoading(false);
-    }
-  }, [listInvoicesUseCase, options?.status, options?.projectId]);
+  const error = queryError instanceof Error ? queryError.message : null;
 
   const createInvoice = useCallback(
     async (invoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -88,42 +90,51 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
         // Ensure domain entity generates required defaults (id, timestamps, status, currency)
         const entity = InvoiceEntity.create(invoice as any);
         await createInvoiceUseCase.execute(entity.data());
-        await loadInvoices(); // Refresh list
+        await Promise.all(
+          invalidations.invoiceMutated({ projectId: options?.projectId })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
         return { success: true };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to create invoice';
         return { success: false, error: errorMsg };
       }
     },
-    [createInvoiceUseCase, loadInvoices]
+    [createInvoiceUseCase, queryClient, options?.projectId]
   );
 
   const updateInvoice = useCallback(
     async (invoice: Invoice) => {
       try {
         await updateInvoiceUseCase.execute(invoice.id, invoice);
-        await loadInvoices(); // Refresh list
+        await Promise.all(
+          invalidations.invoiceMutated({ projectId: options?.projectId })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
         return { success: true };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to update invoice';
         return { success: false, error: errorMsg };
       }
     },
-    [updateInvoiceUseCase, loadInvoices]
+    [updateInvoiceUseCase, queryClient, options?.projectId]
   );
 
   const deleteInvoice = useCallback(
     async (id: string) => {
       try {
         await deleteInvoiceUseCase.execute(id);
-        await loadInvoices(); // Refresh list
+        await Promise.all(
+          invalidations.invoiceMutated({ projectId: options?.projectId })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
         return { success: true };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to delete invoice';
         return { success: false, error: errorMsg };
       }
     },
-    [deleteInvoiceUseCase, loadInvoices]
+    [deleteInvoiceUseCase, queryClient, options?.projectId]
   );
 
   const getInvoiceById = useCallback(
@@ -139,13 +150,8 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
   );
 
   const refreshInvoices = useCallback(async () => {
-    await loadInvoices();
-  }, [loadInvoices]);
-
-  // Load invoices on mount
-  useEffect(() => {
-    loadInvoices();
-  }, [loadInvoices]);
+    await refetch();
+  }, [refetch]);
 
   return {
     invoices,

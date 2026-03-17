@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Task } from '../domain/entities/Task';
 import { DelayReason } from '../domain/entities/DelayReason';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
@@ -22,6 +22,8 @@ import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
 
+import { queryKeys, invalidations } from './queryKeys';
+
 export type { TaskDetail } from '../application/usecases/task/GetTaskDetailUseCase';
 export type { AddDelayReasonInput } from '../application/usecases/task/AddDelayReasonUseCase';
 export type { UpdateProgressLogInput } from '../application/usecases/task/UpdateProgressLogUseCase';
@@ -39,17 +41,14 @@ export interface UseTasksReturn {
   addDependency: (taskId: string, dependsOnTaskId: string) => Promise<void>;
   removeDependency: (taskId: string, dependsOnTaskId: string) => Promise<void>;
   addDelayReason: (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>) => Promise<DelayReason>;
-  removeDelayReason: (delayReasonId: string) => Promise<void>;
+  removeDelayReason: (taskId: string, delayReasonId: string) => Promise<void>;
   addProgressLog: (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => Promise<ProgressLog>;
-  updateProgressLog: (logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
-  deleteProgressLog: (logId: string) => Promise<void>;
-  resolveDelayReason: (delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
+  updateProgressLog: (taskId: string, logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
+  deleteProgressLog: (taskId: string, logId: string) => Promise<void>;
+  resolveDelayReason: (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
 }
 
 export function useTasks(projectId?: string): UseTasksReturn {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const queryClient = useQueryClient();
 
   const taskRepository = useMemo(() => container.resolve<TaskRepository>('TaskRepository'), []);
@@ -70,48 +69,35 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
 
-  const loadTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      let result: Task[];
-      if (projectId) {
-        result = await listUseCase.execute(projectId);
-      } else {
-        // If no project ID, assume we want all tasks or maybe ad-hoc? 
-        // For now list all tasks if no project ID is provided, 
-        // or specifically use listUseCase.execute() which calls findAll() or findByProjectId
-        // The implementation calls findAll() if no projectId provided.
-        // Wait, listUseCase implementation: if(projectId) findByProjectId else findAll.
-        // But maybe we want ad-hoc tasks specifically?
-        // Let's stick to findAll for now to listed everything in main view.
-        result = await listUseCase.execute();
-      }
-      setTasks(result);
-    } catch (error) {
-      console.error('Failed to load tasks', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [listUseCase, projectId]);
+  const tasksQueryKey = queryKeys.tasks(projectId);
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+  const { data: tasks = [], isLoading: loading, refetch } = useQuery<Task[]>({
+    queryKey: tasksQueryKey,
+    queryFn: () => projectId ? listUseCase.execute(projectId) : listUseCase.execute(),
+    staleTime: 30_000,
+  });
+
+  const loadTasks = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const updateTask = useCallback(async (task: Task) => {
     await updateUseCase.execute(task);
-    await loadTasks();
-  }, [updateUseCase, loadTasks]);
+    await Promise.all(
+      invalidations.taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+  }, [updateUseCase, queryClient]);
 
   const deleteTask = useCallback(async (id: string) => {
     await deleteUseCase.execute(id);
-    await loadTasks();
-  }, [deleteUseCase, loadTasks]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [deleteUseCase, queryClient, projectId]);
 
   const createTask = useCallback(async (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => {
     await createUseCase.execute(data);
-    await loadTasks();
-  }, [createUseCase, loadTasks]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [createUseCase, queryClient, projectId]);
 
   const getTask = useCallback(async (id: string) => {
     return getUseCase.execute(id);
@@ -123,37 +109,57 @@ export function useTasks(projectId?: string): UseTasksReturn {
 
   const addDependency = useCallback(async (taskId: string, dependsOnTaskId: string) => {
     await addDependencyUseCase.execute({ taskId, dependsOnTaskId });
-  }, [addDependencyUseCase]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [addDependencyUseCase, queryClient, projectId]);
 
   const removeDependency = useCallback(async (taskId: string, dependsOnTaskId: string) => {
     await removeDependencyUseCase.execute({ taskId, dependsOnTaskId });
-  }, [removeDependencyUseCase]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [removeDependencyUseCase, queryClient, projectId]);
 
   const addDelayReason = useCallback(async (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>): Promise<DelayReason> => {
-    return addDelayReasonUseCase.execute({ taskId, ...input });
-  }, [addDelayReasonUseCase]);
+    const result = await addDelayReasonUseCase.execute({ taskId, ...input });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    return result;
+  }, [addDelayReasonUseCase, queryClient, projectId]);
 
   const addProgressLog = useCallback(async (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => {
     const res = await addProgressLogUseCase.execute({ taskId, ...input });
-    await loadTasks();
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
     return res;
-  }, [addProgressLogUseCase, loadTasks]);
+  }, [addProgressLogUseCase, queryClient]);
 
-  const updateProgressLog = useCallback(async (logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => {
-    return updateProgressLogUseCase.execute({ logId, ...patch });
-  }, [updateProgressLogUseCase]);
+  const updateProgressLog = useCallback(async (taskId: string, logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => {
+    const result = await updateProgressLogUseCase.execute({ logId, ...patch });
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+    return result;
+  }, [updateProgressLogUseCase, queryClient]);
 
-  const deleteProgressLog = useCallback(async (logId: string) => {
-    return deleteProgressLogUseCase.execute({ logId });
-  }, [deleteProgressLogUseCase]);
+  const deleteProgressLog = useCallback(async (taskId: string, logId: string) => {
+    await deleteProgressLogUseCase.execute({ logId });
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+  }, [deleteProgressLogUseCase, queryClient]);
 
-  const removeDelayReason = useCallback(async (delayReasonId: string) => {
+  const removeDelayReason = useCallback(async (taskId: string, delayReasonId: string) => {
     await removeDelayReasonUseCase.execute({ delayReasonId });
-  }, [removeDelayReasonUseCase]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(taskId) });
+  }, [removeDelayReasonUseCase, queryClient, projectId]);
 
-  const resolveDelayReason = useCallback(async (delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => {
+  const resolveDelayReason = useCallback(async (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => {
     await resolveDelayReasonUseCase.execute({ delayReasonId, resolvedAt, mitigationNotes });
-  }, [resolveDelayReasonUseCase]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(taskId) });
+  }, [resolveDelayReasonUseCase, queryClient, projectId]);
 
   return useMemo(() => ({
     tasks,

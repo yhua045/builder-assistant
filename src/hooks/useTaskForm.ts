@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 
@@ -12,6 +13,7 @@ import { ContactRepository } from '../domain/repositories/ContactRepository';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
+import { invalidations, queryKeys } from './queryKeys';
 
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
 
@@ -113,6 +115,7 @@ export function useTaskForm({
   onSuccess,
 }: UseTaskFormOptions = {}): UseTaskFormReturn {
   const isEditMode = Boolean(initialTask?.id);
+  const queryClient = useQueryClient();
 
   // ── Basic fields ──────────────────────────────────────────────────────────
   const [title, setTitle] = useState(initialTask?.title ?? '');
@@ -331,6 +334,12 @@ export function useTaskForm({
             size: pd.size,
           });
         }
+        if (pendingDocuments.length > 0) {
+          await Promise.all(
+            invalidations.documentMutated({ taskId: selfId })
+              .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          );
+        }
         setPendingDocuments([]);
 
         // Sync dependency additions (removals were applied eagerly)
@@ -363,6 +372,10 @@ export function useTaskForm({
             },
             contact,
           });
+          await Promise.all(
+            invalidations.acceptQuotation({ projectId: projectId || '', taskId: selfId })
+              .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          );
           const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
           onSuccess?.(taskWithInvoice);
           return;
@@ -374,8 +387,16 @@ export function useTaskForm({
             status: 'cancelled',
             updatedAt: new Date().toISOString(),
           });
+          await Promise.all(
+            invalidations.invoiceMutated({ projectId: projectId || undefined })
+              .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          );
         }
 
+        await Promise.all(
+          invalidations.taskEdited({ projectId: projectId || '', taskId: selfId })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
         onSuccess?.(updatedTask);
       } else {
         // ── Create mode ───────────────────────────────────────────────────
@@ -406,6 +427,12 @@ export function useTaskForm({
             size: pd.size,
           });
         }
+        if (pendingDocuments.length > 0) {
+          await Promise.all(
+            invalidations.documentMutated({ taskId: newTask.id })
+              .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          );
+        }
         setPendingDocuments([]);
 
         // Attach dependencies
@@ -430,11 +457,16 @@ export function useTaskForm({
             },
             contact,
           });
+          await Promise.all(
+            invalidations.acceptQuotation({ projectId: newTask.projectId || '', taskId: newTask.id })
+              .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          );
           const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
           onSuccess?.(taskWithInvoice);
           return;
         }
 
+        await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(newTask.projectId) });
         onSuccess?.(newTask);
       }
     } finally {
@@ -465,6 +497,7 @@ export function useTaskForm({
     acceptQuotationUseCase,
     contactRepository,
     onSuccess,
+    queryClient,
   ]);
 
   return {

@@ -7,6 +7,7 @@ import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { ContactRepository } from '../domain/repositories/ContactRepository';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
 import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
+import { invalidations } from './queryKeys';
 
 export interface UseAcceptQuoteReturn {
   acceptQuote: (taskId: string) => Promise<{ invoiceId: string }>;
@@ -79,10 +80,10 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
           contact,
         });
         if (queryClient) {
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['payments'] }),
-            queryClient.invalidateQueries({ queryKey: ['invoices'] }),
-          ]);
+          await Promise.all(
+            invalidations.acceptQuotation({ projectId: task.projectId ?? '', taskId })
+              .map(key => queryClient!.invalidateQueries({ queryKey: key }))
+          );
         }
         return { invoiceId: invoice.id };
       } catch (e: any) {
@@ -108,7 +109,12 @@ export function useAcceptQuote(): UseAcceptQuoteReturn {
           quoteStatus: 'rejected',
           updatedAt: new Date().toISOString(),
         });
-        if (queryClient) await queryClient.invalidateQueries({ queryKey: ['payments'] });
+        if (queryClient) {
+          await Promise.all(
+            invalidations.rejectQuotation({ projectId: task.projectId ?? '', taskId })
+              .map(key => queryClient!.invalidateQueries({ queryKey: key }))
+          );
+        }
       } catch (e: any) {
         const msg = e?.message ?? 'Failed to reject quote';
         setError(msg);

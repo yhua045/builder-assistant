@@ -1,5 +1,6 @@
-import { renderHook, act } from '@testing-library/react-native';
+import { act } from '@testing-library/react-native';
 import { useQuotations } from '../../src/hooks/useQuotations';
+import { renderHookWithQuery } from '../utils/queryClientWrapper';
 
 // Mock the use cases
 jest.mock('../../src/application/usecases/quotation/CreateQuotationUseCase');
@@ -32,28 +33,28 @@ describe('useQuotations', () => {
   });
 
   it('provides createQuotation function', () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     expect(result.current.createQuotation).toBeDefined();
     expect(typeof result.current.createQuotation).toBe('function');
   });
 
   it('provides listQuotations function', () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     expect(result.current.listQuotations).toBeDefined();
     expect(typeof result.current.listQuotations).toBe('function');
   });
 
   it('provides loading and error states', () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     expect(result.current).toHaveProperty('loading');
     expect(result.current).toHaveProperty('error');
   });
 
   it('creates quotation successfully', async () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     const mockQuotation = {
       reference: 'QT-2026-001',
@@ -69,7 +70,7 @@ describe('useQuotations', () => {
   });
 
   it('handles creation errors', async () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     await act(async () => {
       try {
@@ -82,7 +83,7 @@ describe('useQuotations', () => {
   });
 
   it('lists quotations with filtering', async () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     await act(async () => {
       const list = await result.current.listQuotations({ status: ['draft'] });
@@ -93,7 +94,7 @@ describe('useQuotations', () => {
   });
 
   it('sets loading state during operations', async () => {
-    const { result } = renderHook(() => useQuotations());
+    const { result } = renderHookWithQuery(() => useQuotations());
     
     expect(result.current.loading).toBe(false);
 
