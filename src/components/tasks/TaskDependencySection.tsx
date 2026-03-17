@@ -1,13 +1,60 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Task } from '../../domain/entities/Task';
-import { Link2, Plus, AlertCircle, Clock } from 'lucide-react-native';
+import { Link2, Plus, AlertCircle, Clock, Play, CheckCircle, XCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 cssInterop(Link2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(Play, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(XCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+
+// ── Status display helper ────────────────────────────────────────────────────
+
+interface DependencyStatusDisplay {
+  icon: React.ReactElement;
+  label: string;
+  textClass: string;
+}
+
+function getDependencyStatusDisplay(status: Task['status']): DependencyStatusDisplay {
+  switch (status) {
+    case 'completed':
+      return {
+        icon: <CheckCircle size={14} className="text-green-500" />,
+        label: 'Complete',
+        textClass: 'text-green-600',
+      };
+    case 'in_progress':
+      return {
+        icon: <Play size={14} className="text-blue-500" />,
+        label: 'In progress',
+        textClass: 'text-blue-600',
+      };
+    case 'blocked':
+      return {
+        icon: <AlertCircle size={14} className="text-red-500" />,
+        label: 'Blocked',
+        textClass: 'text-red-600',
+      };
+    case 'cancelled':
+      return {
+        icon: <XCircle size={14} className="text-gray-400" />,
+        label: 'Cancelled',
+        textClass: 'text-gray-500',
+      };
+    case 'pending':
+    default:
+      return {
+        icon: <Clock size={14} className="text-amber-500" />,
+        label: 'Waiting to complete',
+        textClass: 'text-amber-600',
+      };
+  }
+}
 
 interface Props {
   dependencyTasks: Task[];
@@ -55,8 +102,9 @@ export function TaskDependencySection({
       ) : (
         <View className="gap-3">
           {dependencyTasks.map((dep) => {
-            const isBlocked = dep.status !== 'completed' && dep.status !== 'cancelled';
-            
+            const statusDisplay = getDependencyStatusDisplay(dep.status);
+            const isActive = dep.status !== 'completed' && dep.status !== 'cancelled';
+
             return (
               <TouchableOpacity
                 key={dep.id}
@@ -74,26 +122,17 @@ export function TaskDependencySection({
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-2 mt-2">
-                      {isBlocked ? (
-                        <>
-                          <AlertCircle className="text-red-500" size={14} />
-                          <Text className="text-red-500 text-xs font-medium">
-                            Blocked by this task
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="text-amber-500" size={14} />
-                          <Text className="text-muted-foreground text-xs">
-                            Waiting for completion
-                          </Text>
-                        </>
-                      )}
+                      {statusDisplay.icon}
+                      <Text className={`text-xs font-medium ${statusDisplay.textClass}`}>
+                        {statusDisplay.label}
+                      </Text>
                     </View>
                   </View>
-                  {isBlocked && (
-                    <View className="bg-red-50 px-2 py-1 rounded-md">
-                      <Text className="text-red-600 text-xs font-bold">BLOCKED</Text>
+                  {isActive && (
+                    <View className="bg-amber-50 px-2 py-1 rounded-md">
+                      <Text className="text-amber-700 text-xs font-bold uppercase">
+                        {dep.status.replace('_', ' ')}
+                      </Text>
                     </View>
                   )}
                 </View>

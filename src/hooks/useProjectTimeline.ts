@@ -164,7 +164,10 @@ export function useProjectTimeline(projectId: string): UseProjectTimelineReturn 
   );
 
   const invalidateTimeline = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectDetail(projectId) }),
+    ]);
   }, [queryClient, projectId]);
 
   const error =
