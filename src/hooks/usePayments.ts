@@ -13,6 +13,7 @@ import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { ListGlobalPaymentsUseCase } from '../application/usecases/payment/ListGlobalPaymentsUseCase';
 import { GetPaymentMetricsUseCase } from '../application/usecases/payment/GetPaymentMetricsUseCase';
 import { resolveInvoiceDueDate } from '../utils/resolveInvoiceDueDate';
+import { queryKeys } from './queryKeys';
 import '../infrastructure/di/registerServices';
 
 export type PaymentsMode = 'firefighter' | 'site_manager';
@@ -68,10 +69,11 @@ async function buildInvoicePayables(
 
     const linkedPayments = await paymentRepo.findByInvoice(inv.id);
 
-    // Avoid duplicating obligations when a pending synthetic payment already exists.
-    const hasPendingLegacyPayable = linkedPayments.some((p) => p.status === 'pending');
-    if (hasPendingLegacyPayable) continue;
-
+    // Always compute the true outstanding balance from settled payments.
+    // NOTE: we no longer skip when a pending DB row exists — that row may have a
+    // stale amount (e.g. it was created at quote-acceptance time and never updated
+    // when a partial payment was recorded). The merged list in usePayments filters
+    // out invoice-linked pending DB rows before merging so there is no duplication.
     const paidAmount = getSettledPaidAmount(linkedPayments);
     const outstanding = Math.max((inv.total ?? 0) - paidAmount, 0);
     if (outstanding <= 0) continue;
@@ -216,7 +218,10 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
             )
           : invoicePayablesRaw;
 
-        const mergedGlobalItems = [...result.items, ...invoicePayables];
+        // Filter out invoice-linked pending DB rows — buildInvoicePayables already
+        // represents those invoices with the correct outstanding balance.
+        const standalonePayments = result.items.filter((p) => !p.invoiceId);
+        const mergedGlobalItems = [...standalonePayments, ...invoicePayables];
 
         const additionalProjectIds = [
           ...new Set(result.items.map((p) => p.projectId).filter(Boolean)),
@@ -265,11 +270,15 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
         const invoiceContracts = invoicePayables.filter((p) => p.paymentCategory === 'contract');
         const invoiceVariations = invoicePayables.filter((p) => p.paymentCategory === 'variation');
 
+        // Exclude invoice-linked pending DB rows — covered by invoice payables above.
+        const standaloneContracts = contracts.items.filter((p) => !p.invoiceId);
+        const standaloneVariations = variations.items.filter((p) => !p.invoiceId);
+
         return {
           globalPayments: [] as PaymentWithProject[],
           globalAmountPayable: 0,
-          contractPayments: [...contracts.items, ...invoiceContracts],
-          variationPayments: [...variations.items, ...invoiceVariations],
+          contractPayments: [...standaloneContracts, ...invoiceContracts],
+          variationPayments: [...standaloneVariations, ...invoiceVariations],
           metrics: met,
         };
       }
@@ -301,7 +310,7 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
     metrics,
     loading: isFetching,
     refresh: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentsAll() });
     },
   };
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
   Text,
@@ -24,6 +25,7 @@ import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
 import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
+import { invalidations } from '../../hooks/queryKeys';
 import '../../infrastructure/di/registerServices';
 
 const formatCurrency = (amount: number): string =>
@@ -52,6 +54,7 @@ export default function PaymentDetails() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const iconColor = isDark ? '#e4e4e7' : '#18181b';
+  const queryClient = useQueryClient();
 
   const { paymentId, syntheticRow } = route.params as {
     paymentId?: string;
@@ -144,6 +147,10 @@ export default function PaymentDetails() {
                 status: 'settled',
                 date: new Date().toISOString(),
               });
+              await Promise.all(
+                invalidations.paymentRecorded({ projectId: invoice.projectId })
+                  .map(key => queryClient.invalidateQueries({ queryKey: key }))
+              );
               Alert.alert('Done', 'Payment recorded.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
@@ -168,6 +175,10 @@ export default function PaymentDetails() {
           setMarking(true);
           try {
             await markPaidUc.execute({ paymentId: payment.id });
+            await Promise.all(
+              invalidations.paymentRecorded({})
+                .map(key => queryClient.invalidateQueries({ queryKey: key }))
+            );
             Alert.alert('Done', 'Payment marked as settled.', [
               { text: 'OK', onPress: () => navigation.goBack() },
             ]);
@@ -201,6 +212,10 @@ export default function PaymentDetails() {
         status: 'settled',
         date: new Date().toISOString(),
       });
+      await Promise.all(
+        invalidations.paymentRecorded({ projectId: invoice?.projectId })
+          .map(key => queryClient.invalidateQueries({ queryKey: key }))
+      );
       setPartialModalVisible(false);
       setPartialAmount('');
       setPartialAmountError('');
