@@ -64,6 +64,12 @@ export const queryKeys = {
 
   /** Hydrated project detail (ProjectDetails — includes owner Contact) */
   projectDetail: (projectId: string) => ['projectDetail', projectId] as const,
+
+  /** Payments scoped to a single project (project detail timeline view) */
+  projectPayments: (projectId: string) => ['projectPayments', projectId] as const,
+
+  /** Quotations scoped to a single project (aggregated across all tasks) */
+  projectQuotations: (projectId: string) => ['projectQuotations', projectId] as const,
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────
@@ -119,11 +125,12 @@ export const invalidations = {
 
   /**
    * Record a payment or mark a payment as paid.
-   * Affects: payment list/amounts, invoice payment status.
+   * Affects: payment list/amounts, invoice payment status, project timeline.
    */
   paymentRecorded: (ctx: PaymentCtx) => [
     queryKeys.paymentsAll(),
     queryKeys.invoices(ctx.projectId),
+    ...(ctx.projectId ? [queryKeys.projectPayments(ctx.projectId)] : []),
   ],
 
   /**
@@ -163,5 +170,16 @@ export const invalidations = {
   contactMutated: (_ctx: ContactCtx) => [
     queryKeys.contacts(),
     queryKeys.invoices(), // issuer name may appear on any project's invoice
+  ],
+
+  /**
+   * Refresh all sections of a project's detail timeline simultaneously.
+   * Use after navigation focus or bulk data changes.
+   */
+  projectTimelineRefreshed: (ctx: { projectId: string }) => [
+    queryKeys.tasks(ctx.projectId),
+    queryKeys.projectPayments(ctx.projectId),
+    queryKeys.projectQuotations(ctx.projectId),
+    queryKeys.projectDetail(ctx.projectId),
   ],
 };
