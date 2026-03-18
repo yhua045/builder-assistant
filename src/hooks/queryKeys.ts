@@ -65,6 +65,10 @@ export const queryKeys = {
   /** Hydrated project detail (ProjectDetails — includes owner Contact) */
   projectDetail: (projectId: string) => ['projectDetail', projectId] as const,
 
+  /** Quotation list — scoped to a project (used by useQuotationTimeline) */
+  quotationsByProject: (projectId: string) =>
+    ['quotationsByProject', projectId] as const,
+
   /** Payments scoped to a single project (project detail timeline view) */
   projectPayments: (projectId: string) => ['projectPayments', projectId] as const,
 
@@ -87,6 +91,7 @@ export type TaskEditCtx = {
   affectsPayments?: boolean;
 };
 export type ContactCtx = Record<string, never>;
+export type QuotationProjectCtx = { projectId: string };
 
 // ─── Invalidation map ─────────────────────────────────────────────────────────
 
@@ -170,6 +175,16 @@ export const invalidations = {
   contactMutated: (_ctx: ContactCtx) => [
     queryKeys.contacts(),
     queryKeys.invoices(), // issuer name may appear on any project's invoice
+  ],
+
+  /**
+   * A quotation was created / updated / accepted / declined at the project level.
+   * Affects: project-scoped quotation timeline, project detail totals.
+   * Also used by acceptStandaloneQuotation (which additionally busts paymentsAll + invoices).
+   */
+  quotationProjectMutated: (ctx: QuotationProjectCtx) => [
+    queryKeys.quotationsByProject(ctx.projectId),
+    queryKeys.projectDetail(ctx.projectId),
   ],
 
   /**

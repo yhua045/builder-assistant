@@ -21,6 +21,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Alert } from 'react-native';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,10 @@ function setHookReturn(overrides: {
 
 import ProjectDetailScreen from '../../src/pages/projects/ProjectDetail';
 
+function renderScreen() {
+  return renderer.create(wrapWithQuery(<ProjectDetailScreen />));
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ProjectDetail screen', () => {
@@ -147,7 +152,7 @@ describe('ProjectDetail screen', () => {
     setHookReturn({ projectDetail: { loading: true, project: null }, taskTimeline: { dayGroups: [], loading: true } });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const loading = tree!.root.findAllByProps({ testID: 'project-detail-loading' });
     expect(loading.length).toBeGreaterThan(0);
@@ -156,7 +161,7 @@ describe('ProjectDetail screen', () => {
   it('renders project name in the page heading', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const headingEl = tree!.root.findAllByProps({ testID: 'project-detail-heading' });
     expect(headingEl.length).toBeGreaterThan(0);
@@ -166,7 +171,7 @@ describe('ProjectDetail screen', () => {
   it('renders project name in the body card (regression)', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const nameEl = tree!.root.findAllByProps({ testID: 'project-detail-name' });
     expect(nameEl.length).toBeGreaterThan(0);
@@ -176,7 +181,7 @@ describe('ProjectDetail screen', () => {
   it('renders two day groups (Mar 20 and Mar 28)', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const mar20 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20' });
     const mar28 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-28' });
@@ -187,7 +192,7 @@ describe('ProjectDetail screen', () => {
   it('shows two task cards on Mar 20', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const card0 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' });
     const card1 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-1' });
@@ -198,7 +203,7 @@ describe('ProjectDetail screen', () => {
   it('date label is rendered next to the group (testID present)', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const dateLabel = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-date-label' });
     expect(dateLabel.length).toBeGreaterThan(0);
@@ -207,7 +212,7 @@ describe('ProjectDetail screen', () => {
   it('collapses task cards when per-group toggle is pressed', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
 
     // Groups start expanded (future dates) — cards should be visible
@@ -225,9 +230,10 @@ describe('ProjectDetail screen', () => {
     expect(card0After.length).toBe(0);
   });
 
+
   it('registers a focus listener for timeline invalidation', async () => {
     await act(async () => {
-      renderer.create(<ProjectDetailScreen />);
+      renderScreen();
     });
     expect(mockAddListener).toHaveBeenCalledWith('focus', expect.any(Function));
   });
@@ -236,7 +242,7 @@ describe('ProjectDetail screen', () => {
     setHookReturn({ taskTimeline: { dayGroups: [] } });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
     const empty = tree!.root.findAllByProps({ testID: 'tasks-empty' });
     expect(empty.length).toBeGreaterThan(0);
@@ -246,7 +252,7 @@ describe('ProjectDetail screen', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
 
     // Framing Installation (t3) is pending — complete button should be visible
