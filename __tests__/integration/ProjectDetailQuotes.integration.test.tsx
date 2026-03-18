@@ -2,21 +2,19 @@
  * Integration tests for the Quotes section of ProjectDetail.
  *
  * Covers:
- *  - Quotes section renders with correct heading
- *  - Shows only pending (sent) quotes by default
- *  - Count badge reflects pending quotes in header
- *  - Filter toggle switches between pending-only and all quotes
- *  - Quotes section collapses and expands via header toggle
- *  - QuotationCard shows for each rendered quote
- *  - Empty state message when no pending quotes
+ *  - Quotes section header renders with testID "section-header-quotes"
+ *  - A TimelineQuotationCard renders for each quotation in the section
+ *  - Empty state message when there are no quotations
+ *  - Quotes section collapses when header is pressed
  *
- * Strategy: mocks both `useProjectTimeline` and `useQuotationTimeline` so
- * we test the ProjectDetail component tree in isolation.
- * Hook logic is covered in unit/useQuotationTimeline.test.ts.
+ * Strategy: mocks the four focused hooks (useProjectDetail, useTaskTimeline,
+ * usePaymentsTimeline, useQuotationsTimeline) so we test the component tree
+ * in isolation without a real DB or QueryClientProvider.
  */
 
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -48,24 +46,30 @@ jest.mock('lucide-react-native', () => ({
   Check: 'Check', X: 'X',
 }));
 
-// ── Hook mocks ────────────────────────────────────────────────────────────────
+// ── Four focused hook mocks ───────────────────────────────────────────────────
 
 const mockMarkComplete = jest.fn().mockResolvedValue(undefined);
-const mockInvalidateTimeline = jest.fn().mockResolvedValue(undefined);
-const mockAcceptQuotation = jest.fn().mockResolvedValue(undefined);
-const mockRejectQuotation = jest.fn().mockResolvedValue(undefined);
-const mockInvalidateQuotes = jest.fn().mockResolvedValue(undefined);
-const mockSetStatusFilter = jest.fn();
+const mockInvalidateTasks = jest.fn().mockResolvedValue(undefined);
+const mockInvalidatePayments = jest.fn().mockResolvedValue(undefined);
+const mockInvalidateQuotations = jest.fn().mockResolvedValue(undefined);
+const mockRecordPayment = jest.fn().mockResolvedValue(undefined);
 
-let mockTimelineReturn: any;
-let mockQuotesReturn: any;
+let mockProjectDetailReturn: any;
+let mockTaskTimelineReturn: any;
+let mockPaymentsTimelineReturn: any;
+let mockQuotationsTimelineReturn: any;
 
-jest.mock('../../src/hooks/useProjectTimeline', () => ({
-  useProjectTimeline: () => mockTimelineReturn,
+jest.mock('../../src/hooks/useProjectDetail', () => ({
+  useProjectDetail: () => mockProjectDetailReturn,
 }));
-
-jest.mock('../../src/hooks/useQuotationTimeline', () => ({
-  useQuotationTimeline: () => mockQuotesReturn,
+jest.mock('../../src/hooks/useTaskTimeline', () => ({
+  useTaskTimeline: () => mockTaskTimelineReturn,
+}));
+jest.mock('../../src/hooks/usePaymentsTimeline', () => ({
+  usePaymentsTimeline: () => mockPaymentsTimelineReturn,
+}));
+jest.mock('../../src/hooks/useQuotationsTimeline', () => ({
+  useQuotationsTimeline: () => mockQuotationsTimelineReturn,
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -105,43 +109,59 @@ const acceptedQuote = {
   updatedAt: new Date().toISOString(),
 };
 
-function setHooks(quotesOverrides?: Partial<typeof mockQuotesReturn>) {
-  mockTimelineReturn = {
+function setHooks(quotationsOverrides?: Partial<typeof mockQuotationsTimelineReturn>) {
+  mockProjectDetailReturn = {
     project: sampleProject,
+    loading: false,
+    error: null,
+  };
+  mockTaskTimelineReturn = {
     dayGroups: [],
     loading: false,
     error: null,
     markComplete: mockMarkComplete,
-    invalidateTimeline: mockInvalidateTimeline,
+    invalidate: mockInvalidateTasks,
   };
-
-  // Default: pending filter — only shows pendingQuote
-  const pendingDayGroups = [
-    { date: '2026-04-10', label: 'Fri 10 Apr', quotations: [pendingQuote] },
-  ];
-  const allDayGroups = [
-    { date: '2026-04-05', label: 'Sun 5 Apr', quotations: [acceptedQuote] },
-    { date: '2026-04-10', label: 'Fri 10 Apr', quotations: [pendingQuote] },
-  ];
-
-  mockQuotesReturn = {
-    quoteDayGroups: pendingDayGroups,
-    allQuoteDayGroups: allDayGroups,
-    pendingCount: 1,
-    totalCount: 2,
-    visibleTotal: 5000,
-    statusFilter: 'pending',
-    setStatusFilter: mockSetStatusFilter,
+  mockPaymentsTimelineReturn = {
+    paymentDayGroups: [],
     loading: false,
     error: null,
-    acceptQuotation: mockAcceptQuotation,
-    rejectQuotation: mockRejectQuotation,
-    invalidateQuotes: mockInvalidateQuotes,
-    ...quotesOverrides,
+    truncated: false,
+    recordPayment: mockRecordPayment,
+    invalidate: mockInvalidatePayments,
+  };
+  mockQuotationsTimelineReturn = {
+    quotationDayGroups: [
+      { date: '2026-04-10', label: 'Fri 10 Apr', quotations: [pendingQuote] },
+    ],
+    loading: false,
+    error: null,
+    truncated: false,
+    invalidate: mockInvalidateQuotations,
+    ...quotationsOverrides,
   };
 }
 
 import ProjectDetailScreen from '../../src/pages/projects/ProjectDetail';
+
+function renderScreen() {
+  return renderer.create(wrapWithQuery(<ProjectDetailScreen />));
+}
+
+/** Find the Pressable node (has onPress) rather than an inner host View that also gets testID forwarded. */
+function findPressableByTestID(tree: renderer.ReactTestRenderer, testID: string) {
+  return tree.root.findAll(
+    (node) => node.props.testID === testID && typeof node.props.onPress === 'function',
+  );
+}
+
+/** Expand the quotes section by pressing its header. */
+async function expandQuotesSection(tree: renderer.ReactTestRenderer) {
+  const hdr = findPressableByTestID(tree, 'section-header-quotes');
+  await act(async () => {
+    hdr[0].props.onPress();
+  });
+}
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -151,130 +171,92 @@ describe('ProjectDetail — Quotes section', () => {
     setHooks();
   });
 
-  it('renders the Quotes section heading', async () => {
+  it('renders the Quotes section header', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
-    const hdr = tree!.root.findAllByProps({ testID: 'quotes-section-header' });
+    const hdr = tree!.root.findAllByProps({ testID: 'section-header-quotes' });
     expect(hdr.length).toBeGreaterThan(0);
   });
 
-  it('renders a QuotationCard for the pending quote', async () => {
+  it('renders a TimelineQuotationCard for the pending quote', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
+    // Section starts collapsed — expand it first
+    await expandQuotesSection(tree!);
     const card = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
     expect(card.length).toBeGreaterThan(0);
   });
 
-  it('does not render the accepted quote card in pending-only mode', async () => {
+  it('renders cards for all quotations when multiple are provided', async () => {
+    setHooks({
+      quotationDayGroups: [
+        { date: '2026-04-05', label: 'Sun 5 Apr', quotations: [acceptedQuote] },
+        { date: '2026-04-10', label: 'Fri 10 Apr', quotations: [pendingQuote] },
+      ],
+    });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
-    const card = tree!.root.findAllByProps({ testID: 'quotation-card-q2' });
-    expect(card.length).toBe(0);
-  });
-
-  it('shows all quotes when statusFilter is "all"', async () => {
-    const allDayGroups = [
-      { date: '2026-04-05', label: 'Sun 5 Apr', quotations: [acceptedQuote] },
-      { date: '2026-04-10', label: 'Fri 10 Apr', quotations: [pendingQuote] },
-    ];
-    setHooks({ statusFilter: 'all', quoteDayGroups: allDayGroups });
-
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
-    });
-
+    // Section starts collapsed — expand it first
+    await expandQuotesSection(tree!);
     const card1 = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
     const card2 = tree!.root.findAllByProps({ testID: 'quotation-card-q2' });
     expect(card1.length).toBeGreaterThan(0);
     expect(card2.length).toBeGreaterThan(0);
   });
 
-  it('collapses quotes section when header toggle is pressed', async () => {
+  it('shows empty state when there are no quotations', async () => {
+    setHooks({ quotationDayGroups: [] });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
-
-    // Section starts expanded — card should be visible
-    const cardBefore = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
-    expect(cardBefore.length).toBeGreaterThan(0);
-
-    // Collapse section
-    const toggle = tree!.root.findAllByProps({ testID: 'quotes-section-header-toggle' });
-    await act(async () => {
-      toggle[0].props.onPress();
-    });
-
-    // Card should now be hidden
-    const cardAfter = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
-    expect(cardAfter.length).toBe(0);
+    // Section starts collapsed — expand it so the empty-state footer renders
+    await expandQuotesSection(tree!);
+    const empty = tree!.root.findAllByProps({ testID: 'quotes-empty' });
+    expect(empty.length).toBeGreaterThan(0);
   });
 
-  it('renders the filter toggle pill with correct label in pending mode', async () => {
+  it('collapses quotes section when header is pressed', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
-    const pill = tree!.root.findAllByProps({ testID: 'quotes-section-header-filter' });
-    expect(pill.length).toBeGreaterThan(0);
-    // Should label say "Show all (2)"
-    const text = pill[0].props.children;
-    // The pill text is the children of the Pressable — find Text inside
-    // (renderer returns the Pressable; its child Text holds the label)
-    const textEl = tree!.root.findAllByProps({ testID: 'quotes-section-header-filter' });
-    expect(textEl.length).toBeGreaterThan(0);
+
+    // Section starts collapsed by default (quotes: true in ProjectDetail initial state)
+    // Use a predicate to find the Pressable node (which has onPress), not an inner View
+    const hdr = findPressableByTestID(tree!, 'section-header-quotes');
+    expect(hdr.length).toBeGreaterThan(0);
+
+    // Expand the section
+    await act(async () => {
+      hdr[0].props.onPress();
+    });
+    const cardExpanded = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
+    expect(cardExpanded.length).toBeGreaterThan(0);
+
+    // Collapse again
+    await act(async () => {
+      hdr[0].props.onPress();
+    });
+    const cardCollapsed = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
+    expect(cardCollapsed.length).toBe(0);
   });
 
-  it('calls setStatusFilter when filter pill is pressed', async () => {
+  it('does not render quote cards when section is collapsed (default state)', async () => {
+    // By default quotes section is collapsed (collapsed.quotes = true in ProjectDetail)
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
+      tree = renderScreen();
     });
-    const pill = tree!.root.findAllByProps({ testID: 'quotes-section-header-filter' });
-    await act(async () => {
-      pill[0].props.onPress();
-    });
-    expect(mockSetStatusFilter).toHaveBeenCalledWith('all');
-  });
-
-  it('shows empty state when no pending quotes', async () => {
-    setHooks({
-      quoteDayGroups: [],
-      pendingCount: 0,
-      totalCount: 1,
-    });
-
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
-    });
-
-    const emptyMsg = tree!.root.findAllByProps({ testID: 'quotes-timeline-list-empty' });
-    expect(emptyMsg.length).toBeGreaterThan(0);
-    expect(emptyMsg[0].props.children).toMatch(/pending/i);
-  });
-
-  it('navigates to QuotationDetail when onOpen is called', async () => {
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
-    });
-
-    // Trigger the card body press (open)
-    const cardOpen = tree!.root.findAllByProps({ testID: 'quotation-card-q1-open' });
-    await act(async () => {
-      cardOpen[0].props.onPress();
-    });
-
-    expect(mockNavigate).toHaveBeenCalledWith('QuotationDetail', {
-      quotationId: 'q1',
-    });
+    const card = tree!.root.findAllByProps({ testID: 'quotation-card-q1' });
+    expect(card.length).toBe(0);
   });
 });
+
+

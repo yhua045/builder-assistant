@@ -10,5 +10,7 @@ module.exports = {
         allowUndefined: true,
       },
     ],
+    // react-native-reanimated/plugin MUST be last (required by nativewind → react-native-css-interop → reanimated)
+    'react-native-reanimated/plugin',
   ],
 };

@@ -203,6 +203,25 @@ export class DrizzleQuotationRepository implements QuotationRepository {
     return items;
   }
 
+  async findByProjectId(projectId: string): Promise<Quotation[]> {
+    const db = await this.getSqlDb();
+    // Join through tasks to find all quotations linked to tasks in this project,
+    // plus any quotations directly linked via project_id.
+    const [result] = await db.executeSql(
+      `SELECT q.* FROM quotations q
+       LEFT JOIN tasks t ON q.task_id = t.id
+       WHERE (t.project_id = ? OR q.project_id = ?)
+         AND q.deleted_at IS NULL
+       ORDER BY q.date ASC`,
+      [projectId, projectId],
+    );
+    const items: Quotation[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      items.push(this.mapToEntity(result.rows.item(i) as any));
+    }
+    return items;
+  }
+
   async listQuotations(
     params?: QuotationFilterParams
   ): Promise<{ items: Quotation[]; total: number }> {

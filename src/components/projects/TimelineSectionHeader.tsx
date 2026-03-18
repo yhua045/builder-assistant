@@ -1,14 +1,9 @@
 /**
  * TimelineSectionHeader
  *
- * Collapsible section header for timeline sections on ProjectDetail.
- * Used for both the Task Timeline and the Quotes section.
- *
- * Layout:
- *   [ Title  count-badge ]  [ filter-pill ]  [ chevron ]
- *
- * LayoutAnimation is triggered in the parent toggle handler;
- * this component just renders the header row.
+ * Sticky-safe collapsible section heading for the Project Detail SectionList.
+ * Must have a solid background so it opaques content scrolling beneath it
+ * when pinned by stickySectionHeadersEnabled.
  */
 
 import React from 'react';
@@ -20,82 +15,53 @@ cssInterop(ChevronDown, { className: { target: 'style', nativeStyleToProp: { col
 cssInterop(ChevronRight, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export interface TimelineSectionHeaderProps {
-  /** Section title, e.g. "Quotes" or "Task Timeline" */
   title: string;
-  /** Total items in the current filtered view */
   itemCount: number;
-  /** Whether the section body is currently expanded */
-  expanded: boolean;
-  /** Called when the collapse/expand area is pressed */
+  loading?: boolean;
+  collapsed: boolean;
   onToggle: () => void;
-  /** Optional summary line displayed beneath the title (e.g. total value) */
-  summary?: string;
-  /** Label shown on the filter toggle pill (e.g. "Show all (5)") */
-  filterLabel?: string;
-  /** Called when the filter pill is pressed */
-  onToggleFilter?: () => void;
   testID?: string;
 }
 
 export function TimelineSectionHeader({
   title,
   itemCount,
-  expanded,
+  loading = false,
+  collapsed,
   onToggle,
-  summary,
-  filterLabel,
-  onToggleFilter,
   testID,
 }: TimelineSectionHeaderProps) {
   return (
-    <View
-      className="flex-row items-center mb-4"
+    <Pressable
+      onPress={onToggle}
+      className="flex-row items-center justify-between px-6 py-3 bg-background border-b border-border active:opacity-70"
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={`${title} section, ${itemCount} items, ${collapsed ? 'collapsed' : 'expanded'}`}
+      accessibilityState={{ expanded: !collapsed }}
     >
-      {/* ── Left: title + count badge + optional summary ── */}
-      <Pressable
-        className="flex-1 flex-row items-center gap-2 active:opacity-70"
-        onPress={onToggle}
-        testID={testID ? `${testID}-toggle` : undefined}
-      >
-        <Text className="text-xl font-bold text-foreground">{title}</Text>
-
-        {itemCount > 0 && (
-          <View className="px-2 py-0.5 bg-primary/10 rounded-full">
-            <Text
-              className="text-xs font-semibold text-primary"
-              testID={testID ? `${testID}-count` : undefined}
-            >
-              {itemCount}
-            </Text>
-          </View>
-        )}
-
-        {summary ? (
-          <Text className="text-sm text-muted-foreground flex-shrink ml-1" numberOfLines={1}>
-            {summary}
-          </Text>
-        ) : null}
-
-        {expanded ? (
-          <ChevronDown size={16} color="#6b7280" />
-        ) : (
+      <View className="flex-row items-center gap-2">
+        {collapsed ? (
           <ChevronRight size={16} color="#6b7280" />
+        ) : (
+          <ChevronDown size={16} color="#6b7280" />
         )}
-      </Pressable>
+        <Text className="text-base font-bold text-foreground">{title}</Text>
+      </View>
 
-      {/* ── Right: optional filter toggle pill ── */}
-      {filterLabel && onToggleFilter ? (
-        <Pressable
-          onPress={onToggleFilter}
-          className="ml-2 px-3 py-1 bg-muted rounded-full active:opacity-70"
-          testID={testID ? `${testID}-filter` : undefined}
-        >
-          <Text className="text-xs font-semibold text-muted-foreground">
-            {filterLabel}
+      <View className="flex-row items-center gap-2">
+        {loading ? (
+          <View className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-pulse" />
+        ) : null}
+        <View className="px-2 py-0.5 bg-muted rounded-full">
+          <Text
+            className="text-xs font-semibold text-muted-foreground"
+            testID={testID ? `${testID}-count` : undefined}
+          >
+            {itemCount}
           </Text>
-        </Pressable>
-      ) : null}
-    </View>
+        </View>
+      </View>
+    </Pressable>
   );
 }

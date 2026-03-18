@@ -68,6 +68,12 @@ export const queryKeys = {
   /** Quotation list — scoped to a project (used by useQuotationTimeline) */
   quotationsByProject: (projectId: string) =>
     ['quotationsByProject', projectId] as const,
+
+  /** Payments scoped to a single project (project detail timeline view) */
+  projectPayments: (projectId: string) => ['projectPayments', projectId] as const,
+
+  /** Quotations scoped to a single project (aggregated across all tasks) */
+  projectQuotations: (projectId: string) => ['projectQuotations', projectId] as const,
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────
@@ -124,11 +130,12 @@ export const invalidations = {
 
   /**
    * Record a payment or mark a payment as paid.
-   * Affects: payment list/amounts, invoice payment status.
+   * Affects: payment list/amounts, invoice payment status, project timeline.
    */
   paymentRecorded: (ctx: PaymentCtx) => [
     queryKeys.paymentsAll(),
     queryKeys.invoices(ctx.projectId),
+    ...(ctx.projectId ? [queryKeys.projectPayments(ctx.projectId)] : []),
   ],
 
   /**
@@ -177,6 +184,17 @@ export const invalidations = {
    */
   quotationProjectMutated: (ctx: QuotationProjectCtx) => [
     queryKeys.quotationsByProject(ctx.projectId),
+    queryKeys.projectDetail(ctx.projectId),
+  ],
+
+  /**
+   * Refresh all sections of a project's detail timeline simultaneously.
+   * Use after navigation focus or bulk data changes.
+   */
+  projectTimelineRefreshed: (ctx: { projectId: string }) => [
+    queryKeys.tasks(ctx.projectId),
+    queryKeys.projectPayments(ctx.projectId),
+    queryKeys.projectQuotations(ctx.projectId),
     queryKeys.projectDetail(ctx.projectId),
   ],
 };
