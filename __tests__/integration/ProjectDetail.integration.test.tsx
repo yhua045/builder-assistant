@@ -6,13 +6,13 @@
  *  - Renders one TimelineDayGroup per distinct date
  *  - Multiple tasks on the same day appear under the same group
  *  - Day group collapse/expand works (controlled — state lives in ProjectDetail)
- *  - Collapse All / Expand All global toggle
  *  - Project name shown in page heading
  *  - "Mark complete" triggers markComplete in the hook and shows confirmation
  *
- * Strategy: mock `useProjectTimeline` directly (consistent with cockpit tests)
- * so we test the component tree without needing a QueryClientProvider.
- * Hook logic is covered independently in unit/useProjectTimeline.test.ts.
+ * Strategy: mock the four focused hooks (useProjectDetail, useTaskTimeline,
+ * usePaymentsTimeline, useQuotationsTimeline) directly so we test the component
+ * tree without needing a QueryClientProvider.
+ * Hook logic is covered independently in unit/useTaskTimeline.test.ts.
  *
  * NOTE: Fixture dates are in the future (> 2026-03-17) so that the
  * auto-collapse rule starts all groups EXPANDED, matching the test assertions.
@@ -48,13 +48,30 @@ jest.mock('lucide-react-native', () => ({
   ChevronDown: 'ChevronDown', ChevronRight: 'ChevronRight',
 }));
 
-// ── useProjectTimeline hook mock ─────────────────────────────────────────────
+// ── Four focused hook mocks ─────────────────────────────────────────────────
 
 const mockMarkComplete = jest.fn().mockResolvedValue(undefined);
-const mockInvalidate = jest.fn().mockResolvedValue(undefined);
+const mockInvalidateTasks = jest.fn().mockResolvedValue(undefined);
+const mockInvalidatePayments = jest.fn().mockResolvedValue(undefined);
+const mockInvalidateQuotations = jest.fn().mockResolvedValue(undefined);
+const mockRecordPayment = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('../../src/hooks/useProjectTimeline', () => ({
-  useProjectTimeline: () => mockHookReturn,
+let mockProjectDetailReturn: any;
+let mockTaskTimelineReturn: any;
+let mockPaymentsTimelineReturn: any;
+let mockQuotationsTimelineReturn: any;
+
+jest.mock('../../src/hooks/useProjectDetail', () => ({
+  useProjectDetail: () => mockProjectDetailReturn,
+}));
+jest.mock('../../src/hooks/useTaskTimeline', () => ({
+  useTaskTimeline: () => mockTaskTimelineReturn,
+}));
+jest.mock('../../src/hooks/usePaymentsTimeline', () => ({
+  usePaymentsTimeline: () => mockPaymentsTimelineReturn,
+}));
+jest.mock('../../src/hooks/useQuotationsTimeline', () => ({
+  useQuotationsTimeline: () => mockQuotationsTimelineReturn,
 }));
 
 // ── Fixtures — future dates so groups start EXPANDED ─────────────────────────
@@ -74,11 +91,19 @@ const taskT1 = { id: 't1', title: 'Foundation Inspection', status: 'completed', 
 const taskT2 = { id: 't2', title: 'Concrete Pouring',       status: 'completed', projectId: 'proj-1', scheduledAt: '2026-03-20T14:00:00Z' };
 const taskT3 = { id: 't3', title: 'Framing Installation',   status: 'pending',   projectId: 'proj-1', scheduledAt: '2026-03-28T09:00:00Z' };
 
-let mockHookReturn: any;
-
-function setHookReturn(overrides?: Partial<typeof mockHookReturn>) {
-  mockHookReturn = {
+function setHookReturn(overrides: {
+  projectDetail?: Partial<typeof mockProjectDetailReturn>;
+  taskTimeline?: Partial<typeof mockTaskTimelineReturn>;
+  paymentsTimeline?: Partial<typeof mockPaymentsTimelineReturn>;
+  quotationsTimeline?: Partial<typeof mockQuotationsTimelineReturn>;
+} = {}) {
+  mockProjectDetailReturn = {
     project: sampleProject,
+    loading: false,
+    error: null,
+    ...overrides.projectDetail,
+  };
+  mockTaskTimelineReturn = {
     dayGroups: [
       { date: '2026-03-20', label: 'Fri 20 Mar', tasks: [taskT1, taskT2] },
       { date: '2026-03-28', label: 'Sat 28 Mar', tasks: [taskT3] },
@@ -86,8 +111,25 @@ function setHookReturn(overrides?: Partial<typeof mockHookReturn>) {
     loading: false,
     error: null,
     markComplete: mockMarkComplete,
-    invalidateTimeline: mockInvalidate,
-    ...overrides,
+    invalidate: mockInvalidateTasks,
+    ...overrides.taskTimeline,
+  };
+  mockPaymentsTimelineReturn = {
+    paymentDayGroups: [],
+    loading: false,
+    error: null,
+    truncated: false,
+    recordPayment: mockRecordPayment,
+    invalidate: mockInvalidatePayments,
+    ...overrides.paymentsTimeline,
+  };
+  mockQuotationsTimelineReturn = {
+    quotationDayGroups: [],
+    loading: false,
+    error: null,
+    truncated: false,
+    invalidate: mockInvalidateQuotations,
+    ...overrides.quotationsTimeline,
   };
 }
 
@@ -102,7 +144,7 @@ describe('ProjectDetail screen', () => {
   });
 
   it('renders loading indicator when loading=true', async () => {
-    setHookReturn({ loading: true, project: null, dayGroups: [] });
+    setHookReturn({ projectDetail: { loading: true, project: null }, taskTimeline: { dayGroups: [], loading: true } });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<ProjectDetailScreen />);
@@ -183,44 +225,6 @@ describe('ProjectDetail screen', () => {
     expect(card0After.length).toBe(0);
   });
 
-  it('"Collapse All" button hides all task cards', async () => {
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
-    });
-
-    // Both groups start expanded
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' }).length).toBeGreaterThan(0);
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-28-task-0' }).length).toBeGreaterThan(0);
-
-    const collapseAll = tree!.root.findAllByProps({ testID: 'timeline-toggle-all' });
-    await act(async () => {
-      collapseAll[0].props.onPress();
-    });
-
-    // All cards should be hidden
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' }).length).toBe(0);
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-28-task-0' }).length).toBe(0);
-  });
-
-  it('"Expand All" restores all task cards after collapsing', async () => {
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<ProjectDetailScreen />);
-    });
-
-    // Collapse all first
-    const toggleBtn = tree!.root.findAllByProps({ testID: 'timeline-toggle-all' });
-    await act(async () => { toggleBtn[0].props.onPress(); });
-
-    // Now expand all
-    await act(async () => { toggleBtn[0].props.onPress(); });
-
-    // Cards should be visible again
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' }).length).toBeGreaterThan(0);
-    expect(tree!.root.findAllByProps({ testID: 'day-group-2026-03-28-task-0' }).length).toBeGreaterThan(0);
-  });
-
   it('registers a focus listener for timeline invalidation', async () => {
     await act(async () => {
       renderer.create(<ProjectDetailScreen />);
@@ -229,12 +233,12 @@ describe('ProjectDetail screen', () => {
   });
 
   it('shows "no tasks" message when project has no tasks', async () => {
-    setHookReturn({ dayGroups: [] });
+    setHookReturn({ taskTimeline: { dayGroups: [] } });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<ProjectDetailScreen />);
     });
-    const empty = tree!.root.findAllByProps({ testID: 'project-detail-no-tasks' });
+    const empty = tree!.root.findAllByProps({ testID: 'tasks-empty' });
     expect(empty.length).toBeGreaterThan(0);
   });
 

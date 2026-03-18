@@ -19,5 +19,6 @@ export interface QuotationRepository {
   // Search & List
   findByReference(reference: string): Promise<Quotation | null>;
   findByTask(taskId: string): Promise<Quotation[]>;
+  findByProjectId(projectId: string): Promise<Quotation[]>;
   listQuotations(params?: QuotationFilterParams): Promise<{ items: Quotation[]; total: number }>;
 }
