@@ -8,6 +8,18 @@ import { Task } from '../domain/entities/Task';
 import { Project } from '../domain/entities/Project';
 import { Payment } from '../domain/entities/Payment';
 
+export interface PhaseOverview {
+  phaseId: string | null;
+  phaseName: string;
+  tasks: Task[];
+  totalCount: number;
+  completedCount: number;
+  progressPercent: number;
+  isBlocked: boolean;
+  criticalCompleted: number;
+  criticalTotal: number;
+}
+
 export interface ProjectOverview {
   project: Project;
   progressPercent: number;
@@ -19,6 +31,7 @@ export interface ProjectOverview {
   criticalTasks: Task[];
   nonCriticalTasks: Task[];
   totalPendingPayment: number; // Aggregated pending payment amount
+  phaseOverviews: PhaseOverview[];
 }
 
 /**
@@ -67,6 +80,43 @@ export function toOverview(project: Project, allTasks: Task[], allPayments: Paym
     .filter(p => p.status === 'pending')
     .reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
+  // Build phaseOverviews from project.phases
+  const phaseOverviews: PhaseOverview[] = (project.phases ?? []).map(phase => {
+    const phaseTasks = tasks.filter(t => t.phaseId === phase.id);
+    const phaseCompleted = phaseTasks.filter(t => t.status === 'completed').length;
+    const phaseTotal = phaseTasks.length;
+    const phaseCritical = phaseTasks.filter(t => t.isCriticalPath);
+    return {
+      phaseId: phase.id,
+      phaseName: phase.name,
+      tasks: phaseTasks,
+      totalCount: phaseTotal,
+      completedCount: phaseCompleted,
+      progressPercent: phaseTotal === 0 ? 0 : Math.round((phaseCompleted / phaseTotal) * 100),
+      isBlocked: phaseTasks.some(t => t.status === 'blocked'),
+      criticalCompleted: phaseCritical.filter(t => t.status === 'completed').length,
+      criticalTotal: phaseCritical.length,
+    };
+  });
+
+  // Append synthetic 'Unassigned' phase for tasks without a phaseId
+  const unassignedTasks = tasks.filter(t => !t.phaseId);
+  if (unassignedTasks.length > 0) {
+    const unassignedCompleted = unassignedTasks.filter(t => t.status === 'completed').length;
+    const unassignedCritical = unassignedTasks.filter(t => t.isCriticalPath);
+    phaseOverviews.push({
+      phaseId: null,
+      phaseName: 'Unassigned',
+      tasks: unassignedTasks,
+      totalCount: unassignedTasks.length,
+      completedCount: unassignedCompleted,
+      progressPercent: Math.round((unassignedCompleted / unassignedTasks.length) * 100),
+      isBlocked: unassignedTasks.some(t => t.status === 'blocked'),
+      criticalCompleted: unassignedCritical.filter(t => t.status === 'completed').length,
+      criticalTotal: unassignedCritical.length,
+    });
+  }
+
   return {
     project,
     progressPercent,
@@ -78,6 +128,7 @@ export function toOverview(project: Project, allTasks: Task[], allPayments: Paym
     criticalTasks,
     nonCriticalTasks,
     totalPendingPayment,
+    phaseOverviews,
   };
 }
 

@@ -18,7 +18,7 @@ export function resolve<T>(key: string): T {
     const inst = registry.get(key) as T;
     try {
       // Log resolved implementation for easier debugging in dev
-      // eslint-disable-next-line no-console
+       
       console.debug(`[DI] resolve(${key}) ->`, inst && (inst.constructor ? inst.constructor.name : typeof inst));
     } catch {}
     return inst;
@@ -27,7 +27,7 @@ export function resolve<T>(key: string): T {
     const inst = factories.get(key)!();
     registry.set(key, inst);
     try {
-      // eslint-disable-next-line no-console
+       
       console.debug(`[DI] resolve(${key}) via factory ->`, inst && (inst.constructor ? inst.constructor.name : typeof inst));
     } catch {}
     return inst as T;
