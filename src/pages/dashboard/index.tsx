@@ -7,6 +7,7 @@ import { ProjectOverviewCard } from './components/ProjectOverviewCard';
 import HeroSection from './components/HeroSection';
 import { LayoutGrid, List, Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
@@ -57,11 +58,20 @@ export default function DashboardScreen() {
   const hasProjects = (overviews?.length ?? 0) > 0;
 
   const navigateToProject = (projectId: string) => {
-    // Navigation to Projects stack with screen ProjectDetail
-    navigation.navigate('Projects', {
-      screen: 'ProjectDetail',
-      params: { projectId },
-    });
+    // Dispatch the full stack state so ProjectsList is always the base screen.
+    // A plain navigate('Projects', { screen: 'ProjectDetail' }) only targets the
+    // leaf screen and can leave the stack as [ProjectDetail] with no base,
+    // causing the back button to jump to the Dashboard tab instead of ProjectsList.
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Projects',
+        params: {
+          screen: 'ProjectDetail',
+          params: { projectId },
+          initial: false,
+        },
+      }),
+    );
   };
 
   return (
@@ -69,8 +79,8 @@ export default function DashboardScreen() {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center justify-between">
         <View>
+          <Text className="text-2xl font-bold text-foreground">Dashboard</Text>
           <Text className="text-muted-foreground text-sm">Overview</Text>
-          <Text className="text-2xl font-bold text-foreground">Critical Path</Text>
         </View>
         <View className="flex-row items-center">
           {hasProjects && (

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Quotation } from '../domain/entities/Quotation';
 import { QuotationRepository, QuotationFilterParams } from '../domain/repositories/QuotationRepository';
@@ -43,7 +43,7 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     staleTime: 60_000,
   });
 
-  const createQuotation = async (quotation: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Quotation> => {
+  const createQuotation = useCallback(async (quotation: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Quotation> => {
     setLoading(true);
     setError(null);
     try {
@@ -57,9 +57,9 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [createQuotationUC, queryClient]);
 
-  const listQuotations = async (params?: QuotationFilterParams): Promise<{ items: Quotation[]; total: number }> => {
+  const listQuotations = useCallback(async (params?: QuotationFilterParams): Promise<{ items: Quotation[]; total: number }> => {
     setLoading(true);
     setError(null);
     try {
@@ -72,9 +72,9 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [listQuotationsUC]);
 
-  const getQuotation = async (id: string): Promise<Quotation | null> => {
+  const getQuotation = useCallback(async (id: string): Promise<Quotation | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -87,9 +87,9 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getQuotationUC]);
 
-  const updateQuotation = async (id: string, updates: Partial<Quotation>): Promise<Quotation> => {
+  const updateQuotation = useCallback(async (id: string, updates: Partial<Quotation>): Promise<Quotation> => {
     setLoading(true);
     setError(null);
     try {
@@ -103,9 +103,9 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [updateQuotationUC, queryClient]);
 
-  const deleteQuotation = async (id: string): Promise<void> => {
+  const deleteQuotation = useCallback(async (id: string): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
@@ -118,7 +118,7 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deleteQuotationUC, queryClient]);
 
   return {
     createQuotation,
