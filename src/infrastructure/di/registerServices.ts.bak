@@ -74,7 +74,6 @@ if (typeof (container as any).registerSingleton === 'function') {
 	//   FORCE_REAL_AUDIO=true npx react-native run-ios
 	const forceRealRecorder = (ENV_FORCE_REAL_AUDIO ?? process.env.FORCE_REAL_AUDIO) === 'true';
 	const useMockVoice = __DEV__ && !forceRealRecorder;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const useMockParser = useMockVoice || (ENV_VOICE_USE_MOCK_PARSER ?? process.env.VOICE_USE_MOCK_PARSER) === 'true';
 
 	// if (useMockVoice) {

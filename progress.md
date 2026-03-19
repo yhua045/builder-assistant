@@ -796,3 +796,64 @@ cd ios && pod install
 - **Pay Now action is a stub**: `onPayNow` on `PaymentCard` calls `console.log` — a payment-recording modal is out of scope for this ticket.
 - **Project pill picker in Site Manager mode is not persisted**: Selected `projectId` resets on screen unmount; no deep-link support yet.
 - **`contractTotal` / `variationTotal` computed in JS**: Sums are derived client-side in the hook via `Array.reduce` rather than in SQL — acceptable at current data scale but worth moving to a `SUM()` query if performance becomes an issue.
+
+---
+
+## 15. Issue #145 — Audit Log (2026-03-19)
+
+**Goal**: Implement a chronological, append-only audit log that records all Create/Update/Delete actions on Tasks and Projects. Each log entry stores UTC timestamp, source (screen), action description, and scoped project/task IDs. Entries are surfaced via read-only `AuditLogSection` components in Task Detail and Project Detail views.
+
+**Status**: IMPLEMENTED. All 18 new tests pass (8 unit + 10 integration). Full suite: **838 passing, 0 failures**. `npx tsc --noEmit` clean.
+
+### Key Decisions
+
+- **Append-only repository interface**: `AuditLogRepository` contains only `save()`, `findByProjectId()`, and `findByTaskId()` — no update or delete methods. Audit logs derive their value from immutability; exposing mutation APIs enables data tampering and violates audit-trail best practices.
+- **Logging fired at the hook layer, not the use case**: `useTaskForm` calls `createAuditEntry()` after `createTaskUseCase` and `updateTaskUseCase` succeed, keeping those use cases single-responsibility and side-effect-free. **Exception**: `DeleteTaskUseCase` accepts an optional `auditLogRepository` so it can capture the task title before deletion (which erases the data).
+- **Optional `AuditLogRepository` in `DeleteTaskUseCase`**: Constructor parameter is optional, preserving backward compatibility with all existing unit tests that pass only `taskRepository`. When the DI container wires it, both are provided.
+- **Sorting in the use case, not the repository**: `GetAuditLogs*` use cases sort results newest-first in JavaScript. The repository queries `ORDER BY timestamp_utc DESC`, so the JS sort is a safety net that adds negligible cost for small datasets.
+- **Raw SQL pattern maintained**: `DrizzleAuditLogRepository` uses `db.executeSql()` (not Drizzle query builder) for consistency with existing infrastructure code.
+- **`timestampUtc` stored as Unix milliseconds in SQLite**: Domain layer uses ISO 8601 strings; the repository converts on write/read. This keeps the domain clean and aligns with the schema convention used throughout the codebase.
+- **Free-text `action` string, not a typed enum**: Human-readable descriptions (e.g. `"Created task 'Frame walls'"`) are flexible and future-proof, whereas a typed enum would add ceremony without benefit at this scale. `source` is a union type (`AuditLogSource`) because it may drive UI filtering in a future release.
+
+### Completed
+
+- `design/issue-145-audit-log.md` — design doc (APPROVED).
+- `src/domain/entities/AuditLog.ts` — `AuditLog` interface + `AuditLogSource` union type.
+- `src/domain/repositories/AuditLogRepository.ts` — three-method read-only interface: `save()`, `findByProjectId()`, `findByTaskId()`.
+- `src/infrastructure/database/schema.ts` — `auditLogs` table (9 columns: `localId` PK, `id` unique, `projectId` FK, `taskId` FK, `timestampUtc`, `source`, `action`) with three indexes (projectId, taskId, timestampUtc).
+- `drizzle/migrations/0020_audit_logs.sql` — auto-generated Drizzle migration; applied on app start via `getBundledMigrations()`.
+- `src/infrastructure/repositories/DrizzleAuditLogRepository.ts` — three query methods backing the interface; row mapper handles Unix-ms ↔ ISO string conversion.
+- `src/infrastructure/di/registerServices.ts` — `DrizzleAuditLogRepository` registered as singleton `'AuditLogRepository'`.
+- `src/application/usecases/auditlog/CreateAuditLogEntryUseCase.ts` — generates UUID-based `id`, saves to repository.
+- `src/application/usecases/auditlog/GetAuditLogsByProjectUseCase.ts` — fetches + sorts newest-first by `projectId`.
+- `src/application/usecases/auditlog/GetAuditLogsByTaskUseCase.ts` — fetches + sorts newest-first by `taskId`.
+- `src/hooks/queryKeys.ts` — added `auditLogsByProject()`, `auditLogsByTask()` query keys + `auditLogWritten()` invalidation context.
+- `src/hooks/useAuditLog.ts` — two read hooks: `useAuditLogsByProject(projectId)` and `useAuditLogsByTask(taskId)` backed by TanStack Query.
+- `src/hooks/useCreateAuditLog.ts` — write hook returning `createEntry()` callback; validates `projectId` presence, invalidates logs on write.
+- `src/hooks/useTaskForm.ts` — modified to inject `useCreateAuditLog()` and fire audit events after task create/update succeed.
+- `src/application/usecases/task/DeleteTaskUseCase.ts` — modified to accept optional `auditLogRepository`, fire delete event with captured task title.
+- `src/components/tasks/AuditLogSection.tsx` — reusable list component with collapsible "Show all" toggle, empty state, loading skeleton, timestamp formatting (DD MMM YYYY, HH:mm), and source badge.
+- `src/pages/tasks/TaskDetailsPage.tsx` — integrated `AuditLogSection` with `useAuditLogsByTask` below task metadata.
+- `src/pages/projects/ProjectDetail.tsx` — integrated `AuditLogSection` with `useAuditLogsByProject` at bottom of detail view.
+- `__tests__/unit/CreateAuditLogEntryUseCase.test.ts` — 3 tests: entry saved with all required fields, unique IDs generated, `projectId` validation.
+- `__tests__/unit/GetAuditLogsByProjectUseCase.test.ts` — 2 tests: newest-first sort, empty array on no logs.
+- `__tests__/unit/GetAuditLogsByTaskUseCase.test.ts` — 2 tests: newest-first sort, empty array on no logs.
+- `__tests__/unit/DeleteTaskUseCase.auditlog.test.ts` — 3 tests: delete event fired with title capture, optional repo backward compat, title preserved before deletion.
+- `__tests__/integration/DrizzleAuditLogRepository.integration.test.ts` — 8 tests: save + findByProjectId round-trip, findByTaskId scoping, DESC timestamp ordering, nullable taskId handling, multiple-entry queries.
+
+### Trade-offs & Technical Debt
+
+- **No user attribution**: No `userId` field on audit logs. The app is single-user at this stage; user tracking is deferred to a separate feature when multi-user support is added.
+- **No log retention policy**: All entries are kept permanently. A future ticket will implement housekeeping (e.g., auto-delete entries older than 1 year).
+- **No audit log export**: Logs are view-only in the UI. Export (to CSV/JSON) or email of audit trails is out of scope.
+- **No real-time subscription**: Logs are fetched via TanStack Query with cache invalidation on write. SQLite does not support pub/sub; live-update UI is not feasible without polling or a server connection.
+
+### Acceptance Criteria Met
+
+- ✅ Every Create, Update, Delete on Task via Task Form creates an audit log entry.
+- ✅ Each entry stores UTC timestamp, source, action description, `projectId`, and optional `taskId`.
+- ✅ `AuditLogSection` renders entries below Task Detail (newest-first, collapsible).
+- ✅ `AuditLogSection` renders entries on Project Detail (all project-level entries, cross-task).
+- ✅ Three use cases fully tested (8 unit + 8 integration tests, all passing).
+- ✅ Database schema + migration implemented and auto-applied.
+- ✅ TypeScript strict mode clean (`npx tsc --noEmit` passes).

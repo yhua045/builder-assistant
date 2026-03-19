@@ -85,6 +85,13 @@
       "when": 1773628573498,
       "tag": "0011_jittery_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1773887709105,
+      "tag": "0012_fearless_blur",
+      "breakpoints": true
     }
   ]
 }

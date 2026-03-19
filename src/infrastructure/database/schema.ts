@@ -486,3 +486,18 @@ export const quotations = sqliteTable('quotations', {
   statusIdx:  index('idx_quotations_status').on(table.status),
   dateIdx:    index('idx_quotations_date').on(table.date),
 }));
+
+// Audit Logs Table (issue #145)
+export const auditLogs = sqliteTable('audit_logs', {
+  localId: integer('local_id').primaryKey({ autoIncrement: true }),
+  id: text('id').notNull().unique(),
+  projectId: text('project_id').notNull(),
+  taskId: text('task_id'),                       // nullable
+  timestampUtc: integer('timestamp_utc').notNull(), // Unix ms
+  source: text('source').notNull(),
+  action: text('action').notNull(),
+}, (table) => ({
+  projectIdx: index('idx_audit_logs_project').on(table.projectId),
+  taskIdx:    index('idx_audit_logs_task').on(table.taskId),
+  tsIdx:      index('idx_audit_logs_ts').on(table.timestampUtc),
+}));
