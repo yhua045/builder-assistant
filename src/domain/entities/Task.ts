@@ -35,6 +35,9 @@ export interface Task {
   // Cockpit: manual critical-path pin. User sets this to always show in Focus-3.
   isCriticalPath?: boolean;
 
+  /** Phase this task belongs to (FK to ProjectPhase.id). Optional for ad-hoc tasks. */
+  phaseId?: string;
+
   /**
    * URIs of photos attached to this task.
    * Supports both local paths (file://) and remote URLs (https://).
