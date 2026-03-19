@@ -3,8 +3,10 @@ import { container } from 'tsyringe';
 import { queryKeys } from './queryKeys';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
+import { PaymentRepository } from '../domain/repositories/PaymentRepository';
 import { Task } from '../domain/entities/Task';
 import { Project } from '../domain/entities/Project';
+import { Payment } from '../domain/entities/Payment';
 
 export interface ProjectOverview {
   project: Project;
@@ -16,12 +18,13 @@ export interface ProjectOverview {
   dueSoonCriticalTasksCount: number;
   criticalTasks: Task[];
   nonCriticalTasks: Task[];
+  totalPendingPayment: number; // Aggregated pending payment amount
 }
 
 /**
- * Calculates project overview derived from projects and all tasks.
+ * Calculates project overview derived from projects, tasks, and payments.
  */
-export function toOverview(project: Project, allTasks: Task[]): ProjectOverview {
+export function toOverview(project: Project, allTasks: Task[], allPayments: Payment[]): ProjectOverview {
   const tasks = allTasks.filter(t => t.projectId === project.id);
   const criticalTasks = tasks.filter(t => t.isCriticalPath);
   const nonCriticalTasks = tasks.filter(t => !t.isCriticalPath);
@@ -58,6 +61,12 @@ export function toOverview(project: Project, allTasks: Task[]): ProjectOverview 
     }
   }
 
+  // Calculate total pending payments for this project
+  const projectPayments = allPayments.filter(p => p.projectId === project.id);
+  const totalPendingPayment = projectPayments
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+
   return {
     project,
     progressPercent,
@@ -68,6 +77,7 @@ export function toOverview(project: Project, allTasks: Task[]): ProjectOverview 
     dueSoonCriticalTasksCount: dueSoonCount,
     criticalTasks,
     nonCriticalTasks,
+    totalPendingPayment,
   };
 }
 
@@ -77,13 +87,15 @@ export function useProjectsOverview() {
     queryFn: async (): Promise<ProjectOverview[]> => {
       const projectRepo = container.resolve<ProjectRepository>('ProjectRepository');
       const taskRepo = container.resolve<TaskRepository>('TaskRepository');
+      const paymentRepo = container.resolve<PaymentRepository>('PaymentRepository');
       
-      const [projectsResult, allTasks] = await Promise.all([
+      const [projectsResult, allTasks, allPayments] = await Promise.all([
         projectRepo.list(),
-        taskRepo.findAll()
+        taskRepo.findAll(),
+        paymentRepo.findAll(),
       ]);
 
-      const overviews = projectsResult.items.map(p => toOverview(p, allTasks));
+      const overviews = projectsResult.items.map(p => toOverview(p, allTasks, allPayments));
 
       // Projects sorted by urgency (overdue critical tasks > due soon > on schedule)
       overviews.sort((a, b) => {

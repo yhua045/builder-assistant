@@ -20,7 +20,7 @@ describe('useProjectsOverview - toOverview', () => {
       { id: 't3', projectId: 'p1', title: 'Non-critical 1', status: 'pending', isCriticalPath: false },
     ];
 
-    const overview = toOverview(mockProject, tasks);
+    const overview = toOverview(mockProject, tasks, [] as any);
     
     expect(overview.criticalTasksTotal).toBe(2);
     expect(overview.criticalTasksCompleted).toBe(1);
@@ -32,7 +32,7 @@ describe('useProjectsOverview - toOverview', () => {
       { id: 't1', projectId: 'p1', title: 'Non-critical 1', status: 'completed', isCriticalPath: false },
     ];
 
-    const overview = toOverview(mockProject, tasks);
+    const overview = toOverview(mockProject, tasks, [] as any);
     
     expect(overview.criticalTasksTotal).toBe(0);
     expect(overview.progressPercent).toBe(0);
@@ -55,7 +55,7 @@ describe('useProjectsOverview - toOverview', () => {
       { id: 't4', projectId: 'p1', title: 'Overdue NC', status: 'pending', isCriticalPath: false, dueDate: overdueDate },
     ];
 
-    const overview = toOverview(mockProject, tasks);
+    const overview = toOverview(mockProject, tasks, [] as any);
     
     expect(overview.overdueCriticalTasksCount).toBe(1);
     expect(overview.dueSoonCriticalTasksCount).toBe(1);
