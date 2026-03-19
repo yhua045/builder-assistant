@@ -31,6 +31,9 @@
 // ─── Key factories ────────────────────────────────────────────────────────────
 
 export const queryKeys = {
+  /** All projects overview */
+  projectsOverview: () => ['projectsOverview'] as const,
+
   /** All payments (use for global invalidations) */
   paymentsAll: () => ['payments'] as const,
 
@@ -101,6 +104,7 @@ export const invalidations = {
    * Affects: payment totals, invoice list, task status badge, quote status badge.
    */
   acceptQuotation: (ctx: AcceptQuotationCtx) => [
+    queryKeys.projectsOverview(),
     queryKeys.paymentsAll(),
     queryKeys.invoices(ctx.projectId),
     queryKeys.tasks(ctx.projectId),
@@ -113,6 +117,7 @@ export const invalidations = {
    * Does NOT affect payments or invoices — no financial change occurs.
    */
   rejectQuotation: (ctx: RejectQuotationCtx) => [
+    queryKeys.projectsOverview(),
     queryKeys.tasks(ctx.projectId),
     queryKeys.taskDetail(ctx.taskId),
     queryKeys.quotations(ctx.taskId),
@@ -163,6 +168,7 @@ export const invalidations = {
    * (e.g. subcontractor reassignment on a task with an active invoice).
    */
   taskEdited: (ctx: TaskEditCtx) => [
+    queryKeys.projectsOverview(),
     queryKeys.tasks(ctx.projectId),
     queryKeys.taskDetail(ctx.taskId),
     ...(ctx.affectsPayments ? [queryKeys.paymentsAll()] : []),

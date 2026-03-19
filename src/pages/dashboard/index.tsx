@@ -2,110 +2,19 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { useProjects } from '../../hooks/useProjects';
+import { useProjectsOverview } from '../../hooks/useProjectsOverview';
+import { ProjectOverviewCard } from './components/ProjectOverviewCard';
 import HeroSection from './components/HeroSection';
-import CashOutflow from './components/CashOutflow';
-import ActiveTasks from './components/ActiveTasks';
-import UrgentAlerts from './components/UrgentAlerts';
+import { LayoutGrid, List, Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
 import { MobileOcrAdapter } from '../../infrastructure/ocr/MobileOcrAdapter';
 import { InvoiceNormalizer } from '../../application/ai/InvoiceNormalizer';
 import { PdfThumbnailConverter } from '../../infrastructure/files/PdfThumbnailConverter';
-import { 
-  DollarSign, 
-  Plus,
-  Camera,
-  FileText,
-  Wrench,
-  Receipt,
-  X
-} from 'lucide-react-native';
 
-// Mock data
-const urgentAlerts = [
-  {
-    id: '1',
-    type: 'overdue_payment',
-    title: 'Overdue Payment',
-    vendor: 'ABC Construction Co.',
-    amount: 8500.00,
-    daysOverdue: 3,
-    project: 'Office Renovation'
-  },
-  {
-    id: '2',
-    type: 'expired_quote',
-    title: 'Quote Expired',
-    vendor: 'Elite Electrical Services',
-    amount: 3200.00,
-    expiredDays: 2,
-    project: 'Warehouse Expansion'
-  }
-];
-
-const paymentsThisWeek = [
-  {
-    id: '1',
-    vendor: 'Premium Plumbing Inc.',
-    amount: 4200.00,
-    dueDate: 'Dec 26',
-    project: 'Office Renovation',
-    invoice: 'INV-2024-089'
-  },
-  {
-    id: '2',
-    vendor: 'City Landscaping Co.',
-    amount: 2850.00,
-    dueDate: 'Dec 27',
-    project: 'Retail Store Setup',
-    invoice: 'INV-2024-091'
-  },
-  {
-    id: '3',
-    vendor: 'SafeGuard Security Systems',
-    amount: 5100.00,
-    dueDate: 'Dec 28',
-    project: 'Warehouse Expansion',
-    invoice: 'INV-2024-093'
-  }
-];
-
-const nextUpTasks = [
-  {
-    id: '1',
-    title: 'Pool Cleaner Visit',
-    time: 'Today, 2:00 PM',
-    vendor: 'AquaClear Pool Services',
-    project: 'Office Renovation',
-    type: 'Maintenance'
-  },
-  {
-    id: '2',
-    title: 'Electrical Inspection',
-    time: 'Today, 4:30 PM',
-    vendor: 'Elite Electrical Services',
-    project: 'Warehouse Expansion',
-    type: 'Inspection'
-  },
-  {
-    id: '3',
-    title: 'Plumbing Repair',
-    time: 'Tomorrow, 10:00 AM',
-    vendor: 'Premium Plumbing Inc.',
-    project: 'Office Renovation',
-    type: 'Repair'
-  },
-  {
-    id: '4',
-    title: 'HVAC Maintenance',
-    time: 'Tomorrow, 2:00 PM',
-    vendor: 'CoolAir HVAC Solutions',
-    project: 'Retail Store Setup',
-    type: 'Maintenance'
-  }
-];
+type DashboardNavigationProp = any;
 
 const quickActions = [
   { id: '1', title: 'Snap Receipt', icon: Camera, color: 'bg-chart-1' },
@@ -116,13 +25,14 @@ const quickActions = [
 ];
 
 export default function DashboardScreen() {
-  const { projects } = useProjects();
-  const hasProjects = (projects?.length ?? 0) > 0;
+  const { data: overviews, isLoading, error } = useProjectsOverview();
+  const [isComprehensive, setIsComprehensive] = useState(false);
+  const navigation = useNavigation<DashboardNavigationProp>();
+
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   const [showAdHocTask, setShowAdHocTask] = useState(false);
-  
   const [showQuotation, setShowQuotation] = useState(false);
 
   const invoiceOcrAdapter = useMemo(() => new MobileOcrAdapter(), []);
@@ -131,48 +41,91 @@ export default function DashboardScreen() {
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
-    if (actionId === '1') { // Snap Receipt
+    if (actionId === '1') {
       setShowSnapReceipt(true);
-    } else if (actionId === '2') { // Add Invoice
+    } else if (actionId === '2') {
       setShowAddInvoice(true);
-    } else if (actionId === '5') { // Ad Hoc Task
-      setShowAdHocTask(true);
-    } else if (actionId === '4') { // Add Quote
+    } else if (actionId === '3') {
+      // TODO: Log Payment
+    } else if (actionId === '4') {
       setShowQuotation(true);
+    } else if (actionId === '5') {
+      setShowAdHocTask(true);
     }
-    // Handle other actions...
   };
 
-  // Invoice creation is handled inside InvoiceScreen; Dashboard only toggles modal visibility.
+  const hasProjects = (overviews?.length ?? 0) > 0;
+
+  const navigateToProject = (projectId: string) => {
+    // Navigation to Projects stack with screen ProjectDetail
+    navigation.navigate('Projects', {
+      screen: 'ProjectDetail',
+      params: { projectId },
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center justify-between">
         <View>
-          <Text className="text-muted-foreground text-sm">Welcome back,</Text>
-          <Text className="text-2xl font-bold text-foreground">Dashboard</Text>
+          <Text className="text-muted-foreground text-sm">Overview</Text>
+          <Text className="text-2xl font-bold text-foreground">Critical Path</Text>
         </View>
-        <ThemeToggle />
+        <View className="flex-row items-center">
+          {hasProjects && (
+            <View className="flex-row bg-secondary/50 rounded-lg p-1 mr-4">
+              <Pressable
+                onPress={() => setIsComprehensive(false)}
+                className={`p-1.5 rounded-md ${!isComprehensive ? 'bg-background shadow-sm' : ''}`}
+              >
+                <List size={18} className={!isComprehensive ? 'text-primary' : 'text-muted-foreground'} />
+              </Pressable>
+              <Pressable
+                onPress={() => setIsComprehensive(true)}
+                className={`p-1.5 rounded-md ${isComprehensive ? 'bg-background shadow-sm' : ''}`}
+              >
+                <LayoutGrid size={18} className={isComprehensive ? 'text-primary' : 'text-muted-foreground'} />
+              </Pressable>
+            </View>
+          )}
+          <ThemeToggle />
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section - Show when no projects exist */}
-        {!hasProjects && <HeroSection />}
-        {hasProjects && (
-          <>
-            <UrgentAlerts alerts={urgentAlerts} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+        {isLoading && (
+          <View className="px-6 mt-4">
+            <Text className="text-muted-foreground">Loading projects...</Text>
+          </View>
+        )}
 
-            {/* 2. Cash Outflow + Payment List */}
-            <CashOutflow payments={paymentsThisWeek} />
+        {error && (
+          <View className="px-6 mt-4 p-4 bg-destructive/10 rounded-xl">
+            <Text className="text-destructive">Failed to load overview data</Text>
+          </View>
+        )}
 
-            {/* 3. Active Tasks */}
-            <ActiveTasks tasks={nextUpTasks} />
-          </>
+        {!isLoading && !error && !hasProjects && <HeroSection />}
+
+        {!isLoading && !error && hasProjects && overviews && (
+          <View className="px-6 mt-2">
+             <Text className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
+               Active Projects ({overviews.length})
+             </Text>
+            {overviews.map(overview => (
+              <ProjectOverviewCard
+                key={overview.project.id}
+                overview={overview}
+                isComprehensive={isComprehensive}
+                onPress={() => navigateToProject(overview.project.id)}
+              />
+            ))}
+          </View>
         )}
       </ScrollView>
 
-      {/* 4. Quick Actions - Floating Action Button */}
+      {/* Quick Actions - Floating Action Button */}
       <View className="absolute bottom-24 right-6">
         <Pressable
           onPress={() => setShowQuickActions(true)}
@@ -254,6 +207,7 @@ export default function DashboardScreen() {
           pdfConverter={invoicePdfConverter}
         />
       </Modal>
+
       {/* Ad Hoc Task (TaskScreen manages its own Modal) */}
       {showAdHocTask && (
         (() => {
@@ -261,21 +215,18 @@ export default function DashboardScreen() {
           return <TaskScreen onClose={() => setShowAdHocTask(false)} />;
         })()
       )}
+
       {/* Quotation Modal */}
       <QuotationScreen
         visible={showQuotation}
         onClose={() => setShowQuotation(false)}
-        onSuccess={() => {
-          // Optionally refresh quotation list here when that component exists
-          console.log('Quotation created successfully');
-        }}
+        onSuccess={() => {}}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingBottom: 128 },
   modalBackdrop: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
   modalContainer: { backgroundColor: '#ffffff' },
 });
