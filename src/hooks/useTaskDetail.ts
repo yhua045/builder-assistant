@@ -37,7 +37,7 @@ export function useTaskDetail(
     } catch {
       return null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [_overrideSvc]);
 
   useEffect(() => {

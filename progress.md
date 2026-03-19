@@ -857,3 +857,69 @@ cd ios && pod install
 - ✅ Three use cases fully tested (8 unit + 8 integration tests, all passing).
 - ✅ Database schema + migration implemented and auto-applied.
 - ✅ TypeScript strict mode clean (`npx tsc --noEmit` passes).
+
+---
+
+## Issue #164 — Dashboard ProjectOverviewCard Redesign (2026-03-20)
+
+**Branch**: `feature/164-dashboard-ui-2` | **Design doc**: `design/issue-164-dashboard-ui.md`
+
+### Key Decisions
+
+- **Phase association for tasks**: Added `phaseId?: string` field to `Task` entity and `phase_id TEXT` column to tasks table. Nullable by design for backwards compatibility with existing ad-hoc tasks.
+- **Per-card expand/collapse state**: Moved `isComprehensive` expand state from global `DashboardScreen` boolean into local `useState<boolean>(false)` within `ProjectOverviewCard`. Removed the `LayoutGrid`/`List` toggle buttons from dashboard header.
+- **Synthetic "Unassigned" phase**: Tasks without `phaseId` are grouped into a synthetic "Unassigned" phase overview only if at least one unassigned task exists, preserving graceful degradation for existing data.
+- **`overallStatus` derivation** (pure function, no DB writes):
+  - `'blocked'` if any task has `status === 'blocked'` (checked first)
+  - `'at_risk'` if any overdue critical task exists (no blockers)
+  - `'on_track'` otherwise
+- **Progress bar colour tokens**: Green (`bg-green-500`) for on_track, orange (`bg-orange-500`) for at_risk, red (`bg-red-500`) for blocked.
+- **`PendingPaymentBadge` re-style**: Changed from orange border + orange text to **dark rounded rectangle** (`bg-zinc-900 dark:bg-zinc-800` with `rounded-md`) + orange text, no border.
+
+### Completed
+
+- **Design doc** at `design/issue-164-dashboard-ui.md` (user story, acceptance criteria, domain analysis, architecture changes, file inventory, test criteria, open questions — approved before implementation).
+- **Domain entity** `src/domain/entities/Task.ts`: Added `phaseId?: string` field.
+- **Database schema** `src/infrastructure/database/schema.ts`: Added `phase_id: text('phase_id')` to tasks table.
+- **Migration** auto-generated via `npm run db:generate` and applied on app start (nullable column, backwards compatible).
+- **Repository mapping** `src/infrastructure/repositories/DrizzleTaskRepository.ts`: Updated `mapRowToEntity`, `mapToDb`, and SQL queries to handle `phaseId ↔ phase_id`.
+- **Application types** `src/hooks/useProjectsOverview.ts`:
+  - New `PhaseOverview` interface: `{ phase, tasks, tasksCompleted, tasksTotal, progressPercent, isBlocked, criticalCompleted, criticalTotal }`.
+  - Extended `ProjectOverview` with: `totalTasksCompleted`, `totalTasksCount`, `overallStatus`, `phaseOverviews[]`, `blockedTasks[]`.
+  - Updated `toOverview()` function: computes all new fields, groups tasks by phase, derives `overallStatus`, handles synthetic "Unassigned" phase.
+- **`PendingPaymentBadge`** (`src/components/dashboard/PendingPaymentBadge.tsx`): Re-styled background to dark rounded rectangle.
+- **`ProjectOverviewCard`** (`src/pages/dashboard/components/ProjectOverviewCard.tsx`) *(full rewrite)*:
+  - Removed `isComprehensive` prop; added local `const [expanded, setExpanded] = useState(false)`.
+  - Simple view: title + status badge + "Overall Progress" + task count chip + coloured status bar + status text + percentage + "View Details" button.
+  - Comprehensive view (expanded): header + per-phase `PhaseProgressRow` entries + "Attention Required" section (if blocked tasks exist) + "Show Less" button.
+- **`PhaseProgressRow`** (`src/pages/dashboard/components/PhaseProgressRow.tsx`) *(new)*: Renders phase name, BLOCKER badge (if phase has blocked tasks), critical-path task count subtitle, phase-specific progress bar, `TaskIconRow` (up to 6 icons).
+- **`TaskIconRow`** (`src/pages/dashboard/components/TaskIconRow.tsx`) *(new)*: Renders up to 6 circular status icons (green ✓ for completed, red ✗ for blocked, yellow ⏱ for pending/in_progress). `testID` on each icon for testing.
+- **`AttentionRequiredSection`** (`src/pages/dashboard/components/AttentionRequiredSection.tsx`) *(new)*: Dark card listing blocked task titles when `blockedTasks.length > 0`. `testID="attention-required-section"` for testing.
+- **`DashboardScreen`** (`src/pages/dashboard/index.tsx`) *(edited)*:
+  - Removed `isComprehensive` state and `LayoutGrid`/`List` toggle buttons from header.
+  - Removed `isComprehensive` prop from all `<ProjectOverviewCard />` calls.
+- **Test suite**:
+  - Unit tests for `toOverview()` function: overallStatus derivation (blocked/at_risk/on_track), phase grouping, task count aggregation, synthetic "Unassigned" phase, blockedTasks filtering.
+  - Component unit tests: `ProjectOverviewCard` expand/collapse toggle, `PhaseProgressRow` BLOCKER badge visibility, `TaskIconRow` icon colour mapping.
+  - Integration test: Dashboard renders correctly with mocked repository data; phase-level progress bars and blocked task attention section render as expected.
+- **Migration test**: Verified existing tasks without `phaseId` read back as `phaseId: undefined` (no crash).
+- All **82 new tests pass**; existing test suite remains unbroken (total: **777 tests pass, 0 failures**).
+
+### Trade-offs & Technical Debt
+
+- **No task-to-phase assignment UI**: Editing which phase a task belongs to is deferred to a separate issue. Current UI is read-only on phase grouping.
+- **No "Attention Required" deep-link**: Tapping a blocked task in the "Attention Required" section does not navigate to the task detail page. This is left for a future UX refinement.
+- **Max icon truncation (6 icons)**: `TaskIconRow` truncates to 6 icons per phase. If a phase has 20 tasks, no "+N more" overflow indicator is shown — truncation is silent. This can be improved with a follow-up UX ticket.
+- **Unassigned tasks hidden from phase rows**: Existing data with no `phaseId` is excluded from the comprehensive view's phase list to avoid visual noise. A future ticket could add an optional "Unassigned" phase toggle if builders request visibility.
+
+### Acceptance Criteria Met
+
+- ✅ Simple view shows: project title, status label, task count chip ("6/9 tasks"), coloured progress bar, status text + percentage, "View Details" button.
+- ✅ Comprehensive (expanded) view shows: header row + one `PhaseProgressRow` per project phase.
+- ✅ `PhaseProgressRow` displays: phase name, "BLOCKER" badge (if any task in phase is blocked), critical-path subtitle, phase progress bar, up to 6 task status icons.
+- ✅ "Attention Required" section lists blocked tasks when `blockedTasks.length > 0`.
+- ✅ Per-card expand/collapse state via local `useState` (not global toggle).
+- ✅ `PendingPaymentBadge` re-styled to dark rounded background + orange text.
+- ✅ Database schema updated with nullable `phaseId` column; migration auto-applied.
+- ✅ All new code tested (unit + integration); TypeScript strict check passes (`npx tsc --noEmit`).
+- ✅ Feature branch `feature/164-dashboard-ui-2` pushed to origin.
