@@ -77,6 +77,12 @@ export const queryKeys = {
 
   /** Quotations scoped to a single project (aggregated across all tasks) */
   projectQuotations: (projectId: string) => ['projectQuotations', projectId] as const,
+
+  /** Audit logs scoped to a project (all entries) */
+  auditLogsByProject: (projectId: string) => ['auditLogs', 'project', projectId] as const,
+
+  /** Audit logs scoped to a single task */
+  auditLogsByTask: (taskId: string) => ['auditLogs', 'task', taskId] as const,
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────
@@ -95,6 +101,7 @@ export type TaskEditCtx = {
 };
 export type ContactCtx = Record<string, never>;
 export type QuotationProjectCtx = { projectId: string };
+export type AuditLogCtx = { projectId: string; taskId?: string };
 
 // ─── Invalidation map ─────────────────────────────────────────────────────────
 
@@ -202,5 +209,14 @@ export const invalidations = {
     queryKeys.projectPayments(ctx.projectId),
     queryKeys.projectQuotations(ctx.projectId),
     queryKeys.projectDetail(ctx.projectId),
+  ],
+
+  /**
+   * A task was created, updated, or deleted (audit side-effect).
+   * Invalidate audit log views for the project and (if known) the task.
+   */
+  auditLogWritten: (ctx: AuditLogCtx) => [
+    queryKeys.auditLogsByProject(ctx.projectId),
+    ...(ctx.taskId ? [queryKeys.auditLogsByTask(ctx.taskId)] : []),
   ],
 };

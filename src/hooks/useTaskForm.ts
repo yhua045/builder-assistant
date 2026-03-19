@@ -14,6 +14,7 @@ import { QuotationRepository } from '../domain/repositories/QuotationRepository'
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
 import { invalidations, queryKeys } from './queryKeys';
+import { useCreateAuditLog } from './useCreateAuditLog';
 
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
 
@@ -116,6 +117,7 @@ export function useTaskForm({
 }: UseTaskFormOptions = {}): UseTaskFormReturn {
   const isEditMode = Boolean(initialTask?.id);
   const queryClient = useQueryClient();
+  const { createEntry: createAuditEntry } = useCreateAuditLog();
 
   // ── Basic fields ──────────────────────────────────────────────────────────
   const [title, setTitle] = useState(initialTask?.title ?? '');
@@ -397,6 +399,14 @@ export function useTaskForm({
           invalidations.taskEdited({ projectId: projectId || '', taskId: selfId })
             .map(key => queryClient.invalidateQueries({ queryKey: key }))
         );
+        if (projectId) {
+          await createAuditEntry({
+            projectId,
+            taskId: selfId,
+            source: 'Task Form',
+            action: `Updated task "${updatedTask.title}"`,
+          });
+        }
         onSuccess?.(updatedTask);
       } else {
         // ── Create mode ───────────────────────────────────────────────────
@@ -467,6 +477,14 @@ export function useTaskForm({
         }
 
         await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(newTask.projectId) });
+        if (newTask.projectId) {
+          await createAuditEntry({
+            projectId: newTask.projectId,
+            taskId: newTask.id,
+            source: 'Task Form',
+            action: `Created task "${newTask.title}"`,
+          });
+        }
         onSuccess?.(newTask);
       }
     } finally {
