@@ -516,6 +516,7 @@ export function useTaskForm({
     contactRepository,
     onSuccess,
     queryClient,
+    createAuditEntry,
   ]);
 
   return {

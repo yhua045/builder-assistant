@@ -116,22 +116,18 @@ export default function ProjectDetailScreen() {
   const {
     dayGroups,
     loading: tasksLoading,
-    error: tasksError,
     markComplete,
     invalidate: invalidateTasks,
   } = useTaskTimeline(projectId);
   const {
     paymentDayGroups,
     loading: paymentsLoading,
-    error: paymentsError,
     truncated: paymentsTruncated,
-    recordPayment,
     invalidate: invalidatePayments,
   } = usePaymentsTimeline(projectId);
   const {
     quotationDayGroups,
     loading: quotationsLoading,
-    error: quotationsError,
     truncated: quotationsTruncated,
     invalidate: invalidateQuotations,
   } = useQuotationsTimeline(projectId);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Pressable, Image } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTasks, TaskDetail } from '../../hooks/useTasks';
@@ -7,7 +7,6 @@ import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Task } from '../../domain/entities/Task';
 import { Invoice } from '../../domain/entities/Invoice';
-import { DelayReason } from '../../domain/entities/DelayReason';
 import { Document } from '../../domain/entities/Document';
 import { Contact } from '../../domain/entities/Contact';
 import { DocumentRepository } from '../../domain/repositories/DocumentRepository';
@@ -24,7 +23,6 @@ import { StatusPriorityRow } from '../../components/tasks/StatusPriorityRow';
 import { TaskDocumentSection } from '../../components/tasks/TaskDocumentSection';
 import { TaskDependencySection } from '../../components/tasks/TaskDependencySection';
 import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontractorSection';
-import { TaskDelaySection } from '../../components/tasks/TaskDelaySection';
 import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
 import { TaskQuotationSection } from '../../components/tasks/TaskQuotationSection';
 import { useQuotations } from '../../hooks/useQuotations';
@@ -61,8 +59,6 @@ export default function TaskDetailsPage() {
     addDependency,
     removeDependency,
     addDelayReason,
-    removeDelayReason,
-    resolveDelayReason,
     addProgressLog,
     updateProgressLog,
     deleteProgressLog,
@@ -204,7 +200,7 @@ export default function TaskDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [taskId, getTask, getTaskDetail, documentRepository, taskRepository, invoiceRepository, allContacts]);
+  }, [taskId, getTask, getTaskDetail, documentRepository, taskRepository, invoiceRepository, allContacts, listQuotations]);
 
   const autoTriggered = useRef(false);
 
@@ -285,31 +281,6 @@ export default function TaskDetailsPage() {
       await loadData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to add delay reason');
-    }
-  };
-
-  const handleRemoveDelayReason = async (delayReasonId: string) => {
-    const confirmed = await confirm({
-      title: 'Remove Delay',
-      message: 'Remove this delay reason entry?',
-      confirmLabel: 'Remove',
-      destructive: true,
-    });
-    if (!confirmed) return;
-    try {
-      await removeDelayReason(taskId, delayReasonId);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to remove delay reason');
-    }
-  };
-
-  const handleResolveDelayReason = async (delayReasonId: string) => {
-    try {
-      await resolveDelayReason(taskId, delayReasonId);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to resolve delay reason');
     }
   };
 
