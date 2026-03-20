@@ -15,11 +15,11 @@ export function PendingPaymentBadge({ amount, currency = '$' }: PendingPaymentBa
   });
 
   return (
-    <View className="border border-orange-500/30 rounded-xl bg-orange-500/10 px-3 py-1.5 ml-2">
-      <Text className="text-[10px] text-orange-500 dark:text-orange-400 font-bold uppercase tracking-wide text-center mb-0.5" style={{ letterSpacing: 0.5 }}>
+    <View className="border border-chart-3/20 rounded-xl bg-chart-3/10 px-4 py-2 ml-2 items-end">
+      <Text className="text-xs text-chart-3 font-medium uppercase mb-0.5">
         Pending Payment
       </Text>
-      <Text className="text-base font-bold text-orange-500 dark:text-orange-400 text-center">
+      <Text className="text-lg font-bold text-chart-3">
         {currency}{formatted}
       </Text>
     </View>

@@ -1,101 +1,106 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ProjectOverview } from '../../../hooks/useProjectsOverview';
-import { AlertCircle, Clock } from 'lucide-react-native';
+import { TrendingUp, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { PendingPaymentBadge } from '../../../components/dashboard/PendingPaymentBadge';
+import { PhaseProgressRow } from './PhaseProgressRow';
 
 interface ProjectOverviewCardProps {
   overview: ProjectOverview;
-  isComprehensive: boolean;
   onPress: () => void;
 }
 
-export function ProjectOverviewCard({ overview, isComprehensive, onPress }: ProjectOverviewCardProps) {
-  const { project, progressPercent, nextCriticalTask, overdueCriticalTasksCount, dueSoonCriticalTasksCount } = overview;
+export function ProjectOverviewCard({ overview, onPress }: ProjectOverviewCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const { project } = overview;
+
+  const statusColorClass = ({
+    on_track: 'bg-green-500',
+    at_risk:  'bg-orange-500',
+    blocked:  'bg-red-500',
+  } as Record<string, string>)[overview.overallStatus] ?? 'bg-yellow-500';
+
+  const statusLabel = ({
+    on_track: 'On Track',
+    at_risk:  'In Progress',
+    blocked:  'Blocked',
+  } as Record<string, string>)[overview.overallStatus] ?? 'In Progress';
 
   return (
     <Pressable
       onPress={onPress}
-      className={`border border-border/50 rounded-2xl mb-4 bg-card ${isComprehensive ? 'p-5' : 'p-4'}`}
-      style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+      className="bg-card border border-border rounded-2xl mb-4 overflow-hidden"
+      style={({ pressed }) => ({ opacity: pressed ? 0.95 : 1 })}
     >
-      {/* Header row */}
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-lg font-semibold text-foreground flex-1 mb-1">{project.name}</Text>
-        <Text className="text-base font-bold text-primary">{progressPercent}%</Text>
-      </View>
-
-      {/* Progress Bar */}
-      <View className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-3">
-        <View 
-          className="h-full bg-primary" 
-          style={{ width: `${progressPercent}%` }}
-        />
-      </View>
-
-      {/* Urgency indicators */}
-      <View className="flex-row items-center space-x-3 mt-1">
-        {overdueCriticalTasksCount > 0 && (
-          <View className="flex-row items-center space-x-1 mr-3">
-            <AlertCircle size={14} className="text-destructive" />
-            <Text className="text-xs text-destructive font-medium">{overdueCriticalTasksCount} Overdue</Text>
-          </View>
-        )}
-        {dueSoonCriticalTasksCount > 0 && (
-          <View className="flex-row items-center space-x-1 mr-3">
-            <Clock size={14} className="text-orange-500" />
-            <Text className="text-xs text-orange-500 font-medium">{dueSoonCriticalTasksCount} Due Soon</Text>
-          </View>
-        )}
-      </View>
-
-      {!isComprehensive && nextCriticalTask && (
-        <View className="mt-3 bg-secondary/30 p-2 rounded-lg flex-row items-center">
-          <View className="w-2 h-2 rounded-full bg-primary mr-2" />
-          <Text className="text-xs text-muted-foreground flex-1" numberOfLines={1}>
-            Next up: {nextCriticalTask.title}
-          </Text>
-        </View>
-      )}
-
-      {/* Comprehensive View - Extra Details */}
-      {isComprehensive && (
-        <View className="mt-4 pt-4 border-t border-border/50">
-          <View className="flex-row justify-between mb-3">
-             <View>
-                <Text className="text-xs text-muted-foreground">Critical Tasks</Text>
-                <Text className="text-sm text-foreground font-medium">{overview.criticalTasksCompleted} / {overview.criticalTasksTotal}</Text>
-             </View>
-             <View>
-                <Text className="text-xs text-muted-foreground right-aligned">Other Tasks (Active)</Text>
-                <Text className="text-sm text-foreground font-medium pr-1 text-right">{overview.nonCriticalTasks.length}</Text>
-             </View>
-          </View>
-
-          {nextCriticalTask && (
-            <View className="bg-secondary/30 p-3 rounded-lg flex-row justify-between items-center mb-4">
-              <View className="flex-1">
-                <Text className="text-xs text-muted-foreground mb-1">Critical Next Step</Text>
-                <Text className="text-sm text-foreground font-medium" numberOfLines={1}>{nextCriticalTask.title}</Text>
-              </View>
-              {nextCriticalTask.dueDate && (
-                <Text className="text-xs font-semibold px-2 py-1 bg-background rounded text-muted-foreground border border-border">
-                  {new Date(nextCriticalTask.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </Text>
-              )}
+      {/* ── ZONE 1: Header ── */}
+      <View className="p-5 border-b border-border bg-muted/30">
+        <View className="flex-row items-start justify-between">
+          {/* Left: name + subtitle */}
+          <View className="flex-1 pr-4">
+            <Text className="text-lg font-bold text-foreground mb-1">
+              {project.name}
+            </Text>
+            <View className="flex-row items-center gap-2">
+              <TrendingUp size={16} className="text-primary" />
+              <Text className="text-xs text-muted-foreground">Active Project</Text>
             </View>
+          </View>
+          {/* Right: payment badge */}
+          {overview.totalPendingPayment > 0 && (
+            <PendingPaymentBadge amount={overview.totalPendingPayment} />
           )}
+        </View>
+      </View>
 
-          {/* Quick Actions (Mocked for comprehensive view within dashboard) */}
-          <View className="flex-row items-center justify-between">
-            <Pressable className="flex-1 py-2 px-3 items-center justify-center rounded-lg bg-primary/10 mr-2">
-              <Text className="text-xs font-semibold text-primary">Open Project</Text>
-            </Pressable>
-            <Pressable className="flex-1 py-2 px-3 items-center justify-center rounded-lg bg-secondary">
-              <Text className="text-xs font-semibold text-foreground">Timeline</Text>
-            </Pressable>
+      {/* ── ZONE 2a: Simple View (collapsed) ── */}
+      {!expanded && (
+        <View className="p-5 bg-card">
+          <View className="flex-row justify-between items-end mb-2">
+            <Text className="text-sm font-semibold text-foreground">Overall Progress</Text>
+            <Text className="text-xs font-bold text-muted-foreground">
+              {overview.totalTasksCompleted}/{overview.totalTasksCount} tasks
+            </Text>
+          </View>
+          <View className="h-3 bg-muted rounded-full overflow-hidden mb-2">
+            <View
+              className={`h-full rounded-full ${statusColorClass}`}
+              style={{ width: `${overview.allTasksPercent}%` }}
+            />
+          </View>
+          <View className="flex-row items-center justify-between mt-2">
+            <View className="flex-row items-center">
+              <View className={`w-2 h-2 rounded-full ${statusColorClass} mr-2`} />
+              <Text className="text-xs text-muted-foreground">{statusLabel}</Text>
+            </View>
+            <Text className="text-xs font-bold text-foreground">
+              {overview.allTasksPercent}%
+            </Text>
           </View>
         </View>
       )}
+
+      {/* ── ZONE 2b: Comprehensive View (expanded) ── */}
+      {expanded && (
+        <View className="p-5 gap-6">
+          {overview.phaseOverviews.map(po => (
+            <PhaseProgressRow key={po.phaseId ?? 'unassigned'} phaseOverview={po} />
+          ))}
+        </View>
+      )}
+
+      {/* ── ZONE 3: Toggle Button ── */}
+      <Pressable
+        onPress={() => setExpanded(prev => !prev)}
+        className="flex-row items-center justify-center py-3 bg-muted/20 border-t border-border active:bg-muted/40"
+      >
+        <Text className="text-sm font-medium text-primary mr-2">
+          {expanded ? 'Show Less' : 'View Details'}
+        </Text>
+        {expanded
+          ? <ChevronUp size={18} className="text-primary" />
+          : <ChevronDown size={18} className="text-primary" />
+        }
+      </Pressable>
     </Pressable>
   );
 }

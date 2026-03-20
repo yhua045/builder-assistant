@@ -21,9 +21,9 @@ export function PhaseProgressRow({ phaseOverview }: PhaseProgressRowProps) {
       <View className="flex-row items-center justify-between mb-1">
         <Text className="text-base font-bold text-foreground flex-1">{phaseName}</Text>
         {hasBlocker && (
-          <View className="flex-row items-center bg-background border border-red-500/20 px-2 py-0.5 rounded-sm">
-            <AlertTriangle size={12} color="#ef4444" className="mr-1" />
-            <Text className="text-red-500 text-[10px] uppercase font-bold tracking-wider">Blocker</Text>
+          <View className="flex-row items-center bg-red-50 px-2 py-1 rounded-md">
+            <AlertTriangle className="text-red-500 mr-1" size={14} />
+            <Text className="text-red-600 text-xs font-bold">BLOCKER</Text>
           </View>
         )}
       </View>
@@ -34,7 +34,7 @@ export function PhaseProgressRow({ phaseOverview }: PhaseProgressRowProps) {
       </Text>
 
       {/* Progress Bar */}
-      <View className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-1">
+      <View className="h-2.5 w-full bg-muted rounded-full overflow-hidden mb-1">
         <View 
           className={`h-full ${hasBlocker ? 'bg-red-500' : 'bg-primary'}`} 
           style={{ width: `${progressPercent}%` }}

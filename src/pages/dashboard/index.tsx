@@ -5,7 +5,7 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { useProjectsOverview } from '../../hooks/useProjectsOverview';
 import { ProjectOverviewCard } from './components/ProjectOverviewCard';
 import HeroSection from './components/HeroSection';
-import { LayoutGrid, List, Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
+import { Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
@@ -27,7 +27,6 @@ const quickActions = [
 
 export default function DashboardScreen() {
   const { data: overviews, isLoading, error } = useProjectsOverview();
-  const [isComprehensive, setIsComprehensive] = useState(false);
   const navigation = useNavigation<DashboardNavigationProp>();
 
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -83,22 +82,6 @@ export default function DashboardScreen() {
           <Text className="text-muted-foreground text-sm">Overview</Text>
         </View>
         <View className="flex-row items-center">
-          {hasProjects && (
-            <View className="flex-row bg-secondary/50 rounded-lg p-1 mr-4">
-              <Pressable
-                onPress={() => setIsComprehensive(false)}
-                className={`p-1.5 rounded-md ${!isComprehensive ? 'bg-background shadow-sm' : ''}`}
-              >
-                <List size={18} className={!isComprehensive ? 'text-primary' : 'text-muted-foreground'} />
-              </Pressable>
-              <Pressable
-                onPress={() => setIsComprehensive(true)}
-                className={`p-1.5 rounded-md ${isComprehensive ? 'bg-background shadow-sm' : ''}`}
-              >
-                <LayoutGrid size={18} className={isComprehensive ? 'text-primary' : 'text-muted-foreground'} />
-              </Pressable>
-            </View>
-          )}
           <ThemeToggle />
         </View>
       </View>
@@ -128,7 +111,6 @@ export default function DashboardScreen() {
               <ProjectOverviewCard
                 key={overview.project.id}
                 overview={overview}
-                isComprehensive={isComprehensive}
                 onPress={() => navigateToProject(overview.project.id)}
               />
             ))}
