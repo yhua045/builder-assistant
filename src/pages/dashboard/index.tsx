@@ -103,6 +103,7 @@ export default function DashboardScreen() {
         </View>
       </View>
 
+      {/* eslint-disable-next-line react-native/no-inline-styles */}
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         {isLoading && (
           <View className="px-6 mt-4">

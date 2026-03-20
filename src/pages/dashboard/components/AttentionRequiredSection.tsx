@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Task } from '../../../domain/entities/Task';
-import { AlertTriangle } from 'lucide-react-native';
 
 interface AttentionRequiredSectionProps {
   blockedTasks: Task[];
