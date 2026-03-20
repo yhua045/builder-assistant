@@ -57,6 +57,13 @@ export interface Task {
   // Work/trade category for cost-roll-up reporting (issue #141)
   workType?: string;
 
+  /**
+   * 1-based construction sequence number assigned by CriticalPathService.
+   * Tasks created from critical-path suggestions carry their order so the
+   * Tasks screen can sort by ORDER ASC NULLS LAST before dates are set.
+   */
+  order?: number;
+
   // Quote fields — only meaningful for variation/contract_work tasks (issue #141)
   quoteAmount?: number;     // quoted cost in AUD
   /** pending=no quote data yet; issued=amount captured; accepted/rejected=builder decision */

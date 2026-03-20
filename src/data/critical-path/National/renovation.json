@@ -1,0 +1,73 @@
+{
+  "project_type": "renovation",
+  "state": "National",
+  "title": "Renovation (National canonical)",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "id": "nat-ren-01",
+      "title": "Development Approval / CDC (if required)",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "order": 1,
+      "notes": "Check with your local council whether DA is required for your renovation scope."
+    },
+    {
+      "id": "nat-ren-02",
+      "title": "Heritage Impact Assessment",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "condition": "heritage_flag === true",
+      "order": 2,
+      "notes": "Required when property is heritage listed or in a conservation area."
+    },
+    {
+      "id": "nat-ren-03",
+      "title": "Asbestos Survey (pre-1987 buildings)",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "order": 3,
+      "notes": "Required before any demolition or disturbance of materials in pre-2003 buildings."
+    },
+    {
+      "id": "nat-ren-04",
+      "title": "Strip-out & Demolition",
+      "recommended_start_offset_days": 5,
+      "critical_flag": true,
+      "blocked_by": ["nat-ren-01"],
+      "order": 4
+    },
+    {
+      "id": "nat-ren-05",
+      "title": "Rough-in (Electrical, Plumbing, HVAC)",
+      "recommended_start_offset_days": 15,
+      "critical_flag": true,
+      "blocked_by": ["nat-ren-04"],
+      "order": 5
+    },
+    {
+      "id": "nat-ren-06",
+      "title": "Insulation & Internal Lining",
+      "recommended_start_offset_days": 30,
+      "critical_flag": true,
+      "blocked_by": ["nat-ren-05"],
+      "order": 6
+    },
+    {
+      "id": "nat-ren-07",
+      "title": "Fit-out (Flooring, Joinery, Fixtures)",
+      "recommended_start_offset_days": 50,
+      "critical_flag": false,
+      "blocked_by": ["nat-ren-06"],
+      "order": 7
+    },
+    {
+      "id": "nat-ren-08",
+      "title": "Practical Completion Inspection",
+      "recommended_start_offset_days": 70,
+      "critical_flag": true,
+      "blocked_by": ["nat-ren-07"],
+      "order": 8
+    }
+  ]
+}
