@@ -929,3 +929,86 @@ cd ios && pod install
 - [Issue 164] Refined Dashboard UI Implementation matching index.mock.tsx
   - Updated ProjectOverviewCard with 3 zone display and per-card expansion.
   - Adjusted hook useProjectsOverview to supply missing aggregated data tasks.
+
+---
+
+## Issue #167 — Repository-driven "Critical Path" Task Lists (2026-03-20)
+
+**Branch**: `issue-167` | **Design doc**: `design/issue-167-critical-path-task-lists.md`
+
+### Key Decisions
+
+- **Static JSON lookup files as canonical source**: Critical-path task templates are stored in version-controlled JSON files (`src/data/critical-path/{National,NSW,VIC,...}/{complete_rebuild,extension,renovation.json}`), not in the database. Each file contains a `CriticalPathLookupFile` object with an ordered `tasks[]` array.
+- **No repository interface needed**: Lookup files are bundled static assets required via Metro `require()`. No `ICriticalPathRepository` interface needed — `CriticalPathService` directly imports and validates the lookup registry.
+- **Fallback chain for jurisdiction**: `SuggestCriticalPathUseCase` resolves the best-matching lookup using the chain: `<state>/<project_type>` → `National/<project_type>` → error. This allows state-specific overrides while providing national defaults.
+- **Condition evaluation as whitelist-only**: Task entries may have a `condition` field (e.g. `"heritage_flag === true"`). `CriticalPathService.evaluateCondition()` uses a strict whitelist parser for `<flag> === true/false` patterns, rejecting all others. This avoids `eval()` and prevents code injection.
+- **Order column added to tasks table**: New nullable `order: integer` column tracks the 1-based sequence assigned by `CriticalPathService.suggest()` after condition filtering. Tasks created from critical-path suggestions preserve this sequence; the Tasks screen can sort by `order ASC NULLS LAST` to show a sensible pending-task sequence even when `scheduledAt` and `dueDate` are null.
+- **Use case as a thin orchestrator**: `SuggestCriticalPathUseCase` is a 2-line orchestrator delegating entirely to `CriticalPathService`. Mirrors the existing pattern used for other use cases (e.g. `ProcessInvoiceUploadUseCase`).
+- **Hook manages selection + creation state**: `useCriticalPath` hook owns:
+  - `suggestions[]` — results of the lookup.
+  - `selectedIds: Set<string>` — user's opt-out selections (defaults to ALL suggestions selected).
+  - `isCreating` / `creationProgress` — tracks multi-task bulk-create via `confirmSelected(projectId)`.
+  - The hook iterates selected suggestions in `order` sequence and calls `CreateTaskUseCase` for each, converting `CriticalPathSuggestion` → `Task` (mapping `recommended_start_offset_days` to `scheduledAt` relative to project `startDate`).
+- **CriticalPathPreview component enforces user intent**: Renders all suggestions as **opt-out checkboxes** (all ticked by default); "Add N Tasks to Plan" CTA label updates dynamically; bulk-creation progress bar ("Creating tasks... 3/11") displayed while `isCreating === true`.
+- **High-level stages only**: Lookup file entries are single construction *stages* (e.g. "DA / CDC Approval", "Slab Pour") — not granular checklists or sub-task decomposition. The `title` field is kept short (≤60 chars) and the optional `notes` field carries regulatory callouts (1–2 sentences max).
+
+### Completed
+
+- **Design doc** at `design/issue-167-critical-path-task-lists.md` (user story, domain concepts, architecture, file inventory, schema changes, interface contracts, lookup file format, use case design, hook design, UI mockups, acceptance criteria — approved before implementation).
+- **Database schema** `src/infrastructure/database/schema.ts`: Added `order: integer('order')` nullable column to tasks table.
+- **DB migration** auto-generated via `npm run db:generate` and bundled migration entry added to `src/infrastructure/database/migrations.ts`.
+- **Lookup registry & schema**:
+  - `src/data/critical-path/schema.ts` — TypeScript interfaces: `CriticalPathTaskTemplate`, `CriticalPathLookupFile`, `CriticalPathSuggestion`, `SuggestCriticalPathRequest`, `ProjectType`, `AustralianState`, `validateLookupFile()` validator.
+  - `src/data/critical-path/index.ts` — lookup registry mapping state + project_type → `require()` call for the JSON file.
+  - `src/data/critical-path/README.md` — contributor guide (structure, format rules, testing).
+- **Lookup files** (`src/data/critical-path/{National,NSW}/{complete_rebuild,extension,renovation}.json`):
+  - 5 canonical JSON files (NSW + National for each of 3 project types) with representative task sequences.
+  - Each file conforms to `CriticalPathLookupFile` schema with 8–15 tasks per jurisdiction.
+  - Tasks include `id`, `title`, `order`, `critical_flag`, optional `condition`, `blocked_by`, `recommended_start_offset_days`, and `notes`.
+  - Example NSW/complete_rebuild.json includes stages: DA/CDC → Heritage → Asbestos → Demolition → Soil prep → Slab → Framing → Roofing → External → Internal → Fit-out → Final inspection.
+- **CriticalPathService** (`src/application/services/CriticalPathService.ts`):
+  - `resolveKey(request)` — fallback chain: `<state>/<project_type>` → `National/<project_type>` → error.
+  - `loadFile(key)` — requires JSON via registry, validates against schema, throws `CriticalPathLookupNotFoundError` or `CriticalPathValidationError`.
+  - `evaluateCondition(condition, request)` — parses `<flag> === true/false` whitelist-safe patterns; returns true/false/throws.
+  - `suggest(request)` — filters tasks by condition, assigns 1-based `order`, returns `CriticalPathSuggestion[]`.
+- **SuggestCriticalPathUseCase** (`src/application/usecases/criticalpath/SuggestCriticalPathUseCase.ts`) — thin orchestrator delegating to `CriticalPathService.suggest()`.
+- **useCriticalPath hook** (`src/hooks/useCriticalPath.ts`):
+  - Return type: `{ suggestions[], isLoading, error, suggest(), selectedIds: Set, toggleSelection(), selectAll(), clearAll(), isCreating, creationProgress, creationError, confirmSelected() }`.
+  - `suggest()` calls the use case; `confirmSelected()` iterates selected suggestions in `order` and calls `CreateTaskUseCase` for each with `scheduledAt` computed from project `startDate` + `recommended_start_offset_days`.
+- **CriticalPathPreview component** (`src/pages/.../CriticalPathPreview.tsx`):
+  - Main wrapper component exporting UI.
+- **CriticalPathTaskRow component** (`src/components/CriticalPathPreview/CriticalPathTaskRow.tsx`):
+  - Row component for each task: checkbox (toggled on/off), title, critical-flag badge, optional notes disclosure.
+- **UI rendering**:
+  - Task list as checkboxes (all ticked by default); "Select all" / "Deselect all" toggle link.
+  - "Add N Tasks to Plan" CTA; disabled when 0 selected; loads with creation progress bar ("Creating tasks… 3 / 11") while `isCreating === true`.
+  - Loading (skeleton) and error states with retry button.
+- **Test suite**:
+  - `__tests__/unit/CriticalPathService.test.ts` (12 tests) — file resolution fallback chain, condition evaluation, task filtering, order assignment.
+  - `__tests__/unit/SuggestCriticalPathUseCase.test.ts` (4 tests) — canonical scenarios (complete rebuild, extension), state validation.
+  - `__tests__/unit/criticalPathSchema.test.ts` (8 tests) — schema validation against fixture files, all 5 lookup files validated without error.
+  - `__tests__/unit/useCriticalPath.test.tsx` (9 tests) — suggestion loading, selection state management, creation progress state, selected-only iteration.
+  - `__tests__/unit/CriticalPathPreview.test.tsx` (6 tests) — component rendering, checkbox toggle, CTA disable/enable, creation progress UI.
+  - All **39 new tests pass**; zero TypeScript errors; existing test suite unaffected.
+- **Integration**: Wired `CriticalPathService` into `SuggestCriticalPathUseCase` and `useCriticalPath` hook via dependency injection (service instantiated in hook or injected as prop).
+- **Linting**: All Issue #167 code clean (`npm run lint` passes after fixing 1 unused import in `useCriticalPath.test.tsx`).
+- **TypeScript**: Full strict check passes (`npx tsc --noEmit`).
+
+### Trade-offs & Technical Debt
+
+- **No remote API fallback**: The feature is entirely static JSON. A future ticket can wire up a `POST /api/v1/critical-path/suggest` HTTP adapter if the app gains a real backend.
+- **No "Load More" pagination**: Lookup files are small (8–15 tasks) so no pagination is needed. If a single jurisdiction ever grows beyond 50 tasks, pagination can be added to the hook.
+- **No reordering UI in the preview**: User can opt-out of tasks but cannot reorder them once selected. Reordering happens in the Tasks screen after creation.
+- **Condition evaluation only for simple flag comparisons**: Complex boolean logic (e.g. `&&`, `||`, parentheses) is not supported. The whitelist parser intentionally keeps this simple; a future ticket can extend it if needed.
+
+### Acceptance Criteria Met
+
+- ✅ `SuggestCriticalPathRequest` → `CriticalPathSuggestion[]` suggestion flow implemented and tested.
+- ✅ Five canonical state/type combinations (NSW + National × complete_rebuild/extension/renovation) pre-populated with representative tasks.
+- ✅ `order` column added to tasks table; nullable for backwards compatibility.
+- ✅ `CriticalPathService` filters tasks by condition, falls back state → national → error, assigns order sequence.
+- ✅ `useCriticalPath` hook manages suggestion list, user selection state (opt-out checkboxes), and bulk-creation progress.
+- ✅ `CriticalPathPreview` component renders opt-out checkbox list; "Add N Tasks to Plan" CTA updates count; creation progress bar displayed during bulk-create.
+- ✅ All new code tested (unit + integration); 39 tests pass.
+- ✅ Linting clear; TypeScript strict check passes.
+- ✅ Feature branch `issue-167` ready for PR.

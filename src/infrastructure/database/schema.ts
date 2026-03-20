@@ -318,6 +318,12 @@ export const tasks = sqliteTable('tasks', {
     enum: ['pending', 'issued', 'accepted', 'rejected'],
   }),
   quoteInvoiceId: text('quote_invoice_id'),
+  /**
+   * 1-based construction sequence number (nullable).
+   * Populated when a task is created from a CriticalPath suggestion.
+   * Existing tasks without this value remain unaffected (NULLS LAST in queries).
+   */
+  order: integer('order'),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({

@@ -1,0 +1,115 @@
+{
+  "project_type": "extension",
+  "state": "NSW",
+  "title": "Extension (NSW canonical)",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "id": "nsw-ext-01",
+      "title": "DA / CDC Approval",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "order": 1,
+      "notes": "NSW: lodge through the NSW Planning Portal."
+    },
+    {
+      "id": "nsw-ext-02",
+      "title": "Heritage Impact Statement",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "condition": "heritage_flag === true",
+      "order": 2,
+      "notes": "NSW: required when property is heritage listed or within a conservation area."
+    },
+    {
+      "id": "nsw-ext-03",
+      "title": "Connection to Existing Structure Review",
+      "recommended_start_offset_days": 5,
+      "critical_flag": true,
+      "condition": "connects_to_existing === true",
+      "order": 3,
+      "notes": "Structural engineer must assess tie-in points before partial demolition."
+    },
+    {
+      "id": "nsw-ext-04",
+      "title": "Partial Demolition & Opening Works",
+      "recommended_start_offset_days": 10,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-01"],
+      "order": 4
+    },
+    {
+      "id": "nsw-ext-05",
+      "title": "Foundation & Footings",
+      "recommended_start_offset_days": 15,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-04"],
+      "order": 5
+    },
+    {
+      "id": "nsw-ext-06",
+      "title": "Slab Pour",
+      "recommended_start_offset_days": 25,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-05"],
+      "order": 6
+    },
+    {
+      "id": "nsw-ext-07",
+      "title": "Wall Framing",
+      "recommended_start_offset_days": 35,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-06"],
+      "order": 7
+    },
+    {
+      "id": "nsw-ext-08",
+      "title": "Roof Framing & Sarking",
+      "recommended_start_offset_days": 50,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-07"],
+      "order": 8
+    },
+    {
+      "id": "nsw-ext-09",
+      "title": "External Cladding & Windows",
+      "recommended_start_offset_days": 60,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-08"],
+      "order": 9
+    },
+    {
+      "id": "nsw-ext-10",
+      "title": "Rough-in (Electrical, Plumbing, HVAC)",
+      "recommended_start_offset_days": 65,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-07"],
+      "order": 10
+    },
+    {
+      "id": "nsw-ext-11",
+      "title": "Insulation & Internal Lining",
+      "recommended_start_offset_days": 75,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-10"],
+      "order": 11
+    },
+    {
+      "id": "nsw-ext-12",
+      "title": "Fit-out (Flooring, Joinery, Fixtures)",
+      "recommended_start_offset_days": 90,
+      "critical_flag": false,
+      "blocked_by": ["nsw-ext-11"],
+      "order": 12
+    },
+    {
+      "id": "nsw-ext-13",
+      "title": "Occupation Certificate",
+      "recommended_start_offset_days": 105,
+      "critical_flag": true,
+      "blocked_by": ["nsw-ext-12"],
+      "order": 13,
+      "notes": "NSW: occupation certificate required before occupying the extension."
+    }
+  ]
+}
