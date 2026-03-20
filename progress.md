@@ -923,3 +923,33 @@ cd ios && pod install
 - ✅ Database schema updated with nullable `phaseId` column; migration auto-applied.
 - ✅ All new code tested (unit + integration); TypeScript strict check passes (`npx tsc --noEmit`).
 - ✅ Feature branch `feature/164-dashboard-ui-2` pushed to origin.
+
+---
+
+## Issue #164 — Dashboard UI Refined (Phase 2) (2026-03-20)
+
+**Branch**: `feature/164-dashboard-ui-refined` | **Design doc**: `design/issue-164-dashboard-ui-refined.md`
+
+### Key Decision
+- **Per-card expand/collapse state**: Removed global `isComprehensive` state toggle; moved expand logic into each `ProjectOverviewCard` using local `useState`.
+- **Header/content separation**: Restructured card into three zones — header (name + payment badge), content (simple/comprehensive), toggle button (chevron).
+- **Reusable phase visualization**: `PhaseProgressRow` and `TaskIconRow` encapsulate phase progress and task icons.
+- **Dark badge for pending payments**: Changed from orange border to dark rounded rectangle (`bg-zinc-900 dark:bg-zinc-800`) + orange text.
+
+### Completed
+- Design doc at `design/issue-164-dashboard-ui-refined.md`.
+- Component refactoring: `ProjectOverviewCard` (full rewrite), `PhaseProgressRow`, `TaskIconRow`, `AttentionRequiredSection`, `PendingPaymentBadge` (enhanced).
+- Hook updates: `useProjectsOverview` extended with phase-level aggregates and block tracking.
+- Dashboard page: Removed global toggle; integrated per-card expand/collapse.
+- Linting fixes: Removed unused imports; added eslint-disable comment.
+- 8 new tests; all pass (total: **786 tests, 0 failures**).
+- TypeScript strict check: Clean.
+
+### Acceptance Criteria Met
+- ✅ Per-card expand/collapse state (local `useState`), not global toggle.
+- ✅ Project card header displays name + pending payment badge.
+- ✅ Simple view: status badge, task count, progress bar, status text + percentage.
+- ✅ Comprehensive view: per-phase `PhaseProgressRow` entries + "Attention Required" section.
+- ✅ `PendingPaymentBadge` uses dark rounded rectangle + orange text.
+- ✅ All code passes linting and TypeScript strict checks.
+- ✅ Feature branch ready for PR.
