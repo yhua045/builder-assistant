@@ -32,6 +32,11 @@ export interface ProjectOverview {
   nonCriticalTasks: Task[];
   totalPendingPayment: number; // Aggregated pending payment amount
   phaseOverviews: PhaseOverview[];
+  totalTasksCount: number;
+  totalTasksCompleted: number;
+  allTasksPercent: number;
+  overallStatus: 'on_track' | 'at_risk' | 'blocked';
+  blockedTasks: Task[];
 }
 
 /**
@@ -117,6 +122,22 @@ export function toOverview(project: Project, allTasks: Task[], allPayments: Paym
     });
   }
 
+  // Derived all-tasks fields (not limited to critical path)
+  const totalTasksCount = tasks.length;
+  const totalTasksCompleted = tasks.filter(t => t.status === 'completed').length;
+  const allTasksPercent = totalTasksCount === 0
+    ? 0
+    : Math.round((totalTasksCompleted / totalTasksCount) * 100);
+
+  const blockedTasks = tasks.filter(t => t.status === 'blocked');
+
+  let overallStatus: 'on_track' | 'at_risk' | 'blocked' = 'on_track';
+  if (blockedTasks.length > 0) {
+    overallStatus = 'blocked';
+  } else if (overdueCount > 0) {
+    overallStatus = 'at_risk';
+  }
+
   return {
     project,
     progressPercent,
@@ -129,6 +150,11 @@ export function toOverview(project: Project, allTasks: Task[], allPayments: Paym
     nonCriticalTasks,
     totalPendingPayment,
     phaseOverviews,
+    totalTasksCount,
+    totalTasksCompleted,
+    allTasksPercent,
+    overallStatus,
+    blockedTasks,
   };
 }
 
