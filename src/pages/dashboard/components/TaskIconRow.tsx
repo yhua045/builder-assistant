@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Task } from '../../../domain/entities/Task';
-import { Check, X, Clock } from 'lucide-react-native';
+import { Check, X, Clock, AlertTriangle } from 'lucide-react-native';
 
 interface TaskIconRowProps {
   tasks: Task[];
@@ -11,34 +11,30 @@ export function TaskIconRow({ tasks }: TaskIconRowProps) {
   if (!tasks || tasks.length === 0) return null;
 
   return (
-    <View className="flex-row flex-wrap items-center gap-2 mt-3 mb-4">
-      {tasks.map(task => {
-        let bgColor = "bg-secondary";
-        let IconIcon = Clock;
-        let iconColor = "#888";
+    <View className="flex-row items-center gap-3 mt-3 mb-4">
+      {tasks.slice(0, 6).map(task => {
+        let bgColor = 'bg-yellow-500';
+        let IconComponent: React.ElementType = Clock;
+        const iconColor = '#fff';
 
         if (task.status === 'completed') {
-          bgColor = "bg-green-500";
-          IconIcon = Check;
-          iconColor = "#fff";
+          bgColor = 'bg-green-500';
+          IconComponent = Check;
         } else if (task.status === 'blocked') {
-          bgColor = "bg-red-500";
-          IconIcon = X;
-          iconColor = "#fff";
-        } else if (task.status === 'in_progress') {
-           bgColor = "bg-orange-400";
-           iconColor = "#fff";
-        } else {
-           bgColor = "bg-orange-500"; // pending color from mockup
-           iconColor = "#fff";
+          bgColor = 'bg-red-500';
+          IconComponent = X;
+        } else if ((task.status as string) === 'overdue') {
+          bgColor = 'bg-red-600';
+          IconComponent = AlertTriangle;
         }
+        // pending / in_progress → yellow clock (default)
 
         return (
-          <View 
-            key={task.id} 
-            className={`w-7 h-7 rounded-full items-center justify-center ${bgColor}`}
+          <View
+            key={task.id}
+            className={`w-8 h-8 rounded-full items-center justify-center shadow-sm ${bgColor}`}
           >
-             <IconIcon size={14} color={iconColor} strokeWidth={2.5} />
+            <IconComponent size={12} color={iconColor} strokeWidth={2.5} />
           </View>
         );
       })}
