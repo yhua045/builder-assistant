@@ -87,3 +87,5 @@ ios/build/
 /.env.development
 #.env.reset is a local helper file used during development — do not commit
 .env.reset
+
+.worktrees/
