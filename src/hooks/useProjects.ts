@@ -14,7 +14,7 @@ interface UseProjectsReturn {
   projects: Project[];
   loading: boolean;
   error: string | null;
-  createProject: (request: CreateProjectRequest) => Promise<{ success: boolean; errors?: string[] }>;
+  createProject: (request: CreateProjectRequest) => Promise<{ success: boolean; errors?: string[], projectId?: string }>;
   getProjectAnalysis: (projectId: string) => Promise<any>;
   refreshProjects: () => Promise<void>;
 }
@@ -53,7 +53,8 @@ export const useProjects = (): UseProjectsReturn => {
       
       return {
         success: result.success,
-        errors: result.errors
+        errors: result.errors,
+        projectId: result.projectId
       };
     } catch (err) {
       return {

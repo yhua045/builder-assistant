@@ -872,6 +872,24 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0022_tasks_order_column',
+    hash: '0022_tasks_order_column',
+    folderMillis: 1774224000000, // 2026-03-23
+    sql: [],
+    run: async (db) => {
+      // Add nullable `order` column to tasks table.
+      // Existing rows get NULL — no data migration needed.
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('tasks')`);
+      const existing = new Set<string>();
+      for (let i = 0; i < result.rows.length; i++) {
+        existing.add(result.rows.item(i).name);
+      }
+      if (!existing.has('order')) {
+        await db.executeSql(`ALTER TABLE "tasks" ADD COLUMN "order" integer`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
