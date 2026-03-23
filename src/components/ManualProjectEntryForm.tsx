@@ -6,7 +6,7 @@ import ContactSelector from './inputs/ContactSelector';
 import TeamSelector from './inputs/TeamSelector';
 
 interface Props {
-  visible: boolean;
+  visible?: boolean;
   onSave: (project: any) => void;
   onCancel: () => void;
 }
@@ -17,9 +17,11 @@ interface FormErrors {
   dates?: string;
 }
 
-const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) => {
+const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCancel }) => {
 
   const [name, setName] = React.useState('');
+  const [projectType, setProjectType] = React.useState('complete_rebuild');
+  const [state, setStateLoc] = React.useState('NSW');
   const [description, setDescription] = React.useState('');
   const [address, setAddress] = React.useState('');
   const [projectOwner, setProjectOwner] = React.useState<string | null>(null);
@@ -60,6 +62,8 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
 
     const projectData = {
       name: name.trim(),
+      projectType: projectType,
+      state: state,
       description: description.trim() || undefined,
       address: address.trim() || undefined,
       projectOwner: projectOwner ? projectOwner : undefined,
@@ -103,6 +107,36 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible, onSave, onCancel }) 
           className="border border-border rounded p-2 bg-card text-foreground"
         />
         {errors.name && <Text className="text-red-500 text-sm mt-1">{errors.name}</Text>}
+      </View>
+
+      {/* Project Type */}
+      <View className="mb-4">
+        <Text className="mb-1 font-semibold text-foreground">Project Type</Text>
+        <View className="flex-row gap-2 flex-wrap">
+          {['complete_rebuild', 'extension', 'renovation', 'knockdown_rebuild', 'dual_occupancy'].map((pt) => (
+            <Button
+              key={pt}
+              title={pt.replace('_', ' ')}
+              onPress={() => setProjectType(pt)}
+              color={projectType === pt ? '#007AFF' : '#8E8E93'}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* State */}
+      <View className="mb-4">
+        <Text className="mb-1 font-semibold text-foreground">State</Text>
+        <View className="flex-row gap-2 flex-wrap">
+          {['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'].map((st) => (
+            <Button
+              key={st}
+              title={st}
+              onPress={() => setStateLoc(st)}
+              color={state === st ? '#007AFF' : '#8E8E93'}
+            />
+          ))}
+        </View>
       </View>
 
       {/* Address - Required */}

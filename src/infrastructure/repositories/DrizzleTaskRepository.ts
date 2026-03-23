@@ -36,6 +36,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       quoteAmount: row.quote_amount ?? undefined,
       quoteStatus: (row.quote_status as Task['quoteStatus']) || undefined,
       quoteInvoiceId: row.quote_invoice_id || undefined,
+      order: row.order != null ? row.order : undefined,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
     };
@@ -63,6 +64,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       quote_amount: task.quoteAmount ?? null,
       quote_status: task.quoteStatus ?? null,
       quote_invoice_id: task.quoteInvoiceId ?? null,
+      order: task.order ?? null,
       created_at: task.createdAt ? new Date(task.createdAt).getTime() : Date.now(),
       updated_at: Date.now(),
     };
@@ -85,8 +87,8 @@ export class DrizzleTaskRepository implements TaskRepository {
         is_scheduled, scheduled_at, due_date, assigned_to, subcontractor_id,
         is_critical_path, status, priority, completed_date,
         task_type, work_type, quote_amount, quote_status, quote_invoice_id,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        "order", created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       , [
         values.id,
         values.project_id,
@@ -107,6 +109,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.quote_amount,
         values.quote_status,
         values.quote_invoice_id,
+        values.order,
         values.created_at,
         values.updated_at,
       ]
@@ -197,6 +200,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         quote_amount = ?,
         quote_status = ?,
         quote_invoice_id = ?,
+        "order" = ?,
         created_at = ?,
         updated_at = ?
       WHERE id = ?`,
@@ -219,6 +223,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.quote_amount,
         values.quote_status,
         values.quote_invoice_id,
+        values.order,
         values.created_at,
         values.updated_at,
         values.id,

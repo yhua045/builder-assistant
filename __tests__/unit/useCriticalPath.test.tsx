@@ -415,4 +415,207 @@ describe('useCriticalPath', () => {
 
     await act(async () => { tree.unmount(); });
   });
+
+  // ── Idempotency (Issue #169) ──────────────────────────────────────────────
+
+  describe('idempotency — stable task IDs', () => {
+    it('confirmSelected uses a stable id for each suggestion (matches stableId utility)', async () => {
+      const { stableId } = require('../../src/utils/stableId');
+
+      const suggestions = makeSuggestions(2);
+      const mockUseCase = {
+        execute: jest.fn().mockReturnValue(suggestions),
+      } as unknown as SuggestCriticalPathUseCase;
+      const repo = makeMockTaskRepo();
+      const createTaskUseCase = new CreateTaskUseCase(repo);
+
+      let result!: HookResult;
+      let tree!: renderer.ReactTestRenderer;
+      await act(async () => {
+        tree = renderer.create(
+          <HookWrapper
+            options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
+            onResult={r => { result = r; }}
+          />
+        );
+      });
+
+      await act(async () => {
+        result.suggest({ project_type: 'complete_rebuild' });
+      });
+
+      const projectId = 'proj-stable-1';
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+
+      const saveCalls = (repo.save as jest.Mock).mock.calls;
+      expect(saveCalls[0][0].id).toBe(stableId(projectId, suggestions[0].id));
+      expect(saveCalls[1][0].id).toBe(stableId(projectId, suggestions[1].id));
+
+      await act(async () => { tree.unmount(); });
+    });
+
+    it('on second confirmSelected call, already-confirmed tasks are skipped', async () => {
+      const suggestions = makeSuggestions(3);
+      const mockUseCase = {
+        execute: jest.fn().mockReturnValue(suggestions),
+      } as unknown as SuggestCriticalPathUseCase;
+      const repo = makeMockTaskRepo();
+      const createTaskUseCase = new CreateTaskUseCase(repo);
+
+      let result!: HookResult;
+      let tree!: renderer.ReactTestRenderer;
+      await act(async () => {
+        tree = renderer.create(
+          <HookWrapper
+            options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
+            onResult={r => { result = r; }}
+          />
+        );
+      });
+
+      await act(async () => {
+        result.suggest({ project_type: 'complete_rebuild' });
+      });
+
+      const projectId = 'proj-stable-2';
+
+      // First call — all 3 tasks created
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+      expect(repo.save).toHaveBeenCalledTimes(3);
+
+      // Second call — all tasks already confirmed, none retried
+      (repo.save as jest.Mock).mockClear();
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+      expect(repo.save).toHaveBeenCalledTimes(0);
+
+      await act(async () => { tree.unmount(); });
+    });
+
+    it('on retry after partial failure, only failed tasks are re-attempted', async () => {
+      const suggestions = makeSuggestions(3);
+      const mockUseCase = {
+        execute: jest.fn().mockReturnValue(suggestions),
+      } as unknown as SuggestCriticalPathUseCase;
+      const repo = makeMockTaskRepo();
+
+      // Make the 3rd save fail on first call
+      let callCount = 0;
+      (repo.save as jest.Mock).mockImplementation(async () => {
+        callCount++;
+        if (callCount === 3) throw new Error('DB write failed');
+      });
+
+      const createTaskUseCase = new CreateTaskUseCase(repo);
+
+      let result!: HookResult;
+      let tree!: renderer.ReactTestRenderer;
+      await act(async () => {
+        tree = renderer.create(
+          <HookWrapper
+            options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
+            onResult={r => { result = r; }}
+          />
+        );
+      });
+
+      await act(async () => {
+        result.suggest({ project_type: 'complete_rebuild' });
+      });
+
+      const projectId = 'proj-stable-3';
+
+      // First call — fails on 3rd task
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+      expect(result.creationError).not.toBeNull();
+
+      // Fix the mock — make save succeed
+      (repo.save as jest.Mock).mockReset();
+      (repo.save as jest.Mock).mockResolvedValue(undefined);
+
+      // Retry — only the failed 3rd task should be attempted
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+
+      // Only 1 task retried (the one that failed)
+      expect(repo.save).toHaveBeenCalledTimes(1);
+      expect(result.creationError).toBeNull();
+
+      await act(async () => { tree.unmount(); });
+    });
+
+    it('task IDs on retry are identical to the first attempt (stable IDs)', async () => {
+      const { stableId } = require('../../src/utils/stableId');
+
+      const suggestions = makeSuggestions(2);
+      const mockUseCase = {
+        execute: jest.fn().mockReturnValue(suggestions),
+      } as unknown as SuggestCriticalPathUseCase;
+      const repo = makeMockTaskRepo();
+
+      // Fail first call, succeed second
+      let firstCall = true;
+      (repo.save as jest.Mock).mockImplementation(async () => {
+        if (firstCall) {
+          firstCall = false;
+          throw new Error('Temporary failure');
+        }
+      });
+
+      const createTaskUseCase = new CreateTaskUseCase(repo);
+
+      let result!: HookResult;
+      let tree!: renderer.ReactTestRenderer;
+      await act(async () => {
+        tree = renderer.create(
+          <HookWrapper
+            options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
+            onResult={r => { result = r; }}
+          />
+        );
+      });
+
+      await act(async () => {
+        result.suggest({ project_type: 'complete_rebuild' });
+      });
+
+      const projectId = 'proj-stable-id-check';
+
+      // First attempt — fails on 1st task
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+
+      const firstAttemptIds = (repo.save as jest.Mock).mock.calls.map(
+        (c: any) => c[0].id,
+      );
+
+      // Reset and retry
+      (repo.save as jest.Mock).mockClear();
+      (repo.save as jest.Mock).mockResolvedValue(undefined);
+
+      await act(async () => {
+        await result.confirmSelected(projectId);
+      });
+
+      const retryIds = (repo.save as jest.Mock).mock.calls.map((c: any) => c[0].id);
+
+      // The retried task IDs should match the stable IDs
+      retryIds.forEach((id: string) => {
+        expect(id).toBe(stableId(projectId, suggestions.find(s => stableId(projectId, s.id) === id)!.id));
+        // The retried task was not in the first attempt's successful saves
+        expect(firstAttemptIds).not.toContain(id);
+      });
+
+      await act(async () => { tree.unmount(); });
+    });
+  });
 });

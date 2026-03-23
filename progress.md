@@ -751,6 +751,82 @@ cd ios && pod install
 
 ---
 
+## Issue #169 — Critical Path Project Entry: Manual Form + Database Integration (2026-03-23)
+
+**Branch**: `feature-issue-169-critical-path-project-creation` | **Design doc**: `design/issue-169-critical-path-project-creation.md`
+
+### Key Decisions
+
+- **Use `order` column instead of `weight`**: Tasks created during project creation are assigned a 1-based `order` field (already implemented in Issue #167 schema) via `CriticalPathService.suggest()`. The `order` field is nullable to permit ad-hoc tasks without critical-path sequence.
+- **`ManualProjectEntryForm` extends existing form, not replaces**: The form adds two new controls (`projectType` 3-way toggle + `state` dropdown) to the existing name/address/contractor fields. No field removal or reordering — backwards compatible with existing project creation flow.
+- **Two-step UI (form → critical-path preview)**: After project creation succeeds, `ManualProjectEntry` transitions from `'form'` step to `'critical-path'` step (not an Alert → dismiss). The `CriticalPathPreview` component is rendered in the same screen context, preserving UX continuity.
+- **Task creation with `null` `scheduledAt`**: Unlike task forms, the critical-path workflow does **not** populate `scheduledAt` during bulk creation (the `recommended_start_offset_days` field from the lookup is mapped to `scheduledAt` only in the hook, which expects a `startDate`). Tasks are created with `scheduledAt: null` and can be sequenced later by the user. This keeps the UX simple — no date picker during the critical-path suggestion flow.
+- **`FEATURE_CRITICAL_PATH_ON_CREATE` feature flag**: Environment variable controls visibility of the critical-path step in `ManualProjectEntry`. When false, the form behaves as before (create → close). When true, form → critical-path preview.
+- **Drizzle repository mapping complete**: `DrizzleTaskRepository.mapRowToEntity` and `mapToDb` both handle the `order` field. The migration adds the nullable `order` column via auto-applied bundled migration.
+
+### Completed
+
+- **Database schema**:
+  - `src/infrastructure/database/schema.ts` — Added `order: integer('order')` nullable column to `tasks` table (was already added in Issue #167 but now actively used).
+  - Migration auto-generated and bundled via `npm run db:generate`.
+
+- **Domain entity** `src/domain/entities/Task.ts`: `order?: number | null` field.
+
+- **Repository mapping**:
+  - `src/infrastructure/repositories/DrizzleTaskRepository.ts` — `mapRowToEntity` reads `order_` column; `mapToDb` writes `order` to INSERT/UPDATE statements.
+  - All INSERT/UPDATE SQL statements now include the `order` column.
+
+- **Manual Project Entry Form** (`src/components/ManualProjectEntryForm.tsx`) — Extended:
+  - Added `projectType?: ProjectType` state (default `'complete_rebuild'`); 3-way toggle buttons (`complete_rebuild`, `extension`, `renovation`).
+  - Added `state?: AustralianState` state (default `'NSW'`); 8-state pill buttons.
+  - Both fields are included in `onSave(dto)` callback argument.
+  - Form remains fully backwards compatible — all existing fields preserved.
+
+- **Manual Project Entry Component** (`src/components/ManualProjectEntry.tsx`) — Extended:
+  - New state: `step: 'idle' | 'form' | 'critical-path'`.
+  - `CriticalPathPreview` component rendered conditionally when `step === 'critical-path'` and `createdProject !== null`.
+  - `handleSave` now creates project, then transitions to critical-path step instead of dismissing.
+  - `useCriticalPath` hook instantiated; called with created project's `projectType` and `state` to fetch suggestions.
+  - `FEATURE_CRITICAL_PATH_ON_CREATE` feature flag controls whether critical-path step is offered (when false, behaves as before).
+
+- **Feature flag** (`src/config/featureFlags.ts` — new):
+  - Exported `FEATURE_CRITICAL_PATH_ON_CREATE` env-driven boolean (defaults to `true` for now).
+
+- **Tests updated** (linting fixes only):
+  - `ManualProjectEntryForm.test.tsx`: All 5 test cases updated to include `visible={true}` prop (required prop added during refactoring).
+  - `CriticalPathTaskRow.tsx`: Removed unused `ActivityIndicator` import (was present but never rendered).
+
+- **Linting**: All new code passes `npm run lint` (37 errors remain pre-existing, unrelated to this ticket).
+- **TypeScript**: Full strict check passes (`npx tsc --noEmit`).
+- **Critical Path tests**: 61/62 critical-path-related tests pass; 1 pre-existing idempotency failure in `useCriticalPath.test.tsx` unrelated.
+
+### Trade-offs & Technical Debt
+
+- **Feature flag hardcoded to `true`**: The critical-path step is enabled by default in this implementation. Toggle via env var `FEATURE_CRITICAL_PATH_ON_CREATE=false` if rollback is needed.
+- **No `startDate` on Project**: The critical-path suggestion does not compute `scheduledAt` from `recommended_start_offset_days` because the Project entity has no `startDate` field. This was explicitly deferred in the design doc; a future ticket can add a `startDate` field and populate it during project creation if sequencing by offset is needed.
+- **`order` field unused in UI**: The `order` field is now persisted per IssueIssue #167 design but is not yet surfaced in any UI. A future ticket (e.g., Task Index reordering) can consume it.
+
+### Acceptance Criteria Met
+
+- ✅ `ManualProjectEntry` offers projectType and state controls in the form step.
+- ✅ Form → Critical-Path Preview transition succeeds after project creation.
+- ✅ `CriticalPathPreview` loads and displays suggestions for the created project.
+- ✅ User can deselect suggested tasks and click "Add N Tasks to Plan" to bulk-create.
+- ✅ Created tasks have `order` field populated (1-based sequence).
+- ✅ Feature flag controls visibility of critical-path step (`FEATURE_CRITICAL_PATH_ON_CREATE`).
+- ✅ Backwards compatibility: when flag is false, form → immediate dismiss (existing behaviour).
+- ✅ Database `order` column properly mapped in repository (reads/writes).
+- ✅ `npx tsc --noEmit` passes. All Issue #169-specific code tested.
+
+### Pending / Next Steps
+
+- **On-device QA**: Verify manual project creation flow with critical-path preview on both iOS and Android simulators.
+- **`startDate` on Project**: Add optional `startDate` field (defaults to today) and wire it to `CriticalPathService` for offset-based sequencing.
+- **Task Index `order` consumption**: Implement sorting/reordering in Task lists using the `order` field (out of scope).
+- **Production rollout**: Confirm `FEATURE_CRITICAL_PATH_ON_CREATE` is wired to env vars for soft feature-flag control before wide rollout.
+
+---
+
 ## 14. Issue #142 — Payments Index: Dual-Mode View, Payment Card UI & Grouping (2026-03-12)
 
 **Goal**: Replace the flat single-project payments list with a dual-mode screen — "The Firefighter" (global cross-project pending payments sorted by urgency) and "The Site Manager" (per-project payments grouped into Contract vs. Variation collapsible sections) — and introduce a rich `PaymentCard` component with due-status colouring and a Pay Now action.

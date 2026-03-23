@@ -7,10 +7,11 @@
  * - Bulk-creation progress (calls CreateTaskUseCase for each selected suggestion)
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../data/critical-path/schema';
 import type { SuggestCriticalPathUseCase } from '../application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import type { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
+import { stableId } from '../utils/stableId';
 
 // ── Public interface ──────────────────────────────────────────────────────────
 
@@ -53,6 +54,14 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
   const [creationProgress, setCreationProgress] = useState<{ completed: number; total: number } | null>(null);
   const [creationError, setCreationError] = useState<string | null>(null);
 
+  // Idempotency tracking (refs — no re-render needed)
+  // Suggestion IDs that were successfully saved — skipped on retry.
+  const confirmedIdsRef = useRef<Set<string>>(new Set());
+  // Suggestion IDs whose save was called (attempted) on the LAST confirmSelected
+  // call. On retry the same suggestion's stable ID will be used, so we only
+  // skip tasks in `confirmedIdsRef`, NOT those that previously failed.
+  const failedIdsRef = useRef<Set<string>>(new Set());
+
   // ── suggest ───────────────────────────────────────────────────────────────
 
   const suggest = useCallback(
@@ -61,6 +70,9 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
       setError(null);
       setSuggestions([]);
       setSelectedIds(new Set());
+      // Reset idempotency tracking for a fresh suggestion set
+      confirmedIdsRef.current = new Set();
+      failedIdsRef.current = new Set();
 
       try {
         const result = suggestUseCase.execute(request);
@@ -113,17 +125,34 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
       setCreationProgress({ completed: 0, total: toCreate.length });
 
       try {
+        let completedCount = 0;
         for (let i = 0; i < toCreate.length; i++) {
           const suggestion = toCreate[i];
-          await createTaskUseCase.execute({
-            projectId,
-            title: suggestion.title,
-            status: 'pending',
-            order: suggestion.order,
-            isCriticalPath: suggestion.critical_flag,
-            notes: suggestion.notes,
-          });
-          setCreationProgress({ completed: i + 1, total: toCreate.length });
+          if (confirmedIdsRef.current.has(suggestion.id)) {
+            completedCount++;
+            setCreationProgress({ completed: completedCount, total: toCreate.length });
+            continue;
+          }
+
+          try {
+            const id = stableId(projectId, suggestion.id);
+            await createTaskUseCase.execute({
+              id,
+              projectId,
+              title: suggestion.title,
+              status: 'pending',
+              order: suggestion.order,
+              isCriticalPath: suggestion.critical_flag,
+              notes: suggestion.notes,
+            });
+            confirmedIdsRef.current.add(suggestion.id);
+            failedIdsRef.current.delete(suggestion.id);
+            completedCount++;
+            setCreationProgress({ completed: completedCount, total: toCreate.length });
+          } catch (error) {
+            failedIdsRef.current.add(suggestion.id);
+            throw error; // Stop bulk creation and surface it
+          }
         }
       } catch (err) {
         setCreationError(err instanceof Error ? err.message : 'Failed to create tasks');
