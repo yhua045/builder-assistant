@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ChevronRight } from 'lucide-react-native';
 import DatePickerInput from './inputs/DatePickerInput';
 import ContactSelector from './inputs/ContactSelector';
@@ -108,7 +109,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
       presentationStyle="fullScreen"
       onRequestClose={onCancel}
     >
-      <View className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-background">
         {/* Modal Header */}
         <View className="px-6 py-4 border-b border-border">
           <View className="flex-row items-center justify-between">
@@ -312,7 +313,7 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
             onDone={onTasksAdded}
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

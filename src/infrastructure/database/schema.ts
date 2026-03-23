@@ -290,6 +290,7 @@ export const tasks = sqliteTable('tasks', {
   // Scheduling
   isScheduled: integer('is_scheduled', { mode: 'boolean' }).default(false),
   scheduledAt: integer('scheduled_at'), // Unix timestamp
+  startDate: integer('start_date'), // Unix timestamp — when work begins
   dueDate: integer('due_date'), // Unix timestamp
 
   assignedTo: text('assigned_to'),

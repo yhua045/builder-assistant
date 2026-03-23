@@ -8,6 +8,7 @@ import HeroSection from './components/HeroSection';
 import { Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
+import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
@@ -29,6 +30,7 @@ export default function DashboardScreen() {
   const { data: overviews, isLoading, error } = useProjectsOverview();
   const navigation = useNavigation<DashboardNavigationProp>();
 
+  const [createKey, setCreateKey] = useState(0);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showSnapReceipt, setShowSnapReceipt] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
@@ -100,7 +102,9 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {!isLoading && !error && !hasProjects && <HeroSection />}
+        {!isLoading && !error && !hasProjects && (
+          <HeroSection onManualEntry={() => setCreateKey(k => k + 1)} />
+        )}
 
         {!isLoading && !error && hasProjects && overviews && (
           <View className="px-6 mt-2">
@@ -117,6 +121,9 @@ export default function DashboardScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Always-mounted ManualProjectEntry — survives hasProjects transition so step 2 task selection is not lost */}
+      <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
 
       {/* Quick Actions - Floating Action Button */}
       <View className="absolute bottom-24 right-6">

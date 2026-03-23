@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Upload, Lightbulb } from 'lucide-react-native';
-import ManualProjectEntry from '../../../components/ManualProjectEntry';
+import { ManualProjectEntryButton } from '../../../components/ManualProjectEntryButton';
 
+interface HeroSectionProps {
+  onManualEntry: () => void;
+}
 
-export default function HeroSection() {
+export default function HeroSection({ onManualEntry }: HeroSectionProps) {
   const styles = StyleSheet.create({
     cardShadow: {
       elevation: 4,
@@ -36,7 +39,7 @@ export default function HeroSection() {
           <Text className="text-white/90 text-base ml-11">AI will extract address, owner, and dates</Text>
         </Pressable>
 
-        <ManualProjectEntry />
+        <ManualProjectEntryButton onPress={onManualEntry} />
 
         <View className="bg-chart-3/10 border border-chart-3/30 rounded-xl p-4 flex-row items-start">
           <Lightbulb className="text-chart-3 mr-3 mt-0.5" size={20} />

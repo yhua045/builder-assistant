@@ -890,6 +890,24 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0023_tasks_start_date',
+    hash: '0023_tasks_start_date',
+    folderMillis: 1774310400000, // 2026-03-24
+    sql: [],
+    run: async (db) => {
+      // Add nullable `start_date` column to tasks table (issue #167).
+      // Existing rows get NULL — no data migration needed.
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('tasks')`);
+      const existing = new Set<string>();
+      for (let i = 0; i < result.rows.length; i++) {
+        existing.add(result.rows.item(i).name);
+      }
+      if (!existing.has('start_date')) {
+        await db.executeSql(`ALTER TABLE "tasks" ADD COLUMN "start_date" integer`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

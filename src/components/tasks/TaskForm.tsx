@@ -89,10 +89,11 @@ export function TaskForm({
 
   const handleSubmit = async () => {
     if (useSelfManagedSave) {
-      // useTaskForm.submit() handles validation, create/update, docs, dependencies
-      await form.submit();
-      if (form.validationError) {
-        Alert.alert('Error', form.validationError);
+      // useTaskForm.submit() handles validation, create/update, docs, dependencies.
+      // Returns the saved Task on success, or null if validation failed.
+      const savedTask = await form.submit();
+      if (savedTask) {
+        onSuccess?.(savedTask);
       }
     } else {
       await handleLegacySubmit();
@@ -424,6 +425,16 @@ export function TaskForm({
               />
             </View>
           )}
+
+          {/* Start Date */}
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-foreground">Start Date</Text>
+            <DatePickerInput
+              label=""
+              value={form.startDate}
+              onChange={form.setStartDate}
+            />
+          </View>
 
           {/* Due Date */}
           <View className="gap-2">

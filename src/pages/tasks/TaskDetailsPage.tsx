@@ -453,7 +453,7 @@ export default function TaskDetailsPage() {
                 </Text>
               </View>
               <Text className="text-base font-bold text-foreground">
-                {task.scheduledAt ? new Date(task.scheduledAt).toLocaleDateString() : 'Not set'}
+                {task.startDate ? new Date(task.startDate).toLocaleDateString() : 'Not set'}
               </Text>
             </View>
 

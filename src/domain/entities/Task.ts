@@ -11,6 +11,7 @@ export interface Task {
   // Scheduling
   isScheduled?: boolean;
   scheduledAt?: string; // ISO Date string
+  startDate?: string;   // ISO Date string — when work on this task begins
   dueDate?: string;     // ISO Date string
   
   // Backwards-compatible assignedTo; prefer `assignedToContactId` for clarity

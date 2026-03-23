@@ -23,6 +23,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       notes: row.notes || undefined,
       isScheduled: Boolean(row.is_scheduled),
       scheduledAt: row.scheduled_at ? new Date(row.scheduled_at).toISOString() : undefined,
+      startDate: row.start_date ? new Date(row.start_date).toISOString() : undefined,
       dueDate: row.due_date ? new Date(row.due_date).toISOString() : undefined,
       assignedTo: row.assigned_to || undefined,
       subcontractorId: row.subcontractor_id || undefined,
@@ -51,6 +52,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       notes: task.notes || null,
       is_scheduled: task.isScheduled ? 1 : 0,
       scheduled_at: task.scheduledAt ? new Date(task.scheduledAt).getTime() : null,
+      start_date: task.startDate ? new Date(task.startDate).getTime() : null,
       due_date: task.dueDate ? new Date(task.dueDate).getTime() : null,
       assigned_to: task.assignedTo || null,
       subcontractor_id: task.subcontractorId || null,
@@ -84,11 +86,11 @@ export class DrizzleTaskRepository implements TaskRepository {
     await db.executeSql(
       `INSERT INTO tasks (
         id, project_id, title, description, notes,
-        is_scheduled, scheduled_at, due_date, assigned_to, subcontractor_id,
+        is_scheduled, scheduled_at, start_date, due_date, assigned_to, subcontractor_id,
         is_critical_path, status, priority, completed_date,
         task_type, work_type, quote_amount, quote_status, quote_invoice_id,
         "order", created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       , [
         values.id,
         values.project_id,
@@ -97,6 +99,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.notes,
         values.is_scheduled,
         values.scheduled_at,
+        values.start_date,
         values.due_date,
         values.assigned_to,
         values.subcontractor_id,
@@ -188,6 +191,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         notes = ?,
         is_scheduled = ?,
         scheduled_at = ?,
+        start_date = ?,
         due_date = ?,
         assigned_to = ?,
         subcontractor_id = ?,
@@ -211,6 +215,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         values.notes,
         values.is_scheduled,
         values.scheduled_at,
+        values.start_date,
         values.due_date,
         values.assigned_to,
         values.subcontractor_id,

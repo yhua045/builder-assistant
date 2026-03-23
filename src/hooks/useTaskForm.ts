@@ -68,6 +68,8 @@ export interface UseTaskFormReturn {
   setNotes(v: string): void;
   projectId: string;
   setProjectId(v: string): void;
+  startDate: Date | null;
+  setStartDate(v: Date | null): void;
   dueDate: Date | null;
   setDueDate(v: Date | null): void;
   status: Task['status'];
@@ -104,7 +106,8 @@ export interface UseTaskFormReturn {
   // ── Submit ────────────────────────────────────────────────────────────────
   isSubmitting: boolean;
   validationError: string | null;
-  submit(): Promise<void>;
+  /** Returns the saved Task on success, or null on validation failure. Throws on unexpected errors. */
+  submit(): Promise<Task | null>;
 
   /** Whether the form is in edit mode (editing an existing task) */
   isEditMode: boolean;
@@ -127,6 +130,9 @@ export function useTaskForm({
   );
   const [dueDate, setDueDate] = useState<Date | null>(
     initialTask?.dueDate ? new Date(initialTask.dueDate as string) : null,
+  );
+  const [startDate, setStartDate] = useState<Date | null>(
+    initialTask?.startDate ? new Date(initialTask.startDate as string) : null,
   );
   const [status, setStatus] = useState<Task['status']>(
     initialTask?.status ?? 'pending',
@@ -271,13 +277,13 @@ export function useTaskForm({
     // Validation
     if (!title.trim()) {
       setValidationError('Title is required');
-      return;
+      return null;
     }
 
     const selfId = initialTask?.id;
     if (selfId && dependencyTaskIds.includes(selfId)) {
       setValidationError('A task cannot depend on itself');
-      return;
+      return null;
     }
 
     setIsSubmitting(true);
@@ -296,7 +302,7 @@ export function useTaskForm({
             setValidationError(
               'Cannot remove the quote amount — this variation invoice already has recorded payments.',
             );
-            return;
+            return null;
           }
         }
 
@@ -311,6 +317,7 @@ export function useTaskForm({
           notes: notes.trim() || undefined,
           projectId: projectId || undefined,
           dueDate: dueDate?.toISOString(),
+          startDate: startDate?.toISOString(),
           status,
           priority,
           subcontractorId,
@@ -379,8 +386,7 @@ export function useTaskForm({
               .map(key => queryClient.invalidateQueries({ queryKey: key }))
           );
           const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
-          onSuccess?.(taskWithInvoice);
-          return;
+          return taskWithInvoice;
         }
 
         // ── Variation: cancel linked invoice when amount is removed (no payments) ──
@@ -407,7 +413,7 @@ export function useTaskForm({
             action: `Updated task "${updatedTask.title}"`,
           });
         }
-        onSuccess?.(updatedTask);
+        return updatedTask;
       } else {
         // ── Create mode ───────────────────────────────────────────────────
         const computedQuoteStatus = computeQuoteStatus(taskType, quoteAmount, undefined);
@@ -416,6 +422,7 @@ export function useTaskForm({
           notes: notes.trim() || undefined,
           projectId: projectId || undefined,
           dueDate: dueDate?.toISOString(),
+          startDate: startDate?.toISOString(),
           status,
           priority,
           subcontractorId,
@@ -472,8 +479,7 @@ export function useTaskForm({
               .map(key => queryClient.invalidateQueries({ queryKey: key }))
           );
           const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
-          onSuccess?.(taskWithInvoice);
-          return;
+          return taskWithInvoice;
         }
 
         await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(newTask.projectId) });
@@ -485,7 +491,7 @@ export function useTaskForm({
             action: `Created task "${newTask.title}"`,
           });
         }
-        onSuccess?.(newTask);
+        return newTask;
       }
     } finally {
       setIsSubmitting(false);
@@ -494,6 +500,7 @@ export function useTaskForm({
     title,
     notes,
     projectId,
+    startDate,
     dueDate,
     status,
     priority,
@@ -514,7 +521,6 @@ export function useTaskForm({
     paymentRepository,
     acceptQuotationUseCase,
     contactRepository,
-    onSuccess,
     queryClient,
     createAuditEntry,
   ]);
@@ -526,6 +532,8 @@ export function useTaskForm({
     setNotes,
     projectId,
     setProjectId,
+    startDate,
+    setStartDate,
     dueDate,
     setDueDate,
     status,
