@@ -13,9 +13,10 @@ import { CriticalPathTaskRow } from './CriticalPathTaskRow';
 interface CriticalPathPreviewProps {
   projectId: string;
   hookResult: UseCriticalPathReturn;
+  onDone?: () => void;
 }
 
-export function CriticalPathPreview({ projectId, hookResult }: CriticalPathPreviewProps) {
+export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalPathPreviewProps) {
   const {
     suggestions,
     isLoading,
@@ -120,7 +121,10 @@ export function CriticalPathPreview({ projectId, hookResult }: CriticalPathPrevi
           testID="cta-add-tasks"
           style={[styles.ctaButton, selectedCount === 0 && styles.ctaButtonDisabled]}
           disabled={selectedCount === 0}
-          onPress={() => confirmSelected(projectId)}
+          onPress={async () => {
+            const success = await confirmSelected(projectId);
+            if (success) onDone?.();
+          }}
         >
           <Text style={styles.ctaButtonText}>
             {selectedCount === 0

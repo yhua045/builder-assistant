@@ -17,7 +17,7 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "seed:demo": "npm run ios-15",
-    "seed:reset": "APP_ENV=reset react-native run-ios --simulator='iPhone 15 Pro'",
+    "seed:reset": "bash scripts/seed-reset.sh",
     "seed:demo:android": "npm run android",
     "seed:reset:android": "APP_ENV=reset react-native run-android"
   },

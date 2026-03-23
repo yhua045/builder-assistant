@@ -1,3 +1,7 @@
+// Dynamically select .env file based on APP_ENV environment variable
+const appEnv = process.env.APP_ENV || 'development';
+const envFilePath = appEnv === 'reset' ? '.env.reset' : `.env.${appEnv}`;
+
 module.exports = {
   presets: ['module:@react-native/babel-preset', 'nativewind/babel'],
   plugins: [
@@ -5,8 +9,7 @@ module.exports = {
       'module:react-native-dotenv',
       {
         moduleName: '@env',
-        path: '.env',
-        envName: 'APP_ENV',
+        path: envFilePath,
         allowUndefined: true,
       },
     ],

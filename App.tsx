@@ -63,7 +63,6 @@ function App() {
           if (RESET_DEMO_DATA === 'true') {
             console.log('[app] Resetting demo data...');
             await resetDemoData();
-            await seedDemoData();
           } else if (SEED_DEMO_DATA === 'true') {
             // Seed demo data if environment variable is set
             console.log('[app] Seeding demo data...');

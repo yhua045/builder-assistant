@@ -1,7 +1,7 @@
 /**
- * Demo data reset function.
- * Safely deletes all demo rows (identified by `demo_` prefix in IDs)
- * in reverse foreign-key order to avoid constraint violations.
+ * Data reset function.
+ * Deletes ALL rows from all tables in reverse foreign-key order
+ * to avoid constraint violations.
  */
 
 import { getDatabase } from '../database/connection';
@@ -9,42 +9,53 @@ import {
   taskDelayReasons,
   taskDependencies,
   documents,
+  payments,
+  invoices,
+  quotations,
   tasks,
   projects,
   properties,
   contacts,
 } from '../database/schema';
-import { like } from 'drizzle-orm';
 
 export async function resetDemoData(): Promise<void> {
   try {
     const { drizzle: db } = getDatabase();
 
-    console.log('[reset] Clearing demo data...');
+    console.log('[reset] Clearing all data...');
 
     // Delete in reverse foreign-key order to avoid constraint violations
-    const delayCount = await db.delete(taskDelayReasons).where(like(taskDelayReasons.id, 'demo_%'));
+    await db.delete(taskDelayReasons);
     console.log('[reset] ✓ Cleared task delay reasons');
 
-    const depsCount = await db.delete(taskDependencies).where(like(taskDependencies.taskId, 'demo_%'));
+    await db.delete(taskDependencies);
     console.log('[reset] ✓ Cleared task dependencies');
 
-    const docsCount = await db.delete(documents).where(like(documents.id, 'demo_%'));
+    await db.delete(documents);
     console.log('[reset] ✓ Cleared documents');
 
-    const tasksCount = await db.delete(tasks).where(like(tasks.id, 'demo_%'));
+    await db.delete(payments);
+    console.log('[reset] ✓ Cleared payments');
+
+    await db.delete(invoices);
+    console.log('[reset] ✓ Cleared invoices');
+
+    await db.delete(quotations);
+    console.log('[reset] ✓ Cleared quotations');
+
+    await db.delete(tasks);
     console.log('[reset] ✓ Cleared tasks');
 
-    const projectsCount = await db.delete(projects).where(like(projects.id, 'demo_%'));
+    await db.delete(projects);
     console.log('[reset] ✓ Cleared projects');
 
-    const propertiesCount = await db.delete(properties).where(like(properties.id, 'demo_%'));
+    await db.delete(properties);
     console.log('[reset] ✓ Cleared properties');
 
-    const contactsCount = await db.delete(contacts).where(like(contacts.id, 'demo_%'));
+    await db.delete(contacts);
     console.log('[reset] ✓ Cleared contacts');
 
-    console.log('[reset] ✅ Demo data cleared successfully!');
+    console.log('[reset] ✅ All data cleared successfully!');
   } catch (error) {
     console.error('[reset] ❌ Error resetting demo data:', error);
     throw error;

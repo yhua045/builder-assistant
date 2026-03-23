@@ -8,10 +8,12 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../data/critical-path/schema';
 import type { SuggestCriticalPathUseCase } from '../application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import type { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
 import { stableId } from '../utils/stableId';
+import { queryKeys, invalidations } from './queryKeys';
 
 // ── Public interface ──────────────────────────────────────────────────────────
 
@@ -36,13 +38,14 @@ export interface UseCriticalPathReturn {
   isCreating: boolean;
   creationProgress: { completed: number; total: number } | null;
   creationError: string | null;
-  confirmSelected: (projectId: string) => Promise<void>;
+  confirmSelected: (projectId: string) => Promise<boolean>;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPathReturn {
   const { suggestUseCase, createTaskUseCase } = options;
+  const queryClient = useQueryClient();
 
   const [suggestions, setSuggestions] = useState<CriticalPathSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -113,12 +116,12 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
   // ── confirmSelected ───────────────────────────────────────────────────────
 
   const confirmSelected = useCallback(
-    async (projectId: string): Promise<void> => {
+    async (projectId: string): Promise<boolean> => {
       const toCreate = suggestions
         .filter(s => selectedIds.has(s.id))
         .sort((a, b) => a.order - b.order);
 
-      if (toCreate.length === 0) return;
+      if (toCreate.length === 0) return false;
 
       setIsCreating(true);
       setCreationError(null);
@@ -154,13 +157,21 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
             throw error; // Stop bulk creation and surface it
           }
         }
+        // Invalidate task list + projects overview so any consumer renders fresh data
+        await Promise.all(
+          invalidations.tasksCreated({ projectId }).map(key =>
+            queryClient.invalidateQueries({ queryKey: key }),
+          ),
+        );
+        return true;
       } catch (err) {
         setCreationError(err instanceof Error ? err.message : 'Failed to create tasks');
+        return false;
       } finally {
         setIsCreating(false);
       }
     },
-    [suggestions, selectedIds, createTaskUseCase],
+    [suggestions, selectedIds, createTaskUseCase, queryClient],
   );
 
   return {

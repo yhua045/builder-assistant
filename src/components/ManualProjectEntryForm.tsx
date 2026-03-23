@@ -1,14 +1,19 @@
-import React from 'react';
-import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, StyleSheet } from 'react-native';
-import { X } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { X, ChevronRight } from 'lucide-react-native';
 import DatePickerInput from './inputs/DatePickerInput';
 import ContactSelector from './inputs/ContactSelector';
 import TeamSelector from './inputs/TeamSelector';
+import { CriticalPathPreview } from './CriticalPathPreview/CriticalPathPreview';
+import type { UseCriticalPathReturn } from '../hooks/useCriticalPath';
 
 interface Props {
   visible?: boolean;
   onSave: (project: any) => void;
   onCancel: () => void;
+  onTasksAdded?: () => void;
+  criticalPathHook: UseCriticalPathReturn;
+  projectId?: string | null;
 }
 
 interface FormErrors {
@@ -17,7 +22,10 @@ interface FormErrors {
   dates?: string;
 }
 
-const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCancel }) => {
+const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCancel, onTasksAdded, criticalPathHook, projectId }) => {
+
+  const [formStep, setFormStep] = React.useState<'details' | 'tasks'>('details');
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const [name, setName] = React.useState('');
   const [projectType, setProjectType] = React.useState('complete_rebuild');
@@ -32,6 +40,16 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
   const [priority, setPriority] = React.useState('Low');
   const [notes, setNotes] = React.useState('');
   const [errors, setErrors] = React.useState<FormErrors>({});
+
+  // Advance to task-selection step once the parent reports back a saved projectId
+  useEffect(() => {
+    if (projectId) setFormStep('tasks');
+  }, [projectId]);
+
+  // Reset to details step when modal is closed/reopened
+  useEffect(() => {
+    if (!visible) setFormStep('details');
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -57,26 +75,30 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
+    setIsSaving(true);
+    try {
+      const projectData = {
+        name: name.trim(),
+        projectType: projectType,
+        state: state,
+        description: description.trim() || undefined,
+        address: address.trim() || undefined,
+        projectOwner: projectOwner ? projectOwner : undefined,
+        team: team ? team : undefined,
+        visibility: 'Public' as const,
+        startDate: startDate ? startDate : undefined,
+        expectedEndDate: endDate ? endDate : undefined,
+        budget: budget ? parseFloat(budget) : undefined,
+        priority: priority as 'Low' | 'Medium' | 'High',
+        notes: notes.trim() || undefined
+      };
 
-    const projectData = {
-      name: name.trim(),
-      projectType: projectType,
-      state: state,
-      description: description.trim() || undefined,
-      address: address.trim() || undefined,
-      projectOwner: projectOwner ? projectOwner : undefined,
-      team: team ? team : undefined,
-      visibility: 'Public' as const,
-      startDate: startDate ? startDate : undefined,
-      expectedEndDate: endDate ? endDate : undefined,
-      budget: budget ? parseFloat(budget) : undefined,
-      priority: priority as 'Low' | 'Medium' | 'High',
-      notes: notes.trim() || undefined
-    };
-
-    onSave(projectData);
+      await onSave(projectData);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -88,13 +110,30 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
     >
       <View className="flex-1 bg-background">
         {/* Modal Header */}
-        <View className="px-6 py-4 flex-row items-center justify-between border-b border-border">
-          <Text className="text-2xl font-bold text-foreground">New Project</Text>
-          <Pressable onPress={onCancel} className="p-2">
-            <X className="text-foreground" size={24} />
-          </Pressable>
+        <View className="px-6 py-4 border-b border-border">
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-2xl font-bold text-foreground">
+                {formStep === 'details' ? 'New Project' : 'Add Tasks'}
+              </Text>
+              <Text className="text-sm text-muted-foreground mt-0.5">
+                {formStep === 'details'
+                  ? 'Step 1 of 2 · Project details'
+                  : 'Step 2 of 2 · Select your starting tasks'}
+              </Text>
+            </View>
+            <Pressable onPress={onCancel} className="p-2">
+              <X className="text-foreground" size={24} />
+            </Pressable>
+          </View>
+          {/* Step progress bar */}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, formStep === 'tasks' && styles.progressFillFull]} />
+          </View>
         </View>
 
+        {/* Step 1: Project details */}
+        {formStep === 'details' && (
         <ScrollView className="flex-1 p-6">
       
       {/* Name - Required */}
@@ -249,13 +288,30 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
       <View className="flex-row justify-end mt-6 mb-4">
         <Button title="Cancel" onPress={onCancel} color="#8E8E93" />
         <View style={styles.spacer} />
-        <Button
-          title="Save"
-          onPress={handleSave}
-          disabled={!name.trim() || !address.trim()}
-        />
+        {isSaving ? (
+          <ActivityIndicator size="small" style={styles.savingIndicator} />
+        ) : (
+          <Pressable
+            onPress={handleSave}
+            disabled={!name.trim() || !address.trim()}
+            style={[styles.saveButton, (!name.trim() || !address.trim()) && styles.saveButtonDisabled]}
+          >
+            <Text style={styles.saveButtonText}>Save Project</Text>
+            <ChevronRight size={16} color="#fff" />
+          </Pressable>
+        )}
       </View>
         </ScrollView>
+        )}
+
+        {/* Step 2: Task selection */}
+        {formStep === 'tasks' && projectId && (
+          <CriticalPathPreview
+            projectId={projectId}
+            hookResult={criticalPathHook}
+            onDone={onTasksAdded}
+          />
+        )}
       </View>
     </Modal>
   );
@@ -266,5 +322,41 @@ export default ManualProjectEntryForm;
 const styles = StyleSheet.create({
   spacer: {
     width: 12,
+  },
+  progressBar: {
+    height: 3,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    width: '50%',
+    backgroundColor: '#2563EB',
+    borderRadius: 2,
+  },
+  progressFillFull: {
+    width: '100%',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563EB',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    gap: 4,
+  },
+  saveButtonDisabled: {
+    opacity: 0.4,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  savingIndicator: {
+    marginHorizontal: 12,
   },
 });

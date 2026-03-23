@@ -2,13 +2,15 @@
  * Custom hook for managing project data and operations
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Project } from '../domain/entities/Project';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { CreateProjectUseCase, CreateProjectRequest } from '../application/usecases/project/CreateProjectUseCase';
 import { GetProjectAnalysisUseCase } from '../application/usecases/project/GetProjectAnalysisUseCase';
+import { queryKeys, invalidations } from './queryKeys';
 
 interface UseProjectsReturn {
   projects: Project[];
@@ -20,49 +22,51 @@ interface UseProjectsReturn {
 }
 
 export const useProjects = (): UseProjectsReturn => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Resolve repository via DI container and construct use cases
   const repository = useMemo(() => container.resolve<ProjectRepository>('ProjectRepository'), []);
   const createProjectUseCase = useMemo(() => new CreateProjectUseCase(repository), [repository]);
   const getProjectAnalysisUseCase = useMemo(() => new GetProjectAnalysisUseCase(repository), [repository]);
 
-  const loadProjects = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: projects = [],
+    isLoading: loading,
+    error: queryError,
+  } = useQuery<Project[]>({
+    queryKey: queryKeys.projects(),
+    queryFn: async () => {
       const output = await repository.list();
-      setProjects(output.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
-    } finally {
-      setLoading(false);
-    }
-  }, [repository]);
+      return output.items;
+    },
+  });
+
+  const error = queryError instanceof Error ? queryError.message : null;
 
   const createProject = useCallback(async (request: CreateProjectRequest) => {
     try {
       const result = await createProjectUseCase.execute(request);
-      
+
       if (result.success) {
-        // Refresh projects list
-        await loadProjects();
+        await Promise.all(
+          invalidations.projectCreated().map(key =>
+            queryClient.invalidateQueries({ queryKey: key }),
+          ),
+        );
       }
-      
+
       return {
         success: result.success,
         errors: result.errors,
-        projectId: result.projectId
+        projectId: result.projectId,
       };
     } catch (err) {
       return {
         success: false,
-        errors: [err instanceof Error ? err.message : 'Unknown error']
+        errors: [err instanceof Error ? err.message : 'Unknown error'],
       };
     }
-  }, [createProjectUseCase, loadProjects]);
+  }, [createProjectUseCase, queryClient]);
 
   const getProjectAnalysis = useCallback(async (projectId: string) => {
     try {
@@ -71,18 +75,14 @@ export const useProjects = (): UseProjectsReturn => {
     } catch (err) {
       return {
         success: false,
-        errors: [err instanceof Error ? err.message : 'Failed to analyze project']
+        errors: [err instanceof Error ? err.message : 'Failed to analyze project'],
       };
     }
   }, [getProjectAnalysisUseCase]);
 
   const refreshProjects = useCallback(async () => {
-    await loadProjects();
-  }, [loadProjects]);
-
-  useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.projects() });
+  }, [queryClient]);
 
   return {
     projects,
@@ -90,6 +90,6 @@ export const useProjects = (): UseProjectsReturn => {
     error,
     createProject,
     getProjectAnalysis,
-    refreshProjects
+    refreshProjects,
   };
 };

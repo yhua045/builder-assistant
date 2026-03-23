@@ -31,6 +31,9 @@
 // ─── Key factories ────────────────────────────────────────────────────────────
 
 export const queryKeys = {
+  /** All projects list */
+  projects: () => ['projects'] as const,
+
   /** All projects overview */
   projectsOverview: () => ['projectsOverview'] as const,
 
@@ -102,6 +105,7 @@ export type TaskEditCtx = {
 export type ContactCtx = Record<string, never>;
 export type QuotationProjectCtx = { projectId: string };
 export type AuditLogCtx = { projectId: string; taskId?: string };
+export type TasksCreatedCtx = { projectId: string };
 
 // ─── Invalidation map ─────────────────────────────────────────────────────────
 
@@ -218,5 +222,23 @@ export const invalidations = {
   auditLogWritten: (ctx: AuditLogCtx) => [
     queryKeys.auditLogsByProject(ctx.projectId),
     ...(ctx.taskId ? [queryKeys.auditLogsByTask(ctx.taskId)] : []),
+  ],
+
+  /**
+   * A new project was created.
+   * Affects: projects list, projects overview.
+   */
+  projectCreated: () => [
+    queryKeys.projects(),
+    queryKeys.projectsOverview(),
+  ],
+
+  /**
+   * Bulk tasks were created for a project (e.g. critical-path scaffold).
+   * Affects: task list, projects overview.
+   */
+  tasksCreated: (ctx: TasksCreatedCtx) => [
+    queryKeys.tasks(ctx.projectId),
+    queryKeys.projectsOverview(),
   ],
 };

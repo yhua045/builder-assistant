@@ -1,12 +1,12 @@
-import React, { useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet as RNStyleSheet } from 'react-native';
+import React, { useMemo, useCallback, useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, Pressable, StyleSheet as RNStyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { Layers } from 'lucide-react-native';
+import { Layers, Plus } from 'lucide-react-native';
 import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
 import { Project } from '../../domain/entities/Project';
 import { ProjectsStackParamList } from './ProjectsNavigator';
@@ -14,6 +14,7 @@ import { ProjectsStackParamList } from './ProjectsNavigator';
 const ProjectsPage: React.FC = () => {
   const navigation = useNavigation<any>();
   const { projects, loading, error } = useProjects();
+  const [createKey, setCreateKey] = useState(0);
 
   const handleProjectPress = useCallback(
     (project: ProjectCardDto) => {
@@ -49,7 +50,17 @@ const ProjectsPage: React.FC = () => {
           <Layers className="text-primary mr-3" size={24} />
           <Text className="text-2xl font-bold text-foreground">Projects</Text>
         </View>
-        <ThemeToggle />
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={() => setCreateKey(k => k + 1)}
+            className="p-1.5 rounded-lg active:opacity-60"
+            accessibilityLabel="Add new project"
+            accessibilityRole="button"
+          >
+            <Plus className="text-foreground" size={22} />
+          </Pressable>
+          <ThemeToggle />
+        </View>
       </View>
 
       {loading && (
@@ -66,8 +77,8 @@ const ProjectsPage: React.FC = () => {
 
       {!loading && !error && projectDtos.length === 0 && (
           <View className="px-6 gap-4">
-            <Text testID="projects-empty" style={emptyTextStyle}>No projects yet</Text>
-              <ManualProjectEntry />
+            <Text testID="projects-empty" style={emptyTextStyle}>No projects yet. Tap + to add one.</Text>
+              <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
           </View>
       )}
   
@@ -79,6 +90,8 @@ const ProjectsPage: React.FC = () => {
               <ProjectCard key={project.id} project={project} onPress={handleProjectPress} />
             ))}
           </View>
+          {/* Modal-only ManualProjectEntry — no visible button, opened via header + */}
+          <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
         </ScrollView>
       )}
     </SafeAreaView>
