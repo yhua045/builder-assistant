@@ -908,6 +908,25 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0024_contacts_lookup_fields',
+    hash: '0024_contacts_lookup_fields',
+    folderMillis: 1774310400000,
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('contacts')`);
+      const existing = new Set<string>();
+      for (let i = 0; i < result.rows.length; i++) {
+        existing.add(result.rows.item(i).name);
+      }
+      if (!existing.has('license_number')) {
+        await db.executeSql(`ALTER TABLE "contacts" ADD COLUMN "license_number" text`);
+      }
+      if (!existing.has('usage_count')) {
+        await db.executeSql(`ALTER TABLE "contacts" ADD COLUMN "usage_count" integer DEFAULT 0`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

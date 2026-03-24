@@ -11,6 +11,8 @@ export interface Contact {
   address?: string;
   rate?: number;
   notes?: string;
+  licenseNumber?: string;  // builder/contractor registration number (issue #171)
+  usageCount?: number;    // times selected across all projects (issue #171, default 0)
   createdAt?: string;
   updatedAt?: string;
 }

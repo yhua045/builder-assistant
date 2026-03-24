@@ -57,7 +57,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} criticalPathHook={{ criticalPath: [], isLoading: false, error: null, hasConflicts: false } as any} />,
       );
     });
     const root = tree!.root;
@@ -76,7 +76,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} criticalPathHook={{ criticalPath: [], isLoading: false, error: null, hasConflicts: false } as any} />,
       );
     });
     const root = tree!.root;
@@ -94,7 +94,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} criticalPathHook={{ criticalPath: [], isLoading: false, error: null, hasConflicts: false } as any} />,
       );
     });
     const root = tree!.root;
@@ -115,7 +115,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} criticalPathHook={{ criticalPath: [], isLoading: false, error: null, hasConflicts: false } as any} />,
       );
     });
     const root = tree!.root;
@@ -136,7 +136,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} criticalPathHook={{ criticalPath: [], isLoading: false, error: null, hasConflicts: false } as any} />,
       );
     });
     const root = tree!.root;

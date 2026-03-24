@@ -8,12 +8,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { X, HardHat } from 'lucide-react-native';
+import { X, HardHat, UserPlus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import useContacts from '../../hooks/useContacts';
+import { QuickAddContractorModal } from '../inputs/QuickAddContractorModal';
+import { useQuickLookup } from '../../hooks/useQuickLookup';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(HardHat, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(UserPlus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export interface SubcontractorContact {
   id: string;
@@ -34,7 +37,9 @@ export function SubcontractorPickerModal({ visible, selectedId, onSelect, onClos
   const { contacts } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SubcontractorContact[]>([]);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const { search } = useContacts();
+  const { quickAdd } = useQuickLookup();
 
   const refresh = useCallback(
     async (q: string) => {
