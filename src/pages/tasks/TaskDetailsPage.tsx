@@ -253,11 +253,16 @@ export default function TaskDetailsPage() {
       setTask(updated);
       try {
         await updateTask(updated);
+        await Promise.all(
+          invalidations
+            .taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+        );
       } catch {
         setTask(task); // revert on failure
       }
     },
-    [task, updateTask],
+    [task, updateTask, queryClient],
   );
 
   const handlePriorityChange = useCallback(
@@ -267,11 +272,16 @@ export default function TaskDetailsPage() {
       setTask(updated);
       try {
         await updateTask(updated);
+        await Promise.all(
+          invalidations
+            .taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+        );
       } catch {
         setTask(task);
       }
     },
-    [task, updateTask],
+    [task, updateTask, queryClient],
   );
 
   const handleAddDelayReason = async (data: AddDelayReasonFormData) => {

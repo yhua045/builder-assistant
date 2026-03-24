@@ -32,9 +32,33 @@ jest.mock('../../src/components/inputs/DatePickerInput', () => {
   return function DatePickerInput() { return React.createElement(View, { testID: 'date-picker' }); };
 });
 
+jest.mock('../../src/components/CriticalPathPreview/CriticalPathPreview', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { CriticalPathPreview: () => React.createElement(View, { testID: 'critical-path-preview' }) };
+});
+
 import ManualProjectEntryForm from '../../src/components/ManualProjectEntryForm';
+import type { UseCriticalPathReturn } from '../../src/hooks/useCriticalPath';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function createMockCriticalPathHook(): UseCriticalPathReturn {
+  return {
+    suggestions: [],
+    isLoading: false,
+    error: null,
+    suggest: jest.fn(),
+    selectedIds: new Set(),
+    toggleSelection: jest.fn(),
+    selectAll: jest.fn(),
+    clearAll: jest.fn(),
+    isCreating: false,
+    creationProgress: null,
+    creationError: null,
+    confirmSelected: jest.fn(),
+  };
+}
 
 function fillRequiredFields(root: renderer.ReactTestInstance) {
   const nameInput = root.findByProps({ placeholder: 'Project name' });
@@ -57,7 +81,12 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm 
+          visible={true} 
+          onSave={onSave} 
+          onCancel={jest.fn()}
+          criticalPathHook={createMockCriticalPathHook()}
+        />,
       );
     });
     const root = tree!.root;
@@ -76,7 +105,12 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm 
+          visible={true} 
+          onSave={onSave} 
+          onCancel={jest.fn()}
+          criticalPathHook={createMockCriticalPathHook()}
+        />,
       );
     });
     const root = tree!.root;
@@ -94,7 +128,12 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm 
+          visible={true} 
+          onSave={onSave} 
+          onCancel={jest.fn()}
+          criticalPathHook={createMockCriticalPathHook()}
+        />,
       );
     });
     const root = tree!.root;
@@ -115,7 +154,12 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm 
+          visible={true} 
+          onSave={onSave} 
+          onCancel={jest.fn()}
+          criticalPathHook={createMockCriticalPathHook()}
+        />,
       );
     });
     const root = tree!.root;
@@ -136,7 +180,12 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {
       tree = renderer.create(
-        <ManualProjectEntryForm visible={true} onSave={onSave} onCancel={jest.fn()} />,
+        <ManualProjectEntryForm 
+          visible={true} 
+          onSave={onSave} 
+          onCancel={jest.fn()}
+          criticalPathHook={createMockCriticalPathHook()}
+        />,
       );
     });
     const root = tree!.root;
