@@ -109,6 +109,9 @@ export const contacts = sqliteTable('contacts', {
   address: text('address'),
   rate: real('rate'),
   notes: text('notes'),
+  // issue #171: contractor registry fields
+  licenseNumber: text('license_number'),
+  usageCount: integer('usage_count').default(0),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 });

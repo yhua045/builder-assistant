@@ -24,5 +24,16 @@ jest.mock('react-native', () => {
 
 // Use manual mocks to avoid NativeWind and SafeAreaContext async effects in Jest
 jest.mock('nativewind');
+
+jest.mock('./src/hooks/useQuickLookup', () => ({
+  useQuickLookup: () => ({
+    quickAdd: jest.fn().mockResolvedValue({ id: 'dummy-id', name: 'Dummy' }),
+    getSuggested: jest.fn().mockResolvedValue([]),
+    selectContact: jest.fn(),
+    lookupByLicense: jest.fn().mockResolvedValue([]),
+    suggestedContacts: [],
+    isLoadingSuggestions: false
+  }),
+}));
 jest.mock('react-native-safe-area-context');
 jest.mock('@react-native-community/datetimepicker');

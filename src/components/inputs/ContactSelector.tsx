@@ -7,9 +7,11 @@ interface Props {
   value: string | null;
   onChange: (id: string | null) => void;
   error?: string;
+  /** Called when user taps "+ Add" with the current search query */
+  onQuickAdd?: (initialName: string) => void;
 }
 
-const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => {
+const ContactSelector: React.FC<Props> = ({ label, value, onChange, error, onQuickAdd }) => {
   const { search } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<any>>([]);
@@ -62,7 +64,7 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => 
         placeholder="Search contacts"
         className="border border-border rounded p-2 bg-card text-foreground"
       />
-      {isFocused && results.length > 0 && (
+      {isFocused && (results.length > 0 || (query.length > 0 && onQuickAdd)) && (
         <View style={styles.dropdown}>
           <ScrollView style={styles.list} nestedScrollEnabled>
             {results.map((item) => (
@@ -79,6 +81,18 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error }) => 
                 <Text className="text-foreground">{item.name} — {item.title}</Text>
               </Pressable>
             ))}
+            {query.length > 0 && onQuickAdd && (
+              <Pressable
+                testID="contact-selector-quick-add-btn"
+                onPress={() => {
+                  setIsFocused(false);
+                  onQuickAdd(query);
+                }}
+                className="p-3 border-t border-border"
+              >
+                <Text style={styles.quickAddText}>+ Add "{query}"</Text>
+              </Pressable>
+            )}
           </ScrollView>
         </View>
       )}
@@ -117,6 +131,10 @@ const styles = StyleSheet.create({
   },
   error: {
     color: 'red',
+  },
+  quickAddText: {
+    color: '#3B82F6',
+    fontWeight: '500',
   },
 });
 
