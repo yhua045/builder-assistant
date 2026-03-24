@@ -225,6 +225,55 @@ describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () =>
     await closeDatabase();
   }, 15000);
 
+  // ── Track B — Issue #176: location round-trip ──────────────────────────────
+
+  it('save() persists and reads back project.location', async () => {
+    const repo = new DrizzleProjectRepository();
+    await repo.init();
+
+    const projectData = ProjectEntity.create({
+      name: 'Location Project',
+      status: ProjectStatus.PLANNING,
+      location: '42 Wallaby Way, Sydney NSW 2000',
+      materials: [],
+      phases: [],
+    }).data;
+
+    await repo.save(projectData);
+    const loaded = await repo.findById(projectData.id);
+
+    expect(loaded).not.toBeNull();
+    expect(loaded!.location).toBe('42 Wallaby Way, Sydney NSW 2000');
+
+    await repo.delete(projectData.id);
+    await closeDatabase();
+  }, 15000);
+
+  it('save() (update path) persists updated location', async () => {
+    const repo = new DrizzleProjectRepository();
+    await repo.init();
+
+    const projectData = ProjectEntity.create({
+      name: 'Location Update Project',
+      status: ProjectStatus.PLANNING,
+      location: 'Old Address, Sydney NSW 2000',
+      materials: [],
+      phases: [],
+    }).data;
+
+    await repo.save(projectData);
+
+    // Second save triggers the UPDATE path
+    await repo.save({ ...projectData, location: 'New Address, Melbourne VIC 3000' });
+    const loaded = await repo.findById(projectData.id);
+
+    expect(loaded).not.toBeNull();
+    expect(loaded!.location).toBe('New Address, Melbourne VIC 3000');
+
+    await repo.delete(projectData.id);
+    await closeDatabase();
+  }, 15000);
+
 });
   // End of contract tests
 

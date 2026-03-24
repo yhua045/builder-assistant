@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProjectsPage from './ProjectsPage';
 import ProjectDetailScreen from './ProjectDetail';
+import ProjectEditScreen from './ProjectEditScreen';
 import QuotationDetailScreen from './QuotationDetail';
 import TaskDetailsPage from '../tasks/TaskDetailsPage';
 import CreateTaskPage from '../tasks/CreateTaskPage';
@@ -10,6 +11,7 @@ import EditTaskPage from '../tasks/EditTaskPage';
 export type ProjectsStackParamList = {
   ProjectsList: undefined;
   ProjectDetail: { projectId: string };
+  ProjectEdit: { projectId: string };
   /** Pushed from within the Projects stack so the user stays in context */
   TaskDetails: { taskId: string; openProgressLog?: boolean; openDocument?: boolean };
   CreateTask: { projectId?: string } | undefined;
@@ -28,6 +30,11 @@ export default function ProjectsNavigator() {
         name="ProjectDetail"
         component={ProjectDetailScreen}
         options={{ presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="ProjectEdit"
+        component={ProjectEditScreen}
+        options={{ presentation: 'modal' }}
       />
       <Stack.Screen
         name="TaskDetails"

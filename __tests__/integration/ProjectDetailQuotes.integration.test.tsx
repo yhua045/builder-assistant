@@ -44,6 +44,7 @@ jest.mock('lucide-react-native', () => ({
   Camera: 'Camera', Paperclip: 'Paperclip', FileText: 'FileText',
   ChevronDown: 'ChevronDown', ChevronRight: 'ChevronRight',
   Check: 'Check', X: 'X',
+  Pencil: 'Pencil',
 }));
 
 // ── Four focused hook mocks ───────────────────────────────────────────────────

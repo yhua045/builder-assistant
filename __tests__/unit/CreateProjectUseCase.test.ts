@@ -178,4 +178,24 @@ describe('CreateProjectUseCase (TDD)', () => {
     expect(savedProject.meta?.team).toBe('Team A');
     expect(savedProject.meta?.priority).toBe('High');
   });
+
+  // ── Track C — Issue #176: address → location mapping ──────────────────────
+
+  it('stores request.address as project.location, not propertyId', async () => {
+    const mockRepo: Partial<ProjectRepository> = {
+      list: jest.fn().mockResolvedValue({ items: [], meta: { total: 0 } }),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const usecase = new CreateProjectUseCase(mockRepo as ProjectRepository);
+
+    await usecase.execute({
+      name: 'Test Project',
+      address: '5 Main St, Melbourne VIC 3000',
+    });
+
+    const savedProject = (mockRepo.save as jest.Mock).mock.calls[0][0];
+    expect(savedProject.location).toBe('5 Main St, Melbourne VIC 3000');
+    expect(savedProject.propertyId).toBeUndefined();
+  });
 });

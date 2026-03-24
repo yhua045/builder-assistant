@@ -1,4 +1,4 @@
-import { GeoLocation, GetLocationOptions } from '../../../application/services/IGpsService';
+import { GeoLocation, GetLocationOptions } from '../../services/IGpsService';
 import { StoredLocationRepository } from '../../../domain/repositories/StoredLocationRepository';
 
 // Minimal device provider type used by the use case. Infrastructure adapters
