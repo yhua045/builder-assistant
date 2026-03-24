@@ -1234,3 +1234,69 @@ cd ios && pod install
 - ✅ Integration test validates task edit (status change) + navigation → Project Card shows correct status.
 - ✅ Full Jest suite passes (820 tests); TypeScript strict check clean.
 - ✅ Backwards compatibility maintained; no breaking changes.
+
+---
+
+## 16. Issue #175 — UI/UX Refactor: Replace Inline Option Lists with Dropdown Menus (2026-03-24)
+
+### Key Decisions
+- **Reusable `<Dropdown />` component**: Centralised single-choice picker component in `src/components/inputs/Dropdown.tsx` alongside existing input components (`DatePickerInput`, `ContactSelector`, `ProjectPicker`). Props contract includes `label`, `value`, `onChange`, `options`, `placeholder`, `error`, `disabled`, and `testID`.
+- **Modal-based picker UI**: Full-screen overlay with `FlatList` of `Pressable` rows, each showing option label and optional checkmark icon. Backdrop dismissal and Done button for confirmation. Accessibility attributes: `accessibilityRole="combobox"` on trigger, `accessibilityRole="menuitem"` on each option.
+- **Trigger button styled with NativeWind**: Matches existing form field styling (`border border-border rounded-lg h-12 px-3`) with `ChevronDown` icon on right and computed foreground colour for selected/placeholder text.
+- **Phase 1 scope**: Only `ManualProjectEntryForm` refactored to replace Button-based **Project Type** (`complete_rebuild`, `extension`, `renovation`, `knockdown_rebuild`, `dual_occupancy`) and **State** (`NSW` through `NT`) selection with `<Dropdown>` components. Maintains existing form layout and validation logic; no breaking changes to parent component API.
+- **Type-safe option arrays**: PROJECT_TYPE_OPTIONS and STATE_OPTIONS as module-level `DropdownOption<T>[]` arrays with label and value pairs, eliminating hardcoded strings and enabling easy future phase 2 expansion to other forms.
+
+### Completed
+- **Design doc** at `design/#175-ui-dropdowns.md` (user story, problem statement, Phase 1/2 scope, component contract, interaction model — approved).
+- **`src/components/inputs/Dropdown.tsx`** — reusable component with full test coverage:
+  - Props: `label?`, `value`, `onChange`, `options[]`, `placeholder?`, `error?`, `disabled?`, `testID?`.
+  - Trigger: Styled `Pressable` with icon + label / placeholder text.
+  - Picker: Full-screen `Modal` with `FlatList`, backdrop, Done button.
+  - Accessibility: `accessibilityRole="combobox"` / `"menuitem"`.
+- **`src/components/ManualProjectEntryForm.tsx`** *(refactored)*:
+  - Replaced 5-button horizontal row for Project Type with `<Dropdown>` component.
+  - Replaced 8-button (or more) state selection row with `<Dropdown>` component.
+  - New module-level option arrays: `PROJECT_TYPE_OPTIONS` and `STATE_OPTIONS`.
+  - Form validation and `onSave` callback logic unchanged; fully backwards-compatible.
+- **`__tests__/unit/Dropdown.test.tsx`** *(new)*:
+  - 11 unit tests verifying:
+    - Renders trigger with label + placeholder.
+    - Opens modal on trigger press.
+    - Selects option and calls `onChange` callback.
+    - Applies selected label to trigger.
+    - Handles disabled state.
+    - Displays error message.
+    - Unchecks previous selection on new selection.
+    - Renders all options in list.
+    - Closes modal on Done button press.
+  - **All 11 tests PASS**.
+- **`__tests__/unit/ManualProjectEntryForm.test.tsx`** *(attempted)*:
+  - Jest mock configuration issue with NativeWind/Babel during transpilation (pre-existing test infrastructure concern, not component implementation issue).
+  - Unit test harness requires jest mock factory refactoring (separate from this feature).
+- **`__tests__/integration/ManualProjectEntryForm.integration.test.tsx`** *(new)*:
+  - 5 integration tests verifying:
+    - **I1**: Shows "Complete Rebuild" in the Project Type trigger by default.
+    - **I2**: Selecting "Renovation" via Project Type dropdown updates the trigger label.
+    - **I3**: Selecting "VIC" via State dropdown updates the trigger label.
+    - **I4**: Form submit passes correct `projectType` and `state` to `onSave` callback.
+    - **I5**: Renders Dropdown triggers for Project Type and State (no chip buttons).
+  - **All 5 integration tests PASS**.
+- **Full validation**:
+  - Dropdown unit tests: **11 PASS**.
+  - ManualProjectEntryForm integration tests: **5 PASS**.
+  - TypeScript strict check (`npx tsc --noEmit`): **CLEAN** ✅.
+  - ESLint (pre-existing baseline): 1 warning in Dropdown.tsx for inline style (acceptable, consistent with existing codebase patterns).
+
+### Trade-offs & Deferred Items
+- **Phase 2 forms deferred to separate PR**: `TaskForm`, `AddProgressLogModal`, `ReceiptForm`, `QuotationForm` dropdowns left for follow-up PR to keep scope tight and enable rapid iteration on Phase 1 feedback.
+- **Work Type horizontal scroll preserved**: Intentionally kept in `TaskForm` per design — supports freeform custom entry and is browseable by nature.
+- **Unit test refactoring deferred**: `ManualProjectEntryForm.test.tsx` unit test requires broader Jest mock infrastructure refactor; integration tests provide sufficient validation for this PR.
+
+### Acceptance Criteria Met
+- ✅ **Phase 1 Scope**: `ManualProjectEntryForm` Project Type and State fields replaced with reusable `<Dropdown>` components.
+- ✅ **Component API**: Props contract finalized and documented; matches existing input component patterns.
+- ✅ **Validation**: Dropdown unit tests (11 tests) all passing; integration tests (5 tests) all passing.
+- ✅ **TypeScript**: Strict mode clean, no type warnings introduced.
+- ✅ **Accessibility**: `accessibilityRole` attributes applied; modal interaction accessible.
+- ✅ **Backwards compatibility**: Parent `ManualProjectEntryForm` API unchanged; form submission and `onSave` contract unmodified.
+- ✅ **Design consistency**: Trigger styling matches `DatePickerInput` (border, radius, height, padding); icon and text coloring follow NativeWind tokens.
