@@ -107,9 +107,14 @@ export function SubcontractorPickerModal({ visible, selectedId, onSelect, onClos
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
           <Text className="text-lg font-semibold text-foreground">Select Subcontractor</Text>
-          <TouchableOpacity onPress={onClose} className="p-1">
-            <X size={20} className="text-muted-foreground" />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity onPress={() => setShowQuickAdd(true)} className="p-1">
+              <UserPlus size={20} className="text-primary" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} className="p-1">
+              <X size={20} className="text-muted-foreground" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search */}
@@ -141,8 +146,31 @@ export function SubcontractorPickerModal({ visible, selectedId, onSelect, onClos
           ListEmptyComponent={
             <View className="px-4 py-8 items-center">
               <Text className="text-muted-foreground text-sm">No contacts found</Text>
+              <TouchableOpacity onPress={() => setShowQuickAdd(true)} className="mt-4 p-2 bg-primary/10 rounded-lg">
+                <Text className="text-primary font-medium">Add New Contractor</Text>
+              </TouchableOpacity>
             </View>
           }
+        />
+
+        <QuickAddContractorModal
+          visible={showQuickAdd}
+          initialName={query}
+          onSave={(contact) => {
+            setShowQuickAdd(false);
+            // Delay the parent close on iOS to avoid nested modal dismiss issues freezing the underlying UI
+            setTimeout(() => {
+              handleSelect({
+                id: contact.id,
+                name: contact.name,
+                trade: contact.trade,
+                phone: contact.phone,
+                email: contact.email,
+              });
+            }, 300);
+          }}
+          onCancel={() => setShowQuickAdd(false)}
+          onQuickAdd={quickAdd}
         />
       </View>
     </Modal>

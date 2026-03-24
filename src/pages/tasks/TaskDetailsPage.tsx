@@ -30,6 +30,7 @@ import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/ta
 import { AddProgressLogModal, AddProgressLogFormData } from '../../components/tasks/AddProgressLogModal';
 import { ProgressLog } from '../../domain/entities/ProgressLog';
 import { TaskPickerModal } from './TaskPickerModal';
+import { SubcontractorPickerModal, SubcontractorContact } from '../../components/tasks/SubcontractorPickerModal';
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { invalidations } from '../../hooks/queryKeys';
@@ -77,6 +78,7 @@ export default function TaskDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showDelayModal, setShowDelayModal] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
+  const [showSubcontractorPicker, setShowSubcontractorPicker] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [showAddLogModal, setShowAddLogModal] = useState(false);
   const [editingLog, setEditingLog] = useState<ProgressLog | null>(null);
@@ -376,6 +378,24 @@ export default function TaskDetailsPage() {
     }
   };
 
+  const handleSubcontractorSelect = async (contact: SubcontractorContact | undefined) => {
+    if (!task) return;
+    try {
+      const updated = { ...task, subcontractorId: contact?.id };
+      await updateTask(updated);
+      setTask(updated);
+      if (task.projectId) {
+        await Promise.all(
+          invalidations.taskEdited({ projectId: task.projectId, taskId: task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
+      }
+      await loadData();
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to update subcontractor');
+    }
+  };
+
   // Map resolved Contact to SubcontractorInfo shape expected by the section component
   const subcontractorInfo = subcontractor
     ? {
@@ -515,10 +535,7 @@ export default function TaskDetailsPage() {
         {/* === Task Detail Extension Sections === */}
         <TaskSubcontractorSection
           subcontractor={subcontractorInfo}
-          onEditSubcontractor={() => {
-            // Need task edit navigation here or it was handled via edit page... 
-            // the previous code didn't actually implement onEditSubcontractor here, so omit or handle navigation
-          }}
+          onEditSubcontractor={() => setShowSubcontractorPicker(true)}
         />
 
         <TaskDependencySection
@@ -626,6 +643,13 @@ export default function TaskDetailsPage() {
           onClose={() => setShowTaskPicker(false)}
         />
       )}
+
+      <SubcontractorPickerModal
+        visible={showSubcontractorPicker}
+        selectedId={task.subcontractorId}
+        onSelect={handleSubcontractorSelect}
+        onClose={() => setShowSubcontractorPicker(false)}
+      />
     </SafeAreaView>
   );
 }
