@@ -6,6 +6,27 @@ import DatePickerInput from './inputs/DatePickerInput';
 import ContactSelector from './inputs/ContactSelector';
 import TeamSelector from './inputs/TeamSelector';
 import { CriticalPathPreview } from './CriticalPathPreview/CriticalPathPreview';
+import Dropdown from './inputs/Dropdown';
+import type { DropdownOption } from './inputs/Dropdown';
+
+const PROJECT_TYPE_OPTIONS: DropdownOption[] = [
+  { label: 'Complete Rebuild',  value: 'complete_rebuild'  },
+  { label: 'Extension',         value: 'extension'         },
+  { label: 'Renovation',        value: 'renovation'        },
+  { label: 'Knockdown Rebuild', value: 'knockdown_rebuild' },
+  { label: 'Dual Occupancy',    value: 'dual_occupancy'    },
+];
+
+const STATE_OPTIONS: DropdownOption[] = [
+  { label: 'NSW', value: 'NSW' },
+  { label: 'VIC', value: 'VIC' },
+  { label: 'QLD', value: 'QLD' },
+  { label: 'WA',  value: 'WA'  },
+  { label: 'SA',  value: 'SA'  },
+  { label: 'TAS', value: 'TAS' },
+  { label: 'ACT', value: 'ACT' },
+  { label: 'NT',  value: 'NT'  },
+];
 import type { UseCriticalPathReturn } from '../hooks/useCriticalPath';
 
 interface Props {
@@ -163,32 +184,24 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
 
       {/* Project Type */}
       <View className="mb-4">
-        <Text className="mb-1 font-semibold text-foreground">Project Type</Text>
-        <View className="flex-row gap-2 flex-wrap">
-          {['complete_rebuild', 'extension', 'renovation', 'knockdown_rebuild', 'dual_occupancy'].map((pt) => (
-            <Button
-              key={pt}
-              title={pt.replace('_', ' ')}
-              onPress={() => setProjectType(pt)}
-              color={projectType === pt ? '#007AFF' : '#8E8E93'}
-            />
-          ))}
-        </View>
+        <Dropdown
+          label="Project Type"
+          value={projectType}
+          onChange={setProjectType}
+          options={PROJECT_TYPE_OPTIONS}
+          testID="dropdown-project-type"
+        />
       </View>
 
       {/* State */}
       <View className="mb-4">
-        <Text className="mb-1 font-semibold text-foreground">State</Text>
-        <View className="flex-row gap-2 flex-wrap">
-          {['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'].map((st) => (
-            <Button
-              key={st}
-              title={st}
-              onPress={() => setStateLoc(st)}
-              color={state === st ? '#007AFF' : '#8E8E93'}
-            />
-          ))}
-        </View>
+        <Dropdown
+          label="State"
+          value={state}
+          onChange={setStateLoc}
+          options={STATE_OPTIONS}
+          testID="dropdown-state"
+        />
       </View>
 
       {/* Address - Required */}

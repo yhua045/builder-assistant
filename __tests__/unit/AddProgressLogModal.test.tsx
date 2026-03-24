@@ -18,6 +18,8 @@ jest.mock('lucide-react-native', () => ({
   X: 'X',
   Camera: 'Camera',
   Trash2: 'Trash2',
+  ChevronDown: 'ChevronDown',
+  Check: 'Check',
 }));
 
 jest.mock('react-native-image-picker', () => ({
@@ -50,24 +52,24 @@ describe('AddProgressLogModal — create mode', () => {
   });
 
   it('submit button is enabled after logType selected', async () => {
-    const { getByLabelText } = render(<AddProgressLogModal {...baseProps} />);
-    await act(async () => {
-      fireEvent.press(getByLabelText('log type inspection'));
-    });
-    const btn = getByLabelText('Add Log');
-    fireEvent.press(btn);
+    const { getByLabelText, getByTestId, getByText } = render(<AddProgressLogModal {...baseProps} />);
+    // Open Dropdown and select — each fireEvent wraps its own act flush
+    fireEvent.press(getByTestId('log-type-dropdown'));
+    fireEvent.press(getByText('Inspection'));
+    fireEvent.press(getByLabelText('Add Log'));
     expect(baseProps.onSubmit).toHaveBeenCalledTimes(1);
   });
 
   it('onSubmit called with correct data including notes and actor', async () => {
-    const { getByLabelText, getByPlaceholderText } = render(
+    const { getByLabelText, getByPlaceholderText, getByTestId, getByText } = render(
       <AddProgressLogModal {...baseProps} />,
     );
-    await act(async () => {
-      fireEvent.press(getByLabelText('log type inspection'));
-      fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'Foundation checked');
-      fireEvent.changeText(getByPlaceholderText('e.g. Mike Johnson'), 'Mike');
-    });
+    // Open Dropdown and select
+    fireEvent.press(getByTestId('log-type-dropdown'));
+    fireEvent.press(getByText('Inspection'));
+    // Fill text fields
+    fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'Foundation checked');
+    fireEvent.changeText(getByPlaceholderText('e.g. Mike Johnson'), 'Mike');
     fireEvent.press(getByLabelText('Add Log'));
     expect(baseProps.onSubmit).toHaveBeenCalledWith({
       logType: 'inspection',
@@ -84,13 +86,13 @@ describe('AddProgressLogModal — create mode', () => {
   });
 
   it('form state resets after modal is closed and reopened', async () => {
-    const { getByLabelText, getByPlaceholderText, rerender } = render(
+    const { getByPlaceholderText, getByTestId, getByText, rerender } = render(
       <AddProgressLogModal {...baseProps} />,
     );
-    await act(async () => {
-      fireEvent.press(getByLabelText('log type delay'));
-      fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'some notes');
-    });
+    // Open Dropdown and select
+    fireEvent.press(getByTestId('log-type-dropdown'));
+    fireEvent.press(getByText('Delay'));
+    fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'some notes');
     // Close
     rerender(<AddProgressLogModal {...baseProps} visible={false} />);
     // Reopen

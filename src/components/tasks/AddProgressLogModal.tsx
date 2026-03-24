@@ -13,6 +13,7 @@ import { X, Camera, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { ProgressLog } from '../../domain/entities/ProgressLog';
+import Dropdown from '../inputs/Dropdown';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Camera, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -127,30 +128,14 @@ export function AddProgressLogModal({ visible, initialValues, onSubmit, onClose 
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Log Type */}
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Log Type <Text className="text-destructive">*</Text>
-            </Text>
-            <View className="flex-row flex-wrap gap-2 mb-5">
-              {LOG_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type.value}
-                  accessibilityLabel={`log type ${type.value}`}
-                  onPress={() => setLogType(type.value)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    logType === type.value
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-muted'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-medium ${
-                      logType === type.value ? 'text-primary' : 'text-foreground'
-                    }`}
-                  >
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View className="mb-5">
+              <Dropdown<ProgressLog['logType']>
+                label="Log Type"
+                value={logType || undefined}
+                onChange={(v) => setLogType(v)}
+                options={LOG_TYPES}
+                testID="log-type-dropdown"
+              />
             </View>
 
             {/* Notes */}

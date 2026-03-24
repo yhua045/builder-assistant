@@ -4,6 +4,7 @@ import { SnapReceiptDTO } from '../../application/usecases/receipt/SnapReceiptUs
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react-native';
+import Dropdown from '../inputs/Dropdown';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
@@ -193,24 +194,13 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       </View>
 
       <View className="mb-6">
-        <Text className="mb-2 font-medium text-foreground">Payment Method*</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {PAYMENT_METHODS.map((method) => (
-             <Pressable
-               key={method.value}
-               className={`px-4 py-2 rounded-full border ${
-                 paymentMethod === method.value 
-                   ? 'bg-primary border-primary' 
-                   : 'bg-card border-input'
-               }`}
-               onPress={() => setPaymentMethod(method.value)}
-             >
-               <Text className={`${
-                 paymentMethod === method.value ? 'text-primary-foreground font-medium' : 'text-foreground'
-               }`}>{method.label}</Text>
-             </Pressable>
-          ))}
-        </View>
+        <Dropdown
+          label="Payment Method"
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+          options={PAYMENT_METHODS}
+          testID="receipt-payment-method"
+        />
       </View>
 
       <View className="mb-8">
