@@ -14,7 +14,7 @@
  * tree without needing a QueryClientProvider.
  * Hook logic is covered independently in unit/useTaskTimeline.test.ts.
  *
- * NOTE: Fixture dates are in the future (> 2026-03-17) so that the
+ * NOTE: Fixture dates are in the future (> 2030-03-17) so that the
  * auto-collapse rule starts all groups EXPANDED, matching the test assertions.
  */
 
@@ -47,6 +47,7 @@ jest.mock('lucide-react-native', () => ({
   XCircle: 'XCircle', Play: 'Play', ExternalLink: 'ExternalLink',
   Camera: 'Camera', Paperclip: 'Paperclip',
   ChevronDown: 'ChevronDown', ChevronRight: 'ChevronRight',
+  Pencil: 'Pencil',
 }));
 
 // ── Four focused hook mocks ─────────────────────────────────────────────────
@@ -82,15 +83,15 @@ const sampleProject = {
   name: 'Smith Residence',
   location: '1234 Oak Street',
   status: 'in_progress',
-  startDate: new Date('2026-03-15'),
+  startDate: new Date('2030-03-15'),
   expectedEndDate: new Date('2026-06-15'),
   materials: [], phases: [],
   owner: { id: 'c1', name: 'John Smith', phone: '0412 000 111' },
 };
 
-const taskT1 = { id: 't1', title: 'Foundation Inspection', status: 'completed', projectId: 'proj-1', scheduledAt: '2026-03-20T10:00:00Z' };
-const taskT2 = { id: 't2', title: 'Concrete Pouring',       status: 'completed', projectId: 'proj-1', scheduledAt: '2026-03-20T14:00:00Z' };
-const taskT3 = { id: 't3', title: 'Framing Installation',   status: 'pending',   projectId: 'proj-1', scheduledAt: '2026-03-28T09:00:00Z' };
+const taskT1 = { id: 't1', title: 'Foundation Inspection', status: 'completed', projectId: 'proj-1', scheduledAt: '2030-03-20T10:00:00Z' };
+const taskT2 = { id: 't2', title: 'Concrete Pouring',       status: 'completed', projectId: 'proj-1', scheduledAt: '2030-03-20T14:00:00Z' };
+const taskT3 = { id: 't3', title: 'Framing Installation',   status: 'pending',   projectId: 'proj-1', scheduledAt: '2030-03-28T09:00:00Z' };
 
 function setHookReturn(overrides: {
   projectDetail?: Partial<typeof mockProjectDetailReturn>;
@@ -106,8 +107,8 @@ function setHookReturn(overrides: {
   };
   mockTaskTimelineReturn = {
     dayGroups: [
-      { date: '2026-03-20', label: 'Fri 20 Mar', tasks: [taskT1, taskT2] },
-      { date: '2026-03-28', label: 'Sat 28 Mar', tasks: [taskT3] },
+      { date: '2030-03-20', label: 'Fri 20 Mar', tasks: [taskT1, taskT2] },
+      { date: '2030-03-28', label: 'Sat 28 Mar', tasks: [taskT3] },
     ],
     loading: false,
     error: null,
@@ -168,6 +169,21 @@ describe('ProjectDetail screen', () => {
     expect(headingEl[0].props.children).toBe('Smith Residence');
   });
 
+  it('renders pencil edit button in header and tapping navigates to ProjectEdit with projectId', async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderScreen();
+    });
+    const editBtn = tree!.root.findAllByProps({ testID: 'project-edit-button' })[0];
+    expect(editBtn).toBeTruthy();
+    
+    await act(async () => {
+      editBtn.props.onPress();
+    });
+    const { useNavigation } = require('@react-navigation/native');
+    expect(useNavigation().navigate).toHaveBeenCalledWith('ProjectEdit', { projectId: 'proj-1' });
+  });
+
   it('renders project name in the body card (regression)', async () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
@@ -183,8 +199,8 @@ describe('ProjectDetail screen', () => {
     await act(async () => {
       tree = renderScreen();
     });
-    const mar20 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20' });
-    const mar28 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-28' });
+    const mar20 = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20' });
+    const mar28 = tree!.root.findAllByProps({ testID: 'day-group-2030-03-28' });
     expect(mar20.length).toBeGreaterThan(0);
     expect(mar28.length).toBeGreaterThan(0);
   });
@@ -194,8 +210,8 @@ describe('ProjectDetail screen', () => {
     await act(async () => {
       tree = renderScreen();
     });
-    const card0 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' });
-    const card1 = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-1' });
+    const card0 = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-task-0' });
+    const card1 = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-task-1' });
     expect(card0.length).toBeGreaterThan(0);
     expect(card1.length).toBeGreaterThan(0);
   });
@@ -205,7 +221,7 @@ describe('ProjectDetail screen', () => {
     await act(async () => {
       tree = renderScreen();
     });
-    const dateLabel = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-date-label' });
+    const dateLabel = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-date-label' });
     expect(dateLabel.length).toBeGreaterThan(0);
   });
 
@@ -216,17 +232,17 @@ describe('ProjectDetail screen', () => {
     });
 
     // Groups start expanded (future dates) — cards should be visible
-    const card0Before = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' });
+    const card0Before = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-task-0' });
     expect(card0Before.length).toBeGreaterThan(0);
 
     // Tap the per-group collapse toggle
-    const toggle = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-toggle' });
+    const toggle = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-toggle' });
     await act(async () => {
       toggle[0].props.onPress();
     });
 
     // After collapse, the card should no longer be in the tree
-    const card0After = tree!.root.findAllByProps({ testID: 'day-group-2026-03-20-task-0' });
+    const card0After = tree!.root.findAllByProps({ testID: 'day-group-2030-03-20-task-0' });
     expect(card0After.length).toBe(0);
   });
 
@@ -256,7 +272,7 @@ describe('ProjectDetail screen', () => {
     });
 
     // Framing Installation (t3) is pending — complete button should be visible
-    const completeBtn = tree!.root.findAllByProps({ testID: 'day-group-2026-03-28-task-0-complete' });
+    const completeBtn = tree!.root.findAllByProps({ testID: 'day-group-2030-03-28-task-0-complete' });
     await act(async () => {
       completeBtn[0].props.onPress();
     });

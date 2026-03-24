@@ -30,6 +30,7 @@ import {
   Phone,
   Calendar,
   Clock,
+  Pencil,
 } from 'lucide-react-native';
 import { useProjectDetail } from '../../hooks/useProjectDetail';
 import { useTaskTimeline } from '../../hooks/useTaskTimeline';
@@ -49,6 +50,7 @@ cssInterop(MapPin, { className: { target: 'style', nativeStyleToProp: { color: t
 cssInterop(Phone, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Calendar, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(Pencil, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 // Enable LayoutAnimation on Android.
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -325,12 +327,21 @@ export default function ProjectDetailScreen() {
                 </View>
               ) : null}
             </View>
-            <View className={`px-3 py-1.5 rounded-full ${isActive ? 'bg-chart-2/10' : 'bg-chart-4/10'}`}>
-              <Text
-                className={`text-xs font-semibold uppercase tracking-wide ${isActive ? 'text-chart-2' : 'text-chart-4'}`}
+            <View className="flex-col items-end gap-2">
+              <View className={`px-3 py-1.5 rounded-full ${isActive ? 'bg-chart-2/10' : 'bg-chart-4/10'}`}>
+                <Text
+                  className={`text-xs font-semibold uppercase tracking-wide ${isActive ? 'text-chart-2' : 'text-chart-4'}`}
+                >
+                  {statusLabel}
+                </Text>
+              </View>
+              <Pressable
+                testID="project-edit-button"
+                onPress={() => navigation.navigate('ProjectEdit' as any, { projectId })}
+                className="p-2 -mr-2"
               >
-                {statusLabel}
-              </Text>
+                <Pencil className="text-muted-foreground" size={20} />
+              </Pressable>
             </View>
           </View>
 

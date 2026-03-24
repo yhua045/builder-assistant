@@ -36,6 +36,18 @@ interface Props {
   onTasksAdded?: () => void;
   criticalPathHook: UseCriticalPathReturn;
   projectId?: string | null;
+  excludeCriticalTasks?: boolean;
+  initialValues?: {
+    name?: string;
+    address?: string;
+    description?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    budget?: string;
+    projectType?: string;
+    state?: string;
+    notes?: string;
+  };
 }
 
 interface FormErrors {
@@ -44,29 +56,29 @@ interface FormErrors {
   dates?: string;
 }
 
-const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCancel, onTasksAdded, criticalPathHook, projectId }) => {
+const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCancel, onTasksAdded, criticalPathHook, projectId, excludeCriticalTasks, initialValues }) => {
 
   const [formStep, setFormStep] = React.useState<'details' | 'tasks'>('details');
   const [isSaving, setIsSaving] = React.useState(false);
 
-  const [name, setName] = React.useState('');
-  const [projectType, setProjectType] = React.useState('complete_rebuild');
-  const [state, setStateLoc] = React.useState('NSW');
-  const [description, setDescription] = React.useState('');
-  const [address, setAddress] = React.useState('');
+  const [name, setName] = React.useState(initialValues?.name ?? '');
+  const [projectType, setProjectType] = React.useState(initialValues?.projectType ?? 'complete_rebuild');
+  const [state, setStateLoc] = React.useState(initialValues?.state ?? 'NSW');
+  const [description, setDescription] = React.useState(initialValues?.description ?? '');
+  const [address, setAddress] = React.useState(initialValues?.address ?? '');
   const [projectOwner, setProjectOwner] = React.useState<string | null>(null);
   const [team, setTeam] = React.useState<string | null>(null);
-  const [startDate, setStartDate] = React.useState<Date | null>(null);
-  const [endDate, setEndDate] = React.useState<Date | null>(null);
-  const [budget, setBudget] = React.useState('');
+  const [startDate, setStartDate] = React.useState<Date | null>(initialValues?.startDate ?? null);
+  const [endDate, setEndDate] = React.useState<Date | null>(initialValues?.endDate ?? null);
+  const [budget, setBudget] = React.useState(initialValues?.budget ?? '');
   const [priority, setPriority] = React.useState('Low');
-  const [notes, setNotes] = React.useState('');
+  const [notes, setNotes] = React.useState(initialValues?.notes ?? '');
   const [errors, setErrors] = React.useState<FormErrors>({});
 
   // Advance to task-selection step once the parent reports back a saved projectId
   useEffect(() => {
-    if (projectId) setFormStep('tasks');
-  }, [projectId]);
+    if (projectId && !excludeCriticalTasks) setFormStep('tasks');
+  }, [projectId, excludeCriticalTasks]);
 
   // Reset to details step when modal is closed/reopened
   useEffect(() => {

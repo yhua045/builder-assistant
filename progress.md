@@ -1300,3 +1300,69 @@ cd ios && pod install
 - ✅ **Accessibility**: `accessibilityRole` attributes applied; modal interaction accessible.
 - ✅ **Backwards compatibility**: Parent `ManualProjectEntryForm` API unchanged; form submission and `onSave` contract unmodified.
 - ✅ **Design consistency**: Trigger styling matches `DatePickerInput` (border, radius, height, padding); icon and text coloring follow NativeWind tokens.
+
+---
+
+## Issue #176 — Project Edit Flow (2026-03-24)
+
+**Branch**: `feature-issue-176-project-edit` | **Design doc**: `design/issue-176-project-edit.md`
+
+### Key Decisions
+- **Bug Fix Track (A–C)**: Three foundational bugs blocking the edit flow were discovered and fixed:
+  - **A. Status badge display bug**: `ProjectCard.tsx` used a binary ternary (`IN_PROGRESS ? 'Active' : 'On Hold'`), causing `PLANNING`, `COMPLETED`, and `CANCELLED` projects to all show "On Hold". Replaced with a multi-case status mapper.
+  - **B. Location field not persisted**: `DrizzleProjectRepository.save()` and `update()` SQL omitted the `location`, `fire_zone`, and `regulatory_flags` columns, and `mapRowToProject()` never read them back. Added these fields to INSERT, UPDATE, and the row mapper.
+  - **C. Form address stored as propertyId instead of location**: `CreateProjectUseCase` was routing `request.address` → `propertyId` instead of `location`. Fixed to route to `location` (free-text site address string).
+- **Feature Track (D–E)**: Two complementary features enable the edit flow:
+  - **D. `UpdateProjectUseCase`**: New use case handling edits to `name`, `description`, `location`, `startDate`, `expectedEndDate`, `budget`, `currency`, `fireZone`. Validates required fields, ensures `endDate > startDate`. Leaves `phases`, `materials`, `status`, `ownerId` unchanged (status edited via separate `UpdateProjectStatusUseCase`).
+  - **E. Project Edit UI flow**: Navigation from `ProjectDetail` (pencil icon in header) → `ProjectEditScreen` (form pre-filled with current values, no step 2 task picker) → save → pop back and invalidate queries.
+- **Form reusability**: Extended `ManualProjectEntryForm` to accept `excludeCriticalTasks` prop (skips step 2) and `initialValues` prop (pre-fill for edit mode), avoiding code duplication of the form UI.
+- **Cache invalidation**: Added `projectEdited` entry to `queryKeys` which invalidates three caches: `projects()`, `projectsOverview()`, `projectDetail(projectId)` — ensures edited project reflects immediately on cards and detail screens.
+
+### Completed
+
+**Bug Fixes**:
+- **`src/components/ProjectCard.tsx`** (line 68): Replaced binary ternary with `STATUS_LABELS` map object. All five project statuses now render correct badge label and color.
+- **`src/infrastructure/repositories/DrizzleProjectRepository.ts`**:
+  - `save()` SQL: added `location`, `fire_zone`, `regulatory_flags` to INSERT statement and bindings.
+  - `update()` SQL: added these three fields to UPDATE statement and bindings.
+  - `mapRowToProject()`: added mapping for `location`, `fireZone`, `regulatoryFlags` from row columns.
+- **`src/application/usecases/project/CreateProjectUseCase.ts`**: Routed `request.address` → `location` (not `propertyId`).
+
+**Features**:
+- **`src/application/usecases/project/UpdateProjectUseCase.ts`** *(new)*: Validates `name` non-empty, `endDate > startDate` if both provided, project exists. Delegates to `repo.save(updated)` and returns `{ success: boolean, errors?: string[] }`.
+- **`src/hooks/useUpdateProject.ts`** *(new)*: Hook wrapping `UpdateProjectUseCase` with async error handling. Returns `{ updateProject(request): Promise<...>, loading: boolean }`.
+- **`src/components/ManualProjectEntryForm.tsx`** *(edited)*:
+  - Added `excludeCriticalTasks?: boolean` prop — when true, skips step 2 (task selection) and jumps directly to step 3 (save).
+  - Added `initialValues?: ProjectFormValues` prop — pre-fills form fields for edit mode; merged with default empty values.
+  - Step display logic updated: `excludeCriticalTasks` bypasses rendering step 2 content.
+- **`src/pages/projects/ProjectEditScreen.tsx`** *(new)*: Route screen accepting `projectId` as route param. Calls `getProject(projectId)`, resolves `useUpdateProject` hook, passes `initialValues={project}` and `excludeCriticalTasks={true}` to `ManualProjectEntryForm`. On form save, calls `updateProject()`, invalidates `queryKeys.projectEdited({ projectId })`, and navigates back.
+- **`src/pages/projects/ProjectsNavigator.tsx`** *(edited)*: Added `ProjectEdit` route to stack with param type `{ projectId: string }`.
+- **`src/pages/projects/ProjectDetail.tsx`** *(edited)*: Added pencil (`PencilIcon`) button in header `<HeaderRight>` that navigates to `ProjectEdit` route with `projectId`.
+- **`src/hooks/queryKeys.ts`** *(edited)*: Added `projectEdited` entry returning `[queryKeys.projects(), queryKeys.projectsOverview(), queryKeys.projectDetail(projectId)]` for invalidation.
+
+**Tests**:
+- **New unit tests** (17 tests, all passing):
+  - `__tests__/unit/UpdateProjectUseCase.test.ts` (5 tests) — validates name required, end > start validation, successful update, project not found, unchanged fields preserved.
+  - `__tests__/unit/ProjectCard.status.test.ts` (5 tests) — renders correct badges for all five statuses: Planning, Active, On Hold, Done, Cancelled.
+  - `__tests__/unit/ManualProjectEntryForm.excludeCriticalTasks.test.tsx` (4 tests) — step 2 hidden when prop true, initialValues pre-fill form, step 3 save works, exclude prop impacts form stepIndex logic.
+  - `__tests__/unit/queryKeys.invalidations.test.ts` *(updated)* — added 3 tests for `projectEdited` invalidation entry.
+- **New integration tests** (8 tests, all passing):
+  - `__tests__/integration/DrizzleProjectRepository.location.integration.test.ts` (3 tests) — `save()` persists and hydrates `location`, `update()` updates location, null and empty strings handled.
+  - `__tests__/integration/ProjectEditFlow.integration.test.tsx` (5 tests) — navigate from ProjectDetail → pencil icon present, ProjectEditScreen pre-fills, form save calls updateProject, queries invalidated, navigation pops back to detail with updated values.
+
+**Full test suite**: **848 tests pass, 7 skipped, 0 failures** (up from 820 in Issue #172). `npx tsc --noEmit` clean.
+
+### Trade-offs & Technical Debt
+- **Status editing deferred**: Status transitions remain separate (`UpdateProjectStatusUseCase`). A future ticket could unify them if needed, but separating edit (user-facing changes) from status (workflow-driven) keeps the use case responsibilities distinct.
+- **No onboarding/validation messaging**: The form does not yet surface backend validation errors in `UpdateProjectUseCase` — error messages are swallowed as `{ success: false, errors: [...] }`. A future ticket can surface these in UI via a validation summary component.
+- **propertyId and ownerId immutable**: These are set at project creation and not editable in this flow. A future ticket can extend `UpdateProjectUseCase` to allow reassignment if the app adds property/owner change workflows.
+
+### Acceptance Criteria Met
+- ✅ **Bug A (Status badge)**: All five statuses (Planning / Active / On Hold / Done / Cancelled) render correct badge label.
+- ✅ **Bug B (Location persistence)**: `DrizzleProjectRepository` save/update/read all include `location`, `fireZone`, `regulatoryFlags`.
+- ✅ **Bug C (Form address)**: `CreateProjectUseCase` stores form `address` → `project.location`.
+- ✅ **Feature D (UpdateProjectUseCase)**: Use case validates, updates core fields, preserves unchanged data, returns success/errors.
+- ✅ **Feature E (Edit UI)**: ProjectDetail pencil icon → ProjectEditScreen form pre-filled → save → invalidate queries → pop back.
+- ✅ Form reusability: `ManualProjectEntryForm` accepts `excludeCriticalTasks` and `initialValues` props.
+- ✅ All 17 unit + 8 integration tests pass; 848 total tests green; TypeScript strict check passes.
+- ✅ Feature branch `feature-issue-176-project-edit` ready for PR.
