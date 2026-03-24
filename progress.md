@@ -1181,3 +1181,56 @@ cd ios && pod install
 - ✅ All new code tested (unit + integration); 39 tests pass.
 - ✅ Linting clear; TypeScript strict check passes.
 - ✅ Feature branch `issue-167` ready for PR.
+
+---
+
+## Issue #172 — Project Card Updates After Task Detail Changes (2026-03-24)
+
+**Branch**: `feature/issue-172-blocker` | **Design doc**: `design/issue-172-project-card-update.md`
+
+### Key Decisions
+
+- **Cache invalidation as the single solution**: Rather than optimistic cache updates (complex, error-prone) or navigation-based refetch (insufficient), the fix adds `queryKeys.projectsOverview()` to three invalidation pathways: `invoiceMutated`, `paymentRecorded`, and `taskEdited`. This ensures the @tanstack/query cache stays in sync with all mutations that affect project overview data (pending payments, project status, progress).
+- **Minimal code surface**: Only two files modified — `src/hooks/queryKeys.ts` (2 new lines per invalidation function) and `src/pages/tasks/TaskDetailsPage.tsx` (2 lines per handler to wire invalidations). No schema changes, no new use cases, no new domain entities.
+- **TaskDetailsPage handlers made cache-aware**: `handleStatusChange` and `handlePriorityChange` now call `updateTask()` and immediately fire cache invalidations via `queryClient.invalidateQueries()` in the same try/catch block. On failure, task state is reverted and no invalidation is fired — preserving data consistency.
+
+### Completed
+
+- **`src/hooks/queryKeys.ts`** *(edited)*:
+  - `invoiceMutated` invalidation: Added `queryKeys.projectsOverview()` as first entry in the returned array.
+  - `paymentRecorded` invalidation: Added `queryKeys.projectsOverview()` as first entry in the returned array.
+  - Both changes ensure that invoice and payment mutations invalidate the project overview cache.
+
+- **`src/pages/tasks/TaskDetailsPage.tsx`** *(edited)*:
+  - `handleStatusChange()`: After `await updateTask(updated)` succeeds, invalidates `queryKeys.projectsOverview()` via `queryClient.invalidateQueries()`.
+  - `handlePriorityChange()`: Symmetrically wires invalidation after status/priority updates.
+  - Both handlers revert local state on failure; invalidation is only called on success.
+
+- **`__tests__/unit/queryKeys.invalidations.test.ts`** *(new)*:
+  - 5 new unit tests verifying that `invoiceMutated`, `paymentRecorded`, and `taskEdited` all return `queryKeys.projectsOverview()` in their invalidation arrays.
+  - Tests exercise scenarios with and without `projectId` / `taskId` parameters.
+
+- **`__tests__/integration/ProjectCardPendingPaymentUpdate.integration.test.tsx`** *(new)*:
+  - 3 new integration tests validating the full flow: 
+    - Invoice created → project overview invalidated → ProjectOverviewCard re-renders with correct pending payment.
+    - Payment recorded → project overview invalidated → ProjectOverviewCard reflects updated payment status.
+    - Task status changed from TaskDetailsPage → project overview invalidated → ProjectOverviewCard reflects project status change.
+  - Uses in-memory SQLite and mock repositories; @tanstack/query `QueryClient` configured with `gcTime: 0` to prevent stale reads.
+
+- **Full Jest suite**: **820 tests pass, 7 skipped, 0 failures** (up from 804 in Issue #167). All new tests green.
+- **TypeScript strict check**: Passes (`npx tsc --noEmit` clean).
+- **Linting**: No new errors introduced; 32 pre-existing errors (technical debt) remain unchanged per Issue-142 analysis.
+
+### Trade-offs & Technical Debt
+
+- **Pre-existing linting errors**: The app has 32 ESLint errors (49 warnings) unrelated to this ticket — spanning unused variables, hook dependencies, and bitwise operators. These are documented as technical debt and reference the `CriticalPathPreview` and related components; addressing them is deferred to a separate cleanup ticket.
+
+### Acceptance Criteria Met
+
+- ✅ When a new invoice is issued (create/update/delete), the Project Card's pending payment badge updates via `queryKeys.projectsOverview()` invalidation.
+- ✅ When a payment is recorded or marked as paid, the pending payment badge updates.
+- ✅ When task status or priority is changed from `TaskDetailsPage`, the project overview (including `overallStatus` and progress) refreshes.
+- ✅ Unit tests verify `invoiceMutated`, `paymentRecorded`, and `taskEdited` all include `queryKeys.projectsOverview()`.
+- ✅ Integration test validates task edit (status change) + navigation → Project Card shows correct status.
+- ✅ Full Jest suite passes (820 tests); TypeScript strict check clean.
+- ✅ Backwards compatibility maintained; no breaking changes.

@@ -136,9 +136,10 @@ export const invalidations = {
 
   /**
    * Create / update / delete an invoice.
-   * Affects: payment totals/list, invoice list (and task detail if task-linked).
+   * Affects: project overview pending totals, payment totals/list, invoice list (and task detail if task-linked).
    */
   invoiceMutated: (ctx: InvoiceCtx) => [
+    queryKeys.projectsOverview(),
     queryKeys.paymentsAll(),
     queryKeys.invoices(ctx.projectId),
     ...(ctx.taskId ? [queryKeys.taskDetail(ctx.taskId)] : []),
@@ -146,9 +147,10 @@ export const invalidations = {
 
   /**
    * Record a payment or mark a payment as paid.
-   * Affects: payment list/amounts, invoice payment status, project timeline.
+   * Affects: project overview pending totals, payment list/amounts, invoice payment status, project timeline.
    */
   paymentRecorded: (ctx: PaymentCtx) => [
+    queryKeys.projectsOverview(),
     queryKeys.paymentsAll(),
     queryKeys.invoices(ctx.projectId),
     ...(ctx.projectId ? [queryKeys.projectPayments(ctx.projectId)] : []),
