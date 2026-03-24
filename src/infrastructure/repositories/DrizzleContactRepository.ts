@@ -26,6 +26,8 @@ export class DrizzleContactRepository implements ContactRepository {
       address: row.address || undefined,
       rate: row.rate ?? undefined,
       notes: row.notes || undefined,
+      licenseNumber: row.license_number || undefined,
+      usageCount: row.usage_count ?? 0,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
     };
@@ -36,8 +38,8 @@ export class DrizzleContactRepository implements ContactRepository {
     const now = Date.now();
     await db.executeSql(
       `INSERT OR REPLACE INTO contacts
-        (id, name, roles, trade, phone, email, address, rate, notes, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, name, roles, trade, phone, email, address, rate, notes, license_number, usage_count, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         contact.id,
         contact.name,
@@ -48,6 +50,8 @@ export class DrizzleContactRepository implements ContactRepository {
         contact.address ?? null,
         contact.rate ?? null,
         contact.notes ?? null,
+        contact.licenseNumber ?? null,
+        contact.usageCount ?? 0,
         contact.createdAt ? new Date(contact.createdAt).getTime() : now,
         now,
       ],
@@ -112,7 +116,7 @@ export class DrizzleContactRepository implements ContactRepository {
     await db.executeSql(
       `UPDATE contacts SET
         name = ?, roles = ?, trade = ?, phone = ?, email = ?,
-        address = ?, rate = ?, notes = ?, updated_at = ?
+        address = ?, rate = ?, notes = ?, license_number = ?, updated_at = ?
        WHERE id = ?`,
       [
         contact.name,
@@ -123,6 +127,7 @@ export class DrizzleContactRepository implements ContactRepository {
         contact.address ?? null,
         contact.rate ?? null,
         contact.notes ?? null,
+        contact.licenseNumber ?? null,
         Date.now(),
         contact.id,
       ],
@@ -132,5 +137,26 @@ export class DrizzleContactRepository implements ContactRepository {
   async delete(id: string): Promise<void> {
     const db = await this.getDb();
     await db.executeSql('DELETE FROM contacts WHERE id = ?', [id]);
+  }
+
+  async incrementUsageCount(id: string): Promise<void> {
+    const db = await this.getDb();
+    await db.executeSql(
+      'UPDATE contacts SET usage_count = COALESCE(usage_count, 0) + 1, updated_at = ? WHERE id = ?',
+      [Date.now(), id],
+    );
+  }
+
+  async findMostUsed(limit = 20): Promise<Contact[]> {
+    const db = await this.getDb();
+    const [result] = await db.executeSql(
+      'SELECT * FROM contacts ORDER BY COALESCE(usage_count, 0) DESC, name ASC LIMIT ?',
+      [limit],
+    );
+    const contacts: Contact[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      contacts.push(this.mapRowToEntity(result.rows.item(i)));
+    }
+    return contacts;
   }
 }

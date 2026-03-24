@@ -18,6 +18,7 @@ import { DrizzleDelayReasonTypeRepository } from '../repositories/DrizzleDelayRe
 import { DrizzleContactRepository } from '../repositories/DrizzleContactRepository';
 import { DrizzleQuotationRepository } from '../repositories/DrizzleQuotationRepository';
 import { DrizzleAuditLogRepository } from '../repositories/DrizzleAuditLogRepository';
+import { NullLookupProvider } from '../lookup/NullLookupProvider';
 import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
 import { DrizzleStoredLocationRepository } from '../location/DrizzleStoredLocationRepository';
@@ -44,6 +45,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('ContactRepository', DrizzleContactRepository);
 	container.registerSingleton('QuotationRepository', DrizzleQuotationRepository);
 	container.registerSingleton('AuditLogRepository', DrizzleAuditLogRepository);
+	container.registerSingleton('LookupProvider', NullLookupProvider);
 	container.registerSingleton('FileSystemAdapter', MobileFileSystemAdapter);
 	container.registerSingleton('CameraService', MobileCameraAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
