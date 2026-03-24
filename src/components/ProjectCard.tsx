@@ -27,11 +27,20 @@ interface ProjectCardProps {
   style?: ViewStyle;
 }
 
+const STATUS_CONFIG: Record<ProjectStatus, { label: string; bgClass: string; textClass: string }> = {
+  [ProjectStatus.PLANNING]:    { label: 'Planning',  bgClass: 'bg-chart-4/10',     textClass: 'text-chart-4'     },
+  [ProjectStatus.IN_PROGRESS]: { label: 'Active',    bgClass: 'bg-chart-2/10',     textClass: 'text-chart-2'     },
+  [ProjectStatus.ON_HOLD]:     { label: 'On Hold',   bgClass: 'bg-chart-5/10',     textClass: 'text-chart-5'     },
+  [ProjectStatus.COMPLETED]:   { label: 'Done',      bgClass: 'bg-primary/10',     textClass: 'text-primary'     },
+  [ProjectStatus.CANCELLED]:   { label: 'Cancelled', bgClass: 'bg-destructive/10', textClass: 'text-destructive'  },
+};
+
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   onPress,
   style
 }) => {
+  const statusCfg = STATUS_CONFIG[project.status] ?? STATUS_CONFIG[ProjectStatus.PLANNING];
   return (
     <Pressable 
       onPress={() => onPress?.(project)}
@@ -51,21 +60,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             </Text>
           </View>
         </View>
-        <View 
-          className={`px-2.5 py-1 rounded-full ${
-            project.status === ProjectStatus.IN_PROGRESS 
-              ? 'bg-chart-2/10' 
-              : 'bg-chart-4/10'
-          }`}
-        >
-          <Text 
-            className={`text-xs font-semibold ${
-              project.status === ProjectStatus.IN_PROGRESS 
-                ? 'text-chart-2' 
-                : 'text-chart-4'
-            }`}
-          >
-            {project.status === ProjectStatus.IN_PROGRESS ? 'Active' : 'On Hold'}
+        <View className={`px-2.5 py-1 rounded-full ${statusCfg.bgClass}`}>
+          <Text className={`text-xs font-semibold ${statusCfg.textClass}`}>
+            {statusCfg.label}
           </Text>
         </View>
       </View>

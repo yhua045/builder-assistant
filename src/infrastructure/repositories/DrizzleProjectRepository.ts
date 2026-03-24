@@ -107,8 +107,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
         `INSERT INTO projects (
           id, property_id, owner_id, name, description, status,
           start_date, expected_end_date, budget, currency, meta,
-          default_due_date_days, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          default_due_date_days, location, fire_zone, regulatory_flags,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           project.id,
           project.propertyId || null,
@@ -122,6 +123,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
           project.currency || null,
           project.meta ? JSON.stringify(project.meta) : null,
           project.defaultDueDateDays ?? null,
+          project.location || null,
+          project.fireZone || null,
+          project.regulatoryFlags ? JSON.stringify(project.regulatoryFlags) : null,
           project.createdAt ? project.createdAt.getTime() : null,
           project.updatedAt ? project.updatedAt.getTime() : null,
         ]
@@ -319,8 +323,8 @@ export class DrizzleProjectRepository implements ProjectRepository {
       const txRepo = {
         save: async (project: Project) => {
           await tx.executeSql(
-            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, default_due_date_days, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO projects (id, property_id, owner_id, name, description, status, start_date, expected_end_date, budget, currency, meta, default_due_date_days, location, fire_zone, regulatory_flags, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET
              property_id=excluded.property_id,
              owner_id=excluded.owner_id,
@@ -333,6 +337,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
              currency=excluded.currency,
              meta=excluded.meta,
              default_due_date_days=excluded.default_due_date_days,
+             location=excluded.location,
+             fire_zone=excluded.fire_zone,
+             regulatory_flags=excluded.regulatory_flags,
              updated_at=excluded.updated_at`,
             [
               project.id,
@@ -347,6 +354,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
               project.currency,
               project.meta ? JSON.stringify(project.meta) : null,
               project.defaultDueDateDays ?? null,
+              project.location || null,
+              project.fireZone || null,
+              project.regulatoryFlags ? JSON.stringify(project.regulatoryFlags) : null,
               project.createdAt?.getTime() || Date.now(),
               project.updatedAt?.getTime() || Date.now()
             ]
@@ -432,7 +442,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
         `UPDATE projects SET
           property_id = ?, owner_id = ?, name = ?, description = ?, status = ?,
           start_date = ?, expected_end_date = ?, budget = ?, currency = ?,
-          meta = ?, default_due_date_days = ?, updated_at = ?
+          meta = ?, default_due_date_days = ?,
+          location = ?, fire_zone = ?, regulatory_flags = ?,
+          updated_at = ?
          WHERE id = ?`,
         [
           project.propertyId || null,
@@ -446,6 +458,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
           project.currency || null,
           project.meta ? JSON.stringify(project.meta) : null,
           project.defaultDueDateDays ?? null,
+          project.location || null,
+          project.fireZone || null,
+          project.regulatoryFlags ? JSON.stringify(project.regulatoryFlags) : null,
           project.updatedAt ? project.updatedAt.getTime() : Date.now(),
           project.id,
         ]
@@ -567,6 +582,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
       phases,
       meta: row.meta ? JSON.parse(row.meta) : undefined,
       defaultDueDateDays: row.default_due_date_days ?? undefined,
+      location: row.location ?? undefined,
+      fireZone: row.fire_zone ?? undefined,
+      regulatoryFlags: row.regulatory_flags ? JSON.parse(row.regulatory_flags) : undefined,
       createdAt: row.created_at ? new Date(row.created_at) : undefined,
       updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
     };

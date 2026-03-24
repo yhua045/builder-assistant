@@ -106,6 +106,7 @@ export type ContactCtx = Record<string, never>;
 export type QuotationProjectCtx = { projectId: string };
 export type AuditLogCtx = { projectId: string; taskId?: string };
 export type TasksCreatedCtx = { projectId: string };
+export type ProjectEditedCtx = { projectId: string };
 
 // ─── Invalidation map ─────────────────────────────────────────────────────────
 
@@ -233,6 +234,16 @@ export const invalidations = {
   projectCreated: () => [
     queryKeys.projects(),
     queryKeys.projectsOverview(),
+  ],
+
+  /**
+   * A project's editable fields were updated (name, description, location, dates, budget).
+   * Affects: projects list, projects overview, and the specific project detail.
+   */
+  projectEdited: (ctx: ProjectEditedCtx) => [
+    queryKeys.projects(),
+    queryKeys.projectsOverview(),
+    queryKeys.projectDetail(ctx.projectId),
   ],
 
   /**
