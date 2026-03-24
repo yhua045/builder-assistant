@@ -3,6 +3,7 @@ import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../domain/entities/Quotation';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { Plus, X } from 'lucide-react-native';
+import Dropdown from '../inputs/Dropdown';
 
 interface QuotationFormProps {
   initialValues?: Partial<Quotation>;
@@ -16,7 +17,7 @@ const STATUS_OPTIONS = [
   { label: 'Sent', value: 'sent' },
   { label: 'Accepted', value: 'accepted' },
   { label: 'Declined', value: 'declined' },
-] as const;
+];
 
 export const QuotationForm: React.FC<QuotationFormProps> = ({ 
   initialValues, 
@@ -361,24 +362,13 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
 
       {/* Status */}
       <View className="mb-6">
-        <Text className="mb-2 font-medium text-foreground">Status</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {STATUS_OPTIONS.map((option) => (
-            <Pressable
-              key={option.value}
-              className={`px-4 py-2 rounded-full border ${
-                status === option.value 
-                  ? 'bg-primary border-primary' 
-                  : 'bg-card border-input'
-              }`}
-              onPress={() => setStatus(option.value)}
-            >
-              <Text className={`${
-                status === option.value ? 'text-primary-foreground font-medium' : 'text-foreground'
-              }`}>{option.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Dropdown
+          label="Status"
+          value={status}
+          onChange={(v) => setStatus(v as any)}
+          options={STATUS_OPTIONS}
+          testID="quotation-status"
+        />
       </View>
 
       {/* Notes */}

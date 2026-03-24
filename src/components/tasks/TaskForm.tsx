@@ -19,6 +19,7 @@ import { X, Save, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 import { useTaskForm, PendingDocument } from '../../hooks/useTaskForm';
+import Dropdown from '../inputs/Dropdown';
 import { useAcceptQuote } from '../../hooks/useAcceptQuote';
 import { TaskDocumentSection } from './TaskDocumentSection';
 import { TaskSubcontractorSection } from './TaskSubcontractorSection';
@@ -48,6 +49,27 @@ interface Props {
   /** Called when a quote is accepted and an invoice is created. Caller may navigate to invoice. */
   onAcceptSuccess?: (invoiceId: string) => void;
 }
+
+const TASK_TYPE_OPTIONS = [
+  { label: 'Standard', value: 'standard' },
+  { label: 'Variation', value: 'variation' },
+  { label: 'Contract Work', value: 'contract_work' },
+];
+
+const TASK_STATUS_OPTIONS = [
+  { label: 'Pending', value: 'pending' },
+  { label: 'In Progress', value: 'in_progress' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Blocked', value: 'blocked' },
+  { label: 'Cancelled', value: 'cancelled' },
+];
+
+const TASK_PRIORITY_OPTIONS = [
+  { label: 'Low', value: 'low' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'High', value: 'high' },
+  { label: 'Urgent', value: 'urgent' },
+];
 
 export function TaskForm({
   initialValues,
@@ -253,9 +275,6 @@ export function TaskForm({
     }
   };
 
-  const priorities: Task['priority'][] = ['low', 'medium', 'high', 'urgent'];
-  const statuses: Task['status'][] = ['pending', 'in_progress', 'completed', 'blocked', 'cancelled'];
-
   // Combine saved (already persisted) docs with any pre-fetched ones passed via props
   const displayedSavedDocs = initialSavedDocs ?? form.savedDocuments;
 
@@ -318,28 +337,13 @@ export function TaskForm({
 
           {/* Task Type */}
           <View className="gap-2">
-            <Text className="text-sm font-medium text-foreground">Task Type</Text>
-            <View className="flex-row gap-2">
-              {(['standard', 'variation', 'contract_work'] as const).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  onPress={() => form.setTaskType(t)}
-                  className={`flex-1 py-2 rounded-full border ${
-                    form.taskType === t ? 'bg-primary border-primary' : 'bg-card border-border'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs text-center ${
-                      form.taskType === t
-                        ? 'text-primary-foreground font-semibold'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {t === 'contract_work' ? 'Contract Work' : t.charAt(0).toUpperCase() + t.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Dropdown
+              label="Task Type"
+              value={form.taskType}
+              onChange={(v) => form.setTaskType(v as any)}
+              options={TASK_TYPE_OPTIONS}
+              testID="taskform-task-type"
+            />
           </View>
 
           {/* Project */}
@@ -448,58 +452,24 @@ export function TaskForm({
 
           {/* Status */}
           <View className="gap-2">
-            <Text className="text-sm font-medium text-foreground">Status</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {statuses.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  onPress={() => handleStatusChange(s)}
-                  className={`px-3 py-2 rounded-full border ${
-                    form.status === s
-                      ? 'bg-primary border-primary'
-                      : 'bg-card border-border'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs capitalize ${
-                      form.status === s
-                        ? 'text-primary-foreground font-semibold'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {s.replace('_', ' ')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Dropdown
+              label="Status"
+              value={form.status}
+              onChange={(v) => handleStatusChange(v as any)}
+              options={TASK_STATUS_OPTIONS}
+              testID="taskform-status"
+            />
           </View>
 
           {/* Priority */}
           <View className="gap-2">
-            <Text className="text-sm font-medium text-foreground">Priority</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {priorities.map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => form.setPriority(p)}
-                  className={`px-3 py-2 rounded-full border ${
-                    form.priority === p
-                      ? 'bg-primary border-primary'
-                      : 'bg-card border-border'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs capitalize ${
-                      form.priority === p
-                        ? 'text-primary-foreground font-semibold'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Dropdown
+              label="Priority"
+              value={form.priority}
+              onChange={(v) => form.setPriority(v as any)}
+              options={TASK_PRIORITY_OPTIONS}
+              testID="taskform-priority"
+            />
           </View>
 
           {/* Notes */}
