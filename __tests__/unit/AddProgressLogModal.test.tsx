@@ -52,21 +52,19 @@ describe('AddProgressLogModal — create mode', () => {
   });
 
   it('submit button is enabled after logType selected', async () => {
-    const { getByLabelText, getByTestId, getByText } = render(<AddProgressLogModal {...baseProps} />);
-    // Open Dropdown and select — each fireEvent wraps its own act flush
-    fireEvent.press(getByTestId('log-type-dropdown'));
-    fireEvent.press(getByText('Inspection'));
+    const { getByLabelText, getByTestId } = render(<AddProgressLogModal {...baseProps} />);
+    // Chips are always visible — press directly
+    fireEvent.press(getByTestId('option-inspection'));
     fireEvent.press(getByLabelText('Add Log'));
     expect(baseProps.onSubmit).toHaveBeenCalledTimes(1);
   });
 
   it('onSubmit called with correct data including notes and actor', async () => {
-    const { getByLabelText, getByPlaceholderText, getByTestId, getByText } = render(
+    const { getByLabelText, getByPlaceholderText, getByTestId } = render(
       <AddProgressLogModal {...baseProps} />,
     );
-    // Open Dropdown and select
-    fireEvent.press(getByTestId('log-type-dropdown'));
-    fireEvent.press(getByText('Inspection'));
+    // Chips are always visible — press directly
+    fireEvent.press(getByTestId('option-inspection'));
     // Fill text fields
     fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'Foundation checked');
     fireEvent.changeText(getByPlaceholderText('e.g. Mike Johnson'), 'Mike');
@@ -86,12 +84,11 @@ describe('AddProgressLogModal — create mode', () => {
   });
 
   it('form state resets after modal is closed and reopened', async () => {
-    const { getByPlaceholderText, getByTestId, getByText, rerender } = render(
+    const { getByPlaceholderText, getByTestId, rerender } = render(
       <AddProgressLogModal {...baseProps} />,
     );
-    // Open Dropdown and select
-    fireEvent.press(getByTestId('log-type-dropdown'));
-    fireEvent.press(getByText('Delay'));
+    // Chips are always visible — press directly
+    fireEvent.press(getByTestId('option-delay'));
     fireEvent.changeText(getByPlaceholderText('Add any details here…'), 'some notes');
     // Close
     rerender(<AddProgressLogModal {...baseProps} visible={false} />);

@@ -13,7 +13,7 @@ import { X, Camera, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { ProgressLog } from '../../domain/entities/ProgressLog';
-import Dropdown from '../inputs/Dropdown';
+import OptionList from '../inputs/OptionList';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Camera, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -129,12 +129,12 @@ export function AddProgressLogModal({ visible, initialValues, onSubmit, onClose 
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Log Type */}
             <View className="mb-5">
-              <Dropdown<ProgressLog['logType']>
+              <OptionList<ProgressLog['logType']>
                 label="Log Type"
                 value={logType || undefined}
                 onChange={(v) => setLogType(v)}
                 options={LOG_TYPES}
-                testID="log-type-dropdown"
+                testID="option-list-log-type"
               />
             </View>
 
