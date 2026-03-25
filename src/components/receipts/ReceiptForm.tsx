@@ -4,7 +4,7 @@ import { SnapReceiptDTO } from '../../application/usecases/receipt/SnapReceiptUs
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react-native';
-import Dropdown from '../inputs/Dropdown';
+import OptionList from '../inputs/OptionList';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
@@ -194,12 +194,12 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       </View>
 
       <View className="mb-6">
-        <Dropdown
+        <OptionList
           label="Payment Method"
           value={paymentMethod}
           onChange={setPaymentMethod}
           options={PAYMENT_METHODS}
-          testID="receipt-payment-method"
+          testID="option-list-payment-method"
         />
       </View>
 

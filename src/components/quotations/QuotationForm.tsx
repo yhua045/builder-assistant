@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../domain/entities/Quotation';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { Plus, X } from 'lucide-react-native';
-import Dropdown from '../inputs/Dropdown';
+import OptionList from '../inputs/OptionList';
 
 interface QuotationFormProps {
   initialValues?: Partial<Quotation>;
@@ -362,12 +362,12 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
 
       {/* Status */}
       <View className="mb-6">
-        <Dropdown
+        <OptionList
           label="Status"
           value={status}
           onChange={(v) => setStatus(v as any)}
           options={STATUS_OPTIONS}
-          testID="quotation-status"
+          testID="option-list-quotation-status"
         />
       </View>
 

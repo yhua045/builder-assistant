@@ -20,6 +20,7 @@ import { cssInterop } from 'nativewind';
 
 import { useTaskForm, PendingDocument } from '../../hooks/useTaskForm';
 import Dropdown from '../inputs/Dropdown';
+import OptionList from '../inputs/OptionList';
 import { useAcceptQuote } from '../../hooks/useAcceptQuote';
 import { TaskDocumentSection } from './TaskDocumentSection';
 import { TaskSubcontractorSection } from './TaskSubcontractorSection';
@@ -337,12 +338,12 @@ export function TaskForm({
 
           {/* Task Type */}
           <View className="gap-2">
-            <Dropdown
+            <OptionList
               label="Task Type"
               value={form.taskType}
               onChange={(v) => form.setTaskType(v as any)}
               options={TASK_TYPE_OPTIONS}
-              testID="taskform-task-type"
+              testID="option-list-task-type"
             />
           </View>
 
@@ -452,23 +453,23 @@ export function TaskForm({
 
           {/* Status */}
           <View className="gap-2">
-            <Dropdown
+            <OptionList
               label="Status"
               value={form.status}
               onChange={(v) => handleStatusChange(v as any)}
               options={TASK_STATUS_OPTIONS}
-              testID="taskform-status"
+              testID="option-list-task-status"
             />
           </View>
 
           {/* Priority */}
           <View className="gap-2">
-            <Dropdown
+            <OptionList
               label="Priority"
               value={form.priority}
               onChange={(v) => form.setPriority(v as any)}
               options={TASK_PRIORITY_OPTIONS}
-              testID="taskform-priority"
+              testID="option-list-task-priority"
             />
           </View>
 

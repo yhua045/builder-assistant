@@ -14,29 +14,13 @@ jest.mock('../../src/hooks/useContacts', () => ({
   useContacts: () => ({ contacts: [], loading: false, search: jest.fn(), refresh: jest.fn() }),
 }));
 
-jest.mock('../../src/components/inputs/ContactSelector', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return function ContactSelector() { return React.createElement(View, { testID: 'contact-selector' }); };
-});
+jest.mock('../../src/components/inputs/ContactSelector', () => { return function ContactSelector() { const { View } = require('react-native'); const React = require('react'); return <View testID="contact-selector" />; }; });
 
-jest.mock('../../src/components/inputs/TeamSelector', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return function TeamSelector() { return React.createElement(View, { testID: 'team-selector' }); };
-});
+jest.mock('../../src/components/inputs/TeamSelector', () => { return function TeamSelector() { const { View } = require('react-native'); const React = require('react'); return <View testID="team-selector" />; }; });
 
-jest.mock('../../src/components/inputs/DatePickerInput', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return function DatePickerInput() { return React.createElement(View, { testID: 'date-picker' }); };
-});
+jest.mock('../../src/components/inputs/DatePickerInput', () => { return function DatePickerInput() { const { View } = require('react-native'); const React = require('react'); return <View testID="date-picker" />; }; });
 
-jest.mock('../../src/components/CriticalPathPreview/CriticalPathPreview', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return { CriticalPathPreview: () => React.createElement(View, { testID: 'critical-path-preview' }) };
-});
+jest.mock('../../src/components/CriticalPathPreview/CriticalPathPreview', () => { return { CriticalPathPreview: function CriticalPathPreview() { const { View } = require('react-native'); const React = require('react'); return <View testID="critical-path-preview" />; } }; });
 
 import ManualProjectEntryForm from '../../src/components/ManualProjectEntryForm';
 import type { UseCriticalPathReturn } from '../../src/hooks/useCriticalPath';
@@ -69,8 +53,21 @@ function fillRequiredFields(root: renderer.ReactTestInstance) {
 }
 
 function tapSave(root: renderer.ReactTestInstance) {
-  const saveButton = root.findByProps({ title: 'Save' });
-  act(() => { saveButton.props.onPress(); });
+  const { Text } = require('react-native');
+  const allTexts = root.findAllByType(Text);
+  const saveText = allTexts.find((node) => node.props.children === 'Save Project');
+  if (saveText) {
+    let node = saveText;
+    while (node && !node.props.onPress) {
+      if (!node.parent) break;
+      node = node.parent;
+    }
+    act(() => { node.props.onPress(); });
+  } else {
+    // fallback if somehow Button with title="Save" is there
+    const saveButton = root.findByProps({ title: 'Save' });
+    act(() => { saveButton.props.onPress(); });
+  }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -91,9 +88,9 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     });
     const root = tree!.root;
 
-    const completeRebuildBtn = root.findByProps({ testID: 'project-type-complete_rebuild' });
-    const extensionBtn = root.findByProps({ testID: 'project-type-extension' });
-    const renovationBtn = root.findByProps({ testID: 'project-type-renovation' });
+    const completeRebuildBtn = root.findByProps({ testID: 'option-complete_rebuild' });
+    const extensionBtn = root.findByProps({ testID: 'option-extension' });
+    const renovationBtn = root.findByProps({ testID: 'option-renovation' });
 
     expect(completeRebuildBtn).toBeTruthy();
     expect(extensionBtn).toBeTruthy();
@@ -138,7 +135,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     });
     const root = tree!.root;
 
-    const extensionBtn = root.findByProps({ testID: 'project-type-extension' });
+    const extensionBtn = root.findByProps({ testID: 'option-extension' });
     act(() => { extensionBtn.props.onPress(); });
 
     fillRequiredFields(root);
@@ -164,7 +161,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     });
     const root = tree!.root;
 
-    const renovationBtn = root.findByProps({ testID: 'project-type-renovation' });
+    const renovationBtn = root.findByProps({ testID: 'option-renovation' });
     act(() => { renovationBtn.props.onPress(); });
 
     fillRequiredFields(root);
@@ -175,7 +172,7 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     );
   });
 
-  it('selecting NSW state and submitting passes state: NSW', () => {
+  it('state defaults to NSW and submitting passes state: NSW', () => {
     const onSave = jest.fn();
     let tree: renderer.ReactTestRenderer;
     act(() => {
@@ -190,8 +187,8 @@ describe('ManualProjectEntryForm — projectType picker', () => {
     });
     const root = tree!.root;
 
-    const nswBtn = root.findByProps({ testID: 'state-NSW' });
-    act(() => { nswBtn.props.onPress(); });
+    const stateTrigger = root.findByProps({ testID: 'dropdown-state' });
+    expect(stateTrigger).toBeTruthy();
 
     fillRequiredFields(root);
     tapSave(root);

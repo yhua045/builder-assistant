@@ -8,6 +8,7 @@ import TeamSelector from './inputs/TeamSelector';
 import { CriticalPathPreview } from './CriticalPathPreview/CriticalPathPreview';
 import Dropdown from './inputs/Dropdown';
 import type { DropdownOption } from './inputs/Dropdown';
+import OptionList from './inputs/OptionList';
 
 const PROJECT_TYPE_OPTIONS: DropdownOption[] = [
   { label: 'Complete Rebuild',  value: 'complete_rebuild'  },
@@ -184,12 +185,12 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
 
       {/* Project Type */}
       <View className="mb-4">
-        <Dropdown
+        <OptionList
           label="Project Type"
           value={projectType}
           onChange={setProjectType}
           options={PROJECT_TYPE_OPTIONS}
-          testID="dropdown-project-type"
+          testID="option-list-project-type"
         />
       </View>
 

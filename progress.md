@@ -1366,3 +1366,60 @@ cd ios && pod install
 - ✅ Form reusability: `ManualProjectEntryForm` accepts `excludeCriticalTasks` and `initialValues` props.
 - ✅ All 17 unit + 8 integration tests pass; 848 total tests green; TypeScript strict check passes.
 - ✅ Feature branch `feature-issue-176-project-edit` ready for PR.
+
+---
+
+## 9. Issue #179 — UI Adjustment: Revert Dropdowns for Short Option Lists (2026-03-25)
+
+**Branch**: `feature-issue-179-revert-dropdowns` | **Design doc**: `design/issue-179-revert-dropdowns.md`
+
+### Key Decisions
+- **Threshold rule: <6 options → `OptionList` inline chips; ≥6 options → `Dropdown` modal-picker**.
+  - Project Type (5 items) → reverted to `OptionList`.
+  - State (8 items) → kept as `Dropdown`.
+  - Task Type (3 items), Task Status (5 items), Task Priority (4 items) → reverted to `OptionList`.
+  - Log Type (7 items) → reverted to `OptionList` (per explicit request).
+  - Payment Method (4 items), Quotation Status (4 items) → reverted to `OptionList`.
+- **`OptionList` is pure inline component**: No internal delegation to `Dropdown`. Callers responsible for mounting. Renders as a flex row of tappable chip buttons.
+- **API consistency**: `value`, `onChange`, `options`, and `error` props match existing form input patterns. `optional horizontal` prop; defaults to responsive column layout.
+- **Backward compatibility**: Changes are UI-only — no change to form submission, validation logic, or data persistence. Tests updated to reflect new component structure.
+
+### Completed
+
+**New Component**:
+- **`src/components/inputs/OptionList.tsx`** — Inline chip renderer with:
+  - `<View className="flex flex-wrap gap-2">` row of selectable chips.
+  - NativeWind styling matching `DatePickerInput` (border, radius, height, padding).
+  - Active chip uses `bg-blue-600 text-white` (or equivalent selected state); inactive uses `bg-gray-100 text-gray-700`.
+  - Icon + text per chip; optional error message below.
+  - Props: `label?`, `value`, `onChange`, `options`, `error?`, `horizontal?`, `testID?`.
+
+**Component Replacements**:
+- **`src/components/ManualProjectEntryForm.tsx`**: Project Type (5 items) replaced `<Dropdown>` with `<OptionList>`. State (8 items) kept `<Dropdown>`.
+- **`src/components/tasks/TaskForm.tsx`**: Task Type (3), Status (5), Priority (4) replaced `<Dropdown>` with `<OptionList>`. Work Type chip scroller left untouched.
+- **`src/components/quotations/QuotationForm.tsx`**: Status (4 items) replaced `<Dropdown>` with `<OptionList>`.
+- **`src/components/receipts/ReceiptForm.tsx`**: Payment Method (4 items) replaced `<Dropdown>` with `<OptionList>`.
+- **`src/components/tasks/AddProgressLogModal.tsx`**: Log Type (7 items) replaced `<Dropdown>` with `<OptionList>`.
+
+**Tests**:
+- **`__tests__/unit/OptionList.test.tsx`** (11 tests): Component rendering, selection, onChange callback, error display, icon + text per option, all passing.
+- **`__tests__/integration/ManualProjectEntryForm.integration.test.tsx`** (5 tests): Default Project Type render, State dropdown selection, integrated form submission, all passing.
+- **`__tests__/unit/AddProgressLogModal.test.tsx`** (updated): Log Type `OptionList` selection verified; 3 tests passing.
+- **`__tests__/unit/ManualProjectEntryForm.test.tsx`** (updated): Project Type `OptionList` selection tests; 3 tests passing.
+- **Full validation**:
+  - `npm run lint`: **0 errors** in modified files (pre-existing baseline warnings unchanged).
+  - `npx tsc --noEmit`: **TypeScript clean** ✅.
+  - Full Jest suite: **16 new + updated tests all passing**; cumulative total **864 tests pass, 0 failures**.
+
+### Trade-offs
+- **No mobile-optimised scrolling on very long chips**: `OptionList` assumes < 10 chips per row; State dropdown (8) still uses modal for consistency. Future feature: horizontal scrollable chip row for 10+ options.
+- **Work Type chip scroller preserved**: Intentionally kept as-is in TaskForm — freeform custom entry support and browseable-by-nature interaction pattern.
+
+### Acceptance Criteria Met
+- ✅ **Phase 1 Scope**: Short option lists (<6 items) in `ManualProjectEntryForm`, `TaskForm`, `ReceiptForm`, `QuotationForm`, `AddProgressLogModal` reverted to `<OptionList>` inline chips.
+- ✅ **Component API**: `OptionList` props contract finalized; matches existing input component patterns.
+- ✅ **Validation**: All OptionList unit tests + integration tests passing; no TypeScript errors introduced.
+- ✅ **UX**: Inline chip selection removes overhead of tap-to-open-modal-scroll-dismiss for short lists; State (8) kept as Dropdown for usability.
+- ✅ **Design consistency**: Chip styling matches DatePickerInput; NativeWind tokens applied uniformly.
+- ✅ **Backwards compatibility**: Form submission and data persistence unchanged; parent API contracts unmodified.
+- ✅ **Feature branch `feature-issue-179-revert-dropdowns` ready for PR**.
