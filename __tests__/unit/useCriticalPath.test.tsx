@@ -3,6 +3,8 @@
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { wrapWithQuery, createTestQueryClient } from '../utils/queryClientWrapper';
 
 // Mock DI registration to avoid native module resolution during unit tests
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
@@ -77,9 +79,30 @@ function HookWrapper({ options, onResult }: WrapperProps) {
   return null;
 }
 
+// Wrap HookWrapper with QueryClientProvider to avoid "No QueryClient set" errors
+// Uses a shared client to avoid memory leaks from creating new clients per test
+let sharedQueryClient: QueryClient;
+
+function HookWrapperWithQuery(props: WrapperProps) {
+  if (!sharedQueryClient) {
+    sharedQueryClient = createTestQueryClient();
+  }
+  return (
+    <QueryClientProvider client={sharedQueryClient}>
+      <HookWrapper {...props} />
+    </QueryClientProvider>
+  );
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('useCriticalPath', () => {
+  afterEach(() => {
+    if (sharedQueryClient) {
+      sharedQueryClient.clear();
+    }
+  });
+
   it('initial state: no suggestions, not loading, no error', async () => {
     const suggestions = makeSuggestions(3);
     const mockUseCase = {
@@ -91,7 +114,7 @@ describe('useCriticalPath', () => {
     let result!: HookResult;
     await act(async () => {
       renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -116,7 +139,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -148,7 +171,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -188,7 +211,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -226,7 +249,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -258,7 +281,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -296,7 +319,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -334,7 +357,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -366,7 +389,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -399,7 +422,7 @@ describe('useCriticalPath', () => {
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <HookWrapper
+        <HookWrapperWithQuery
           options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
           onResult={r => { result = r; }}
         />
@@ -433,7 +456,7 @@ describe('useCriticalPath', () => {
       let tree!: renderer.ReactTestRenderer;
       await act(async () => {
         tree = renderer.create(
-          <HookWrapper
+          <HookWrapperWithQuery
             options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
             onResult={r => { result = r; }}
           />
@@ -468,7 +491,7 @@ describe('useCriticalPath', () => {
       let tree!: renderer.ReactTestRenderer;
       await act(async () => {
         tree = renderer.create(
-          <HookWrapper
+          <HookWrapperWithQuery
             options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
             onResult={r => { result = r; }}
           />
@@ -517,7 +540,7 @@ describe('useCriticalPath', () => {
       let tree!: renderer.ReactTestRenderer;
       await act(async () => {
         tree = renderer.create(
-          <HookWrapper
+          <HookWrapperWithQuery
             options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
             onResult={r => { result = r; }}
           />
@@ -576,7 +599,7 @@ describe('useCriticalPath', () => {
       let tree!: renderer.ReactTestRenderer;
       await act(async () => {
         tree = renderer.create(
-          <HookWrapper
+          <HookWrapperWithQuery
             options={{ suggestUseCase: mockUseCase, createTaskUseCase }}
             onResult={r => { result = r; }}
           />

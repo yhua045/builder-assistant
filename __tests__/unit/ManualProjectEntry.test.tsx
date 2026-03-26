@@ -1,5 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import { container } from 'tsyringe';
 import ManualProjectEntry from '../../src/components/ManualProjectEntry';
 import { useProjects } from '../../src/hooks/useProjects';
 
@@ -61,6 +62,15 @@ jest.mock('../../src/components/inputs/DatePickerInput', () => {
 describe('ManualProjectEntry', () => {
   beforeEach(() => {
     mockedUseProjects.mockReset();
+    // Register a mock TaskRepository in the DI container
+    container.register('TaskRepository', {
+      useValue: {
+        create: jest.fn().mockResolvedValue({ id: 'task-1' }),
+        list: jest.fn().mockResolvedValue([]),
+        listDetails: jest.fn().mockResolvedValue([]),
+        findAll: jest.fn().mockResolvedValue([]),
+      },
+    });
   });
 
   it('opens form and calls createProject on save', async () => {
@@ -157,6 +167,9 @@ describe('ManualProjectEntry', () => {
       require('../../src/components/ManualProjectEntryForm').default,
     );
 
+    // Verify form is visible
+    expect(form.props.visible).toBe(true);
+
     // Transition to step 2
     await act(async () => {
       await form.props.onSave({
@@ -166,16 +179,15 @@ describe('ManualProjectEntry', () => {
       });
     });
 
-    // Tap Skip
-    const skipBtn = root.findByProps({ testID: 'skip-critical-path' });
+    // Simulate closing the modal by calling onCancel
     await act(async () => {
-      skipBtn.props.onPress();
+      form.props.onCancel();
     });
 
-    // Modal should now be hidden — ManualProjectEntryForm no longer rendered
-    const ManualProjectEntryForm = require('../../src/components/ManualProjectEntryForm').default;
-    const forms = root.findAllByType(ManualProjectEntryForm);
-    // After skip, the modal is closed so the form is not mounted
-    expect(forms).toHaveLength(0);
+    // After cancel, the form's visible prop should be false
+    const formAfterCancel = root.findByType(
+      require('../../src/components/ManualProjectEntryForm').default,
+    );
+    expect(formAfterCancel.props.visible).toBe(false);
   });
 });

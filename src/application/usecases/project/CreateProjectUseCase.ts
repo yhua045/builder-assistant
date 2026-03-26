@@ -56,7 +56,7 @@ export class CreateProjectUseCase {
       if (request.address && request.projectOwner) {
         const existingProjects = (await this.projectRepository.list()).items;
         const duplicateExists = existingProjects.some((p: Project) => 
-          p.propertyId === request.address && p.ownerId === request.projectOwner
+          p.location === request.address && p.ownerId === request.projectOwner
         );
 
         if (duplicateExists) {
@@ -71,7 +71,7 @@ export class CreateProjectUseCase {
       const projectEntity = ProjectEntity.create({
         name: request.name,
         description: request.description || request.notes || '',
-        propertyId: request.address,
+        location: request.address,
         ownerId: request.projectOwner,
         status: ProjectStatus.PLANNING,
         startDate: request.startDate,

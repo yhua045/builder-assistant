@@ -94,7 +94,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         <View className="flex-row items-center mb-2">
           <Clock className="text-primary mr-2" size={16} />
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Upcoming Tasks ({project.upcomingTasks.length})
+            Upcoming Tasks ({project.upcomingTasks?.length ?? 0})
           </Text>
         </View>
         <View className="gap-2">

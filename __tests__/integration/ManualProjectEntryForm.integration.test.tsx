@@ -104,12 +104,13 @@ describe('ManualProjectEntryForm — Dropdown integration', () => {
   it('I2: selecting Renovation via Project Type dropdown updates the trigger label', () => {
     const { getByTestId, getByText, queryByText } = renderForm();
 
-    fireEvent.press(getByTestId('dropdown-project-type'));
-    fireEvent.press(getByText('Renovation'));
+    // Project Type now uses an OptionList (chip buttons) — press the Renovation option directly
+    fireEvent.press(getByTestId('option-renovation'));
 
-    // Trigger now shows "Renovation"; modal options are gone
+    // Trigger now shows "Renovation"; OptionList remains visible (chip UI).
     expect(getByText('Renovation')).toBeTruthy();
-    expect(queryByText('Extension')).toBeNull(); // modal is closed
+    // Ensure Extension option exists but is not selected
+    expect(getByTestId('option-extension').props.accessibilityState.selected).toBe(false);
   });
 
   // I3 — selecting VIC updates the State trigger
@@ -133,8 +134,8 @@ describe('ManualProjectEntryForm — Dropdown integration', () => {
     fireEvent.changeText(getByPlaceholderText('Property address'), '123 Test St');
 
     // Select Renovation
-    fireEvent.press(getByTestId('dropdown-project-type'));
-    fireEvent.press(getByText('Renovation'));
+    // Project Type now uses an OptionList (chip buttons) — press the Renovation option directly
+    fireEvent.press(getByTestId('option-renovation'));
 
     // Select VIC
     fireEvent.press(getByTestId('dropdown-state'));
@@ -156,7 +157,7 @@ describe('ManualProjectEntryForm — Dropdown integration', () => {
   // I5 — Dropdown components are rendered (hex Button chips are gone)
   it('I5: renders Dropdown triggers for Project Type and State (no chip buttons)', () => {
     const { getByTestId } = renderForm();
-    expect(getByTestId('dropdown-project-type')).toBeTruthy();
+    expect(getByTestId('option-list-project-type')).toBeTruthy();
     expect(getByTestId('dropdown-state')).toBeTruthy();
   });
 });

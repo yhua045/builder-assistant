@@ -448,6 +448,8 @@ export default function TaskDetailsPage() {
     );
   }
 
+  const isCompleted = task.status === 'completed';
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
       {/* Header */}
@@ -460,13 +462,15 @@ export default function TaskDetailsPage() {
             <Pressable onPress={handleDelete} className="p-2">
               <Trash2 className="text-destructive" size={22} />
             </Pressable>
-            <Pressable onPress={() => navigation.navigate('EditTask', { taskId })} className="p-2">
-              <Edit className="text-primary" size={22} />
-            </Pressable>
+            {!isCompleted && (
+              <Pressable onPress={() => navigation.navigate('EditTask', { taskId })} className="p-2">
+                <Edit className="text-primary" size={22} />
+              </Pressable>
+            )}
         </View>
       </View>
       
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} className="flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: isCompleted ? 24 : 120 }} className="flex-1">
         {/* Task Header */}
         <View className="px-6 pt-6 pb-4">
           <View className="flex-row items-start gap-4 mb-4">
@@ -552,26 +556,26 @@ export default function TaskDetailsPage() {
         {/* Progress Logs — directly under Notes per #136 */}
         <TaskProgressSection
           progressLogs={taskDetail?.progressLogs ?? []}
-          onAddLog={() => setShowAddLogModal(true)}
-          onEditLog={(log) => setEditingLog(log)}
-          onDeleteLog={handleDeleteProgressLog}
+          onAddLog={isCompleted ? undefined : () => setShowAddLogModal(true)}
+          onEditLog={isCompleted ? undefined : (log) => setEditingLog(log)}
+          onDeleteLog={isCompleted ? undefined : handleDeleteProgressLog}
         />
 
         {/* === Task Detail Extension Sections === */}
         <TaskSubcontractorSection
           subcontractor={subcontractorInfo}
-          onEditSubcontractor={() => setShowSubcontractorPicker(true)}
+          onEditSubcontractor={isCompleted ? undefined : () => setShowSubcontractorPicker(true)}
         />
 
         <TaskDependencySection
           dependencyTasks={taskDetail?.dependencyTasks ?? []}
-          onAddDependency={() => setShowTaskPicker(true)}
-          onRemoveDependency={handleRemoveDependency}
+          onAddDependency={isCompleted ? undefined : () => setShowTaskPicker(true)}
+          onRemoveDependency={isCompleted ? undefined : handleRemoveDependency}
         />
 
         <TaskDocumentSection
           documents={documents}
-          onAddDocument={handleAddDocument}
+          onAddDocument={isCompleted ? undefined : handleAddDocument}
           uploading={uploadingDocument}
         />
 
@@ -581,6 +585,7 @@ export default function TaskDetailsPage() {
           priority={task.priority ?? 'medium'}
           onStatusChange={handleStatusChange}
           onPriorityChange={handlePriorityChange}
+          disablePriority={isCompleted}
         />
 
         {/* Next-In-Line (moved below Images & Documents per #136) */}
@@ -612,26 +617,28 @@ export default function TaskDetailsPage() {
 
       </ScrollView>
 
-      {/* Bottom Action Button */}
-      <View className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border">
-        <Pressable
-          testID="mark-as-complete-button"
-          onPress={handleComplete}
-          disabled={completing}
-          className={`bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2${
-            completing ? ' opacity-50' : ''
-          }`}
-        >
-          {completing ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <CheckCircle className="text-primary-foreground" size={20} />
-          )}
-          <Text className="text-primary-foreground font-bold text-base">
-            Mark as Completed
-          </Text>
-        </Pressable>
-      </View>
+      {/* Bottom Action Button — hidden when task is already completed */}
+      {!isCompleted && (
+        <View className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border">
+          <Pressable
+            testID="mark-as-complete-button"
+            onPress={handleComplete}
+            disabled={completing}
+            className={`bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2${
+              completing ? ' opacity-50' : ''
+            }`}
+          >
+            {completing ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <CheckCircle className="text-primary-foreground" size={20} />
+            )}
+            <Text className="text-primary-foreground font-bold text-base">
+              Mark as Completed
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       <AddDelayReasonModal
         visible={showDelayModal}

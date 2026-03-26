@@ -24,6 +24,8 @@ jest.mock('react-native', () => {
 
 // Use manual mocks to avoid NativeWind and SafeAreaContext async effects in Jest
 jest.mock('nativewind');
+// Mock css interop to avoid runtime JSX hijacking in tests
+jest.mock('react-native-css-interop');
 
 jest.mock('./src/hooks/useQuickLookup', () => ({
   useQuickLookup: () => ({
@@ -37,3 +39,6 @@ jest.mock('./src/hooks/useQuickLookup', () => ({
 }));
 jest.mock('react-native-safe-area-context');
 jest.mock('@react-native-community/datetimepicker');
+
+// No global mock for @tanstack/react-query - tests that use hooks must wrap with QueryClientProvider
+// via renderHookWithQuery() or wrapWithQuery()
