@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Layers, Plus } from 'lucide-react-native';
 import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
-import { Project } from '../../domain/entities/Project';
+import { ProjectDetails } from '../../domain/entities/ProjectDetails';
 import { ProjectsStackParamList } from './ProjectsNavigator';
 
 const ProjectsPage: React.FC = () => {
@@ -26,17 +26,17 @@ const ProjectsPage: React.FC = () => {
   const projectDtos = useMemo((): ProjectCardDto[] => {
     if (!projects) return [];
     
-    return projects.map((project: Project): ProjectCardDto => ({
+    return projects.map((project: ProjectDetails): ProjectCardDto => ({
       id: project.id,
-      owner: project.name, // Using Name as owner placeholder
-      address: project.description || 'No Address',
+      owner: project.owner?.name || project.name,
+      address: project.property?.address || project.location || 'No Address',
       status: project.status,
-      contact: 'Unknown',
+      contact: project.owner?.phone || project.owner?.email || 'No contact',
       lastCompletedTask: {
         title: 'Initial Setup',
         completedDate: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-' 
       },
-      upcomingTasks: [],
+      upcomingTasks: project.upcomingTasks,
       // Ensure all fields from DTO are covered.
     }));
   }, [projects]);

@@ -56,6 +56,21 @@ jest.mock('../../src/components/inputs/DatePickerInput', () => {
   return ({ label }: any) => <Text>{label}</Text>;
 });
 
+// ── useDelayReasonTypes stub to avoid DB/native calls in tests
+jest.mock('../../src/hooks/useDelayReasonTypes', () => ({
+  useDelayReasonTypes: () => ({ delayReasonTypes: [], loading: false }),
+}));
+
+// ── SubcontractorPickerModal stub to avoid SafeArea/css-interop issues in tests
+jest.mock('../../src/components/tasks/SubcontractorPickerModal', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    SubcontractorPickerModal: (props: any) => React.createElement(View, props, null),
+  };
+});
+
 // ── useTasks stub ─────────────────────────────────────────────────────────────
 const mockCreateTask = jest.fn().mockResolvedValue(undefined);
 const mockUpdateTask = jest.fn().mockResolvedValue(undefined);

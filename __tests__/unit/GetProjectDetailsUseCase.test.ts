@@ -13,6 +13,7 @@ describe('GetProjectDetailsUseCase', () => {
       materials: [],
       phases: [],
       owner: { id: 'owner-1', name: 'Owner Name' },
+      upcomingTasks: [],
     };
 
     const repo = { findDetailsById: jest.fn().mockResolvedValue(fakeDetails) };

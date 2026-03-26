@@ -13,6 +13,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
         name: 'Unknown',
       },
       property: undefined,
+      upcomingTasks: [],
     };
   }
 

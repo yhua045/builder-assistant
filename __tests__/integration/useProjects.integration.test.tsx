@@ -54,8 +54,7 @@ import renderer, { act } from 'react-test-renderer';
 import React, { useEffect } from 'react';
 import { useProjects } from '../../src/hooks/useProjects';
 import { DrizzleProjectRepository } from '../../src/infrastructure/repositories/DrizzleProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';
-import { closeDatabase } from '../../src/infrastructure/database/connection';
+import { ProjectEntity, ProjectStatus } from '../../src/domain/entities/Project';import { wrapWithQuery } from '../utils/queryClientWrapper';import { closeDatabase } from '../../src/infrastructure/database/connection';
 
 describe('useProjects integration', () => {
   it('loads projects from Drizzle-backed repository', async () => {
@@ -83,7 +82,7 @@ describe('useProjects integration', () => {
     }
 
     await act(async () => {
-      renderer.create(<TestHarness />);
+      renderer.create(wrapWithQuery(<TestHarness />));
       // wait for hook to perform initial load
       for (let i = 0; i < 20; i++) {
         if (latest && latest.loading === false) break;

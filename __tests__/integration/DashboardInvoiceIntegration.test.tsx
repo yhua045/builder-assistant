@@ -9,6 +9,7 @@ import DashboardScreen from '../../src/pages/dashboard';
 import { useInvoices } from '../../src/hooks/useInvoices';
 import { useProjects } from '../../src/hooks/useProjects';
 import { usePayments } from '../../src/hooks/usePayments';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // Mock dependencies
 jest.mock('../../src/hooks/useInvoices');
@@ -28,6 +29,14 @@ jest.mock('lucide-react-native', () => ({
   Calendar: 'Calendar',
   Clock: 'Clock',
   Home: 'Home',
+}));
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    push: jest.fn(),
+  }),
 }));
 
 jest.mock('nativewind', () => ({
@@ -149,7 +158,7 @@ describe('Dashboard Invoice Integration', () => {
     
     // 1. Render dashboard
     act(() => {
-      tree = renderer.create(<DashboardScreen />);
+      tree = renderer.create(wrapWithQuery(<DashboardScreen />));
     });
     const root = tree.root;
 
@@ -211,7 +220,7 @@ describe('Dashboard Invoice Integration', () => {
     let tree: any;
     
     act(() => {
-      tree = renderer.create(<DashboardScreen />);
+      tree = renderer.create(wrapWithQuery(<DashboardScreen />));
     });
     const root = tree.root;
 
@@ -239,7 +248,7 @@ describe('Dashboard Invoice Integration', () => {
     let tree: any;
     
     act(() => {
-      tree = renderer.create(<DashboardScreen />);
+      tree = renderer.create(wrapWithQuery(<DashboardScreen />));
     });
     const root = tree.root;
 
@@ -298,7 +307,7 @@ describe('Dashboard Invoice Integration', () => {
     let tree: any;
     
     act(() => {
-      tree = renderer.create(<DashboardScreen />);
+      tree = renderer.create(wrapWithQuery(<DashboardScreen />));
     });
     const root = tree.root;
 

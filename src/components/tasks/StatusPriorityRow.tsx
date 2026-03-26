@@ -15,6 +15,8 @@ export interface StatusPriorityRowProps {
   priority: NonNullable<Task['priority']>;
   onStatusChange: (status: Task['status']) => void;
   onPriorityChange: (priority: NonNullable<Task['priority']>) => void;
+  /** When true the priority pills are rendered read-only (disabled + dimmed). */
+  disablePriority?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -40,6 +42,7 @@ export function StatusPriorityRow({
   priority,
   onStatusChange,
   onPriorityChange,
+  disablePriority = false,
 }: StatusPriorityRowProps) {
   return (
     <View style={styles.container}>
@@ -79,10 +82,15 @@ export function StatusPriorityRow({
             <TouchableOpacity
               key={value}
               testID={`priority-pill-${value}`}
-              onPress={() => onPriorityChange(value)}
-              style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
+              onPress={disablePriority ? undefined : () => onPriorityChange(value)}
+              disabled={disablePriority}
+              style={[
+                styles.pill,
+                isActive ? styles.pillActive : styles.pillInactive,
+                disablePriority && styles.pillDisabled,
+              ]}
               accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
+              accessibilityState={{ selected: isActive, disabled: disablePriority }}
             >
               <Text
                 style={[
@@ -149,5 +157,8 @@ const styles = StyleSheet.create({
   },
   pillTextInactive: {
     color: '#475569',
+  },
+  pillDisabled: {
+    opacity: 0.4,
   },
 });

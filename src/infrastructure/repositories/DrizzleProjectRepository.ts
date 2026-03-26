@@ -288,6 +288,33 @@ export class DrizzleProjectRepository implements ProjectRepository {
       items.push(this.buildProjectDetails(project, row));
     }
 
+    // Batch-fetch upcoming tasks for all projects in a single query (not N+1)
+    if (items.length > 0) {
+      const projectIds = items.map(p => p.id);
+      const placeholders = projectIds.map(() => '?').join(',');
+      const [taskRows] = await db.executeSql(
+        `SELECT id, title, due_date, project_id FROM tasks
+         WHERE project_id IN (${placeholders})
+           AND status IN ('pending', 'in_progress')
+         ORDER BY project_id, due_date ASC`,
+        projectIds
+      );
+      const tasksByProject = new Map<string, Array<{ title: string; dueDate: string }>>();
+      for (let i = 0; i < taskRows.rows.length; i++) {
+        const t = taskRows.rows.item(i);
+        if (!tasksByProject.has(t.project_id)) {
+          tasksByProject.set(t.project_id, []);
+        }
+        tasksByProject.get(t.project_id)!.push({
+          title: t.title,
+          dueDate: t.due_date ? new Date(t.due_date * 1000).toLocaleDateString() : '',
+        });
+      }
+      for (const item of items) {
+        item.upcomingTasks = tasksByProject.get(item.id) ?? [];
+      }
+    }
+
     const [countRows] = await db.executeSql(`SELECT COUNT(*) as cnt FROM projects p ${whereSql}`, params);
     const total = countRows.rows.length ? countRows.rows.item(0).cnt : 0;
 
@@ -523,6 +550,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       ...project,
       owner: owner ?? { id: project.ownerId ?? 'unknown', name: 'Unknown' },
       property: property ?? undefined,
+      upcomingTasks: [],
     };
   }
   private async mapRowToProject(row: any): Promise<Project> {

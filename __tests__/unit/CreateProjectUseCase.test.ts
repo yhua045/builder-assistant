@@ -47,7 +47,7 @@ describe('CreateProjectUseCase (TDD)', () => {
     const existing = {
       id: 'p1',
       name: 'Existing',
-      propertyId: '123 Main St',
+      location: '123 Main St',
       ownerId: 'owner1'
     } as any;
 
@@ -72,7 +72,7 @@ describe('CreateProjectUseCase (TDD)', () => {
     const existing = {
       id: 'p1',
       name: 'Existing',
-      propertyId: '123 Main St',
+      location: '123 Main St',
       ownerId: 'owner1'
     } as any;
 
@@ -96,7 +96,7 @@ describe('CreateProjectUseCase (TDD)', () => {
     const existing = {
       id: 'p1',
       name: 'Existing',
-      propertyId: '123 Main St',
+      location: '123 Main St',
       ownerId: 'owner1'
     } as any;
 
@@ -173,7 +173,7 @@ describe('CreateProjectUseCase (TDD)', () => {
     // Verify saved project has correct metadata
     const savedProject = (mockRepo.save as jest.Mock).mock.calls[0][0];
     expect(savedProject.name).toBe('Brand New');
-    expect(savedProject.propertyId).toBe('456 Oak St');
+    expect(savedProject.location).toBe('456 Oak St');
     expect(savedProject.ownerId).toBe('owner2');
     expect(savedProject.meta?.team).toBe('Team A');
     expect(savedProject.meta?.priority).toBe('High');

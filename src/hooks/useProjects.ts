@@ -5,6 +5,7 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Project } from '../domain/entities/Project';
+import { ProjectDetails } from '../domain/entities/ProjectDetails';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
@@ -13,7 +14,7 @@ import { GetProjectAnalysisUseCase } from '../application/usecases/project/GetPr
 import { queryKeys, invalidations } from './queryKeys';
 
 interface UseProjectsReturn {
-  projects: Project[];
+  projects: ProjectDetails[];
   loading: boolean;
   error: string | null;
   createProject: (request: CreateProjectRequest) => Promise<{ success: boolean; errors?: string[], projectId?: string }>;
@@ -33,10 +34,10 @@ export const useProjects = (): UseProjectsReturn => {
     data: projects = [],
     isLoading: loading,
     error: queryError,
-  } = useQuery<Project[]>({
+  } = useQuery<ProjectDetails[]>({
     queryKey: queryKeys.projects(),
     queryFn: async () => {
-      const output = await repository.list();
+      const output = await repository.listDetails();
       return output.items;
     },
   });

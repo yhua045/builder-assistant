@@ -10,6 +10,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import TasksScreen from '../../src/pages/tasks/index';
 import { useTasks } from '../../src/hooks/useTasks';
+import { wrapWithQuery } from '../utils/queryClientWrapper';
 import type { Task } from '../../src/domain/entities/Task';
 
 // --- Global mocks (nativewind, safe-area-context) already applied in jest.setup.js ---
@@ -108,7 +109,7 @@ describe('TC-1: renders task titles from useTasks', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     const allTextNodes = tree!.root.findAll((n) => String(n.type) === 'Text');
@@ -127,7 +128,7 @@ describe('TC-2: empty state when no tasks', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     const allTextNodes = tree!.root.findAll((n) => String(n.type) === 'Text');
@@ -149,7 +150,7 @@ describe('TC-3: filter pills filter the list', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     // Find and press the "Pending" filter pill by testID
@@ -179,7 +180,7 @@ describe('TC-4: tapping a task navigates to TaskDetails', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     const taskItem = tree!.root.findByProps({ testID: 'task-item-task-abc' });
@@ -202,7 +203,7 @@ describe('TC-5: tapping "+" navigates to CreateTask', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     const createBtn = tree!.root.findByProps({ testID: 'create-task-btn' });
@@ -224,7 +225,7 @@ describe('TC-6: pull-to-refresh calls refreshTasks', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     // Find the RefreshControl and trigger its onRefresh
@@ -246,7 +247,7 @@ describe('T6: TasksScreen does not render TaskBottomSheet', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     // The bottom sheet's close button was testID="sheet-close-btn"
@@ -260,7 +261,7 @@ describe('T6: TasksScreen does not render TaskBottomSheet', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     // TaskBottomSheet used a Modal — verify no Modal with visible prop exists in tree
@@ -284,7 +285,7 @@ describe('TC-7: summary count cards are no longer rendered', () => {
 
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(<TasksScreen />);
+      tree = renderer.create(wrapWithQuery(<TasksScreen />));
     });
 
     // Issue #125: numeric summary cards (pending/in-progress count) have been removed.

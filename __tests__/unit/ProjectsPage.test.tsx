@@ -11,6 +11,14 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('../../src/hooks/useProjects');
 
+jest.mock('../../src/components/ManualProjectEntry', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: () => React.createElement('View'), // Mock as empty View component
+  };
+});
+
 const mockedUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
 
 describe('ProjectsPage', () => {
@@ -51,6 +59,7 @@ describe('ProjectsPage', () => {
           status: ProjectStatus.IN_PROGRESS,
           materials: [],
           phases: [],
+          upcomingTasks: [],
         },
       ],
       loading: false,
