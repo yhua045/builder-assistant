@@ -34,6 +34,7 @@ import { SubcontractorPickerModal, SubcontractorContact } from '../../components
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { invalidations } from '../../hooks/queryKeys';
+import { TaskCompletionValidationError } from '../../application/errors/TaskCompletionErrors';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -63,6 +64,7 @@ export default function TaskDetailsPage() {
     addProgressLog,
     updateProgressLog,
     deleteProgressLog,
+    completeTask,
   } = useTasks();
   const { delayReasonTypes } = useDelayReasonTypes();
   const { confirm } = useConfirm();
@@ -77,6 +79,7 @@ export default function TaskDetailsPage() {
   const [hasQuotationRecord, setHasQuotationRecord] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showDelayModal, setShowDelayModal] = useState(false);
+  const [completing, setCompleting] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
   const [showSubcontractorPicker, setShowSubcontractorPicker] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
@@ -227,6 +230,28 @@ export default function TaskDetailsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  const handleComplete = useCallback(async () => {
+    if (!task) return;
+    setCompleting(true);
+    try {
+      await completeTask(task.id);
+      navigation.goBack();
+    } catch (err) {
+      if (err instanceof TaskCompletionValidationError) {
+        const refs = err.pendingQuotations.map(q => q.reference).join('\n\u2022 ');
+        Alert.alert(
+          'Cannot Mark as Complete',
+          `The following quotations are still unresolved:\n\n\u2022 ${refs}\n\nPlease accept or decline each quotation before completing this task.`,
+          [{ text: 'OK' }],
+        );
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setCompleting(false);
+    }
+  }, [task, completeTask, navigation]);
 
   const handleDelete = async () => {
     const confirmed = await confirm({
@@ -589,12 +614,19 @@ export default function TaskDetailsPage() {
 
       {/* Bottom Action Button */}
       <View className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border">
-        <Pressable 
-          // For now just navigate back or execute complete logic directly if implemented.
-          onPress={() => {}} 
-          className="bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2"
+        <Pressable
+          testID="mark-as-complete-button"
+          onPress={handleComplete}
+          disabled={completing}
+          className={`bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2${
+            completing ? ' opacity-50' : ''
+          }`}
         >
-          <CheckCircle className="text-primary-foreground" size={20} />
+          {completing ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <CheckCircle className="text-primary-foreground" size={20} />
+          )}
           <Text className="text-primary-foreground font-bold text-base">
             Mark as Completed
           </Text>

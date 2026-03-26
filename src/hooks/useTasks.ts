@@ -21,6 +21,8 @@ import { DeleteProgressLogUseCase } from '../application/usecases/task/DeletePro
 import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
+import { CompleteTaskUseCase } from '../application/usecases/task/CompleteTaskUseCase';
+import { QuotationRepository } from '../domain/repositories/QuotationRepository';
 
 import { queryKeys, invalidations } from './queryKeys';
 
@@ -46,6 +48,7 @@ export interface UseTasksReturn {
   updateProgressLog: (taskId: string, logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
   deleteProgressLog: (taskId: string, logId: string) => Promise<void>;
   resolveDelayReason: (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
+  completeTask: (taskId: string) => Promise<void>;
 }
 
 export function useTasks(projectId?: string): UseTasksReturn {
@@ -68,6 +71,8 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
+  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
+  const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
 
   const tasksQueryKey = queryKeys.tasks(projectId);
 
@@ -161,6 +166,11 @@ export function useTasks(projectId?: string): UseTasksReturn {
     await queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(taskId) });
   }, [resolveDelayReasonUseCase, queryClient, projectId]);
 
+  const completeTask = useCallback(async (taskId: string) => {
+    await completeTaskUseCase.execute(taskId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [completeTaskUseCase, queryClient, projectId]);
+
   return useMemo(() => ({
     tasks,
     loading,
@@ -178,5 +188,6 @@ export function useTasks(projectId?: string): UseTasksReturn {
     addProgressLog,
     updateProgressLog,
     deleteProgressLog,
-  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog]);
+    completeTask,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog, completeTask]);
 }
