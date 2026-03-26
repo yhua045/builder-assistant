@@ -1423,3 +1423,66 @@ cd ios && pod install
 - ✅ **Design consistency**: Chip styling matches DatePickerInput; NativeWind tokens applied uniformly.
 - ✅ **Backwards compatibility**: Form submission and data persistence unchanged; parent API contracts unmodified.
 - ✅ **Feature branch `feature-issue-179-revert-dropdowns` ready for PR**.
+
+---
+
+## Issue #181 — Safe "Mark as Complete" Validation for Tasks (2026-03-26)
+
+**Branch**: `feature-issue-181-completion-validation` | **Design doc**: `design/issue-181-completion-validation.md`
+
+### Summary
+Implemented task completion validation to prevent users from marking tasks as complete while unresolved quotations remain attached. The validator is a pure, injectable business service; the use case orchestrates the fetch-validate-persist flow; and the UI hook provides a clean error-handling interface to the TaskDetailsPage.
+
+### Key Decisions
+- **Two-step validation**:
+  1. `TaskCompletionValidator.validate(taskId)` checks linked Quotation records atomically.
+  2. Returns typed `ValidationResult` with pending quotation list on failure.
+  3. `CompleteTaskUseCase.execute(taskId)` calls validator, throws typed error on failure.
+- **Quotation vs. Task Quote Distinction**: 
+  - `Quotation` (standalone entity, linked via `quotation.taskId`) — used by this validator.
+  - `tasks.quote_status` (per-task shorthand, legacy) — not involved in this feature.
+  - Invalid or soft-deleted Quotations excluded from validation.
+- **No schema changes**: Existing `quotations.task_id` column and `idx_quotations_task` index used; no migrations needed.
+- **Clean error handling**: `TaskCompletionValidationError` inherits from Error; carries `pendingQuotations` list for UI display.
+
+### Files Created
+- **`src/application/usecases/task/TaskCompletionValidator.ts`** — Pure validation logic; injectable dependency pattern.
+- **`src/application/usecases/task/CompleteTaskUseCase.ts`** — Orchestrates fetch + validate + update flow.
+- **`src/application/errors/TaskCompletionErrors.ts`** — Typed error classes (`TaskCompletionValidationError`, `TaskNotFoundError`).
+- **`__tests__/unit/TaskCompletionValidator.test.ts`** — All validator branches (no quotations, all resolved, pending) tested.
+- **`__tests__/unit/CompleteTaskUseCase.test.ts`** — Use case orchestration mocked; validator injection verified.
+- **`__tests__/integration/CompleteTaskUseCase.integration.test.ts`** — Real Drizzle + SQLite in-memory backend; end-to-end flow validated.
+
+### Files Modified
+- **`src/hooks/useTasks.ts`**: 
+  - Added `CompleteTaskUseCase` dependency.
+  - Exposed `completeTask(taskId): Promise<void>` to UI via `UseTasksReturn` interface.
+- **`src/pages/tasks/TaskDetailsPage.tsx`**:
+  - Added `handleComplete` callback function.
+  - Wired "Mark as Completed" button to `completeTask(taskId)`.
+  - Added error handling for `TaskCompletionValidationError`; displays Alert with blocking quotation refs.
+  - Disabled button during async operation (`completing` state).
+- **`__tests__/unit/TasksScreen.test.tsx`**: Updated mock builder to include `completeTask` in `UseTasksReturn`.
+
+### Tests
+- **Unit tests**: All validator branches covered (no quotations: ✓, all resolved: ✓, one+ pending: ✓).
+- **Use case unit tests**: Task-not-found path, validation-fails path, successful completion path all covered.
+- **Integration tests**: End-to-end Drizzle + SQLite in-memory flow validated with fixtures.
+- **Full validation**:
+  - `npx tsc --noEmit`: **TypeScript clean** ✅.
+  - `npm run lint`: Pre-existing baseline unchanged; no new ESLint errors introduced.
+  - Jest suite: All 71 test suites pass (446 tests); no regressions.
+
+### Acceptance Criteria Met
+- ✅ **AC-1 to AC-3**: Validator returns correct result for all three cases (no quotations, all resolved, pending).
+- ✅ **AC-4 to AC-5**: Use case calls validator and persists task status on success.
+- ✅ **AC-6**: `TaskNotFoundError` thrown for invalid task ID.
+- ✅ **AC-7**: Hook catches `TaskCompletionValidationError` and displays Alert with quotation refs.
+- ✅ **AC-8**: "Mark as Completed" button disabled during operation.
+- ✅ **AC-9 to AC-11**: Unit, use-case, and integration tests all passing.
+- ✅ **AC-12**: TypeScript strict mode clean; zero new errors.
+
+### Pending / Next Steps
+- Wire `CompleteTaskUseCase` into app DI container for production use (currently available but requires configuration).
+- Manual QA: Test task completion flow with and without pending quotations on iOS/Android.
+- Consider UX enhancement: Surface "auto-resolve" option for users to batch-close quotations before task completion.
