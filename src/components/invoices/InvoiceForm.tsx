@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Invoice, InvoiceLineItem } from '../../domain/entities/Invoice';
 import DatePickerInput from '../inputs/DatePickerInput';
+import { ContractorLookupField } from '../inputs/ContractorLookupField';
 import { PdfFileMetadata } from '../../types/PdfFileMetadata';
 
 export interface InvoiceFormProps {
@@ -27,6 +28,7 @@ export interface InvoiceFormProps {
 interface FormErrors {
   total?: string;
   currency?: string;
+  vendor?: string;
   status?: string;
   paymentStatus?: string;
   dates?: string;
@@ -46,16 +48,18 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   // Core fields
   const [invoiceNumber, setInvoiceNumber] = useState(initialValues?.externalReference || '');
   const [vendor, setVendor] = useState(initialValues?.issuerName || '');
+  const [vendorId, setVendorId] = useState(initialValues?.issuerId || '');
   const [total, setTotal] = useState(initialValues?.total?.toString() || '');
-  const [currency, setCurrency] = useState(initialValues?.currency || 'USD');
+  // Default currency to AUD
+  const [currency, _setCurrency] = useState(initialValues?.currency || 'AUD');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
-  const [tax, setTax] = useState(initialValues?.tax?.toString() || '');
+  const [tax, _setTax] = useState(initialValues?.tax?.toString() || '');
   const [status, _setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
   const [paymentStatus, _setPaymentStatus] = useState<Invoice['paymentStatus']>(
     initialValues?.paymentStatus || 'unpaid'
   );
   const [dateIssued, setDateIssued] = useState<Date | null>(
-    initialValues?.dateIssued ? new Date(initialValues.dateIssued) : null
+    initialValues?.dateIssued ? new Date(initialValues.dateIssued) : new Date()
   );
   const [dateDue, setDateDue] = useState<Date | null>(
     initialValues?.dateDue ? new Date(initialValues.dateDue) : null
@@ -82,6 +86,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
+
+    if (!vendor.trim() || !vendorId.trim()) {
+      newErrors.vendor = 'Please select a vendor';
+    }
 
     // Required: total
     const totalNum = parseFloat(total);
@@ -142,6 +150,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const invoiceData: any = {
       externalReference: invoiceNumber.trim() || undefined,
       issuerName: vendor.trim() || undefined,
+      issuerId: vendorId.trim() || undefined,
       total: parseFloat(total),
       currency: currency.trim(),
       subtotal: subtotal ? parseFloat(subtotal) : undefined,
@@ -191,20 +200,22 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             style={styles.input}
             value={invoiceNumber}
             onChangeText={setInvoiceNumber}
-            placeholder="INV-2024-001"
+            placeholder="Auto-generated if left blank"
             testID="invoice-form-number-input"
           />
         </View>
 
         {/* Vendor */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Vendor/Issuer</Text>
-          <TextInput
-            style={styles.input}
+          <ContractorLookupField
+            label="Vendor/Issuer *"
             value={vendor}
-            onChangeText={setVendor}
+            onChange={(val, id) => {
+              setVendor(val);
+              if (id) setVendorId(id);
+            }}
             placeholder="Vendor name"
-            testID="invoice-form-vendor-input"
+            error={errors.vendor}
           />
         </View>
 
@@ -224,49 +235,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               {errors.total}
             </Text>
           )}
-        </View>
-
-        {/* Currency */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Currency *</Text>
-          <TextInput
-            style={[styles.input, errors.currency && styles.inputError]}
-            value={currency}
-            onChangeText={setCurrency}
-            placeholder="USD"
-            testID="invoice-form-currency-input"
-          />
-          {errors.currency && (
-            <Text style={styles.errorText} testID="invoice-form-currency-error">
-              {errors.currency}
-            </Text>
-          )}
-        </View>
-
-        {/* Subtotal */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Subtotal</Text>
-          <TextInput
-            style={styles.input}
-            value={subtotal}
-            onChangeText={setSubtotal}
-            placeholder="Subtotal"
-            keyboardType="numeric"
-            testID="invoice-form-subtotal"
-          />
-        </View>
-
-        {/* Tax */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Tax</Text>
-          <TextInput
-            style={styles.input}
-            value={tax}
-            onChangeText={setTax}
-            placeholder="Tax amount"
-            keyboardType="numeric"
-            testID="invoice-form-tax-input"
-          />
         </View>
 
         {/* Date Issued */}

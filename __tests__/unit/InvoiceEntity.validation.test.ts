@@ -44,4 +44,27 @@ describe('InvoiceEntity validations', () => {
     expect(e.data().total).toBe(80);
     expect(e.data().subtotal).toBe(80);
   });
+
+  it('auto-generates externalReference when blank', () => {
+    const e = InvoiceEntity.create({ total: 10 } as any);
+    const ref = e.data().externalReference;
+    expect(ref).toBeDefined();
+    expect(ref).toMatch(/^INV-\d{8}-[A-Z0-9]{6}$/);
+  });
+
+  it('auto-generates externalReference when explicitly empty string', () => {
+    const e = InvoiceEntity.create({ total: 10, externalReference: '' } as any);
+    const ref = e.data().externalReference;
+    expect(ref).toMatch(/^INV-\d{8}-[A-Z0-9]{6}$/);
+  });
+
+  it('preserves externalReference when explicitly provided', () => {
+    const e = InvoiceEntity.create({ total: 10, externalReference: 'MY-REF-001' } as any);
+    expect(e.data().externalReference).toBe('MY-REF-001');
+  });
+
+  it('defaults currency to AUD', () => {
+    const e = InvoiceEntity.create({ total: 10 } as any);
+    expect(e.data().currency).toBe('AUD');
+  });
 });

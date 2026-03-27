@@ -101,7 +101,8 @@ describe('DrizzleInvoiceRepository', () => {
     const retrieved = await repo.getInvoice(invoice.id);
     expect(retrieved).toBeDefined();
     expect(retrieved?.externalId).toBeUndefined();
-    expect(retrieved?.externalReference).toBeUndefined();
+    // externalReference is now auto-generated if left blank by InvoiceEntity.create
+    expect(retrieved?.externalReference).toMatch(/^INV-/);
   });
 
   it('does not enforce uniqueness when external keys are missing', async () => {

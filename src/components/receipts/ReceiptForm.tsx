@@ -6,6 +6,8 @@ import DatePickerInput from '../inputs/DatePickerInput';
 import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react-native';
 import OptionList from '../inputs/OptionList';
 
+import { ContractorLookupField } from '../inputs/ContractorLookupField';
+
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
   normalizedData?: NormalizedReceipt;  // OCR-extracted data with confidence
@@ -31,6 +33,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
   isProcessing 
 }) => {
   const [vendor, setVendor] = useState(initialValues?.vendor || '');
+  const [vendorId, setVendorId] = useState('');
   const [amount, setAmount] = useState(initialValues?.amount?.toString() || '');
   const [date, setDate] = useState<Date | null>(initialValues?.date ? new Date(initialValues.date) : new Date());
   const [paymentMethod, setPaymentMethod] = useState<string>(initialValues?.paymentMethod || 'card');
@@ -72,6 +75,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!vendor.trim()) newErrors.vendor = 'Vendor is required';
+    if (!vendorId.trim()) newErrors.vendor = 'Please select a vendor from the list';
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) newErrors.amount = 'Valid amount is required';
     if (!date) newErrors.date = 'Date is required';
     setErrors(newErrors);
@@ -82,11 +86,12 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
     if (validate()) {
       onSubmit({
         vendor,
+        vendorId,
         amount: parseFloat(amount),
         date: date!.toISOString(),
         paymentMethod: paymentMethod as any,
         notes,
-        currency: 'USD' // Default
+        currency: 'AUD' // Default
       });
     }
   };
@@ -127,27 +132,24 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
-          <Text className="font-medium text-foreground">Vendor*</Text>
-          {normalizedData && (
-            <View className="ml-2">
-              {getConfidenceIcon(normalizedData.confidence.vendor)}
-            </View>
-          )}
+          {/* Label is handled by ContractorLookupField if we want, but we have OCR confidence icons here */}
         </View>
-        <TextInput
-          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
-            errors.vendor 
-              ? 'border-destructive' 
-              : normalizedData 
-                ? getConfidenceColor(normalizedData.confidence.vendor)
-                : 'border-input'
-          }`}
+        <ContractorLookupField
+          label="Vendor*"
           value={vendor}
-          onChangeText={setVendor}
+          onChange={(val, contactId) => {
+            setVendor(val);
+            if (contactId) setVendorId(contactId);
+          }}
           placeholder="Who did you pay?"
-          placeholderTextColor="#9ca3af"
+          error={errors.vendor}
         />
-        {errors.vendor && <Text className="text-destructive text-sm mt-1">{errors.vendor}</Text>}
+        {normalizedData && (
+          <View className="flex-row items-center mt-1">
+            <Text className="text-xs text-muted-foreground mr-1">OCR Match:</Text>
+            {getConfidenceIcon(normalizedData.confidence.vendor)}
+          </View>
+        )}
       </View>
 
       <View className="mb-4">

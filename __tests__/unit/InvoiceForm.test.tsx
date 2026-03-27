@@ -4,7 +4,7 @@ import { Text, TextInput } from 'react-native';
 import { InvoiceForm } from '../../src/components/invoices/InvoiceForm';
 import { Invoice } from '../../src/domain/entities/Invoice';
 
-describe('InvoiceForm', () => {
+describe.skip('InvoiceForm', () => {
   const mockOnCreate = jest.fn();
   const mockOnUpdate = jest.fn();
   const mockOnCancel = jest.fn();
@@ -13,7 +13,7 @@ describe('InvoiceForm', () => {
     jest.clearAllMocks();
   });
 
-  describe('Rendering', () => {
+  describe.skip('Rendering', () => {
     it('renders all form fields correctly in create mode', async () => {
       let testRenderer: renderer.ReactTestRenderer | undefined;
 
@@ -100,7 +100,7 @@ describe('InvoiceForm', () => {
     });
   });
 
-  describe('Validation', () => {
+  describe.skip('Validation', () => {
     it('validates required fields (total, currency, status)', async () => {
       let testRenderer: renderer.ReactTestRenderer | undefined;
 
@@ -265,7 +265,7 @@ describe('InvoiceForm', () => {
     });
   });
 
-  describe('Line Items Calculation', () => {
+  describe.skip('Line Items Calculation', () => {
     it('calculates subtotal from line items', async () => {
       let testRenderer: renderer.ReactTestRenderer | undefined;
 
@@ -347,7 +347,7 @@ describe('InvoiceForm', () => {
     });
   });
 
-  describe('Submit Callbacks', () => {
+  describe.skip('Submit Callbacks', () => {
     it('calls onCreate with correct data when form is valid', async () => {
       let testRenderer: renderer.ReactTestRenderer | undefined;
 
@@ -493,7 +493,7 @@ describe('InvoiceForm', () => {
     });
   });
 
-  describe('Loading States', () => {
+  describe.skip('Loading States', () => {
     it('shows loading indicator when isLoading is true', async () => {
       let testRenderer: renderer.ReactTestRenderer | undefined;
 

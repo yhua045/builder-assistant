@@ -6,6 +6,7 @@ import { ReceiptFieldParser } from '../../receipt/ReceiptFieldParser';
 import { IReceiptNormalizer, NormalizedReceipt } from '../../receipt/IReceiptNormalizer';
 
 export interface SnapReceiptDTO {
+  vendorId: string;
   vendor: string;
   amount: number;
   date: string;
@@ -25,29 +26,36 @@ export class SnapReceiptUseCase {
   ) {}
 
   async execute(input: SnapReceiptDTO): Promise<{ invoice: Invoice; payment: Payment }> {
+    if (!input.vendorId || !input.vendorId.trim()) {
+      throw new Error('Vendor is required');
+    }
     if (input.amount <= 0) {
       throw new Error('Amount must be positive');
     }
     if (!input.vendor) {
         throw new Error('Vendor is required');
     }
-    if (!input.date) {
-        throw new Error('Date is required');
+    if (!input.date || isNaN(Date.parse(input.date))) {
+      throw new Error('Date must be a valid ISO date');
     }
+
+    const currency = input.currency || 'AUD';
 
     // 1. Create Invoice
     const invoiceEntity = InvoiceEntity.create({
       issuerName: input.vendor,
       total: input.amount,
-      currency: input.currency || 'USD', // Default to USD or App settings
+      currency,
       status: 'paid', // Immediately paid
       paymentStatus: 'paid',
       dateIssued: input.date,
       paymentDate: input.date, // Paid on same day
       projectId: input.projectId,
       notes: input.notes,
-      // We might want to store category in metadata or tags
-      metadata: input.category ? { category: input.category } : undefined
+      metadata: {
+        ...(input.category ? { category: input.category } : {}),
+        vendorId: input.vendorId,
+      },
     });
 
     const invoice = invoiceEntity.data();
@@ -59,7 +67,7 @@ export class SnapReceiptUseCase {
       projectId: input.projectId,
       invoiceId: invoice.id,
       method: input.paymentMethod,
-      currency: input.currency || 'USD',
+      currency,
       status: 'settled',
       notes: input.notes
     });
@@ -109,31 +117,47 @@ export class SnapReceiptUseCase {
   }
 
   /**
-   * Save normalized receipt as invoice + payment
-   * @param normalizedReceipt - Normalized receipt from processReceipt()
-   * @param paymentMethod - Payment method to use
-   * @param projectId - Optional project to associate with
-   * @returns Created invoice and payment
+   * Save normalized receipt as invoice + payment.
+   * This is the OCR flow — vendor comes from text recognition, not a contact
+   * picker, so vendorId is not required here.
    */
   async saveReceipt(
     normalizedReceipt: NormalizedReceipt,
     paymentMethod: Payment['method'],
     projectId?: string
   ): Promise<{ invoice: Invoice; payment: Payment }> {
-    // Convert NormalizedReceipt to SnapReceiptDTO
-    const dto: SnapReceiptDTO = {
-      vendor: normalizedReceipt.vendor || 'Unknown Vendor',
-      amount: normalizedReceipt.total || 0,
-      date: normalizedReceipt.date?.toISOString() || new Date().toISOString(),
-      paymentMethod,
-      projectId,
-      currency: normalizedReceipt.currency,
-      notes: normalizedReceipt.suggestedCorrections.length > 0 
-        ? `OCR Suggestions: ${normalizedReceipt.suggestedCorrections.join(', ')}` 
-        : undefined
-    };
+    const currency = normalizedReceipt.currency || 'AUD';
+    const date = normalizedReceipt.date?.toISOString() || new Date().toISOString();
+    const vendor = normalizedReceipt.vendor || 'Unknown Vendor';
+    const amount = normalizedReceipt.total || 0;
 
-    // Reuse existing execute logic
-    return this.execute(dto);
+    const invoiceEntity = InvoiceEntity.create({
+      issuerName: vendor,
+      total: amount,
+      currency,
+      status: 'paid',
+      paymentStatus: 'paid',
+      dateIssued: date,
+      paymentDate: date,
+      projectId,
+      notes:
+        normalizedReceipt.suggestedCorrections.length > 0
+          ? `OCR Suggestions: ${normalizedReceipt.suggestedCorrections.join(', ')}`
+          : undefined,
+    });
+    const invoice = invoiceEntity.data();
+
+    const paymentEntity = PaymentEntity.create({
+      amount,
+      date,
+      projectId,
+      invoiceId: invoice.id,
+      method: paymentMethod,
+      currency,
+      status: 'settled',
+    });
+    const payment = paymentEntity.data();
+
+    return this.receiptRepo.createReceipt(invoice, payment);
   }
 }
