@@ -113,10 +113,15 @@ export function useQuotationsTimeline(projectId: string): UseQuotationsTimelineR
     enabled: Boolean(projectId),
   });
 
-  const quotations = data?.quotations ?? [];
   const truncated = data?.truncated ?? false;
 
-  const quotationDayGroups = useMemo(() => groupQuotationsByDay(quotations), [quotations]);
+  const quotationDayGroups = useMemo(
+    () => {
+      const quotations = data?.quotations ?? [];
+      return groupQuotationsByDay(quotations);
+    },
+    [data?.quotations],
+  );
 
   const invalidate = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.projectQuotations(projectId) });
