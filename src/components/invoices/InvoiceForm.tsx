@@ -50,10 +50,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [vendor, setVendor] = useState(initialValues?.issuerName || '');
   const [vendorId, setVendorId] = useState(initialValues?.issuerId || '');
   const [total, setTotal] = useState(initialValues?.total?.toString() || '');
-// Default currency to AUD
-  const [currency, setCurrency] = useState(initialValues?.currency || 'AUD');
+  // Default currency to AUD
+  const [currency, _setCurrency] = useState(initialValues?.currency || 'AUD');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
-  const [tax, setTax] = useState(initialValues?.tax?.toString() || '');
+  const [tax, _setTax] = useState(initialValues?.tax?.toString() || '');
   const [status, _setStatus] = useState<Invoice['status']>(initialValues?.status || 'draft');
   const [paymentStatus, _setPaymentStatus] = useState<Invoice['paymentStatus']>(
     initialValues?.paymentStatus || 'unpaid'
