@@ -12,6 +12,7 @@ describe('SnapReceiptUseCase', () => {
     beforeEach(() => {
         mockReceiptRepo = {
             createReceipt: jest.fn().mockImplementation(async (inv, pay) => ({ invoice: inv, payment: pay })),
+            createUnpaidInvoice: jest.fn().mockImplementation(async (inv) => inv),
         } as unknown as ReceiptRepository;
 
         useCase = new SnapReceiptUseCase(mockReceiptRepo);
@@ -20,6 +21,7 @@ describe('SnapReceiptUseCase', () => {
     it('creates an invoice and payment from valid receipt data', async () => {
         // initial unused input removed; using validInput below
         const validInput: SnapReceiptDTO = {
+            vendorId: 'contact-bunnings-1',
             vendor: 'Bunnings',
             amount: 150.50,
             date: '2023-10-27T10:00:00Z',
@@ -57,12 +59,61 @@ describe('SnapReceiptUseCase', () => {
 
     it('throws error if amount is invalid', async () => {
         const invalidInput: SnapReceiptDTO = {
+            vendorId: 'contact-bunnings-1',
             vendor: 'Bunnings',
             amount: -10,
             date: new Date().toISOString(),
             paymentMethod: 'cash'
         };
         await expect(useCase.execute(invalidInput)).rejects.toThrow('Amount must be positive');
+    });
+
+    it('throws Vendor is required when vendorId is absent (empty string)', async () => {
+        const dto: SnapReceiptDTO = {
+            vendorId: '',
+            vendor: 'Bunnings',
+            amount: 50,
+            date: new Date().toISOString(),
+            paymentMethod: 'cash',
+        };
+        await expect(useCase.execute(dto)).rejects.toThrow('Vendor is required');
+    });
+
+    it('throws Date must be a valid ISO date when date is not valid ISO', async () => {
+        const dto: SnapReceiptDTO = {
+            vendorId: 'contact-bunnings-1',
+            vendor: 'Bunnings',
+            amount: 50,
+            date: 'not-a-date',
+            paymentMethod: 'cash',
+        };
+        await expect(useCase.execute(dto)).rejects.toThrow('Date must be a valid ISO date');
+    });
+
+    it('defaults currency to AUD when not provided', async () => {
+        const dto: SnapReceiptDTO = {
+            vendorId: 'contact-bunnings-1',
+            vendor: 'Bunnings',
+            amount: 50,
+            date: new Date().toISOString(),
+            paymentMethod: 'cash',
+        };
+        const result = await useCase.execute(dto);
+        expect(result.invoice.currency).toBe('AUD');
+        expect(result.payment.currency).toBe('AUD');
+    });
+
+    it('stores vendorId in invoice metadata', async () => {
+        const dto: SnapReceiptDTO = {
+            vendorId: 'contact-bunnings-1',
+            vendor: 'Bunnings',
+            amount: 50,
+            date: new Date().toISOString(),
+            paymentMethod: 'cash',
+        };
+        const result = await useCase.execute(dto);
+        expect(result.invoice.metadata).toBeDefined();
+        expect(result.invoice.metadata!.vendorId).toBe('contact-bunnings-1');
     });
 
     describe('OCR Pipeline Integration', () => {

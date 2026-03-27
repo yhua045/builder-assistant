@@ -1486,3 +1486,9 @@ Implemented task completion validation to prevent users from marking tasks as co
 - Wire `CompleteTaskUseCase` into app DI container for production use (currently available but requires configuration).
 - Manual QA: Test task completion flow with and without pending quotations on iOS/Android.
 - Consider UX enhancement: Surface "auto-resolve" option for users to batch-close quotations before task completion.
+
+## 184 Changes Implemented (Recent)
+- Updated `Invoice` entity and schema to include `issuer_id`.
+- Replaced manual unmanaged vendor tracking with `ContractorLookupField` across `InvoiceForm` and `ReceiptForm`.
+- Fixed duplicate Drizzle migrations and securely added `pending_payments` and `total_payments` columns.
+- Removed arbitrary hidden interactions from `InvoiceScreen` (such as Enter Details vs Pick PDF mapping) allowing direct form entry or PDF ingestion.

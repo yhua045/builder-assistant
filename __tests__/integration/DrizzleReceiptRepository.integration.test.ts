@@ -118,3 +118,102 @@ describe('DrizzleReceiptRepository transaction behavior', () => {
     expect(payCount).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('DrizzleReceiptRepository — project aggregate updates', () => {
+  const PROJECT_ID = 'proj_aggregate_test';
+
+  beforeAll(async () => {
+    await initDatabase();
+    const { db } = getDatabase();
+    // Seed a project row used in aggregate tests
+    await db.executeSql(
+      `INSERT OR IGNORE INTO projects (id, name, status, total_payments, pending_payments, created_at, updated_at)
+       VALUES (?, ?, ?, 0, 0, ?, ?)`,
+      [PROJECT_ID, 'Aggregate Test Project', 'planning', Date.now(), Date.now()]
+    );
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  test('createReceipt increments total_payments on the linked project', async () => {
+    const repo = new DrizzleReceiptRepository();
+    const { db } = getDatabase();
+
+    // Read baseline
+    const [before] = await db.executeSql('SELECT total_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const baseTotal: number = before.rows.item(0).total_payments ?? 0;
+
+    const invoice = InvoiceEntity.create({
+      total: 300,
+      projectId: PROJECT_ID,
+    }).data();
+
+    const payment = PaymentEntity.create({
+      amount: 300,
+      invoiceId: invoice.id,
+      projectId: PROJECT_ID,
+    }).data();
+
+    await repo.createReceipt(invoice, payment);
+
+    const [after] = await db.executeSql('SELECT total_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const newTotal: number = after.rows.item(0).total_payments;
+    expect(newTotal).toBeCloseTo(baseTotal + 300, 5);
+  });
+
+  test('createUnpaidInvoice inserts invoice with status issued/unpaid and increments pending_payments', async () => {
+    const repo = new DrizzleReceiptRepository();
+    const { db } = getDatabase();
+
+    // Read baseline
+    const [before] = await db.executeSql('SELECT pending_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const basePending: number = before.rows.item(0).pending_payments ?? 0;
+
+    const invoice = InvoiceEntity.create({
+      total: 500,
+      projectId: PROJECT_ID,
+      status: 'issued',
+      paymentStatus: 'unpaid',
+    }).data();
+
+    const result = await repo.createUnpaidInvoice(invoice);
+
+    expect(result.status).toBe('issued');
+    expect(result.paymentStatus).toBe('unpaid');
+
+    const [invRes] = await db.executeSql('SELECT status, payment_status FROM invoices WHERE id = ?', [invoice.id]);
+    expect(invRes.rows.length).toBe(1);
+    expect(invRes.rows.item(0).status).toBe('issued');
+    expect(invRes.rows.item(0).payment_status).toBe('unpaid');
+
+    const [after] = await db.executeSql('SELECT pending_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const newPending: number = after.rows.item(0).pending_payments;
+    expect(newPending).toBeCloseTo(basePending + 500, 5);
+  });
+
+  test('createUnpaidInvoice rolls back on simulated failure — project pending_payments unchanged', async () => {
+    const repo = new DrizzleReceiptRepository();
+    const { db } = getDatabase();
+
+    const [before] = await db.executeSql('SELECT pending_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const basePending: number = before.rows.item(0).pending_payments ?? 0;
+
+    const invoice = InvoiceEntity.create({
+      total: 999,
+      projectId: PROJECT_ID,
+      metadata: { simulateFailure: true },
+    }).data();
+
+    await expect(repo.createUnpaidInvoice(invoice)).rejects.toThrow('SIMULATE_FAIL');
+
+    const [after] = await db.executeSql('SELECT pending_payments FROM projects WHERE id = ?', [PROJECT_ID]);
+    const newPending: number = after.rows.item(0).pending_payments;
+    expect(newPending).toBe(basePending);
+
+    // Invoice row must not be persisted
+    const [invRes] = await db.executeSql('SELECT COUNT(*) as c FROM invoices WHERE id = ?', [invoice.id]);
+    expect(invRes.rows.item(0).c).toBe(0);
+  });
+});

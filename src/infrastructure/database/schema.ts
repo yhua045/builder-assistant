@@ -22,6 +22,9 @@ export const projects = sqliteTable('projects', {
   regulatoryFlags: text('regulatory_flags'), // JSON array of constraint labels
   // Default days to add from invoice issue date when dateDue is absent (issue #146)
   defaultDueDateDays: integer('default_due_date_days').default(5),
+  // Payment aggregates (issue #184)
+  totalPayments: real('total_payments').default(0),
+  pendingPayments: real('pending_payments').default(0),
   createdAt: integer('created_at'),
   updatedAt: integer('updated_at'),
 }, (table) => ({
@@ -197,6 +200,7 @@ export const invoices = sqliteTable('invoices', {
   
   // Participant Info
   issuerName: text('issuer_name'),
+  issuerId: text('issuer_id'),
   issuerAddress: text('issuer_address'),
   issuerTaxId: text('issuer_tax_id'),
   recipientName: text('recipient_name'),

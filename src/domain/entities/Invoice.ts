@@ -25,6 +25,7 @@ export interface Invoice {
   
   // Metadata
   issuerName?: string;
+  issuerId?: string;
   issuerAddress?: string;
   issuerTaxId?: string;
   recipientName?: string;
@@ -82,16 +83,26 @@ export class InvoiceEntity {
   ): InvoiceEntity {
     const id = payload.id ?? `inv_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     const now = new Date().toISOString();
-    
+
+    // Auto-generate externalReference when blank/absent
+    const baseDate = payload.dateIssued ? new Date(payload.dateIssued) : new Date();
+    const yyyymmdd = baseDate.toISOString().slice(0, 10).replace(/-/g, '');
+    const autoRef = `INV-${yyyymmdd}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const externalReference =
+      payload.externalReference && payload.externalReference.trim().length > 0
+        ? payload.externalReference
+        : autoRef;
+
     // Default values
     const inv: Invoice = { 
-      ...payload, 
+      ...payload,
+      externalReference,
       id, 
       createdAt: now, 
       updatedAt: now,
       status: payload.status || 'draft',
       paymentStatus: payload.paymentStatus || 'unpaid',
-      currency: payload.currency || 'USD'
+      currency: payload.currency || 'AUD'
     } as Invoice;
       // Domain validations
       // 1. total must be non-negative
