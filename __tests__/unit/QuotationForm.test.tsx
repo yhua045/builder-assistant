@@ -260,4 +260,110 @@ describe('QuotationForm', () => {
       testRenderer!.unmount();
     });
   });
+
+  // ─── New test cases for issue #186 ───────────────────────────────────────
+
+  it('(A) does NOT render currency input', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const currencyInputs = root.findAllByProps({ testID: 'quotation-currency-input' });
+    expect(currencyInputs).toHaveLength(0);
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(B) does NOT render subtotal input', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const subtotalInputs = root.findAllByProps({ testID: 'quotation-subtotal-input' });
+    expect(subtotalInputs).toHaveLength(0);
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(C) does NOT render tax input', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const taxInputs = root.findAllByProps({ testID: 'quotation-tax-input' });
+    expect(taxInputs).toHaveLength(0);
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(D) submits even when reference field is left empty (reference is optional)', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+
+    // Fill in total (required) but leave reference blank
+    await act(async () => {
+      const totalInput = root.findByProps({ testID: 'quotation-total-input' });
+      totalInput.props.onChangeText('250');
+    });
+
+    const saveButton = root.findByProps({ testID: 'quotation-save-button' });
+    await act(async () => {
+      saveButton.props.onPress();
+    });
+
+    expect(mockOnSubmit).toHaveBeenCalled();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(E) shows PDF filename indicator when pdfFile prop is provided', async () => {
+    const pdfFile = {
+      uri: 'file:///app/storage/quote_123.pdf',
+      originalUri: 'file:///tmp/quote.pdf',
+      name: 'my-quote.pdf',
+      size: 204800,
+      mimeType: 'application/pdf',
+    };
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+          pdfFile={pdfFile}
+        />
+      );
+    });
+    const root = testRenderer!.root;
+    const pdfIndicator = root.findByProps({ testID: 'quotation-pdf-indicator' });
+    expect(pdfIndicator).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(F) renders without full-screen padding when embedded prop is true', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+          embedded={true}
+        />
+      );
+    });
+    // Just verifies it renders without crashing — compact layout applied
+    const tree = testRenderer!.toJSON();
+    expect(tree).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
 });

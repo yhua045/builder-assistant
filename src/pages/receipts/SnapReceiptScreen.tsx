@@ -109,14 +109,14 @@ export const SnapReceiptScreen = ({ onClose, enableOcr = false, imageUri, camera
                         testID="camera-button"
                         onPress={handleCameraCapture}
                         disabled={isCapturing || processing}
-                        className="bg-primary p-4 rounded-xl items-center flex-row justify-center active:opacity-80 mb-6"
+                        className="bg-card border border-border rounded-xl p-4 items-center flex-row justify-center active:opacity-80 mb-4"
                     >
                         {isCapturing ? (
-                            <ActivityIndicator size="small" color="white" />
+                            <ActivityIndicator size="small" color="#6b7280" />
                         ) : (
-                            <Camera size={24} color="white" />
+                            <Camera size={24} color="#6b7280" />
                         )}
-                        <Text className="text-primary-foreground font-bold ml-2 text-lg">
+                        <Text className="text-foreground font-bold ml-2 text-lg">
                             {isCapturing ? 'Opening Camera...' : processing ? 'Processing...' : 'Open Camera'}
                         </Text>
                     </Pressable>

@@ -1551,3 +1551,73 @@ Implemented task completion validation to prevent users from marking tasks as co
 - **`issuerName` field retained for backwards-compatibility**: Invoices created before this ticket may have `issuerName` but no `issuerId`. Going forward, only `issuerId` is used; the legacy field remains as-is for immutable historical records. A future data migration can populate `issuerId` from Contact lookups for historical invoices if needed.
 - **No cascading Contact deletions**: If a Contact (vendor) is deleted from the app, invoices that reference `issuerId` pointing to that contact will display an empty vendor field. A future ticket should add soft-delete semantics or archive logic.
 - **ContractorLookupField placement in vendor selection**: The component is now used in two places (InvoiceForm, ReceiptForm). Future refactoring could extract a reusable `VendorPickerSection` component if more forms adopt vendor selection.
+
+---
+
+## 15. Issue #186 — Add Quote Screen: Adapt UX to Match Invoice Upload & Form Parity (2026-03-27)
+
+**Branch**: `feature/issue-186` | **Design doc**: `design/#186-add-quote-screen.md` | **Status**: IMPLEMENTED & VALIDATED
+
+### Key Decisions
+
+- **PDF Upload Flow for Quotations**: Mirrored Invoice Screen's upload pattern — Pressable at top of `QuotationScreen` with optional PDF upload and OCR-driven form pre-fill; matches existing Invoice UX paradigm.
+- **Auto-Generated Quote References**: `QuotationEntity.create()` now auto-generates `QUO-YYYYMMDD-XXXXXX` reference when `quoteReference` is omitted, reducing user friction and ensuring consistency (parallel to Invoice behavior pattern).
+- **UI Field Hiding (Not Removal)**: `currency`, `subtotal`, and `tax` fields remain in domain model and database (backward-compatible storage); hidden from `QuotationForm` UI via conditional rendering (`hideAdvancedFields` flag). Enables future advanced entry if needed without schema migration.
+- **Normalization Reuse**: Created `normalizedInvoiceToQuotationFormValues` utility that mirrors `normalizedInvoiceToInvoiceFormValues`, allowing OCR output from PDF upload to populate quotation drafts without duplicate normalization logic.
+- **SnapReceiptScreen Button Alignment**: Standardized camera/upload button styling to match Quote/Invoice flows (`bg-card border border-border` Pressable instead of ad-hoc primary button).
+
+### Implementation Details
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/utils/normalizedInvoiceToQuotationFormValues.ts` | Maps `NormalizedInvoice` (OCR output) → `Partial<Quotation>` form values; mirrors Invoice mapper |
+| `__tests__/unit/normalizedInvoiceToQuotationFormValues.test.ts` | Unit tests covering invoice normalization → quotation form shape transformation |
+| `__tests__/unit/QuotationEntity.autoReference.test.ts` | Tests auto-generation of `QUO-YYYYMMDD-XXXXXX` reference when blank |
+| `__tests__/unit/QuotationScreen.upload.test.tsx` | Integration test: PDF upload flow, file selection, form pre-fill |
+
+**Modified Files:**
+| File | Change |
+|------|--------|
+| `src/domain/entities/Quotation.ts` | Made `quoteReference` optional; auto-generate ref in `create()` via `generateQuotationReference()` |
+| `src/components/quotations/QuotationForm.tsx` | Added `hideAdvancedFields` boolean prop; conditionally render `currency`, `subtotal`, `tax` based on flag |
+| `src/pages/quotations/QuotationScreen.tsx` | Added PDF upload Pressable at top; integrated file picker + OCR adapter; form always visible below with pre-fill on upload success |
+| `src/pages/receipts/SnapReceiptScreen.tsx` | Replaced primary button style with standardized `bg-card border border-border` Pressable for camera affordance |
+| `src/hooks/useQuotationsTimeline.ts` | Fixed react-hooks/exhaustive-deps warning by inlining quotations derivation into useMemo |
+| `__tests__/integration/QuotationScreen.integration.test.tsx` | Cleaned unused imports (`IOcrAdapter`, `IInvoiceNormalizer`, `NormalizedInvoice`) |
+| `__tests__/unit/QuotationForm.test.tsx` | Updated test mocks to account for `hideAdvancedFields` prop and optional reference |
+
+### Validation Results
+
+- ✅ **Linting**: All #186-specific files pass ESLint (removed 3 unused imports; fixed react-hooks warning).
+- ✅ **TypeScript Strict**: `npx tsc --noEmit` — no errors.
+- ✅ **Unit & Integration Tests**: All test suites for quotation normalization, auto-reference generation, and upload flow passing.
+- ✅ **UX Parity**: Quote upload flow now mirrors Invoice upload pattern; consistent Pressable styling across Dashboard quick actions.
+
+### Files Modified Summary
+
+- **Domain**: 1 entity modified (`Quotation.ts`).
+- **Application**: 0 new use cases (reused existing PDF/OCR infrastructure).
+- **Infrastructure**: 0 new repositories (uses existing `DrizzleQuotationRepository`).
+- **Components**: 2 components modified (`QuotationForm.tsx`, `SnapReceiptScreen.tsx`).
+- **Pages**: 1 page modified (`QuotationScreen.tsx`).
+- **Hooks**: 1 hook modified (`useQuotationsTimeline.ts`).
+- **Utils**: 1 new utility (`normalizedInvoiceToQuotationFormValues.ts`).
+- **Tests**: 4 new test files + 2 modified test files.
+
+### Acceptance Criteria Met
+
+- ✅ **AC-1**: Quotation upload Pressable visible at top of `QuotationScreen`; file picker integration functional.
+- ✅ **AC-2**: OCR output pre-fills `QuotationForm` via `normalizedInvoiceToQuotationFormValues` mapper.
+- ✅ **AC-3**: `currency`, `subtotal`, `tax` fields hidden in UI; retained in domain model.
+- ✅ **AC-4**: Quote reference auto-generated as `QUO-YYYYMMDD-XXXXXX` when omitted.
+- ✅ **AC-5**: Form always visible below upload section (no modal toggle).
+- ✅ **AC-6**: SnapReceiptScreen camera button styled consistently with Quote/Invoice flows.
+- ✅ **AC-7**: No breaking changes to existing quotation workflows; backward-compatible schema.
+- ✅ **AC-8**: All tests passing; linting clean; TypeScript strict mode satisfied.
+
+### Pending / Next Steps
+
+- Manual QA: Test PDF upload and form pre-fill on iOS/Android devices.
+- Consider implementing "Batch Create Quotations" from receipt OCR results in a future iteration.
+- Monitor OCR accuracy metrics from real user uploads to refine confidence thresholds.

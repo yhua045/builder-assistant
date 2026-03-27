@@ -2,28 +2,27 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../domain/entities/Quotation';
 import DatePickerInput from '../inputs/DatePickerInput';
-import { Plus, X } from 'lucide-react-native';
-import OptionList from '../inputs/OptionList';
+import { Plus, X, Paperclip } from 'lucide-react-native';
+import { PdfFileMetadata } from '../../types/PdfFileMetadata';
 
 interface QuotationFormProps {
   initialValues?: Partial<Quotation>;
   onSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  /** When true, renders with compact padding (embedded inside another screen) */
+  embedded?: boolean;
+  /** When set, shows a PDF attached indicator with the filename */
+  pdfFile?: PdfFileMetadata;
 }
-
-const STATUS_OPTIONS = [
-  { label: 'Draft', value: 'draft' },
-  { label: 'Sent', value: 'sent' },
-  { label: 'Accepted', value: 'accepted' },
-  { label: 'Declined', value: 'declined' },
-];
 
 export const QuotationForm: React.FC<QuotationFormProps> = ({ 
   initialValues, 
   onSubmit, 
   onCancel, 
-  isLoading 
+  isLoading,
+  embedded = false,
+  pdfFile,
 }) => {
   const [reference, setReference] = useState(initialValues?.reference || '');
   const [vendorName, setVendorName] = useState(initialValues?.vendorName || '');
@@ -38,8 +37,8 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const [total, setTotal] = useState(initialValues?.total?.toString() || '');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
   const [taxTotal, setTaxTotal] = useState(initialValues?.taxTotal?.toString() || '');
-  const [currency, setCurrency] = useState(initialValues?.currency || 'USD');
-  const [status, setStatus] = useState<Quotation['status']>(initialValues?.status || 'draft');
+  const [currency] = useState(initialValues?.currency || 'AUD');
+  const [status] = useState<Quotation['status']>(initialValues?.status || 'draft');
   const [notes, setNotes] = useState(initialValues?.notes || '');
   
   const [lineItems, setLineItems] = useState<QuotationLineItem[]>(
@@ -51,7 +50,6 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const validate = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!reference.trim()) newErrors.reference = 'Reference is required';
     if (!date) newErrors.date = 'Date is required';
     if (!total || isNaN(parseFloat(total)) || parseFloat(total) < 0) {
       newErrors.total = 'Valid total amount is required';
@@ -136,29 +134,44 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   };
 
   return (
-    <ScrollView className="flex-1 bg-background p-4">
-      <Text className="text-2xl font-bold mb-6 text-foreground">New Quotation</Text>
+    <ScrollView className={`flex-1 bg-background ${embedded ? 'p-0' : 'p-4'}`}>
+      {!embedded && (
+        <Text className="text-2xl font-bold mb-6 text-foreground">New Quotation</Text>
+      )}
       
       {errors.form && (
         <View className="bg-destructive/10 border border-destructive rounded-xl p-3 mb-4">
           <Text className="text-destructive text-sm">{errors.form}</Text>
         </View>
       )}
+
+      {/* PDF Attached Indicator */}
+      {pdfFile && (
+        <View
+          testID="quotation-pdf-indicator"
+          className="bg-card border border-border rounded-xl p-3 mb-4 flex-row items-center"
+        >
+          <Paperclip size={16} color="#6b7280" />
+          <Text className="text-foreground font-medium ml-2 flex-1" numberOfLines={1}>
+            {pdfFile.name}
+          </Text>
+          <Text className="text-muted-foreground text-xs">
+            {(pdfFile.size / 1024).toFixed(1)} KB
+          </Text>
+        </View>
+      )}
       
-      {/* Reference */}
+      {/* Reference (optional) */}
       <View className="mb-4">
-        <Text className="font-medium text-foreground mb-2">Reference*</Text>
+        <Text className="font-medium text-foreground mb-2">Reference (optional)</Text>
         <TextInput
           testID="quotation-reference-input"
-          className={`border rounded-xl p-4 text-base bg-card text-foreground ${
-            errors.reference ? 'border-destructive' : 'border-input'
-          }`}
+          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
           value={reference}
           onChangeText={setReference}
-          placeholder="QT-2026-001"
+          placeholder="Leave blank to auto-generate"
           placeholderTextColor="#9ca3af"
         />
-        {errors.reference && <Text className="text-destructive text-sm mt-1">{errors.reference}</Text>}
       </View>
 
       {/* Vendor Name */}
@@ -298,39 +311,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
         ))}
       </View>
 
-      {/* Financials */}
-      <View className="mb-4">
-        <Text className="font-medium text-foreground mb-2">Subtotal</Text>
-        <TextInput
-          testID="quotation-subtotal-input"
-          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
-          value={subtotal}
-          onChangeText={setSubtotal}
-          placeholder="0.00"
-          placeholderTextColor="#9ca3af"
-          keyboardType="numeric"
-        />
-      </View>
-
-      <View className="mb-4">
-        <Text className="font-medium text-foreground mb-2">Tax</Text>
-        <TextInput
-          testID="quotation-tax-input"
-          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
-          value={taxTotal}
-          onChangeText={(val) => {
-            setTaxTotal(val);
-            // Auto-update total
-            const sub = parseFloat(subtotal) || 0;
-            const tax = parseFloat(val) || 0;
-            setTotal((sub + tax).toFixed(2));
-          }}
-          placeholder="0.00"
-          placeholderTextColor="#9ca3af"
-          keyboardType="numeric"
-        />
-      </View>
-
+      {/* Total */}
       <View className="mb-4">
         <Text className="font-medium text-foreground mb-2">Total*</Text>
         <TextInput
@@ -347,29 +328,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
         {errors.total && <Text className="text-destructive text-sm mt-1">{errors.total}</Text>}
       </View>
 
-      {/* Currency */}
-      <View className="mb-4">
-        <Text className="font-medium text-foreground mb-2">Currency</Text>
-        <TextInput
-          testID="quotation-currency-input"
-          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
-          value={currency}
-          onChangeText={setCurrency}
-          placeholder="USD"
-          placeholderTextColor="#9ca3af"
-        />
-      </View>
-
-      {/* Status */}
-      <View className="mb-6">
-        <OptionList
-          label="Status"
-          value={status}
-          onChange={(v) => setStatus(v as any)}
-          options={STATUS_OPTIONS}
-          testID="option-list-quotation-status"
-        />
-      </View>
+      {/* Currency, Subtotal, Tax, Status — hidden in UI; retained in state and submission data */}
 
       {/* Notes */}
       <View className="mb-8">
