@@ -303,5 +303,45 @@ export const InvoiceScreen = ({
       </View>
     );
   }
-  return null;
+
+  // ── Render: Default upload view — PDF button at top, form immediately below ──
+  const isProcessing =
+    processingStep === 'copying' ||
+    processingStep === 'ocr' ||
+    processingStep === 'normalizing';
+
+  return (
+    <View className="flex-1 bg-background" testID="invoice-screen">
+      {/* Upload Invoice PDF — always shown at the top */}
+      <View className="px-4 pt-8 pb-4">
+        <Text className="text-2xl font-bold text-foreground mb-4">New Invoice</Text>
+        <Pressable
+          testID="upload-pdf-button"
+          onPress={handleUploadPdf}
+          disabled={isProcessing}
+          className="bg-primary/10 border border-primary/30 p-4 rounded-xl flex-row items-center justify-center active:opacity-70"
+        >
+          {isProcessing ? (
+            <ActivityIndicator size="small" color="#6366f1" />
+          ) : (
+            <Paperclip size={20} color="#6366f1" />
+          )}
+          <Text className="text-primary font-semibold ml-2">
+            {isProcessing ? 'Processing PDF…' : formPdfFile ? formPdfFile.name : 'Upload Invoice PDF'}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Invoice form — always visible below the upload button */}
+      <InvoiceForm
+        mode="create"
+        initialValues={formInitialValues}
+        onCreate={handleFormSave}
+        onCancel={onClose}
+        isLoading={invoicesLoading}
+        pdfFile={formPdfFile}
+        embedded
+      />
+    </View>
+  );
 };
