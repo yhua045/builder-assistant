@@ -86,6 +86,15 @@ export const queryKeys = {
 
   /** Audit logs scoped to a single task */
   auditLogsByTask: (taskId: string) => ['auditLogs', 'task', taskId] as const,
+
+  /** Global quotations list (Finances screen Quotations filter) */
+  globalQuotations: () => ['quotations', 'global'] as const,
+
+  /** Global paid payments (Finances screen Paid filter) */
+  paidPaymentsGlobal: (contractorSearch?: string) =>
+    (contractorSearch
+      ? ['payments', 'paid', contractorSearch]
+      : ['payments', 'paid']) as readonly string[],
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────
