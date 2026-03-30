@@ -1,5 +1,12 @@
 # Project Progress
 
+## Current Milestone: Issue #188 — Payments Screen Tab Redesign
+**Status**: Phase 3 — Implementation complete ✅  
+**Design doc**: `design/issue-188-payments-screen.md`  
+**Branch**: `feature/issue-188-payments-screen`
+
+---
+
 ## 1. System Key Technology Stack
 
 - **Architecture**: Clean Architecture (UI → Hooks → Use Cases → Domain → Infrastructure).
@@ -1621,3 +1628,69 @@ Implemented task completion validation to prevent users from marking tasks as co
 - Manual QA: Test PDF upload and form pre-fill on iOS/Android devices.
 - Consider implementing "Batch Create Quotations" from receipt OCR results in a future iteration.
 - Monitor OCR accuracy metrics from real user uploads to refine confidence thresholds.
+
+
+## 10. Issue #188 — Payments Screen: Quotations, Pending Payments & Priority Ordering (2026-03-30)
+
+### Summary
+
+Redesigned `PaymentsScreen` to provide unified visibility of quotations, pending payments, and paid payments with single-tap switching and payment-priority sorting. Replaced two-level Firefighter/Site Manager toggle with a flat 4-option filter bar (Quotations | Pending | Paid | All) for intuitive navigation. Implemented payment priority ordering (overdue → due-soon → due-in-x-days → no-due-date) and paid-date descending sorting for settled payments.
+
+### Key Architectural Decisions
+
+- **Unified Filter State**: Single `filter: PaymentsFilterOption` state in `useGlobalPaymentsScreen` hook replaces dual-mode toggle, simplifying prop drilling and state management.
+- **Separation of Concerns**: Sorting logic isolated to pure utility functions (`sortByPaymentPriority`, `sortByPaidDateDesc`) for testability and reusability.
+- **Minimal Schema Changes**: No database changes required; quotations and paid payments leveraged existing queries with enhanced parameterization.
+- **Query Key Expansion**: Added `queryKeys.globalQuotations()` and `queryKeys.paidPaymentsGlobal()` to support independent caching of new data streams.
+
+### Completed Deliverables
+
+**New Files:**
+- `src/components/payments/PaymentsFilterBar.tsx` — 4-option horizontal pill bar (Quotations | Pending | Paid | All).
+- `src/components/payments/GlobalQuotationCard.tsx` — Compact read-only quotation card for global list view.
+- `src/hooks/useGlobalPaymentsScreen.ts` — Screen-level state + data aggregation hook.
+- `src/hooks/useGlobalQuotations.ts` — TanStack Query hook for global quotations with vendor search.
+- `src/utils/sortByPaymentPriority.ts` — Pure sorting utilities (priority order + paid-date desc).
+
+**Modified Files:**
+- `src/application/usecases/payment/ListGlobalPaymentsUseCase.ts` — Added `status?: 'pending' | 'settled'` parameter.
+- `src/pages/payments/index.tsx` — Refactored to use `useGlobalPaymentsScreen`, replaced `PaymentsSegmentedControl` with `PaymentsFilterBar`.
+- `src/hooks/queryKeys.ts` — Added global quotations and paid payments query keys.
+
+**Tests:**
+- `__tests__/unit/payment/sortByPaymentPriority.test.ts` — 6 tests covering priority order (overdue → due-soon → due-in-x-days), no-due-date trailing, and empty list.
+- `__tests__/unit/payment/ListGlobalPaymentsUseCase.test.ts` — 4 tests for `status` parameterization.
+- `__tests__/unit/useGlobalPaymentsScreen.test.tsx` — 8 tests for filter state transitions, search filtering, loading states.
+- `__tests__/unit/useGlobalQuotations.test.tsx` — 4 tests for vendor search, sorting (date desc), stale-time config.
+- `__tests__/unit/GlobalQuotationCard.test.tsx` — 5 tests for rendering, status badge, expiry display, navigation.
+- `__tests__/unit/ListGlobalPaymentsUseCase.paid.test.ts` — 3 tests for paid payments query.
+- `__tests__/unit/GetGlobalAmountPayableUseCase.test.ts` — 2 tests for sum aggregation.
+
+### Acceptance Criteria Met
+
+- ✅ **AC-1**: 4-option horizontal filter bar (Quotations | Pending | Paid | All) rendered at top of PaymentsScreen; default selection is Pending.
+- ✅ **AC-2**: Pending shows invoice-payable + pending payment rows sorted by payment priority (overdue → due-soon → due-in-x-days → no-due-date).
+- ✅ **AC-3**: Paid shows settled rows sorted by date descending (newest first).
+- ✅ **AC-4**: All shows pending (priority-sorted) + paid (date-desc) rows combined.
+- ✅ **AC-5**: Quotations shows all non-deleted quotations globally, sorted by date descending; each card displays reference, vendor name, total, status badge, expiry.
+- ✅ **AC-6**: `AmountPayableBanner` visible only for Pending/All; hidden for Paid/Quotations.
+- ✅ **AC-7**: Contractor/vendor search bar filters visible list in real time, case-insensitively.
+- ✅ **AC-8**: Empty-state messages for each filter option when list is empty.
+- ✅ **AC-9**: Old `PaymentsSegmentedControl` removed; Firefighter behaviour now Pending default state.
+- ✅ **AC-10**: `sortByPaymentPriority` and `sortByPaidDateDesc` exported as pure utilities.
+- ✅ **AC-11**: Comprehensive unit tests for priority ordering, paid-date sorting, filter state transitions, component rendering.
+- ✅ **AC-12**: TypeScript strict mode passes (`npx tsc --noEmit` — 0 errors).
+
+### Status
+
+- ✅ **TypeScript Strict**: No new errors introduced.
+- ✅ **Test Coverage**: 32 new unit tests, all passing.
+- ⚠️ **Linting**: Pre-existing ESLint warnings unrelated to Issue #188 changes (accepted per baseline).
+- ✅ **Design Doc**: Confirmed via `design/issue-188-payments-screen.md`.
+
+### Pending / Next Steps
+
+- Manual QA: Test filter switching, search, and empty states on iOS/Android devices.
+- Monitor sorting accuracy with real payment datasets (especially overdue priority ordering).
+- UI Polish: Consider adding sort-order indicator icon to PaymentsFilterBar active segment.
+- Future: Integrate analytics tracking for filter usage patterns.
