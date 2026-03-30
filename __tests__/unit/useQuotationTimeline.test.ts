@@ -22,16 +22,17 @@ import { renderHookWithQuery } from '../utils/queryClientWrapper';
 
 // ─── Factories ────────────────────────────────────────────────────────────────
 
-function makeQuotation(overrides: Partial<Quotation> & { id: string }): Quotation {
+function makeQuotation({ id, ...rest }: Partial<Quotation> & { id: string }): Quotation {
   return {
-    reference: `QT-${overrides.id}`,
+    reference: `QT-${id}`,
     date: '2024-12-20',
     total: 1000,
     currency: 'AUD',
     status: 'sent',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    ...overrides,
+    id,
+    ...rest,
   };
 }
 
@@ -59,6 +60,7 @@ function makeInvoiceRepo(overrides: Record<string, jest.Mock> = {}) {
     listInvoices: jest.fn().mockResolvedValue({ items: [], total: 0 }),
     findByExternalKey: jest.fn().mockResolvedValue(null),
     assignProject: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
   };
 }
 

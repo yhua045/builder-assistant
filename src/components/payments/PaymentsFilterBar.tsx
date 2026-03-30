@@ -25,7 +25,7 @@ export function PaymentsFilterBar({ value, onChange }: PaymentsFilterBarProps) {
             testID={`filter-option-${option}`}
             onPress={() => onChange(option)}
             style={styles.segment}
-            className={active ? 'bg-card rounded-lg shadow-sm' : ''}
+            className={active ? 'bg-card rounded-lg shadow-sm' : undefined}
             activeOpacity={0.7}
           >
             <Text

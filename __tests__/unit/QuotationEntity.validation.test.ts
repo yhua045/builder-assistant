@@ -1,14 +1,13 @@
 import { QuotationEntity } from '../../src/domain/entities/Quotation';
 
 describe('QuotationEntity validations', () => {
-  it('throws when reference is missing', () => {
-    expect(() =>
-      QuotationEntity.create({
-        reference: '',
-        date: '2026-01-15',
-        total: 100,
-      } as any)
-    ).toThrow('Quotation reference is required');
+  it('auto-generates reference when reference is missing', () => {
+    const entity = QuotationEntity.create({
+      reference: '',
+      date: '2026-01-15',
+      total: 100,
+    } as any);
+    expect(entity.data().reference).toMatch(/^QUO-\d{8}-[A-Z0-9]{6}$/);
   });
 
   it('throws when date is missing', () => {

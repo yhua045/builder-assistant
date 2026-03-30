@@ -9,7 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { launchCamera } from 'react-native-image-picker';
 import { Task, PREDEFINED_WORK_TYPES } from '../../domain/entities/Task';
 import { Document } from '../../domain/entities/Document';
 import ProjectPicker from '../inputs/ProjectPicker';
@@ -19,7 +19,7 @@ import { X, Save, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
 import { useTaskForm, PendingDocument } from '../../hooks/useTaskForm';
-import Dropdown from '../inputs/Dropdown';
+// Dropdown not used in this component
 import OptionList from '../inputs/OptionList';
 import { useAcceptQuote } from '../../hooks/useAcceptQuote';
 import { TaskDocumentSection } from './TaskDocumentSection';

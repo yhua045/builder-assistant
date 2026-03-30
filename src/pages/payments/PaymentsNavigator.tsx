@@ -2,11 +2,13 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PaymentsScreen from './index';
 import PaymentDetails from './PaymentDetails';
+import QuotationDetailScreen from '../projects/QuotationDetail';
 import { Payment } from '../../domain/entities/Payment';
 
 export type PaymentsStackParamList = {
   PaymentsList: undefined;
   PaymentDetails: { paymentId?: string; syntheticRow?: Payment };
+  QuotationDetail: { quotationId: string };
 };
 
 const Stack = createNativeStackNavigator();
@@ -18,6 +20,11 @@ export default function PaymentsNavigator() {
       <Stack.Screen
         name="PaymentDetails"
         component={PaymentDetails}
+        options={{ presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="QuotationDetail"
+        component={QuotationDetailScreen}
         options={{ presentation: 'card' }}
       />
     </Stack.Navigator>

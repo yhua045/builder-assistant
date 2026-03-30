@@ -4,7 +4,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { wrapWithQuery, createTestQueryClient } from '../utils/queryClientWrapper';
+import { createTestQueryClient } from '../utils/queryClientWrapper';
 
 // Mock DI registration to avoid native module resolution during unit tests
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));

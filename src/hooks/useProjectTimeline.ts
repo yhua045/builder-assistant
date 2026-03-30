@@ -40,7 +40,7 @@ export interface UseProjectTimelineReturn {
 export function useProjectTimeline(projectId: string): UseProjectTimelineReturn {
   const queryClient = useQueryClient();
   const { project, loading: projectLoading, error: projectError } = useProjectDetail(projectId);
-  const { dayGroups, loading: tasksLoading, error: tasksError, markComplete, invalidate } =
+  const { dayGroups, loading: tasksLoading, error: tasksError, markComplete } =
     useTaskTimeline(projectId);
 
   const invalidateTimeline = useCallback(async () => {

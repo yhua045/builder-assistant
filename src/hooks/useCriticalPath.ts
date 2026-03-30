@@ -13,7 +13,7 @@ import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../data
 import type { SuggestCriticalPathUseCase } from '../application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import type { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
 import { stableId } from '../utils/stableId';
-import { queryKeys, invalidations } from './queryKeys';
+import { invalidations } from './queryKeys';
 
 // ── Public interface ──────────────────────────────────────────────────────────
 
@@ -152,9 +152,9 @@ export function useCriticalPath(options: UseCriticalPathOptions): UseCriticalPat
             failedIdsRef.current.delete(suggestion.id);
             completedCount++;
             setCreationProgress({ completed: completedCount, total: toCreate.length });
-          } catch (error) {
+          } catch (createErr) {
             failedIdsRef.current.add(suggestion.id);
-            throw error; // Stop bulk creation and surface it
+            throw createErr; // Stop bulk creation and surface it
           }
         }
         // Invalidate task list + projects overview so any consumer renders fresh data

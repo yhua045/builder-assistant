@@ -6,7 +6,7 @@ describe('useConfirm', () => {
   let alertSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, _buttons) => {
       // Do nothing by default; individual tests trigger buttons manually
     });
   });

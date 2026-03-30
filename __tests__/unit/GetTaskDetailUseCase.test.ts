@@ -1,4 +1,4 @@
-import { GetTaskDetailUseCase, TaskDetail } from '../../src/application/usecases/task/GetTaskDetailUseCase';
+import { GetTaskDetailUseCase } from '../../src/application/usecases/task/GetTaskDetailUseCase';
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { DelayReason } from '../../src/domain/entities/DelayReason';

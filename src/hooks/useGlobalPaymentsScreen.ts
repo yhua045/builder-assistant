@@ -68,7 +68,7 @@ export function useGlobalPaymentsScreen(
     () =>
       options?.paymentRepoOverride ??
       container.resolve<PaymentRepository>('PaymentRepository' as any),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [options?.paymentRepoOverride],
   );
   const listGlobalUc = useMemo(

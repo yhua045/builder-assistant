@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useQueryClient, QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
@@ -19,13 +19,7 @@ export interface UseAcceptQuoteReturn {
 export function useAcceptQuote(): UseAcceptQuoteReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  let queryClient: QueryClient | null = null;
-  try {
-    queryClient = useQueryClient();
-  } catch (e) {
-    // No QueryClientProvider in this render environment (tests). Fall back to no-op.
-    queryClient = null;
-  }
+  const queryClient = useQueryClient();
 
   const taskRepository = useMemo(
     () => container.resolve<TaskRepository>('TaskRepository'),

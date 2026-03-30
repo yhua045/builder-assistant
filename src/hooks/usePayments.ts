@@ -188,7 +188,7 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
     ? ['payments', 'firefighter', contractorSearch ?? ''] as const
     : ['payments', 'site_manager', projectId ?? ''] as const;
 
-  const { data, isFetching, refetch } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       if (mode === 'firefighter') {
@@ -287,8 +287,8 @@ export function usePayments(options: UsePaymentsOptions): UsePaymentsReturn {
 
   const globalPayments = data?.globalPayments ?? [];
   const globalAmountPayable = data?.globalAmountPayable ?? 0;
-  const contractPayments = data?.contractPayments ?? [];
-  const variationPayments = data?.variationPayments ?? [];
+  const contractPayments = useMemo(() => data?.contractPayments ?? [], [data?.contractPayments]);
+  const variationPayments = useMemo(() => data?.variationPayments ?? [], [data?.variationPayments]);
   const metrics = data?.metrics ?? { pendingTotalNext7Days: 0, overdueCount: 0 };
 
   const contractTotal = useMemo(

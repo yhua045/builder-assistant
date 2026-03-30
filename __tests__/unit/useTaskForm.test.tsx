@@ -188,11 +188,6 @@ describe.skip('useTaskForm — validation', () => {
 
 describe.skip('useTaskForm — create mode submit', () => {
   it('calls CreateTaskUseCase and then AddTaskDocumentUseCase for each pending doc', async () => {
-    const createdTask: Task = {
-      id: 'new-task-1',
-      title: 'Build deck',
-      status: 'pending',
-    };
     taskRepo.save.mockResolvedValue(undefined);
 
     const onSuccess = jest.fn();

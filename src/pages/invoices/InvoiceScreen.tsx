@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Alert, Text, Pressable, ActivityIndicator } from 'react-native';
-import { Paperclip, Edit } from 'lucide-react-native';
+import { Paperclip } from 'lucide-react-native';
 import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../../infrastructure/files/MobileFilePickerAdapter';
@@ -176,11 +176,7 @@ export const InvoiceScreen = ({
     }
   };
 
-  const handleManualEntry = () => {
-    setFormInitialValues(undefined);
-    setFormPdfFile(undefined);
-    setView('form');
-  };
+
 
   const handleAcceptExtraction = (result: NormalizedInvoice) => {
     const initialValues = normalizedInvoiceToFormValues(result);

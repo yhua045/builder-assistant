@@ -12,7 +12,6 @@ import { useBlockerBar } from '../../hooks/useBlockerBar';
 import { TasksList } from '../../components/tasks/TasksList';
 import { BlockerCarousel } from '../../components/tasks/BlockerCarousel';
 import { CriticalTasksTimeline } from '../../components/tasks/CriticalTasksTimeline';
-import { FocusList } from '../../components/tasks/FocusList';
 import type { Task } from '../../domain/entities/Task';
 import { selectTopBlockedTasks, BlockedTaskItem } from '../../utils/selectTopBlockedTasks';
 
@@ -29,7 +28,7 @@ const FILTER_PILLS: { label: string; value: FilterValue }[] = [
 ];
 
 export default function TasksScreen() {
-  const { tasks, loading, refreshTasks, updateTask } = useTasks();
+  const { tasks, loading, refreshTasks } = useTasks();
   const navigation = useNavigation<any>();
   const [selectedFilters, setSelectedFilters] = useState<Set<FilterValue>>(
     new Set(['all'])
@@ -40,7 +39,7 @@ export default function TasksScreen() {
   // useCockpitData drives the Focus-3 list for the default (first) project.
   const { projects } = useProjects();
   const defaultProjectId = useMemo(() => projects[0]?.id ?? '', [projects]);
-  const { cockpit, refresh: refreshCockpit } = useCockpitData(defaultProjectId);
+  const { refresh: refreshCockpit } = useCockpitData(defaultProjectId);
   const { result: blockerBarResult, refresh: refreshBlockerBar } = useBlockerBar(projects);
 
   // ── Navigation handler ──────────────────────────────────────────

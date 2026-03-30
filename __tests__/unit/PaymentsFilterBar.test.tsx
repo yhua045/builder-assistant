@@ -95,4 +95,27 @@ describe('PaymentsFilterBar', () => {
       });
     }
   });
+
+  it('active pill has the NativeWind className; inactive pills have undefined className (not empty string)', async () => {
+    // Regression guard for the NavigationStateContext crash:
+    // className="" (empty string) causes NativeWind v4 to wrap TouchableOpacity in an
+    // InteropComponent that misfires during React 19 concurrent re-renders inside
+    // React Navigation v7 screen boundaries. className={undefined} prevents the wrapper.
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <PaymentsFilterBar value="pending" onChange={onChange} />,
+      );
+    });
+    const options: PaymentsFilterOption[] = ['quotations', 'pending', 'paid', 'all'];
+    for (const option of options) {
+      const btn = tree!.root.findByProps({ testID: `filter-option-${option}` });
+      if (option === 'pending') {
+        expect(btn.props.className).toBe('bg-card rounded-lg shadow-sm');
+      } else {
+        // Must be undefined, NOT the empty string '', to avoid NativeWind wrapper crash
+        expect(btn.props.className).toBeUndefined();
+      }
+    }
+  });
 });
