@@ -73,7 +73,7 @@ export function useTaskDetail(
     return () => {
       cancelled = true;
     };
-  }, [task?.id, suggestionService, project?.id]);
+  }, [task, suggestionService, project?.id, project?.location, project?.fireZone, project?.regulatoryFlags]);
 
   return { suggestion, loadingSuggestion };
 }

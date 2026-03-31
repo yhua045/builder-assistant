@@ -87,11 +87,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-        <NavigationContainer>
-          <View style={containerStyle}>
+        <View style={containerStyle}>
+          <NavigationContainer>
             <TabsLayout />
-          </View>
-        </NavigationContainer>
+          </NavigationContainer>
+        </View>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

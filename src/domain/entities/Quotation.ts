@@ -57,17 +57,25 @@ export class QuotationEntity {
       currency?: string;
     }
   ): QuotationEntity {
-    const id = payload.id ?? `quot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const now = new Date().toISOString();
+    // Validate date is required and must be valid first
+    // (needed for auto-reference generation)
+    if (!(payload as any).date) {
+      throw new Error('Quotation date is required');
+    }
+    const dateMs = new Date((payload as any).date).getTime();
+    if (!Number.isFinite(dateMs)) {
+      throw new Error('Quotation date must be a valid ISO date');
+    }
 
     // Auto-generate reference when blank/absent (mirrors InvoiceEntity.create)
-    const baseDate = (payload as any).date ? new Date((payload as any).date) : new Date();
+    const providedRef = String((payload as any).reference || '').trim();
+    const baseDate = new Date((payload as any).date);
     const yyyymmdd = baseDate.toISOString().slice(0, 10).replace(/-/g, '');
     const autoRef = `QUO-${yyyymmdd}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const reference =
-      (payload as any).reference && String((payload as any).reference).trim().length > 0
-        ? String((payload as any).reference).trim()
-        : autoRef;
+    const reference = providedRef.length > 0 ? providedRef : autoRef;
+
+    const id = payload.id ?? `quot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const now = new Date().toISOString();
 
     // Default values
     const quotation: Quotation = {
@@ -77,25 +85,15 @@ export class QuotationEntity {
       createdAt: now,
       updatedAt: now,
       status: payload.status || 'draft',
-      currency: payload.currency || 'AUD',
+      currency: payload.currency || 'USD',
     } as Quotation;
-
-    // Domain validations
-    // 1. date is required and must be valid
-    if (!quotation.date) {
-      throw new Error('Quotation date is required');
-    }
-    const dateMs = new Date(quotation.date).getTime();
-    if (!Number.isFinite(dateMs)) {
-      throw new Error('Quotation date must be a valid ISO date');
-    }
-
-    // 2. total must be non-negative
+    // Domain validations (continued)
+    // 3. total must be non-negative
     if (quotation.total == null || typeof quotation.total !== 'number' || quotation.total < 0) {
       throw new Error('Quotation total must be a non-negative number');
     }
 
-    // 3. If expiryDate provided, it must be valid and >= date
+    // 4. If expiryDate provided, it must be valid and >= date
     if (quotation.expiryDate) {
       const expiryMs = new Date(quotation.expiryDate).getTime();
       if (!Number.isFinite(expiryMs)) {
@@ -106,7 +104,7 @@ export class QuotationEntity {
       }
     }
 
-    // 4. If line items are provided, their sum should match subtotal/total if present
+    // 5. If line items are provided, their sum should match subtotal/total if present
     if (quotation.lineItems && quotation.lineItems.length > 0) {
       const sum = quotation.lineItems.reduce((acc, item) => {
         const qty = typeof item.quantity === 'number' ? item.quantity : 1;

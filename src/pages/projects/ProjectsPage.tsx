@@ -9,7 +9,6 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { Layers, Plus } from 'lucide-react-native';
 import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
 import { ProjectDetails } from '../../domain/entities/ProjectDetails';
-import { ProjectsStackParamList } from './ProjectsNavigator';
 
 const ProjectsPage: React.FC = () => {
   const navigation = useNavigation<any>();

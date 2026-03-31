@@ -1,5 +1,5 @@
 import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { Task } from '../../../domain/entities/Task';
+// Task type not required here
 
 export interface AddTaskDependencyInput {
   taskId: string;

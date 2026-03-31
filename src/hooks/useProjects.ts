@@ -4,7 +4,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Project } from '../domain/entities/Project';
+// Project entity type not used in this hook
 import { ProjectDetails } from '../domain/entities/ProjectDetails';
 import { ProjectRepository } from '../domain/repositories/ProjectRepository';
 import { container } from 'tsyringe';

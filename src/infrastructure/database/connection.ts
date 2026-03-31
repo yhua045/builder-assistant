@@ -9,26 +9,6 @@ let dbInstance: SQLite.SQLiteDatabase | null = null;
 let drizzleInstance: ReturnType<typeof drizzle> | null = null;
 let initPromise: Promise<{ db: SQLite.SQLiteDatabase; drizzle: ReturnType<typeof drizzle> }> | null = null;
 
-async function columnExists(
-  db: SQLite.SQLiteDatabase,
-  tableName: string,
-  columnName: string,
-): Promise<boolean> {
-  // Use SELECT from pragma_table_info so test adapters that only
-  // return rows for SELECT statements will work correctly.
-  const [result] = await db.executeSql(
-    `SELECT name FROM pragma_table_info('${tableName}')`
-  );
-
-  for (let i = 0; i < result.rows.length; i++) {
-    if (result.rows.item(i).name === columnName) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 /**
  * Initialize the database connection and run migrations
  */

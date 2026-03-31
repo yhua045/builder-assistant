@@ -36,7 +36,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   );
   const [total, setTotal] = useState(initialValues?.total?.toString() || '');
   const [subtotal, setSubtotal] = useState(initialValues?.subtotal?.toString() || '');
-  const [taxTotal, setTaxTotal] = useState(initialValues?.taxTotal?.toString() || '');
+  const [taxTotal, _setTaxTotal] = useState(initialValues?.taxTotal?.toString() || '');
   const [currency] = useState(initialValues?.currency || 'AUD');
   const [status] = useState<Quotation['status']>(initialValues?.status || 'draft');
   const [notes, setNotes] = useState(initialValues?.notes || '');

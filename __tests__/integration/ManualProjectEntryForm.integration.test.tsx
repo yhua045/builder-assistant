@@ -102,7 +102,7 @@ describe('ManualProjectEntryForm — Dropdown integration', () => {
 
   // I2 — selecting Renovation updates the Project Type trigger
   it('I2: selecting Renovation via Project Type dropdown updates the trigger label', () => {
-    const { getByTestId, getByText, queryByText } = renderForm();
+    const { getByTestId, getByText } = renderForm();
 
     // Project Type now uses an OptionList (chip buttons) — press the Renovation option directly
     fireEvent.press(getByTestId('option-renovation'));

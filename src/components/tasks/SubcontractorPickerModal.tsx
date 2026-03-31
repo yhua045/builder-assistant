@@ -6,7 +6,6 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { X, HardHat, UserPlus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
@@ -34,7 +33,6 @@ interface Props {
 }
 
 export function SubcontractorPickerModal({ visible, selectedId, onSelect, onClose }: Props) {
-  const { contacts } = useContacts();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SubcontractorContact[]>([]);
   const [showQuickAdd, setShowQuickAdd] = useState(false);

@@ -126,7 +126,7 @@ beforeEach(() => {
 
 describe('Task Form round-trip: documents (Issue #114)', () => {
   it('create task → attach document → document is found by taskId', async () => {
-    const { taskRepo, docRepo, createTask, addDoc } = setup();
+    const { docRepo, createTask, addDoc } = setup();
 
     const task = await createTask.execute({ title: 'Install windows', status: 'pending' });
 

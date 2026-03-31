@@ -118,13 +118,13 @@ export function usePaymentsTimeline(projectId: string): UsePaymentsTimelineRetur
     enabled: Boolean(projectId),
   });
 
-  const payments = data?.payments ?? [];
+  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
   const truncated = data?.truncated ?? false;
 
   const paymentDayGroups = useMemo(() => groupPaymentsByDay(payments), [payments]);
 
   const recordPayment = useCallback(
-    async (payment: Payment) => {
+    async (_payment: Payment) => {
       // Persist is handled by the caller (e.g. RecordPaymentSheet).
       // This helper only invalidates the relevant cache keys.
       await Promise.all(

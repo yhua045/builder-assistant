@@ -6,7 +6,7 @@
  * exposes loading flag, and forwards errors correctly.
  */
 
-import React from 'react';
+// React not needed in this test file
 import { act } from 'react-test-renderer';
 import { container } from 'tsyringe';
 import { useUpdateProject } from '../../src/hooks/useUpdateProject';

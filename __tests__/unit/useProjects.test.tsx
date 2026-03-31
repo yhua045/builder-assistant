@@ -1,7 +1,5 @@
 import { renderHookWithQuery } from '../utils/queryClientWrapper';
-import React, { useEffect } from 'react';
-import { act } from 'react-test-renderer';
-import TestRenderer from 'react-test-renderer';
+// React/test renderer imports not required for these tests
 import { container } from 'tsyringe';
 import { useProjects } from '../../src/hooks/useProjects';
 

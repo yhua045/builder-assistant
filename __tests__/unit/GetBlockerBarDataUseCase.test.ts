@@ -11,13 +11,12 @@
 import { GetBlockerBarDataUseCase } from '../../src/application/usecases/task/GetBlockerBarDataUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { Task } from '../../src/domain/entities/Task';
-import { BlockerBarResult } from '../../src/domain/entities/CockpitData';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const NOW = new Date('2026-03-05T10:00:00.000Z');
 
-let taskIdCounter = 0;
+// taskIdCounter not needed
 function makeTask(overrides: Partial<Task> & Pick<Task, 'id'>): Task {
   return {
     title: `Task ${overrides.id}`,

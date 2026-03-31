@@ -386,6 +386,7 @@ export function useTaskForm({
               .map(key => queryClient.invalidateQueries({ queryKey: key }))
           );
           const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
+          onSuccess?.(taskWithInvoice);
           return taskWithInvoice;
         }
 
@@ -413,6 +414,7 @@ export function useTaskForm({
             action: `Updated task "${updatedTask.title}"`,
           });
         }
+        onSuccess?.(updatedTask);
         return updatedTask;
       } else {
         // ── Create mode ───────────────────────────────────────────────────
@@ -479,6 +481,7 @@ export function useTaskForm({
               .map(key => queryClient.invalidateQueries({ queryKey: key }))
           );
           const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
+          onSuccess?.(taskWithInvoice);
           return taskWithInvoice;
         }
 
@@ -491,6 +494,7 @@ export function useTaskForm({
             action: `Created task "${newTask.title}"`,
           });
         }
+        onSuccess?.(newTask);
         return newTask;
       }
     } finally {
@@ -523,6 +527,7 @@ export function useTaskForm({
     contactRepository,
     queryClient,
     createAuditEntry,
+    onSuccess,
   ]);
 
   return {

@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { QuotationCard } from '../../src/components/projects/QuotationCard';
 import { Quotation } from '../../src/domain/entities/Quotation';
