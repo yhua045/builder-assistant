@@ -50,7 +50,10 @@ export function useGlobalPaymentsScreen(
 
   // ── Quotations data ──────────────────────────────────────────────────────
   const { quotations, loading: quotationsLoading, refresh: refreshQuotations } =
-    useGlobalQuotations({ vendorSearch: filter === 'quotations' ? search : undefined });
+    useGlobalQuotations({
+      vendorSearch: filter === 'quotations' ? search : undefined,
+      enabled: filter === 'quotations',
+    });
 
   // ── Pending payments data (firefighter mode) ─────────────────────────────
   const {

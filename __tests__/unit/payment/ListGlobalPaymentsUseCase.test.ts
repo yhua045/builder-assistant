@@ -1,5 +1,5 @@
 import { ListGlobalPaymentsUseCase } from '../../../src/application/usecases/payment/ListGlobalPaymentsUseCase';
-import { PaymentRepository } from '../../../src/domain/repositories/PaymentRepository';
+import { PaymentRepository, PaymentListResult } from '../../../src/domain/repositories/PaymentRepository';
 
 function makeRepo(items = []): jest.Mocked<PaymentRepository> {
   return {

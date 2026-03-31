@@ -7,6 +7,8 @@ import { queryKeys } from './queryKeys';
 
 export interface UseGlobalQuotationsOptions {
   vendorSearch?: string;
+  /** When false, the query will not execute. Defaults to true. */
+  enabled?: boolean;
 }
 
 export interface UseGlobalQuotationsReturn {
@@ -31,6 +33,7 @@ export function useGlobalQuotations(
       return result.items;
     },
     staleTime: Infinity,
+    enabled: options?.enabled ?? true,
   });
 
   const quotations = useMemo((): Quotation[] => {

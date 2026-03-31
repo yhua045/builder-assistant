@@ -2,7 +2,7 @@ import { AddDelayReasonUseCase } from '../../src/application/usecases/task/AddDe
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { DelayReasonTypeRepository } from '../../src/domain/repositories/DelayReasonTypeRepository';
-// DelayReason types not needed in this test
+import { DelayReasonType } from '../../src/domain/entities/DelayReason';
 
 function makeMockTaskRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {

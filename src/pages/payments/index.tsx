@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import AmountPayableBanner from '../../components/payments/AmountPayableBanner';
 import PaymentCard, { PaymentCardPayment } from '../../components/payments/PaymentCard';
-import { PaymentsFilterBar } from '../../components/payments/PaymentsFilterBar';
+import { PaymentTypeFilterChips } from '../../components/payments/PaymentTypeFilterChips';
 import GlobalQuotationCard from '../../components/payments/GlobalQuotationCard';
 import { useGlobalPaymentsScreen } from '../../hooks/useGlobalPaymentsScreen';
 import type { Quotation } from '../../domain/entities/Quotation';
@@ -92,8 +92,8 @@ export default function PaymentsScreen() {
           <ThemeToggle />
         </View>
 
-        {/* Single flattened 4-option filter bar */}
-        <PaymentsFilterBar value={filter} onChange={setFilter} />
+        {/* Single flattened 4-option filter chips */}
+        <PaymentTypeFilterChips value={filter} onChange={setFilter} isDark={isDark} />
 
         <View
           className="flex-row items-center bg-card border border-border rounded-xl px-3 mt-3"
