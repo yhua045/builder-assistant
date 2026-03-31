@@ -1,6 +1,39 @@
 # Project Progress
 
-## Current Milestone: Issue #188 — Payments Screen Tab Redesign
+## Current Milestone: Issue #186 — Payments Navigation & Filter Chips
+**Status**: Phase 3 — Implementation complete ✅  
+**Design doc**: `design/issue-186-payments-filter-chips.md`  
+**Branch**: `fix/payments-navigation-context-186`
+
+### Summary
+Replaced broken segmented control tabs with filter chips to fix navigation context loss in payments screen. Migrated from `PaymentsSegmentedControl` (React Navigation incompatible) to new `PaymentTypeFilterChips` component with local state management.
+
+### Implementation Details
+- **New Component**: `PaymentTypeFilterChips.tsx` — Renders filter chips in horizontal scrollable container with active/inactive states
+- **Removed Components**:
+  - `PaymentsFilterBar.tsx` (wrapper component)
+  - `PaymentsSegmentedControl.tsx` (broken tabs)
+- **Integration Points**:
+  - `useGlobalPaymentsScreen` hook updated to use local state for payment type filter
+  - `PaymentsScreen` integrated with new filter UI
+- **Test Updates**: Fixed missing type imports in test files (`DelayReasonType`, `PaymentListResult`)
+- **Design**:
+  - Uses NativeWind styling (Tailwind) for consistent UI
+  - Horizontal scrollable FlatList for responsive layout
+  - Active/inactive chip styling with Tailwind classes
+- **Validation**: All type checks and linting pass ✅
+
+### Completed
+- ✅ Replaced broken segmented control with filter chips
+- ✅ Fixed navigation context loss issue
+- ✅ Local state management for payment type filtering
+- ✅ Updated test imports (TypeScript compilation clean)
+- ✅ Static analysis passed (ESLint warnings only, no errors)
+- ✅ Committed and pushed to `fix/payments-navigation-context-186`
+
+---
+
+## Previous Milestone: Issue #188 — Payments Screen Tab Redesign
 **Status**: Phase 3 — Implementation complete ✅  
 **Design doc**: `design/issue-188-payments-screen.md`  
 **Branch**: `feature/issue-188-payments-screen`
