@@ -93,6 +93,7 @@ function buildHookReturn(
     deleteProgressLog: jest.fn(),
     resolveDelayReason: jest.fn(),
     completeTask: jest.fn(),
+    completeTaskAndSettlePayments: jest.fn(),
   };
 }
 

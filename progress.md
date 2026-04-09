@@ -1,5 +1,50 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+## ✅ Issue #198 — Refine "Mark Task Completed" — Payment Validation (Feature 1)
+**Status**: COMPLETED  
+**Branch**: `issue-198-refine-mark-task-completed`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **Domain Layer — New Error Type**:
+  - Added `PendingPaymentsForTaskError` in `TaskCompletionErrors.ts` to encapsulate pending payment records and provide rich error context to the UI
+- **Domain Layer — New Service**:
+  - Created `TaskPaymentValidator` service (`src/domain/services/TaskPaymentValidator.ts`) — validates task completion eligibility by checking:
+    - Whether the task has a linked invoice (`task.quoteInvoiceId`)
+    - Whether the linked invoice has any pending payments (status: `'pending'`)
+    - Returns `{ ok: true, pendingPayments: [] }` if eligible; `{ ok: false, pendingPayments: [...] }` if not
+- **Application Layer — Extended Use Cases**:
+  - **CompleteTaskUseCase**: Added payment validation check (after existing quotation validation) — throws `PendingPaymentsForTaskError` if pending payments exist
+  - **CompleteTaskAndSettlePaymentsUseCase** (NEW): Two-phase atomic operation — settles all pending payments via `MarkPaymentAsPaidUseCase`, then calls `CompleteTaskUseCase` to mark task completed
+- **Hooks Layer**:
+  - Extended `useTasks` hook with new `completeTaskAndSettlePayments(taskId)` method—delegates to the new use case and refreshes task/payment caches on success
+- **UI Layer — TaskDetailsPage**:
+  - Updated `handleComplete` to catch `PendingPaymentsForTaskError` and present a 2-button Alert:
+    - **"Mark as Paid & Complete"**: calls `completeTaskAndSettlePayments(taskId)`
+    - **"Cancel"**: dismisses dialog; task and payments unchanged
+  - Successful settlement navigates back to project with updated task
+- **Tests**: Comprehensive TDD coverage across all layers — 13 acceptance criteria:
+  - Unit tests: `TaskPaymentValidator` covering all three paths (no invoice, all settled, 1+ pending)
+  - Unit tests: `CompleteTaskUseCase` for no-throw (settled) and throw (pending) paths
+  - Unit tests: `CompleteTaskAndSettlePaymentsUseCase` for full two-phase flow
+  - Integration test: End-to-end flow — pending payment on accepted-quotation invoice → use case execution → task completed and payment marked paid in SQLite
+  - UI snapshot test: TaskDetailsPage rendering with alert dialog
+- **Code Quality**:
+  - ✅ TypeScript strict mode: 0 new errors (all earlier issues fixed)
+  - ✅ ESLint: 0 errors (71 pre-existing warnings from earlier issues)
+  - ✅ All 13 acceptance criteria met (AC-1 through AC-13)
+  - Fixed test suite errors: corrected Invoice field names (`vendor` vs `vendorName`, `total` vs `totalAmount`), added missing mock method
+
+### Acceptance Criteria
+All 13 acceptance criteria met:
+- ✅ AC-1 to AC-3: TaskPaymentValidator validates invoice and pending payment states
+- ✅ AC-4 to AC-5: CompleteTaskUseCase throws on pending payments; CompleteTaskAndSettlePaymentsUseCase settles then completes
+- ✅ AC-6 to AC-8: UI catches error and presents 2-button alert with correct behavior
+- ✅ AC-9 to AC-12: Full unit and integration test coverage
+- ✅ AC-13: TypeScript strict mode passes
+
+---
+
 ## ✅ Issue #192 — Add Quotation: Project Field + Subcontractor Picker  
 **Status**: COMPLETED  
 **Branch**: `issue-192-add-quotation-project-subcontractor`  
