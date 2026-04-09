@@ -1,6 +1,5 @@
 # Project Progress — Summary (updated 2026-04-09)
 
-<<<<<<< HEAD
 ## ✅ Issue #199 — Update Payments List in Project Detail
 **Status**: COMPLETED  
 **Branch**: `issue-199-payments-list-project-detail`  
@@ -234,8 +233,6 @@ All 15 acceptance criteria met:
 - ✅ AC-13: All use cases and components have unit tests
 - ✅ AC-14: Two integration tests pass (CreateQuotationWithTask + ApproveQuotation flows)
 - ✅ AC-15: TypeScript strict mode passes
->>>>>>> master
->>>>>>> origin/master
 
 ---
 

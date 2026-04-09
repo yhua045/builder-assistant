@@ -76,15 +76,10 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
-<<<<<<< issue-198-refine-mark-task-completed
-  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
   const paymentRepository = useMemo(() => container.resolve<PaymentRepository>('PaymentRepository'), []);
   const invoiceRepository = useMemo(() => container.resolve<InvoiceRepository>('InvoiceRepository'), []);
   const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository, paymentRepository), [taskRepository, quotationRepository, paymentRepository]);
   const completeTaskAndSettlePaymentsUseCase = useMemo(() => new CompleteTaskAndSettlePaymentsUseCase(taskRepository, paymentRepository, invoiceRepository, quotationRepository), [taskRepository, paymentRepository, invoiceRepository, quotationRepository]);
-=======
-  const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
->>>>>>> master
 
   const tasksQueryKey = queryKeys.tasks(projectId);
 
