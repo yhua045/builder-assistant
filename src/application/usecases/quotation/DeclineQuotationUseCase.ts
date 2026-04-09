@@ -27,7 +27,9 @@ export class DeclineQuotationUseCase {
     // ── Load and validate quotation ──────────────────────────────────────────
     const quotation = await this.quotationRepository.getQuotation(quotationId);
     if (!quotation) throw new Error('QUOTATION_NOT_FOUND');
-    if (quotation.status !== 'pending_approval') throw new Error('QUOTATION_NOT_PENDING_APPROVAL');
+    if (quotation.status !== 'pending_approval' && quotation.status !== 'draft') {
+      throw new Error('QUOTATION_NOT_PENDING_APPROVAL');
+    }
 
     const now = new Date().toISOString();
 

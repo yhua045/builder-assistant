@@ -137,12 +137,12 @@ export default function QuotationDetailScreen() {
   const handleDecline = useCallback(() => {
     if (!quotation) return;
     Alert.alert(
-      'Decline Quotation',
-      'Are you sure you want to decline this quotation?',
+      'Reject Quotation',
+      'Are you sure you want to reject this quotation?',
       [
         { text: 'No', style: 'cancel' },
         {
-          text: 'Yes',
+          text: 'Reject',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -150,7 +150,7 @@ export default function QuotationDetailScreen() {
               await declineQuotation(quotation.id);
               await load();
             } catch (e: any) {
-              Alert.alert('Error', e?.message || 'Failed to decline quotation');
+              Alert.alert('Error', e?.message || 'Failed to reject quotation');
             } finally {
               setDeclining(false);
             }
@@ -312,6 +312,36 @@ export default function QuotationDetailScreen() {
             </View>
           ) : null}
         </ScrollView>
+      )}
+
+      {/* Action footer: Approve / Reject (visible for draft and pending_approval) */}
+      {!loading && !error && quotation && (quotation.status === 'pending_approval' || quotation.status === 'draft') && (
+        <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
+          <View className="flex-row gap-3">
+            <Pressable
+              onPress={handleDecline}
+              className="flex-1 items-center justify-center border border-destructive rounded-lg p-3"
+              disabled={declining || approving}
+            >
+              {declining ? (
+                <ActivityIndicator testID="decline-loading" />
+              ) : (
+                <Text className="text-destructive font-semibold">Reject</Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={handleApprove}
+              className="flex-1 items-center justify-center bg-green-600 rounded-lg p-3"
+              disabled={approving || declining}
+            >
+              {approving ? (
+                <ActivityIndicator color="#fff" testID="approve-loading" />
+              ) : (
+                <Text className="text-white font-semibold">Approve</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
       )}
     </SafeAreaView>
   );

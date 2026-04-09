@@ -18,7 +18,7 @@ export interface ApproveQuotationOutput {
 /**
  * ApproveQuotationUseCase
  *
- * Approves a quotation that is in 'pending_approval' status:
+ * Approves a quotation that is in 'draft' or 'pending_approval' status:
  * 1. Validates quotation exists and is pending_approval.
  * 2. Creates an Invoice from the quotation data.
  * 3. Transitions quotation to 'accepted'.
@@ -37,7 +37,9 @@ export class ApproveQuotationUseCase {
     // ── Load and validate quotation ──────────────────────────────────────────
     const quotation = await this.quotationRepository.getQuotation(quotationId);
     if (!quotation) throw new Error('QUOTATION_NOT_FOUND');
-    if (quotation.status !== 'pending_approval') throw new Error('QUOTATION_NOT_PENDING_APPROVAL');
+    if (quotation.status !== 'pending_approval' && quotation.status !== 'draft') {
+      throw new Error('QUOTATION_NOT_PENDING_APPROVAL');
+    }
 
     const now = new Date().toISOString();
     const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
