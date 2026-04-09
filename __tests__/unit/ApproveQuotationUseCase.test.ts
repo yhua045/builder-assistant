@@ -112,15 +112,24 @@ describe('ApproveQuotationUseCase', () => {
     await expect(uc.execute({ quotationId: 'missing' })).rejects.toThrow('QUOTATION_NOT_FOUND');
   });
 
-  it('throws QUOTATION_NOT_PENDING_APPROVAL when status is not pending_approval', async () => {
+  it('throws QUOTATION_NOT_PENDING_APPROVAL when status is sent', async () => {
     const quotationRepo = makeQuotationRepo({
-      getQuotation: jest.fn().mockResolvedValue(makeQuotation({ status: 'draft' })),
+      getQuotation: jest.fn().mockResolvedValue(makeQuotation({ status: 'sent' })),
     });
     const uc = new ApproveQuotationUseCase(makeInvoiceRepo(), quotationRepo, makeTaskRepo());
 
     await expect(uc.execute({ quotationId: 'quot-1' })).rejects.toThrow(
       'QUOTATION_NOT_PENDING_APPROVAL',
     );
+  });
+
+  it('approves a quotation when status is draft', async () => {
+    const quotationRepo = makeQuotationRepo({
+      getQuotation: jest.fn().mockResolvedValue(makeQuotation({ status: 'draft' })),
+    });
+    const uc = new ApproveQuotationUseCase(makeInvoiceRepo(), quotationRepo, makeTaskRepo());
+
+    await expect(uc.execute({ quotationId: 'quot-1' })).resolves.toBeDefined();
   });
 
   it('throws QUOTATION_NOT_PENDING_APPROVAL when status is accepted', async () => {

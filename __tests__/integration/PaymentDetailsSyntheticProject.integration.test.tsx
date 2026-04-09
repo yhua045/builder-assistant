@@ -13,7 +13,7 @@
  * async loadData() to complete; then assert on rendered testIDs.
  */
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PaymentDetails from '../../src/pages/payments/PaymentDetails';
 
@@ -111,7 +111,11 @@ jest.mock('react-native-safe-area-context', () => ({
 // ── Stubbed sub-components ────────────────────────────────────────────────────
 
 jest.mock('../../src/components/shared/ProjectPickerModal', () => ({
-  ProjectPickerModal: () => null,
+  ProjectPickerModal: ({ visible }: any) => {
+    const React2 = require('react');
+    const { View } = require('react-native');
+    return visible ? React2.createElement(View, { testID: 'project-picker-modal' }) : null;
+  },
 }));
 
 jest.mock('../../src/components/payments/PendingPaymentForm', () => ({
@@ -228,8 +232,11 @@ describe('PaymentDetails — synthetic row project support', () => {
     const { findByTestId } = renderPaymentDetails();
     const projectRow = await findByTestId('project-row');
 
-    // Interactive row has an onPress handler
-    expect(typeof projectRow.props.onPress).toBe('function');
+    // Interactive row opens the project picker when pressed
+    await act(async () => {
+      fireEvent.press(projectRow);
+    });
+    expect(await findByTestId('project-picker-modal')).toBeTruthy();
   });
 
   it('project row for a settled real payment is read-only (no onPress)', async () => {

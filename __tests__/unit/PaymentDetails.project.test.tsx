@@ -42,6 +42,7 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('lucide-react-native', () => ({
   ChevronLeft: 'ChevronLeft',
   ChevronRight: 'ChevronRight',
+  Pencil: 'Pencil',
   X: 'X',
   DollarSign: 'DollarSign',
   Search: 'Search',
