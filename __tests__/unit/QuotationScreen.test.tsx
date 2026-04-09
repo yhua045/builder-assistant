@@ -22,6 +22,8 @@ beforeEach(() => {
     getQuotation: jest.fn(),
     updateQuotation: jest.fn(),
     deleteQuotation: jest.fn(),
+    approveQuotation: jest.fn(),
+    declineQuotation: jest.fn(),
     taskQuotations: undefined,
     loading: false,
     error: null,

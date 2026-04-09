@@ -56,13 +56,14 @@ export function useTasks(projectId?: string): UseTasksReturn {
 
   const taskRepository = useMemo(() => container.resolve<TaskRepository>('TaskRepository'), []);
   const delayReasonTypeRepository = useMemo(() => container.resolve<DelayReasonTypeRepository>('DelayReasonTypeRepository'), []);
+  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
   
   const createUseCase = useMemo(() => new CreateTaskUseCase(taskRepository), [taskRepository]);
   const updateUseCase = useMemo(() => new UpdateTaskUseCase(taskRepository), [taskRepository]);
   const deleteUseCase = useMemo(() => new DeleteTaskUseCase(taskRepository), [taskRepository]);
   const getUseCase = useMemo(() => new GetTaskUseCase(taskRepository), [taskRepository]);
   const listUseCase = useMemo(() => new ListTasksUseCase(taskRepository), [taskRepository]);
-  const getTaskDetailUseCase = useMemo(() => new GetTaskDetailUseCase(taskRepository), [taskRepository]);
+  const getTaskDetailUseCase = useMemo(() => new GetTaskDetailUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
   const addDependencyUseCase = useMemo(() => new AddTaskDependencyUseCase(taskRepository), [taskRepository]);
   const removeDependencyUseCase = useMemo(() => new RemoveTaskDependencyUseCase(taskRepository), [taskRepository]);
   const addDelayReasonUseCase = useMemo(() => new AddDelayReasonUseCase(taskRepository, delayReasonTypeRepository), [taskRepository, delayReasonTypeRepository]);
@@ -71,7 +72,6 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
-  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
   const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
 
   const tasksQueryKey = queryKeys.tasks(projectId);

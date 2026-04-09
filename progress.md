@@ -1,5 +1,89 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+## ✅ Issue #195 — Create Task for Quotation + Approve Action + Task Detail Linking  
+**Status**: COMPLETED  
+**Branch**: `feature-195-create-task-for-quotation`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **Quotation Entity & Schema**: 
+  - Added `'pending_approval'` status to `Quotation` entity type union (`'draft' | 'sent' | 'pending_approval' | 'accepted' | 'declined'`)
+  - Updated Drizzle schema with new status enum variant; migration auto-generated and applied
+  - `STATUS_CONFIG` in QuotationDetail updated with `pending_approval` (yellow badge: `bg-yellow-100`, `text-yellow-700`)
+  
+- **CreateQuotationWithTaskUseCase** (new):
+  - Validates `projectId` is present; throws `QUOTATION_PROJECT_REQUIRED` if missing/empty
+  - Auto-creates linked Task with `title = "Review Quotation: {vendorName ?? reference}"`, `status = 'pending'`, `taskType = 'contract_work'`, `quoteStatus = 'issued'`, `quoteAmount = quotation.total`
+  - Sets `quotation.status = 'pending_approval'` and writes `taskId` back to quotation record
+  - Orchestrates Task + Quotation creation atomically via `TaskRepository.save()` → `QuotationRepository.createQuotation()`
+  
+- **ApproveQuotationUseCase & DeclineQuotationUseCase** (new):
+  - **Approve**: Validates `status === 'pending_approval'`; creates Invoice; sets quotation `status = 'accepted'`; if `quotation.taskId` set, updates task `quoteStatus = 'accepted'` and `quoteInvoiceId = invoice.id`
+  - **Decline**: Validates `status === 'pending_approval'`; sets quotation `status = 'declined'`; if `quotation.taskId` set, updates task `quoteStatus = 'declined'`
+  
+- **GetTaskDetailUseCase** (extended):
+  - Added `linkedQuotations: Quotation[]` to `TaskDetail` interface
+  - Injects optional `QuotationRepository`; hydrates `linkedQuotations` via `quotationRepository.findByTask(taskId)` (zero regression on existing callers without injection)
+  
+- **QuotationForm** (validation hardened):
+  - Project field now required: `validate()` adds error guard → `if (!selectedProjectId) errors.project = 'Project is required'`
+  - Red asterisk (*) added to Project label; error message renders below picker (consistent with other field errors)
+  - Blocks form submission when project is unselected
+  
+- **QuotationDetail Screen** (action buttons added):
+  - Displays **Cancel** and **Decline** action buttons when `quotation.status === 'pending_approval'` (sticky footer)
+  - Approve button: `bg-green-600`; triggers confirmation Alert → calls `approveQuotation()`; shows loading indicator
+  - Cancel button: destructive outline style; triggers confirmation Alert → calls `declineQuotation()`; shows loading indicator
+  - On success: quotation re-fetches; status badge updates to `Accepted` or `Declined`; buttons disappear
+  
+- **TaskLinkedQuotationSection** (new component):
+  - Displays under Task details when `linkedQuotations` is non-empty
+  - Yellow alert card for `pending_approval` quotations: AlertTriangle icon + "Awaiting your approval" text + reference/total + "Open Quotation" link
+  - Green row for `accepted` quotations with badge styling
+  - Neutral rows for other statuses
+  - Section title: "Linked Quotation" (with pressable link to quotation detail)
+  
+- **useQuotations Hook** (new actions):
+  - Added `approveQuotation(quotationId): Promise<ApproveQuotationOutput>`
+  - Added `declineQuotation(quotationId): Promise<DeclineQuotationOutput>`
+  - Both dispatch cache invalidation via `invalidateQuotationQueries()` and repopulate local state
+  
+- **Tests**: Full TDD coverage (1370+ tests pass):
+  - Unit tests: CreateQuotationWithTaskUseCase (validation, task creation, linking)
+  - Unit tests: ApproveQuotationUseCase & DeclineQuotationUseCase (status transitions, task updates, invoice creation)
+  - Unit tests: GetTaskDetailUseCase extended (linkedQuotations hydration with optional repo)
+  - Unit tests: QuotationForm required project validation (error rendering, blocking submit)
+  - Unit tests: QuotationDetail approve/decline buttons, confirmation flows, loading states
+  - Unit tests: TaskLinkedQuotationSection component (yellow pending banner, green accepted row, navigation)
+  - Integration tests: CreateQuotationWithTask full flow (Drizzle); ApproveQuotation → invoicing + task update flow (Drizzle)
+  - Snapshot tests: Button layouts, modal states, section renders
+  
+- **Code Quality**:
+  - ✅ ESLint: 0 errors (71 pre-existing warnings)
+  - ✅ TypeScript strict mode: All 15 acceptance criteria validated; `npx tsc --noEmit` passes with zero new errors
+  - All 15 acceptance criteria met (AC-1 through AC-15)
+
+### Acceptance Criteria  
+All 15 acceptance criteria met:
+- ✅ AC-1: Auto-created Task linked via `taskId` in quotation
+- ✅ AC-2: `QUOTATION_PROJECT_REQUIRED` error thrown when `projectId` absent
+- ✅ AC-3: Task auto-creation rules (title, status, taskType, quoteStatus, quoteAmount) enforced
+- ✅ AC-4: QuotationForm shows required indicator (*) on Project; blocks submission when empty
+- ✅ AC-5: Quotation entity and schema support `'pending_approval'` status
+- ✅ AC-6: QuotationDetail shows Cancel & Approve buttons when `status === 'pending_approval'`
+- ✅ AC-7: Approve invokes use case; creates Invoice; updates quotation + task; shows Accepted badge
+- ✅ AC-7b: Cancel invokes use case; updates quotation + task; shows Declined badge
+- ✅ AC-8: On success, buttons replaced with badge; navigation/confirmation shown
+- ✅ AC-9: `GetTaskDetailUseCase` returns `linkedQuotations` via `QuotationRepository.findByTask()`
+- ✅ AC-10: `TaskDetailsPage` renders `TaskLinkedQuotationSection` when quotations exist
+- ✅ AC-11: Section shows yellow "Pending Approval" banner with "Open Quotation" link
+- ✅ AC-12: Section shows green "Approved" row with quotation total
+- ✅ AC-13: All use cases and components have unit tests
+- ✅ AC-14: Two integration tests pass (CreateQuotationWithTask + ApproveQuotation flows)
+- ✅ AC-15: TypeScript strict mode passes
+
+---
+
 ## ✅ Issue #192 — Add Quotation: Project Field + Subcontractor Picker  
 **Status**: COMPLETED  
 **Branch**: `issue-192-add-quotation-project-subcontractor`  

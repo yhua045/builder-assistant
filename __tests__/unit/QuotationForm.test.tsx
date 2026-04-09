@@ -197,6 +197,16 @@ describe('QuotationForm', () => {
       totalInput.props.onChangeText('500');
     });
 
+    await act(async () => {
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' });
+      picker.props.onPress();
+    });
+    
+    await act(async () => {
+      const projItem = root.findByProps({ testID: 'mock-project-item-proj1' });
+      projItem.props.onPress();
+    });
+
     // Submit form
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => {
@@ -385,6 +395,16 @@ describe('QuotationForm', () => {
       totalInput.props.onChangeText('250');
     });
 
+    await act(async () => {
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' });
+      picker.props.onPress();
+    });
+    
+    await act(async () => {
+      const projItem = root.findByProps({ testID: 'mock-project-item-proj1' });
+      projItem.props.onPress();
+    });
+
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => {
       saveButton.props.onPress();
@@ -499,6 +519,16 @@ describe('QuotationForm', () => {
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('1000');
     });
+    
+    await act(async () => {
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' });
+      picker.props.onPress();
+    });
+    await act(async () => {
+      const projItem = root.findByProps({ testID: 'mock-project-item-proj1' });
+      projItem.props.onPress();
+    });
+
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => { saveButton.props.onPress(); });
     expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -529,6 +559,16 @@ describe('QuotationForm', () => {
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('500');
     });
+
+    await act(async () => {
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' });
+      picker.props.onPress();
+    });
+    await act(async () => {
+      const projItem = root.findByProps({ testID: 'mock-project-item-proj1' });
+      projItem.props.onPress();
+    });
+
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => { saveButton.props.onPress(); });
     expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -564,7 +604,7 @@ describe('QuotationForm', () => {
     act(() => { testRenderer!.unmount(); });
   });
 
-  it('(M) submit with no project and no vendor is valid (both optional)', async () => {
+  it('(M) submit with no project is invalid (project is required)', async () => {
     let testRenderer: renderer.ReactTestRenderer | undefined;
     await act(async () => {
       testRenderer = renderer.create(
@@ -578,13 +618,7 @@ describe('QuotationForm', () => {
     });
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => { saveButton.props.onPress(); });
-    expect(mockOnSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ total: 999 })
-    );
-    // projectId and vendorId should be absent / undefined
-    const call = mockOnSubmit.mock.calls[0][0];
-    expect(call.projectId).toBeUndefined();
-    expect(call.vendorId).toBeUndefined();
+    expect(mockOnSubmit).not.toHaveBeenCalled();
     act(() => { testRenderer!.unmount(); });
   });
 });

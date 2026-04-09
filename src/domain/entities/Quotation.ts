@@ -39,7 +39,7 @@ export interface Quotation {
   notes?: string;
   
   // Status & Lifecycle
-  status: 'draft' | 'sent' | 'accepted' | 'declined';
+  status: 'draft' | 'sent' | 'pending_approval' | 'accepted' | 'declined';
   
   // Audit fields
   createdAt: string;             // ISO timestamp
