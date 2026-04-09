@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, View, Alert, Text, Pressable, ActivityIndicator } from 'react-native';
-import { Paperclip } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Paperclip, X } from 'lucide-react-native';
+import { cssInterop } from 'nativewind';
 import { QuotationForm } from '../../components/quotations/QuotationForm';
 import { useQuotations } from '../../hooks/useQuotations';
 import { Quotation, QuotationEntity } from '../../domain/entities/Quotation';
@@ -17,6 +19,8 @@ import {
 } from '../../application/usecases/invoice/ProcessInvoiceUploadUseCase';
 import { IPdfConverter } from '../../infrastructure/files/IPdfConverter';
 import { normalizedInvoiceToQuotationFormValues } from '../../utils/normalizedInvoiceToQuotationFormValues';
+
+cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 type ProcessingStep = 'idle' | 'copying' | 'ocr' | 'error';
 
@@ -152,9 +156,20 @@ export const QuotationScreen: React.FC<Props> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-background">
-        {/* Upload Pressable — always visible at top */}
-        <View className="px-4 pt-4 pb-2">
+      <SafeAreaView className="flex-1 bg-background">
+        {/* Modal Header */}
+        <View
+          testID="quotation-modal-header"
+          className="px-6 pt-8 pb-4 flex-row items-center justify-between border-b border-border"
+        >
+          <Text className="text-2xl font-bold text-foreground">New Quotation</Text>
+          <Pressable testID="quotation-modal-close-button" onPress={onClose}>
+            <X size={24} className="text-foreground" />
+          </Pressable>
+        </View>
+
+        {/* Upload Pressable — always visible below header */}
+        <View className="px-6 pt-4 pb-2">
           <Pressable
             testID="upload-quote-pdf-button"
             onPress={handleUploadPdf}
@@ -190,6 +205,7 @@ export const QuotationScreen: React.FC<Props> = ({
 
         {/* QuotationForm — always visible below upload section */}
         <QuotationForm
+            key={formInitialValues ? 'loaded' : 'empty'}
           initialValues={formInitialValues}
           onSubmit={handleSubmit}
           onCancel={onClose}
@@ -197,7 +213,7 @@ export const QuotationScreen: React.FC<Props> = ({
           pdfFile={formPdfFile}
           embedded
         />
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

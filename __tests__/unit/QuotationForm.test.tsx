@@ -3,6 +3,78 @@ import renderer, { act } from 'react-test-renderer';
 import { QuotationForm } from '../../src/components/quotations/QuotationForm';
 import { Quotation } from '../../src/domain/entities/Quotation';
 
+// ── Mocks for new pickers ─────────────────────────────────────────────────
+jest.mock('../../src/components/shared/ProjectPickerModal', () => ({
+  ProjectPickerModal: ({
+    visible,
+    onSelect,
+    onClose,
+  }: {
+    visible: boolean;
+    onSelect: (p: any) => void;
+    onClose: () => void;
+  }) => {
+    if (!visible) return null;
+    const { TouchableOpacity, Text, View } = require('react-native');
+    return (
+      <View testID="mock-project-picker-modal">
+        <TouchableOpacity testID="mock-project-item-proj1" onPress={() => { onSelect({ id: 'proj1', name: 'Bathroom Reno' }); onClose(); }}>
+          <Text>Bathroom Reno</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+}));
+
+jest.mock('../../src/components/tasks/SubcontractorPickerModal', () => ({
+  SubcontractorPickerModal: ({
+    visible,
+    onSelect,
+    onClose,
+  }: {
+    visible: boolean;
+    onSelect: (c: any) => void;
+    onClose: () => void;
+  }) => {
+    if (!visible) return null;
+    const { TouchableOpacity, Text, View } = require('react-native');
+    return (
+      <View testID="mock-subcontractor-picker-modal">
+        <TouchableOpacity
+          testID="mock-subcontractor-item-c1"
+          onPress={() => { onSelect({ id: 'c1', name: 'Jane Smith', trade: 'Electrician', email: 'jane@example.com' }); onClose(); }}
+        >
+          <Text>Jane Smith</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+  SubcontractorContact: {},
+}));
+
+jest.mock('../../src/components/inputs/QuickAddContractorModal', () => ({
+  QuickAddContractorModal: ({
+    visible,
+    onSave,
+  }: {
+    visible: boolean;
+    onSave: (c: any) => void;
+  }) => {
+    if (!visible) return null;
+    const { TouchableOpacity, Text, View } = require('react-native');
+    return (
+      <View testID="mock-quick-add-modal">
+        <TouchableOpacity
+          testID="mock-quick-add-save"
+          onPress={() => onSave({ id: 'new-c1', name: 'Quick Added Co', email: 'quick@example.com' })}
+        >
+          <Text>Save Quick Add</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+}));
+
 describe('QuotationForm', () => {
   const mockOnSubmit = jest.fn();
   const mockOnCancel = jest.fn();
@@ -26,13 +98,13 @@ describe('QuotationForm', () => {
     const root = testRenderer!.root;
     
     // Verify key form fields exist
-    // Should have inputs for: reference, client/vendor, date, total, currency
+    // Should have inputs for: reference, project picker, vendor picker row, date, total
     const referenceInput = root.findByProps({ testID: 'quotation-reference-input' });
-    const vendorInput = root.findByProps({ testID: 'quotation-vendor-input' });
+    const vendorPickerRow = root.findByProps({ testID: 'quotation-vendor-picker-row' });
     const totalInput = root.findByProps({ testID: 'quotation-total-input' });
     
     expect(referenceInput).toBeDefined();
-    expect(vendorInput).toBeDefined();
+    expect(vendorPickerRow).toBeDefined();
     expect(totalInput).toBeDefined();
 
     act(() => {
@@ -121,9 +193,6 @@ describe('QuotationForm', () => {
       const referenceInput = root.findByProps({ testID: 'quotation-reference-input' });
       referenceInput.props.onChangeText('QT-2026-TEST');
       
-      const vendorInput = root.findByProps({ testID: 'quotation-vendor-input' });
-      vendorInput.props.onChangeText('Test Vendor Inc');
-      
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('500');
     });
@@ -138,7 +207,6 @@ describe('QuotationForm', () => {
     expect(mockOnSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         reference: 'QT-2026-TEST',
-        vendorName: 'Test Vendor Inc',
         total: 500,
       })
     );
@@ -364,6 +432,159 @@ describe('QuotationForm', () => {
     // Just verifies it renders without crashing — compact layout applied
     const tree = testRenderer!.toJSON();
     expect(tree).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  // ─── New tests for issue #192 ─────────────────────────────────────────────
+
+  it('(G) renders project picker row', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const pickerRow = root.findByProps({ testID: 'quotation-project-picker-row' });
+    expect(pickerRow).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(H) renders vendor picker row in empty state with add label', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const pickerRow = root.findByProps({ testID: 'quotation-vendor-picker-row' });
+    expect(pickerRow).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(I) opens SubcontractorPickerModal when vendor row is pressed', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    const pickerRow = root.findByProps({ testID: 'quotation-vendor-picker-row' });
+    await act(async () => {
+      pickerRow.props.onPress();
+    });
+    const modal = root.findByProps({ testID: 'mock-subcontractor-picker-modal' });
+    expect(modal).toBeDefined();
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(J) selecting a vendor sets vendorId and vendorName in onSubmit', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    // Open vendor picker
+    const pickerRow = root.findByProps({ testID: 'quotation-vendor-picker-row' });
+    await act(async () => { pickerRow.props.onPress(); });
+    // Select mock vendor item
+    const vendorItem = root.findByProps({ testID: 'mock-subcontractor-item-c1' });
+    await act(async () => { vendorItem.props.onPress(); });
+    // Fill total and submit
+    await act(async () => {
+      const totalInput = root.findByProps({ testID: 'quotation-total-input' });
+      totalInput.props.onChangeText('1000');
+    });
+    const saveButton = root.findByProps({ testID: 'quotation-save-button' });
+    await act(async () => { saveButton.props.onPress(); });
+    expect(mockOnSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ vendorId: 'c1', vendorName: 'Jane Smith' })
+    );
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(K) vendor quick-add creates contact and selects it in onSubmit', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    // Open vendor picker then click quick-add button
+    const pickerRow = root.findByProps({ testID: 'quotation-vendor-picker-row' });
+    await act(async () => { pickerRow.props.onPress(); });
+    // Trigger quick-add from the QuickAdd route (vendor picker row button)
+    const quickAddButton = root.findByProps({ testID: 'quotation-vendor-quick-add-button' });
+    await act(async () => { quickAddButton.props.onPress(); });
+    // Save in quick-add modal
+    const quickAddSave = root.findByProps({ testID: 'mock-quick-add-save' });
+    await act(async () => { quickAddSave.props.onPress(); });
+    // Fill total and submit
+    await act(async () => {
+      const totalInput = root.findByProps({ testID: 'quotation-total-input' });
+      totalInput.props.onChangeText('500');
+    });
+    const saveButton = root.findByProps({ testID: 'quotation-save-button' });
+    await act(async () => { saveButton.props.onPress(); });
+    expect(mockOnSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ vendorId: 'new-c1', vendorName: 'Quick Added Co' })
+    );
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(L) selecting a project sets projectId in onSubmit', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    // Open project picker
+    const pickerRow = root.findByProps({ testID: 'quotation-project-picker-row' });
+    await act(async () => { pickerRow.props.onPress(); });
+    // Select mock project
+    const projectItem = root.findByProps({ testID: 'mock-project-item-proj1' });
+    await act(async () => { projectItem.props.onPress(); });
+    // Fill total and submit
+    await act(async () => {
+      const totalInput = root.findByProps({ testID: 'quotation-total-input' });
+      totalInput.props.onChangeText('2000');
+    });
+    const saveButton = root.findByProps({ testID: 'quotation-save-button' });
+    await act(async () => { saveButton.props.onPress(); });
+    expect(mockOnSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ projectId: 'proj1' })
+    );
+    act(() => { testRenderer!.unmount(); });
+  });
+
+  it('(M) submit with no project and no vendor is valid (both optional)', async () => {
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+      );
+    });
+    const root = testRenderer!.root;
+    await act(async () => {
+      const totalInput = root.findByProps({ testID: 'quotation-total-input' });
+      totalInput.props.onChangeText('999');
+    });
+    const saveButton = root.findByProps({ testID: 'quotation-save-button' });
+    await act(async () => { saveButton.props.onPress(); });
+    expect(mockOnSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ total: 999 })
+    );
+    // projectId and vendorId should be absent / undefined
+    const call = mockOnSubmit.mock.calls[0][0];
+    expect(call.projectId).toBeUndefined();
+    expect(call.vendorId).toBeUndefined();
     act(() => { testRenderer!.unmount(); });
   });
 });

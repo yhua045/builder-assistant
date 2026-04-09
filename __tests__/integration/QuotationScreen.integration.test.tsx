@@ -153,4 +153,55 @@ describe('QuotationScreen Integration', () => {
     const entity = QuotationEntity.create({ date: '2026-03-27', total: 500 });
     expect(entity.data().reference).toMatch(/^QUO-\d{8}-[A-Z0-9]{6}$/);
   });
+
+  // ─── New integration test for issue #192 ────────────────────────────────
+
+  it('saves quotation with projectId and vendorId when form submits', async () => {
+    // This test uses the real QuotationScreen + QuotationForm (not mocked), so we
+    // re-mock QuotationForm to a controlled stub that calls onSubmit directly.
+    require('../../src/pages/quotations/QuotationScreen');
+
+    const capturedOnSubmit: { fn?: (data: any) => void } = {};
+    jest.doMock('../../src/components/quotations/QuotationForm', () => ({
+      QuotationForm: ({ onSubmit }: { onSubmit: (data: any) => void }) => {
+        capturedOnSubmit.fn = onSubmit;
+        return null;
+      },
+    }));
+
+    jest.requireActual('../../src/pages/quotations/QuotationScreen');
+
+    // Use the real QS since QuotationForm is captured via closure mock here
+    const mockSuccess = jest.fn();
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      testRenderer = renderer.create(
+        <QuotationScreen visible={true} onClose={jest.fn()} onSuccess={mockSuccess} />
+      );
+    });
+
+    // Directly invoke the onSubmit captured from QuotationForm with projectId + vendorId
+    await act(async () => {
+      const formEl = testRenderer!.root.findByType('QuotationForm' as any);
+      formEl.props.onSubmit({
+        date: '2026-04-09',
+        total: 4500,
+        currency: 'AUD',
+        status: 'draft',
+        projectId: 'proj-abc',
+        vendorId: 'vendor-xyz',
+        vendorName: 'ACME Builders',
+        vendorEmail: 'acme@example.com',
+      });
+    });
+
+    expect(mockCreateQuotation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'proj-abc',
+        vendorId: 'vendor-xyz',
+        vendorName: 'ACME Builders',
+      })
+    );
+    act(() => { testRenderer!.unmount(); });
+  });
 });

@@ -1,6 +1,11 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Alert } from 'react-native';
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  RN.Alert.alert = jest.fn();
+  return RN;
+});
 import { QuotationScreen } from '../../src/pages/quotations/QuotationScreen';
 import { useQuotations } from '../../src/hooks/useQuotations';
 import { IFilePickerAdapter, FilePickerResult } from '../../src/infrastructure/files/IFilePickerAdapter';
@@ -9,7 +14,21 @@ import { IOcrAdapter } from '../../src/application/services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../../src/application/ai/IInvoiceNormalizer';
 
 jest.mock('../../src/hooks/useQuotations');
-jest.mock('react-native/Libraries/Alert/Alert', () => ({ alert: jest.fn() }));
+// Mock pickers so SubcontractorPickerModal / ProjectPickerModal don't require
+// QueryClientProvider or tsyringe DI in upload-focused tests.
+jest.mock('../../src/components/tasks/SubcontractorPickerModal', () => ({
+  SubcontractorPickerModal: () => null,
+  SubcontractorContact: {},
+}));
+jest.mock('../../src/components/shared/ProjectPickerModal', () => ({
+  ProjectPickerModal: () => null,
+}));
+jest.mock('../../src/components/inputs/QuickAddContractorModal', () => ({
+  QuickAddContractorModal: () => null,
+}));
+jest.mock('../../src/hooks/useQuickLookup', () => ({
+  useQuickLookup: () => ({ quickAdd: jest.fn() }),
+}));
 
 const mockUseQuotations = useQuotations as jest.MockedFunction<typeof useQuotations>;
 
@@ -130,7 +149,6 @@ describe('QuotationScreen — upload UX', () => {
 
   it('(3) when picker is cancelled, form is unchanged, no error shown', async () => {
     const filePicker = makeFilePicker({ cancelled: true });
-    const alertSpy = jest.spyOn(Alert, 'alert');
 
     let tr: renderer.ReactTestRenderer | undefined;
     await act(async () => {
@@ -146,13 +164,12 @@ describe('QuotationScreen — upload UX', () => {
     const btn = tr!.root.findByProps({ testID: 'upload-quote-pdf-button' });
     await act(async () => { btn.props.onPress(); });
 
-    expect(alertSpy).not.toHaveBeenCalled();
+    expect(Alert.alert).not.toHaveBeenCalled();
     act(() => { tr!.unmount(); });
   });
 
   it('(4) shows Alert when invalid file type selected', async () => {
-    const filePicker = makeFilePicker({ type: 'image/jpeg', name: 'photo.jpg' });
-    const alertSpy = jest.spyOn(Alert, 'alert');
+    const filePicker = makeFilePicker({ type: 'application/msword', name: 'document.doc' });
 
     let tr: renderer.ReactTestRenderer | undefined;
     await act(async () => {
@@ -168,7 +185,7 @@ describe('QuotationScreen — upload UX', () => {
     const btn = tr!.root.findByProps({ testID: 'upload-quote-pdf-button' });
     await act(async () => { btn.props.onPress(); });
 
-    expect(alertSpy).toHaveBeenCalled();
+    expect(Alert.alert).toHaveBeenCalled();
     act(() => { tr!.unmount(); });
   });
 
@@ -204,7 +221,7 @@ describe('QuotationScreen — upload UX', () => {
   });
 
   it('(6) upload with OCR adapters succeeds → form pre-fills vendorName', async () => {
-    const filePicker = makeFilePicker();
+      const filePicker = makeFilePicker({ type: 'image/jpeg', name: 'quote.jpg' });
     const fileSystem = makeFileSystem();
     const ocrAdapter = makeOcrAdapter();
     const invoiceNormalizer = makeInvoiceNormalizer();
@@ -227,14 +244,14 @@ describe('QuotationScreen — upload UX', () => {
     await act(async () => { btn.props.onPress(); });
 
     // Form should be pre-filled with vendor from OCR
-    const vendorInput = tr!.root.findByProps({ testID: 'quotation-vendor-input' });
-    expect(vendorInput.props.value).toBe('Builder Co');
+    const vendorInput = tr!.root.findByProps({ testID: 'quotation-vendor-picker-row' });
+    expect(vendorInput.props.children[1].props.children).toContain('Builder Co');
 
     act(() => { tr!.unmount(); });
   });
 
   it('(7) OCR failure shows error banner, form still editable', async () => {
-    const filePicker = makeFilePicker();
+    const filePicker = makeFilePicker({ type: 'image/jpeg', name: 'quote.jpg' });
     const fileSystem = makeFileSystem();
     const ocrAdapter: IOcrAdapter = {
       extractText: jest.fn().mockRejectedValue(new Error('OCR service unavailable')),

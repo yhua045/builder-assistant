@@ -1,5 +1,55 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+## ✅ Issue #192 — Add Quotation: Project Field + Subcontractor Picker  
+**Status**: COMPLETED  
+**Branch**: `issue-192-add-quotation-project-subcontractor`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **QuotationForm Component**: 
+  - Added **Project Picker** field (reusing `ProjectPickerModal` from #191) — allows selection of existing projects; both optional
+  - Replaced plain text "Client / Vendor" input with **Subcontractor Picker Row** — same UX as `TaskDetailsPage` (`SubcontractorPickerModal`)
+  - Integrated **quick-add inline flow** via `QuickAddContractorModal` — users can create new contacts on-the-fly
+  - Fixed form layout: consistent `px-6 mb-4` spacing for all fields, `px-6 gap-4 mt-6` for button row
+  - `onSubmit` payload now includes `projectId` and `vendorId` (both optional; persisted via existing `DrizzleQuotationRepository`)
+- **QuotationScreen Modal**: 
+  - Added proper modal header with title `"New Quotation"` and close button (`✕`)
+  - Wrapped content in `SafeAreaView` with `pt-8` top padding (matching `InvoiceScreen` pattern)
+  - Consistent spacing and layout alignment across modal child elements
+- **QuotationDetail Screen**:
+  - Added **Project** row display (folder icon + project name or empty message)
+  - Improved client/vendor row display with name and email
+  - Loads project name via `ProjectRepository` (no schema changes; data already captured)
+- **Database**: No schema migrations required — `projectId` and `vendorId` columns already exist in `quotations` table (indexed)
+- **Tests**: Full coverage (1361 tests pass):
+  - Unit tests: QuotationForm project picker, vendor picker, quick-add flow, layout snapshots
+  - Unit tests: QuotationScreen modal header and layout
+  - Unit tests: QuotationDetail project and vendor row display
+  - Integration tests: End-to-end quotation create with project and vendor selection
+  - Fixed lint errors: Removed unused variable declarations in QuotationScreen integration test
+- **Code Quality**:
+  - ✅ ESLint: 0 errors (71 pre-existing warnings from earlier issues)
+  - ✅ TypeScript strict mode: No new errors
+  - All 13 acceptance criteria met (AC-1 through AC-13)
+
+### Acceptance Criteria  
+All 13 acceptance criteria met:
+- ✅ AC-1: Project picker field added, persists `projectId`
+- ✅ AC-2: Vendor picker replaces text input, supports subcontractor selection
+- ✅ AC-3: Quick-add contractor inline flow integrated
+- ✅ AC-4: `onSubmit` includes both `projectId` and `vendorId`
+- ✅ AC-5: QuotationDetail displays project and vendor rows
+- ✅ AC-6: QuotationScreen modal has proper header and SafeAreaView
+- ✅ AC-7: Form spacing uses consistent NativeWind tokens throughout
+- ✅ AC-8: Unit tests for QuotationForm pickers and submit
+- ✅ AC-9: Unit test for vendor quick-add flow
+- ✅ AC-10: Integration test for end-to-end quotation create
+- ✅ AC-11: Snapshot tests for QuotationForm layouts
+- ✅ AC-12: TypeScript strict mode passes
+- ✅ AC-13: No regression in existing tests
+
+---
+
 ## ✅ Issue #191 — Payment Detail: Show & Assign Project + Unassigned Filter  
 **Status**: COMPLETED  
 **Branch**: `issue-191-show-payment-project`  

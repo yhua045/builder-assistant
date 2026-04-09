@@ -18,15 +18,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, FileText } from 'lucide-react-native';
+import { ArrowLeft, FileText, FolderOpen } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { container } from 'tsyringe';
 import { Quotation } from '../../domain/entities/Quotation';
 import { QuotationRepository } from '../../domain/repositories/QuotationRepository';
+import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 import '../../infrastructure/di/registerServices';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
+cssInterop(FolderOpen, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,7 @@ export default function QuotationDetailScreen() {
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +78,17 @@ export default function QuotationDetailScreen() {
       const result = await repo.getQuotation(quotationId);
       if (!result) throw new Error('Quotation not found.');
       setQuotation(result);
+
+      // Load project name if projectId is set
+      if (result.projectId) {
+        try {
+          const projectRepo = container.resolve<ProjectRepository>('ProjectRepository');
+          const project = await projectRepo.findById(result.projectId);
+          setProjectName(project?.name ?? null);
+        } catch {
+          // project name is optional — swallow and leave null
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load quotation.');
     } finally {
@@ -138,15 +152,32 @@ export default function QuotationDetailScreen() {
               </View>
             </View>
 
-            {/* Reference + vendor */}
+            {/* Reference + project + vendor */}
             <Text
               className="text-2xl font-bold text-foreground mb-1"
               testID="quotation-detail-reference"
             >
               {quotation.reference}
             </Text>
+
+            {/* Project row — only shown when projectId is set */}
+            {quotation.projectId && (
+              <View className="flex-row items-center gap-2 mb-2">
+                <FolderOpen size={14} className="text-muted-foreground" />
+                <Text
+                  className="text-sm text-muted-foreground"
+                  testID="quotation-detail-project-name"
+                >
+                  {projectName ?? quotation.projectId}
+                </Text>
+              </View>
+            )}
+
             {quotation.vendorName ? (
-              <Text className="text-muted-foreground text-sm mb-4">
+              <Text
+                className="text-muted-foreground text-sm mb-4"
+                testID="quotation-detail-vendor-name"
+              >
                 {quotation.vendorName}
                 {quotation.vendorAddress ? `\n${quotation.vendorAddress}` : ''}
               </Text>
