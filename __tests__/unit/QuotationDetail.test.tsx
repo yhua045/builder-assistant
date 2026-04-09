@@ -12,6 +12,12 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({ params: { quotationId: 'q1' } }),
 }));
 
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: undefined, isLoading: false }), useQueryClient: () => ({
+    invalidateQueries: jest.fn(),
+  }),
+}));
+
 jest.mock('../../src/infrastructure/di/registerServices', () => {});
 
 const mockGetQuotation = jest.fn();
@@ -32,6 +38,9 @@ describe('QuotationDetailScreen project row (issue #192)', () => {
       if (token === 'QuotationRepository') {
         return { getQuotation: mockGetQuotation };
       }
+      if (token === 'TaskRepository') { return {}; } 
+      if (token === 'InvoiceRepository') { return {}; } 
+
       if (token === 'ProjectRepository') {
         return { getProject: mockGetProject };
       }

@@ -21,7 +21,7 @@ jest.mock('../../src/components/tasks/SubcontractorPickerModal', () => ({
   SubcontractorContact: {},
 }));
 jest.mock('../../src/components/shared/ProjectPickerModal', () => ({
-  ProjectPickerModal: () => null,
+  ProjectPickerModal: (props: any) => { const React = require('react'); const RN = require('react-native'); return React.createElement(RN.View, { testID: 'mock-project-picker-modal' }, React.createElement(RN.TouchableOpacity, { testID: 'mock-project-item-proj1', onPress: () => props.onSelect({ id: 'proj1', name: 'proj1' }) })); },
 }));
 jest.mock('../../src/components/inputs/QuickAddContractorModal', () => ({
   QuickAddContractorModal: () => null,
@@ -116,6 +116,8 @@ beforeEach(() => {
     getQuotation: jest.fn(),
     updateQuotation: jest.fn(),
     deleteQuotation: jest.fn(),
+    approveQuotation: jest.fn(),
+    declineQuotation: jest.fn(),
     taskQuotations: undefined,
     loading: false,
     error: null,
@@ -300,6 +302,15 @@ describe('QuotationScreen — upload UX', () => {
     await act(async () => {
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('500');
+    }); 
+    await act(async () => { 
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' }); 
+      picker.props.onPress(); 
+    }); 
+    await act(async () => { 
+      const item = root.findByProps({ testID: 'mock-project-item-proj1' }); 
+      item.props.onPress(); 
+
     });
 
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
@@ -328,6 +339,15 @@ describe('QuotationScreen — upload UX', () => {
     await act(async () => {
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('500');
+    }); 
+    await act(async () => { 
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' }); 
+      picker.props.onPress(); 
+    }); 
+    await act(async () => { 
+      const item = root.findByProps({ testID: 'mock-project-item-proj1' }); 
+      item.props.onPress(); 
+
     });
 
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
@@ -353,6 +373,15 @@ describe('QuotationScreen — upload UX', () => {
     await act(async () => {
       const totalInput = root.findByProps({ testID: 'quotation-total-input' });
       totalInput.props.onChangeText('500');
+    }); 
+    await act(async () => { 
+      const picker = root.findByProps({ testID: 'quotation-project-picker-row' }); 
+      picker.props.onPress(); 
+    }); 
+    await act(async () => { 
+      const item = root.findByProps({ testID: 'mock-project-item-proj1' }); 
+      item.props.onPress(); 
+
     });
 
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
