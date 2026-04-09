@@ -15,6 +15,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -24,6 +25,7 @@ import { container } from 'tsyringe';
 import { Quotation } from '../../domain/entities/Quotation';
 import { QuotationRepository } from '../../domain/repositories/QuotationRepository';
 import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
+import { useQuotations } from '../../hooks/useQuotations';
 import '../../infrastructure/di/registerServices';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -35,10 +37,11 @@ cssInterop(FolderOpen, { className: { target: 'style', nativeStyleToProp: { colo
 type StatusConfig = { label: string; bgClass: string; textClass: string };
 
 const STATUS_CONFIG: Record<Quotation['status'], StatusConfig> = {
-  draft:    { label: 'Draft',    bgClass: 'bg-muted',     textClass: 'text-muted-foreground' },
-  sent:     { label: 'Pending',  bgClass: 'bg-blue-100',  textClass: 'text-blue-700' },
-  accepted: { label: 'Accepted', bgClass: 'bg-green-100', textClass: 'text-green-700' },
-  declined: { label: 'Declined', bgClass: 'bg-red-100',   textClass: 'text-red-600' },
+  draft:            { label: 'Draft',            bgClass: 'bg-muted',        textClass: 'text-muted-foreground' },
+  sent:             { label: 'Pending',           bgClass: 'bg-blue-100',     textClass: 'text-blue-700' },
+  pending_approval: { label: 'Pending Approval',  bgClass: 'bg-yellow-100',   textClass: 'text-yellow-700' },
+  accepted:         { label: 'Accepted',          bgClass: 'bg-green-100',    textClass: 'text-green-700' },
+  declined:         { label: 'Declined',          bgClass: 'bg-red-100',      textClass: 'text-red-600' },
 };
 
 function formatCurrency(amount: number | undefined, currency = 'AUD'): string {
@@ -69,6 +72,10 @@ export default function QuotationDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [declining, setDeclining] = useState(false);
+
+  const { approveQuotation, declineQuotation } = useQuotations();
 
   const load = useCallback(async () => {
     try {
@@ -99,6 +106,59 @@ export default function QuotationDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleApprove = useCallback(() => {
+    if (!quotation) return;
+    const totalDisplay = formatCurrency(quotation.total, quotation.currency);
+    Alert.alert(
+      'Approve Quotation',
+      `This will create an invoice for ${totalDisplay}. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setApproving(true);
+              await approveQuotation(quotation.id);
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to approve quotation');
+            } finally {
+              setApproving(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [quotation, approveQuotation, load]);
+
+  const handleDecline = useCallback(() => {
+    if (!quotation) return;
+    Alert.alert(
+      'Reject Quotation',
+      'Are you sure you want to reject this quotation?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeclining(true);
+              await declineQuotation(quotation.id);
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to reject quotation');
+            } finally {
+              setDeclining(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [quotation, declineQuotation, load]);
 
   const statusCfg = quotation
     ? (STATUS_CONFIG[quotation.status] ?? STATUS_CONFIG.draft)
@@ -252,6 +312,36 @@ export default function QuotationDetailScreen() {
             </View>
           ) : null}
         </ScrollView>
+      )}
+
+      {/* Action footer: Approve / Reject (visible for draft and pending_approval) */}
+      {!loading && !error && quotation && (quotation.status === 'pending_approval' || quotation.status === 'draft') && (
+        <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
+          <View className="flex-row gap-3">
+            <Pressable
+              onPress={handleDecline}
+              className="flex-1 items-center justify-center border border-destructive rounded-lg p-3"
+              disabled={declining || approving}
+            >
+              {declining ? (
+                <ActivityIndicator testID="decline-loading" />
+              ) : (
+                <Text className="text-destructive font-semibold">Reject</Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={handleApprove}
+              className="flex-1 items-center justify-center bg-green-600 rounded-lg p-3"
+              disabled={approving || declining}
+            >
+              {approving ? (
+                <ActivityIndicator color="#fff" testID="approve-loading" />
+              ) : (
+                <Text className="text-white font-semibold">Approve</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
       )}
     </SafeAreaView>
   );

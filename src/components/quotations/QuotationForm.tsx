@@ -81,6 +81,10 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!selectedProjectId) {
+      newErrors.project = 'Project is required';
+    }
+
     if (!date) newErrors.date = 'Date is required';
     if (!total || isNaN(parseFloat(total)) || parseFloat(total) < 0) {
       newErrors.total = 'Valid total amount is required';
@@ -225,17 +229,24 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
 
       {/* Project Picker */}
       <View className={`mb-4 ${px}`}>
-        <Text className="font-medium text-foreground mb-2">Project</Text>
+        <Text className="font-medium text-foreground mb-2">
+          Project <Text className="text-destructive">*</Text>
+        </Text>
         <TouchableOpacity
           testID="quotation-project-picker-row"
           onPress={() => setProjectPickerVisible(true)}
-          className="border border-input rounded-xl p-4 bg-card flex-row items-center justify-between"
+          className={`border rounded-xl p-4 bg-card flex-row items-center justify-between ${errors.project ? 'border-destructive' : 'border-input'}`}
         >
           <Text className={selectedProjectId ? 'text-foreground text-base' : 'text-muted-foreground text-base'}>
-            {selectedProjectName ?? (selectedProjectId ? selectedProjectId : 'None')}
+            {selectedProjectName ?? (selectedProjectId ? selectedProjectId : 'Select a project')}
           </Text>
           <Text className="text-muted-foreground text-xs">▾</Text>
         </TouchableOpacity>
+        {errors.project && (
+          <Text testID="quotation-project-error" className="text-destructive text-xs mt-1">
+            {errors.project}
+          </Text>
+        )}
       </View>
 
       {/* Vendor Picker */}

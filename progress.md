@@ -1,5 +1,28 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+<<<<<<< HEAD
+## ✅ Issue #199 — Update Payments List in Project Detail
+**Status**: COMPLETED  
+**Branch**: `issue-199-payments-list-project-detail`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **New Domain Entity**: `PaymentFeedItem` discriminated union (`'payment' | 'invoice'`) representing unified payment/invoice feed items in project detail
+- **New Use Case**: `ListProjectPaymentsFeedUseCase` combining both unlinked payments and all invoices (all statuses: Draft, Issued, Overdue, Paid, Cancelled, etc.) for a project
+- **New Component**: `TimelineInvoiceCard` (parallel to `TimelinePaymentCard`) with amber left-border accent, status chips display, and quick actions (View, Mark Paid, Attach)
+- **Updated Hook**: `usePaymentsTimeline` now returns `items: PaymentFeedItem[]` instead of `payments: Payment[]`; grouped by date via `groupFeedItemsByDay` helper
+- **Updated Screen**: `ProjectDetail.tsx` renders mixed payment/invoice grid; new handlers for `onViewInvoice`, `onMarkInvoiceAsPaid`, `onInvoiceAttachDocument`
+- **Navigation Route**: Added `InvoiceDetail` to `ProjectsStackParamList` with `openMarkAsPaid` and `openDocument` params (consistent with `QuotationDetail` pattern)
+- **Algorithm**: Filters to unlinked payments (`invoiceId === null || undefined`) + all invoices; sorts by due date ascending; applies MAX_ITEMS=500 guard with truncation flag
+- **Tests**: Full TDD coverage (1396 tests pass):
+  - Unit tests: `ListProjectPaymentsFeedUseCase`, `groupFeedItemsByDay`, `TimelineInvoiceCard` rendering and actions
+  - Integration tests: ProjectDetail mixed payments/invoices, navigation, empty states
+  - No schema changes required; both `PaymentRepository.findByProjectId` and `InvoiceRepository.listInvoices` already exist
+
+### Acceptance Criteria  
+All criteria met:
+# Project Progress — Summary (updated 2026-04-09)
+
 ## ✅ Issue #199 — Update Payments List in Project Detail
 **Status**: COMPLETED  
 **Branch**: `issue-199-payments-list-project-detail`  
@@ -30,6 +53,189 @@ All criteria met:
 - ✅ Unit & integration tests pass with full coverage
 - ✅ TypeScript strict mode passes; ESLint 0 errors (71 pre-existing warnings)
 - ✅ MAX_ITEMS=500 guard with truncation flag
+
+## ✅ Issue #198 — Refine "Mark Task Completed" — Payment Validation (Feature 1)
+**Status**: COMPLETED  
+**Branch**: `issue-198-refine-mark-task-completed`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **Domain Layer — New Error Type**:
+  - Added `PendingPaymentsForTaskError` in `TaskCompletionErrors.ts` to encapsulate pending payment records and provide rich error context to the UI
+- **Domain Layer — New Service**:
+  - Created `TaskPaymentValidator` service (`src/domain/services/TaskPaymentValidator.ts`) — validates task completion eligibility by checking:
+    - Whether the task has a linked invoice (`task.quoteInvoiceId`)
+    - Whether the linked invoice has any pending payments (status: `'pending'`)
+    - Returns `{ ok: true, pendingPayments: [] }` if eligible; `{ ok: false, pendingPayments: [...] }` if not
+- **Application Layer — Extended Use Cases**:
+  - **CompleteTaskUseCase**: Added payment validation check (after existing quotation validation) — throws `PendingPaymentsForTaskError` if pending payments exist
+  - **CompleteTaskAndSettlePaymentsUseCase** (NEW): Two-phase atomic operation — settles all pending payments via `MarkPaymentAsPaidUseCase`, then calls `CompleteTaskUseCase` to mark task completed
+- **Hooks Layer**:
+  - Extended `useTasks` hook with new `completeTaskAndSettlePayments(taskId)` method—delegates to the new use case and refreshes task/payment caches on success
+- **UI Layer — TaskDetailsPage**:
+  - Updated `handleComplete` to catch `PendingPaymentsForTaskError` and present a 2-button Alert:
+    - **"Mark as Paid & Complete"**: calls `completeTaskAndSettlePayments(taskId)`
+    - **"Cancel"**: dismisses dialog; task and payments unchanged
+  - Successful settlement navigates back to project with updated task
+- **Tests**: Comprehensive TDD coverage across all layers — 13 acceptance criteria:
+  - Unit tests: `TaskPaymentValidator` covering all three paths (no invoice, all settled, 1+ pending)
+  - Unit tests: `CompleteTaskUseCase` for no-throw (settled) and throw (pending) paths
+  - Unit tests: `CompleteTaskAndSettlePaymentsUseCase` for full two-phase flow
+  - Integration test: End-to-end flow — pending payment on accepted-quotation invoice → use case execution → task completed and payment marked paid in SQLite
+  - UI snapshot test: TaskDetailsPage rendering with alert dialog
+  - **Code Quality**:
+  - ✅ TypeScript strict mode: 0 new errors (all earlier issues fixed)
+  - ✅ ESLint: 0 errors (71 pre-existing warnings from earlier issues)
+  - ✅ All 13 acceptance criteria met (AC-1 through AC-13)
+
+### Acceptance Criteria
+All 13 acceptance criteria met:
+- ✅ AC-1 to AC-3: TaskPaymentValidator validates invoice and pending payment states
+- ✅ AC-4 to AC-5: CompleteTaskUseCase throws on pending payments; CompleteTaskAndSettlePaymentsUseCase settles then completes
+- ✅ AC-6 to AC-8: UI catches error and presents 2-button alert with correct behavior
+- ✅ AC-9 to AC-12: Full unit and integration test coverage
+- ✅ AC-13: TypeScript strict mode passes
+
+## ✅ Issue #196 — Link Payment to Project in Pending Payment Screen
+**Status**: COMPLETED  
+**Branch**: `issue-196-link-payment-to-project`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **LinkPaymentToProjectUseCase** (new):
+  - Validates `payment.status === 'pending'`; throws `PaymentNotPendingError` if not
+  - Updates payment via `paymentRepo.update()` with new `projectId` (or `undefined` to clear)
+  - Returns updated Payment entity
+  
+- **LinkInvoiceToProjectUseCase** (new):
+  - Validates invoice is not `'cancelled'` and `paymentStatus !== 'paid'`; throws `InvoiceNotEditableError` if invalid
+  - Calls `invoiceRepo.assignProject()` (for defined projectId) or `updateInvoice()` (to clear)
+  - Returns void; orchestrates invoice project assignment
+  
+- **PaymentErrors** (new domain error types):
+  - `PaymentNotPendingError`: Thrown when attempting to link project to non-pending payment
+  - `InvoiceNotEditableError`: Thrown when invoice is cancelled or already paid
+  
+- **PaymentDetails.tsx** (extended):
+  - Removed `!isSynthetic` guard from project row display — now shows project for **all** payment types
+  - For synthetic invoice-payable rows: project resolved from `invoice.projectId` (via new extended `loadData()` logic)
+  - Tappable project row for **pending** payments (real or synthetic) → opens `ProjectPickerModal`
+  - Read-only project row (no chevron, non-interactive) for **settled** or **cancelled** payments
+  - Added edit (pencil) icon in header, visible only for **pending real payment records** (not synthetic invoice rows)
+  - On project selection: calls `LinkPaymentToProjectUseCase` (for real payments) or `LinkInvoiceToProjectUseCase` (for synthetic rows)
+  - Cache invalidation: `paymentEdited()` with updated `projectId` clears `paymentsAll`, `projectPayments()`, and cross-filter keys
+  
+- **PendingPaymentForm** (new modal component):
+  - Editable fields: `date`, `dueDate`, `method`, `notes`, `reference`, `projectId`
+  - Project field: tappable row that opens embedded `ProjectPickerModal`
+  - Method selector: horizontal chip row (`bank`, `cash`, `check`, `card`, `other`)
+  - Save button calls `paymentRepo.update()` with all changed fields + optional `LinkPaymentToProjectUseCase` if `projectId` changed
+  - Modal presentation: `pageSheet` style, `KeyboardAvoidingView`, consistent with existing modal patterns
+  - Visible/triggered from Payment Detail header edit icon (for pending real payments only)
+  
+- **Query Keys** (extended):
+  - No new query key types required; existing keys (`paymentsAll`, `projectPayments()`, `unassignedPaymentsGlobal`, `invoices()`) already cover cache invalidation
+  - Invalidation logic updated in `PaymentDetails.tsx` to cover both payment and invoice project changes
+  
+- **Invoice Schema** (extended via `DrizzleInvoiceRepository`):
+  - No database migration needed — `projectId` column already exists on `invoices` table (from earlier work)
+  - `assignProject(invoiceId, projectId)` method already implemented; reused in `LinkInvoiceToProjectUseCase`
+  
+- **Tests**: Full TDD coverage (1375+ tests pass):
+  - Unit tests: `LinkPaymentToProjectUseCase` (pending flow, status guards, not-found errors)
+  - Unit tests: `LinkInvoiceToProjectUseCase` (unpaid invoice flow, cancelled/paid guards)
+  - Unit tests: `PaymentErrors` (error types and messaging)
+  - Integration tests: `LinkPaymentToProject` (full Drizzle flow: save pending payment → link → verify updated `projectId`)
+  - Integration tests: `LinkInvoiceToProject` (full Drizzle flow: save invoice → link → verify project assignment)
+  - UI integration tests: `PaymentDetailsSyntheticProject` (synthetic row project display, tappable state, read-only guard for settled payments)
+  - UI integration tests: `PendingPaymentForm` (form rendering, field edits, save flow, project picker integration)
+  - Snapshot tests: Form layouts, modal states, project row display variants
+  
+- **Code Quality**:
+  - ✅ TypeScript strict mode: `npx tsc --noEmit` passes with zero errors (fixed missing import in integration test)
+  - ✅ All 15 acceptance criteria met (AC-1 through AC-15)
+
+### Acceptance Criteria  
+All 15 acceptance criteria met:
+- ✅ AC-1: PaymentDetails shows Project row for both real and synthetic invoice-payable rows
+- ✅ AC-2: For synthetic rows, project resolved from `invoice.projectId`; shows "Unassigned" if none
+- ✅ AC-3: Tapping project row on pending payment opens `ProjectPickerModal`
+- ✅ AC-4: Real pending payment project selection calls `LinkPaymentToProjectUseCase`; persists `projectId`
+- ✅ AC-5: Synthetic invoice-payable row calls `LinkInvoiceToProjectUseCase`; persists invoice `projectId`
+- ✅ AC-6: Clearing project (via modal) sets `projectId = undefined`
+- ✅ AC-7: Cache invalidation on assignment: `paymentsAll`, `projectPayments()`, `unassignedPaymentsGlobal`, `invoices()` cleared
+- ✅ AC-8: Settled/cancelled payments show read-only project row (no chevron, non-tappable)
+- ✅ AC-9: `LinkPaymentToProjectUseCase` throws `PaymentNotPendingError` for non-pending status
+- ✅ AC-10: `LinkInvoiceToProjectUseCase` throws `InvoiceNotEditableError` when invoice cancelled or paid
+- ✅ AC-11: Edit (pencil) icon visible in PaymentDetails header only for pending real payments
+- ✅ AC-12: `PendingPaymentForm` has editable fields (date, dueDate, method, notes, reference, projectId)
+- ✅ AC-13: Form save calls `paymentRepo.update()` + optional `LinkPaymentToProjectUseCase` if projectId changed
+- ✅ AC-14: TypeScript strict mode passes (`npx tsc --noEmit`)
+- ✅ AC-15: All test plan items (§7) have passing tests
+
+---
+- **GetTaskDetailUseCase** (extended):
+  - Added `linkedQuotations: Quotation[]` to `TaskDetail` interface
+  - Injects optional `QuotationRepository`; hydrates `linkedQuotations` via `quotationRepository.findByTask(taskId)` (zero regression on existing callers without injection)
+  
+- **QuotationForm** (validation hardened):
+  - Project field now required: `validate()` adds error guard → `if (!selectedProjectId) errors.project = 'Project is required'`
+  - Red asterisk (*) added to Project label; error message renders below picker (consistent with other field errors)
+  - Blocks form submission when project is unselected
+  
+- **QuotationDetail Screen** (action buttons added):
+  - Displays **Cancel** and **Decline** action buttons when `quotation.status === 'pending_approval'` (sticky footer)
+  - Approve button: `bg-green-600`; triggers confirmation Alert → calls `approveQuotation()`; shows loading indicator
+  - Cancel button: destructive outline style; triggers confirmation Alert → calls `declineQuotation()`; shows loading indicator
+  - On success: quotation re-fetches; status badge updates to `Accepted` or `Declined`; buttons disappear
+  
+- **TaskLinkedQuotationSection** (new component):
+  - Displays under Task details when `linkedQuotations` is non-empty
+  - Yellow alert card for `pending_approval` quotations: AlertTriangle icon + "Awaiting your approval" text + reference/total + "Open Quotation" link
+  - Green row for `accepted` quotations with badge styling
+  - Neutral rows for other statuses
+  - Section title: "Linked Quotation" (with pressable link to quotation detail)
+  
+- **useQuotations Hook** (new actions):
+  - Added `approveQuotation(quotationId): Promise<ApproveQuotationOutput>`
+  - Added `declineQuotation(quotationId): Promise<DeclineQuotationOutput>`
+  - Both dispatch cache invalidation via `invalidateQuotationQueries()` and repopulate local state
+  
+- **Tests**: Full TDD coverage (1370+ tests pass):
+  - Unit tests: CreateQuotationWithTaskUseCase (validation, task creation, linking)
+  - Unit tests: ApproveQuotationUseCase & DeclineQuotationUseCase (status transitions, task updates, invoice creation)
+  - Unit tests: GetTaskDetailUseCase extended (linkedQuotations hydration with optional repo)
+  - Unit tests: QuotationForm required project validation (error rendering, blocking submit)
+  - Unit tests: QuotationDetail approve/decline buttons, confirmation flows, loading states
+  - Unit tests: TaskLinkedQuotationSection component (yellow pending banner, green accepted row, navigation)
+  - Integration tests: CreateQuotationWithTask full flow (Drizzle); ApproveQuotation → invoicing + task update flow (Drizzle)
+  - Snapshot tests: Button layouts, modal states, section renders
+  
+- **Code Quality**:
+  - ✅ ESLint: 0 errors (71 pre-existing warnings)
+  - ✅ TypeScript strict mode: All 15 acceptance criteria validated; `npx tsc --noEmit` passes with zero new errors
+  - All 15 acceptance criteria met (AC-1 through AC-15)
+
+### Acceptance Criteria  
+All 15 acceptance criteria met:
+- ✅ AC-1: Auto-created Task linked via `taskId` in quotation
+- ✅ AC-2: `QUOTATION_PROJECT_REQUIRED` error thrown when `projectId` absent
+- ✅ AC-3: Task auto-creation rules (title, status, taskType, quoteStatus, quoteAmount) enforced
+- ✅ AC-4: QuotationForm shows required indicator (*) on Project; blocks submission when empty
+- ✅ AC-5: Quotation entity and schema support `'pending_approval'` status
+- ✅ AC-6: QuotationDetail shows Cancel & Approve buttons when `status === 'pending_approval'`
+- ✅ AC-7: Approve invokes use case; creates Invoice; updates quotation + task; shows Accepted badge
+- ✅ AC-7b: Cancel invokes use case; updates quotation + task; shows Declined badge
+- ✅ AC-8: On success, buttons replaced with badge; navigation/confirmation shown
+- ✅ AC-9: `GetTaskDetailUseCase` returns `linkedQuotations` via `QuotationRepository.findByTask()`
+- ✅ AC-10: `TaskDetailsPage` renders `TaskLinkedQuotationSection` when quotations exist
+- ✅ AC-11: Section shows yellow "Pending Approval" banner with "Open Quotation" link
+- ✅ AC-12: Section shows green "Approved" row with quotation total
+- ✅ AC-13: All use cases and components have unit tests
+- ✅ AC-14: Two integration tests pass (CreateQuotationWithTask + ApproveQuotation flows)
+- ✅ AC-15: TypeScript strict mode passes
+>>>>>>> master
+>>>>>>> origin/master
 
 ---
 

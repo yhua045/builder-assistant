@@ -51,6 +51,7 @@ type StatusConfig = { label: string; bgClass: string; textClass: string };
 const STATUS_CONFIG: Record<Quotation['status'], StatusConfig> = {
   draft:    { label: 'Draft',    bgClass: 'bg-muted',       textClass: 'text-muted-foreground' },
   sent:     { label: 'Pending',  bgClass: 'bg-blue-100',    textClass: 'text-blue-700' },
+  pending_approval: { label: 'Approval Required', bgClass: 'bg-orange-100', textClass: 'text-orange-700' },
   accepted: { label: 'Accepted', bgClass: 'bg-green-100',   textClass: 'text-green-700' },
   declined: { label: 'Declined', bgClass: 'bg-red-100',     textClass: 'text-red-600' },
 };

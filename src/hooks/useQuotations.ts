@@ -2,12 +2,18 @@ import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Quotation } from '../domain/entities/Quotation';
 import { QuotationRepository, QuotationFilterParams } from '../domain/repositories/QuotationRepository';
+import { TaskRepository } from '../domain/repositories/TaskRepository';
+import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { CreateQuotationUseCase } from '../application/usecases/quotation/CreateQuotationUseCase';
 import { ListQuotationsUseCase } from '../application/usecases/quotation/ListQuotationsUseCase';
 import { GetQuotationByIdUseCase } from '../application/usecases/quotation/GetQuotationByIdUseCase';
 import { UpdateQuotationUseCase } from '../application/usecases/quotation/UpdateQuotationUseCase';
 import { DeleteQuotationUseCase } from '../application/usecases/quotation/DeleteQuotationUseCase';
+import { ApproveQuotationUseCase, ApproveQuotationOutput } from '../application/usecases/quotation/ApproveQuotationUseCase';
+import { DeclineQuotationUseCase } from '../application/usecases/quotation/DeclineQuotationUseCase';
 import { DrizzleQuotationRepository } from '../infrastructure/repositories/DrizzleQuotationRepository';
+import { container } from 'tsyringe';
+import '../infrastructure/di/registerServices';
 import { queryKeys } from './queryKeys';
 
 export interface UseQuotationsOptions {
@@ -21,6 +27,8 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
   const queryClient = useQueryClient();
 
   const repository = useMemo<QuotationRepository>(() => new DrizzleQuotationRepository(), []);
+  const taskRepo = useMemo<TaskRepository>(() => container.resolve<TaskRepository>('TaskRepository'), []);
+  const invoiceRepo = useMemo<InvoiceRepository>(() => container.resolve<InvoiceRepository>('InvoiceRepository'), []);
 
   const createQuotationUC = useMemo(() => new CreateQuotationUseCase(repository), [repository]);
   const listQuotationsUC = useMemo(() => new ListQuotationsUseCase(repository), [repository]);
@@ -120,12 +128,49 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     }
   }, [deleteQuotationUC, queryClient]);
 
+  const approveQuotation = useCallback(async (quotationId: string): Promise<ApproveQuotationOutput> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const uc = new ApproveQuotationUseCase(invoiceRepo, repository, taskRepo);
+      const result = await uc.execute({ quotationId });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks() });
+      return result;
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to approve quotation';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [invoiceRepo, repository, taskRepo, queryClient]);
+
+  const declineQuotation = useCallback(async (quotationId: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const uc = new DeclineQuotationUseCase(repository, taskRepo);
+      await uc.execute({ quotationId });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks() });
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to decline quotation';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [repository, taskRepo, queryClient]);
+
   return {
     createQuotation,
     listQuotations,
     getQuotation,
     updateQuotation,
     deleteQuotation,
+    approveQuotation,
+    declineQuotation,
     /** Reactive quotations list — only populated when taskId option is provided */
     taskQuotations,
     loading,

@@ -22,7 +22,10 @@ import { ProgressLog } from '../domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/usecases/task/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/usecases/task/ResolveDelayReasonUseCase';
 import { CompleteTaskUseCase } from '../application/usecases/task/CompleteTaskUseCase';
+import { CompleteTaskAndSettlePaymentsUseCase } from '../application/usecases/task/CompleteTaskAndSettlePaymentsUseCase';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
+import { PaymentRepository } from '../domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 
 import { queryKeys, invalidations } from './queryKeys';
 
@@ -49,6 +52,7 @@ export interface UseTasksReturn {
   deleteProgressLog: (taskId: string, logId: string) => Promise<void>;
   resolveDelayReason: (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
+  completeTaskAndSettlePayments: (taskId: string) => Promise<void>;
 }
 
 export function useTasks(projectId?: string): UseTasksReturn {
@@ -56,13 +60,14 @@ export function useTasks(projectId?: string): UseTasksReturn {
 
   const taskRepository = useMemo(() => container.resolve<TaskRepository>('TaskRepository'), []);
   const delayReasonTypeRepository = useMemo(() => container.resolve<DelayReasonTypeRepository>('DelayReasonTypeRepository'), []);
+  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
   
   const createUseCase = useMemo(() => new CreateTaskUseCase(taskRepository), [taskRepository]);
   const updateUseCase = useMemo(() => new UpdateTaskUseCase(taskRepository), [taskRepository]);
   const deleteUseCase = useMemo(() => new DeleteTaskUseCase(taskRepository), [taskRepository]);
   const getUseCase = useMemo(() => new GetTaskUseCase(taskRepository), [taskRepository]);
   const listUseCase = useMemo(() => new ListTasksUseCase(taskRepository), [taskRepository]);
-  const getTaskDetailUseCase = useMemo(() => new GetTaskDetailUseCase(taskRepository), [taskRepository]);
+  const getTaskDetailUseCase = useMemo(() => new GetTaskDetailUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
   const addDependencyUseCase = useMemo(() => new AddTaskDependencyUseCase(taskRepository), [taskRepository]);
   const removeDependencyUseCase = useMemo(() => new RemoveTaskDependencyUseCase(taskRepository), [taskRepository]);
   const addDelayReasonUseCase = useMemo(() => new AddDelayReasonUseCase(taskRepository, delayReasonTypeRepository), [taskRepository, delayReasonTypeRepository]);
@@ -71,8 +76,15 @@ export function useTasks(projectId?: string): UseTasksReturn {
   const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
   const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
   const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
+<<<<<<< issue-198-refine-mark-task-completed
   const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
+  const paymentRepository = useMemo(() => container.resolve<PaymentRepository>('PaymentRepository'), []);
+  const invoiceRepository = useMemo(() => container.resolve<InvoiceRepository>('InvoiceRepository'), []);
+  const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository, paymentRepository), [taskRepository, quotationRepository, paymentRepository]);
+  const completeTaskAndSettlePaymentsUseCase = useMemo(() => new CompleteTaskAndSettlePaymentsUseCase(taskRepository, paymentRepository, invoiceRepository, quotationRepository), [taskRepository, paymentRepository, invoiceRepository, quotationRepository]);
+=======
   const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
+>>>>>>> master
 
   const tasksQueryKey = queryKeys.tasks(projectId);
 
@@ -171,6 +183,11 @@ export function useTasks(projectId?: string): UseTasksReturn {
     await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
   }, [completeTaskUseCase, queryClient, projectId]);
 
+  const completeTaskAndSettlePayments = useCallback(async (taskId: string) => {
+    await completeTaskAndSettlePaymentsUseCase.execute(taskId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [completeTaskAndSettlePaymentsUseCase, queryClient, projectId]);
+
   return useMemo(() => ({
     tasks,
     loading,
@@ -189,5 +206,6 @@ export function useTasks(projectId?: string): UseTasksReturn {
     updateProgressLog,
     deleteProgressLog,
     completeTask,
-  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog, completeTask]);
+    completeTaskAndSettlePayments,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog, completeTask, completeTaskAndSettlePayments]);
 }
