@@ -34,7 +34,7 @@ import { SubcontractorPickerModal, SubcontractorContact } from '../../components
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { invalidations } from '../../hooks/queryKeys';
-import { TaskCompletionValidationError } from '../../application/errors/TaskCompletionErrors';
+import { TaskCompletionValidationError, PendingPaymentsForTaskError } from '../../application/errors/TaskCompletionErrors';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -65,6 +65,7 @@ export default function TaskDetailsPage() {
     updateProgressLog,
     deleteProgressLog,
     completeTask,
+    completeTaskAndSettlePayments,
   } = useTasks();
   const { delayReasonTypes } = useDelayReasonTypes();
   const { confirm } = useConfirm();
@@ -238,7 +239,39 @@ export default function TaskDetailsPage() {
       await completeTask(task.id);
       navigation.goBack();
     } catch (err) {
-      if (err instanceof TaskCompletionValidationError) {
+      if (err instanceof PendingPaymentsForTaskError) {
+        const paymentLines = err.pendingPayments
+          .map(p => {
+            const amount = p.amount != null ? `$${p.amount.toLocaleString()}` : 'Unknown amount';
+            const contractor = p.contractorName ?? 'Unknown contractor';
+            const due = p.dueDate ? `Due: ${p.dueDate}` : '';
+            return `\u2022 ${amount} \u2014 ${contractor}${due ? `\n  ${due}` : ''}`;
+          })
+          .join('\n');
+        const capturedTaskId = task.id;
+        Alert.alert(
+          'Unpaid Payment Detected',
+          `This task has an unpaid payment:\n\n${paymentLines}\n\nMark the payment as paid and complete this task?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Mark as Paid & Complete',
+              style: 'default',
+              onPress: async () => {
+                setCompleting(true);
+                try {
+                  await completeTaskAndSettlePayments(capturedTaskId);
+                  navigation.goBack();
+                } catch {
+                  Alert.alert('Error', 'Something went wrong. Please try again.');
+                } finally {
+                  setCompleting(false);
+                }
+              },
+            },
+          ],
+        );
+      } else if (err instanceof TaskCompletionValidationError) {
         const refs = err.pendingQuotations.map(q => q.reference).join('\n\u2022 ');
         Alert.alert(
           'Cannot Mark as Complete',
@@ -251,7 +284,7 @@ export default function TaskDetailsPage() {
     } finally {
       setCompleting(false);
     }
-  }, [task, completeTask, navigation]);
+  }, [task, completeTask, completeTaskAndSettlePayments, navigation]);
 
   const handleDelete = async () => {
     const confirmed = await confirm({
