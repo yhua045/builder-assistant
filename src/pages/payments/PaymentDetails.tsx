@@ -28,7 +28,7 @@ import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/Mar
 import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
 import { invalidations, queryKeys } from '../../hooks/queryKeys';
-import { ProjectPickerModal } from '../../components/payments/ProjectPickerModal';
+import { ProjectPickerModal } from '../../components/shared/ProjectPickerModal';
 import '../../infrastructure/di/registerServices';
 
 const formatCurrency = (amount: number): string =>

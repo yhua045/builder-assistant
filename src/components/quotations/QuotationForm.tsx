@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../domain/entities/Quotation';
 import DatePickerInput from '../inputs/DatePickerInput';
-import { Plus, X, Paperclip } from 'lucide-react-native';
+import { Plus, X, Paperclip, HardHat, UserPlus } from 'lucide-react-native';
 import { PdfFileMetadata } from '../../types/PdfFileMetadata';
+import { ProjectPickerModal } from '../shared/ProjectPickerModal';
+import { SubcontractorPickerModal, SubcontractorContact } from '../tasks/SubcontractorPickerModal';
+import { QuickAddContractorModal } from '../inputs/QuickAddContractorModal';
+import { useQuickLookup } from '../../hooks/useQuickLookup';
+import { Project } from '../../domain/entities/Project';
 
 interface QuotationFormProps {
   initialValues?: Partial<Quotation>;
@@ -14,15 +19,21 @@ interface QuotationFormProps {
   embedded?: boolean;
   /** When set, shows a PDF attached indicator with the filename */
   pdfFile?: PdfFileMetadata;
+  /** Pre-selected projectId (e.g. when opened from ProjectDetail) */
+  projectId?: string;
+  /** Pre-selected vendorId (e.g. from OCR-parsed contact) */
+  vendorId?: string;
 }
 
-export const QuotationForm: React.FC<QuotationFormProps> = ({ 
-  initialValues, 
-  onSubmit, 
-  onCancel, 
+export const QuotationForm: React.FC<QuotationFormProps> = ({
+  initialValues,
+  onSubmit,
+  onCancel,
   isLoading,
   embedded = false,
   pdfFile,
+  projectId: propProjectId,
+  vendorId: propVendorId,
 }) => {
   const [reference, setReference] = useState(initialValues?.reference || '');
   const [vendorName, setVendorName] = useState(initialValues?.vendorName || '');
@@ -40,26 +51,45 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const [currency] = useState(initialValues?.currency || 'AUD');
   const [status] = useState<Quotation['status']>(initialValues?.status || 'draft');
   const [notes, setNotes] = useState(initialValues?.notes || '');
-  
+
+  // ── Project picker state ───────────────────────────────────────────────────
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
+    initialValues?.projectId ?? propProjectId ?? undefined
+  );
+  const [selectedProjectName, setSelectedProjectName] = useState<string | undefined>(undefined);
+  const [projectPickerVisible, setProjectPickerVisible] = useState(false);
+
+  // ── Vendor picker state ────────────────────────────────────────────────────
+  const [selectedVendor, setSelectedVendor] = useState<SubcontractorContact | undefined>(
+    initialValues?.vendorId
+      ? { id: initialValues.vendorId, name: initialValues.vendorName ?? '' }
+      : propVendorId
+      ? { id: propVendorId, name: '' }
+      : undefined
+  );
+  const [vendorPickerVisible, setVendorPickerVisible] = useState(false);
+  const [quickAddVisible, setQuickAddVisible] = useState(false);
+
+  const { quickAdd } = useQuickLookup();
+
   const [lineItems, setLineItems] = useState<QuotationLineItem[]>(
     initialValues?.lineItems || []
   );
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!date) newErrors.date = 'Date is required';
     if (!total || isNaN(parseFloat(total)) || parseFloat(total) < 0) {
       newErrors.total = 'Valid total amount is required';
     }
-    
-    // Validate expiry date is after issue date
+
     if (expiryDate && date && expiryDate < date) {
       newErrors.expiryDate = 'Expiry date must be on or after issue date';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -67,10 +97,15 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const handleSubmit = () => {
     if (validate()) {
       try {
+        const resolvedVendorName = selectedVendor?.name || vendorName || undefined;
+        const resolvedVendorEmail = selectedVendor?.email || vendorEmail || undefined;
+
         const quotationData = {
           reference,
-          vendorName: vendorName || undefined,
-          vendorEmail: vendorEmail || undefined,
+          projectId: selectedProjectId || undefined,
+          vendorId: selectedVendor?.id || undefined,
+          vendorName: resolvedVendorName,
+          vendorEmail: resolvedVendorEmail,
           vendorAddress: vendorAddress || undefined,
           date: date!.toISOString(),
           expiryDate: expiryDate?.toISOString(),
@@ -83,14 +118,29 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
           lineItems: lineItems.length > 0 ? lineItems : undefined,
         };
 
-        // Validate with domain entity
         QuotationEntity.create(quotationData as any);
-        
+
         onSubmit(quotationData as any);
       } catch (error) {
         setErrors({ form: error instanceof Error ? error.message : 'Validation failed' });
       }
     }
+  };
+
+  const handleProjectSelect = (project: Project | undefined) => {
+    if (project) {
+      setSelectedProjectId(project.id);
+      setSelectedProjectName(project.name);
+    } else {
+      setSelectedProjectId(undefined);
+      setSelectedProjectName(undefined);
+    }
+  };
+
+  const handleVendorSelect = (contact: SubcontractorContact | undefined) => {
+    setSelectedVendor(contact);
+    if (contact?.email) setVendorEmail(contact.email);
+    if (contact?.name) setVendorName(contact.name);
   };
 
   const addLineItem = () => {
@@ -113,34 +163,33 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   const updateLineItem = (index: number, field: keyof QuotationLineItem, value: any) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
-    
-    // Auto-calculate total if quantity or unitPrice changes
+
     if (field === 'quantity' || field === 'unitPrice') {
       const qty = field === 'quantity' ? parseFloat(value) || 0 : updated[index].quantity || 0;
       const price = field === 'unitPrice' ? parseFloat(value) || 0 : updated[index].unitPrice || 0;
       updated[index].total = qty * price;
     }
-    
+
     setLineItems(updated);
-    
-    // Auto-update subtotal
+
     const newSubtotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
     setSubtotal(newSubtotal.toFixed(2));
-    
-    // Auto-update total if no tax
+
     if (!taxTotal || parseFloat(taxTotal) === 0) {
       setTotal(newSubtotal.toFixed(2));
     }
   };
 
+  const px = embedded ? 'px-0' : 'px-6';
+
   return (
-    <ScrollView className={`flex-1 bg-background ${embedded ? 'p-0' : 'p-4'}`}>
+    <ScrollView className="flex-1 bg-background">
       {!embedded && (
-        <Text className="text-2xl font-bold mb-6 text-foreground">New Quotation</Text>
+        <Text className="text-2xl font-bold mb-6 px-6 text-foreground">New Quotation</Text>
       )}
-      
+
       {errors.form && (
-        <View className="bg-destructive/10 border border-destructive rounded-xl p-3 mb-4">
+        <View className={`bg-destructive/10 border border-destructive rounded-xl p-3 mb-4 ${px}`}>
           <Text className="text-destructive text-sm">{errors.form}</Text>
         </View>
       )}
@@ -149,7 +198,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       {pdfFile && (
         <View
           testID="quotation-pdf-indicator"
-          className="bg-card border border-border rounded-xl p-3 mb-4 flex-row items-center"
+          className={`bg-card border border-border rounded-xl p-3 mb-4 flex-row items-center ${px}`}
         >
           <Paperclip size={16} color="#6b7280" />
           <Text className="text-foreground font-medium ml-2 flex-1" numberOfLines={1}>
@@ -160,9 +209,9 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
           </Text>
         </View>
       )}
-      
+
       {/* Reference (optional) */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Reference (optional)</Text>
         <TextInput
           testID="quotation-reference-input"
@@ -174,21 +223,60 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
         />
       </View>
 
-      {/* Vendor Name */}
-      <View className="mb-4">
+      {/* Project Picker */}
+      <View className={`mb-4 ${px}`}>
+        <Text className="font-medium text-foreground mb-2">Project</Text>
+        <TouchableOpacity
+          testID="quotation-project-picker-row"
+          onPress={() => setProjectPickerVisible(true)}
+          className="border border-input rounded-xl p-4 bg-card flex-row items-center justify-between"
+        >
+          <Text className={selectedProjectId ? 'text-foreground text-base' : 'text-muted-foreground text-base'}>
+            {selectedProjectName ?? (selectedProjectId ? selectedProjectId : 'None')}
+          </Text>
+          <Text className="text-muted-foreground text-xs">▾</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Vendor Picker */}
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Client / Vendor</Text>
-        <TextInput
-          testID="quotation-vendor-input"
-          className="border border-input rounded-xl p-4 text-base bg-card text-foreground"
-          value={vendorName}
-          onChangeText={setVendorName}
-          placeholder="Vendor name"
-          placeholderTextColor="#9ca3af"
-        />
+        <TouchableOpacity
+          testID="quotation-vendor-picker-row"
+          onPress={() => setVendorPickerVisible(true)}
+          className="border border-input rounded-xl p-4 bg-card flex-row items-center"
+        >
+          <HardHat size={16} color="#6b7280" />
+          <Text className={`ml-2 flex-1 text-base ${selectedVendor || vendorName ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {selectedVendor
+              ? `${selectedVendor.name}${(selectedVendor as any).trade ? ` (${(selectedVendor as any).trade})` : ''}`
+              : vendorName ? vendorName : '+ Add Client / Vendor'}
+          </Text>
+          {(!!(selectedVendor || vendorName)) && (
+            <Pressable
+              testID="quotation-vendor-edit-button"
+              onPress={() => setVendorPickerVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text className="text-muted-foreground text-xs">&#9998;</Text>
+            </Pressable>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="quotation-vendor-quick-add-button"
+          onPress={() => {
+            setVendorPickerVisible(false);
+            setQuickAddVisible(true);
+          }}
+          className="mt-1 flex-row items-center px-1 py-1"
+        >
+          <UserPlus size={14} color="#6b7280" />
+          <Text className="text-muted-foreground text-xs ml-1">Quick add new contact</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Vendor Email */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Vendor Email</Text>
         <TextInput
           testID="quotation-vendor-email-input"
@@ -203,7 +291,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Vendor Address */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Vendor Address</Text>
         <TextInput
           testID="quotation-vendor-address-input"
@@ -219,7 +307,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Date */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Issue Date*</Text>
         <DatePickerInput
           label=""
@@ -230,7 +318,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Expiry Date */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Expiry Date</Text>
         <DatePickerInput
           label=""
@@ -241,10 +329,10 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Line Items */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <View className="flex-row items-center justify-between mb-2">
           <Text className="font-medium text-foreground">Line Items</Text>
-          <Pressable 
+          <Pressable
             testID="quotation-add-line-item"
             onPress={addLineItem}
             className="flex-row items-center bg-primary px-3 py-2 rounded-lg active:opacity-80"
@@ -253,10 +341,10 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
             <Text className="text-primary-foreground ml-1 font-medium">Add Item</Text>
           </Pressable>
         </View>
-        
+
         {lineItems.map((item, index) => (
-          <View 
-            key={item.id || index} 
+          <View
+            key={item.id || index}
             testID={`quotation-line-item-${index}`}
             className="bg-card border border-input rounded-xl p-4 mb-3"
           >
@@ -266,7 +354,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
                 <X size={20} color="#ef4444" />
               </Pressable>
             </View>
-            
+
             <TextInput
               className="border border-input rounded-lg p-2 mb-2 bg-background text-foreground"
               value={item.description}
@@ -274,7 +362,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
               placeholder="Description"
               placeholderTextColor="#9ca3af"
             />
-            
+
             <View className="flex-row gap-2">
               <View className="flex-1">
                 <Text className="text-xs text-muted-foreground mb-1">Qty</Text>
@@ -287,7 +375,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
                   placeholderTextColor="#9ca3af"
                 />
               </View>
-              
+
               <View className="flex-1">
                 <Text className="text-xs text-muted-foreground mb-1">Unit Price</Text>
                 <TextInput
@@ -299,7 +387,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
                   placeholderTextColor="#9ca3af"
                 />
               </View>
-              
+
               <View className="flex-1">
                 <Text className="text-xs text-muted-foreground mb-1">Total</Text>
                 <Text className="border border-input rounded-lg p-2 bg-muted text-foreground">
@@ -312,7 +400,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Total */}
-      <View className="mb-4">
+      <View className={`mb-4 ${px}`}>
         <Text className="font-medium text-foreground mb-2">Total*</Text>
         <TextInput
           testID="quotation-total-input"
@@ -328,10 +416,8 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
         {errors.total && <Text className="text-destructive text-sm mt-1">{errors.total}</Text>}
       </View>
 
-      {/* Currency, Subtotal, Tax, Status — hidden in UI; retained in state and submission data */}
-
       {/* Notes */}
-      <View className="mb-8">
+      <View className={`mb-8 ${px}`}>
         <Text className="mb-2 font-medium text-foreground">Notes</Text>
         <TextInput
           testID="quotation-notes-input"
@@ -347,19 +433,19 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Action Buttons */}
-      <View className="flex-row gap-4 mb-8">
-        <Pressable 
+      <View className={`flex-row gap-4 mb-8 mt-6 ${px}`}>
+        <Pressable
           testID="quotation-cancel-button"
-          onPress={onCancel} 
+          onPress={onCancel}
           disabled={isLoading}
           className="flex-1 bg-secondary p-4 rounded-xl items-center active:opacity-80"
         >
           <Text className="text-secondary-foreground font-semibold text-lg">Cancel</Text>
         </Pressable>
-        
-        <Pressable 
+
+        <Pressable
           testID="quotation-save-button"
-          onPress={handleSubmit} 
+          onPress={handleSubmit}
           disabled={isLoading}
           className="flex-1 bg-primary p-4 rounded-xl items-center active:opacity-80"
         >
@@ -370,6 +456,44 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
           )}
         </Pressable>
       </View>
+
+      {/* Project Picker Modal */}
+      <ProjectPickerModal
+        visible={projectPickerVisible}
+        currentProjectId={selectedProjectId}
+        onSelect={handleProjectSelect}
+        onClose={() => setProjectPickerVisible(false)}
+      />
+
+      {/* Subcontractor Picker Modal */}
+      <SubcontractorPickerModal
+        visible={vendorPickerVisible}
+        selectedId={selectedVendor?.id}
+        onSelect={handleVendorSelect}
+        onClose={() => setVendorPickerVisible(false)}
+      />
+
+      {/* Quick-add contractor modal */}
+      <QuickAddContractorModal
+        visible={quickAddVisible}
+        onSave={(contact) => {
+          const vendor: SubcontractorContact = {
+            id: contact.id,
+            name: contact.name,
+            email: contact.email ?? undefined,
+            phone: contact.phone ?? undefined,
+          };
+          setSelectedVendor(vendor);
+          if (contact.email) setVendorEmail(contact.email);
+          if (contact.name) setVendorName(contact.name);
+          setQuickAddVisible(false);
+        }}
+        onCancel={() => setQuickAddVisible(false)}
+        onQuickAdd={async (input) => {
+          const contact = await quickAdd(input);
+          return contact;
+        }}
+      />
     </ScrollView>
   );
 };
