@@ -1,5 +1,84 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+## ✅ Issue #196 — Link Payment to Project in Pending Payment Screen
+**Status**: COMPLETED  
+**Branch**: `issue-196-link-payment-to-project`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **LinkPaymentToProjectUseCase** (new):
+  - Validates `payment.status === 'pending'`; throws `PaymentNotPendingError` if not
+  - Updates payment via `paymentRepo.update()` with new `projectId` (or `undefined` to clear)
+  - Returns updated Payment entity
+  
+- **LinkInvoiceToProjectUseCase** (new):
+  - Validates invoice is not `'cancelled'` and `paymentStatus !== 'paid'`; throws `InvoiceNotEditableError` if invalid
+  - Calls `invoiceRepo.assignProject()` (for defined projectId) or `updateInvoice()` (to clear)
+  - Returns void; orchestrates invoice project assignment
+  
+- **PaymentErrors** (new domain error types):
+  - `PaymentNotPendingError`: Thrown when attempting to link project to non-pending payment
+  - `InvoiceNotEditableError`: Thrown when invoice is cancelled or already paid
+  
+- **PaymentDetails.tsx** (extended):
+  - Removed `!isSynthetic` guard from project row display — now shows project for **all** payment types
+  - For synthetic invoice-payable rows: project resolved from `invoice.projectId` (via new extended `loadData()` logic)
+  - Tappable project row for **pending** payments (real or synthetic) → opens `ProjectPickerModal`
+  - Read-only project row (no chevron, non-interactive) for **settled** or **cancelled** payments
+  - Added edit (pencil) icon in header, visible only for **pending real payment records** (not synthetic invoice rows)
+  - On project selection: calls `LinkPaymentToProjectUseCase` (for real payments) or `LinkInvoiceToProjectUseCase` (for synthetic rows)
+  - Cache invalidation: `paymentEdited()` with updated `projectId` clears `paymentsAll`, `projectPayments()`, and cross-filter keys
+  
+- **PendingPaymentForm** (new modal component):
+  - Editable fields: `date`, `dueDate`, `method`, `notes`, `reference`, `projectId`
+  - Project field: tappable row that opens embedded `ProjectPickerModal`
+  - Method selector: horizontal chip row (`bank`, `cash`, `check`, `card`, `other`)
+  - Save button calls `paymentRepo.update()` with all changed fields + optional `LinkPaymentToProjectUseCase` if `projectId` changed
+  - Modal presentation: `pageSheet` style, `KeyboardAvoidingView`, consistent with existing modal patterns
+  - Visible/triggered from Payment Detail header edit icon (for pending real payments only)
+  
+- **Query Keys** (extended):
+  - No new query key types required; existing keys (`paymentsAll`, `projectPayments()`, `unassignedPaymentsGlobal`, `invoices()`) already cover cache invalidation
+  - Invalidation logic updated in `PaymentDetails.tsx` to cover both payment and invoice project changes
+  
+- **Invoice Schema** (extended via `DrizzleInvoiceRepository`):
+  - No database migration needed — `projectId` column already exists on `invoices` table (from earlier work)
+  - `assignProject(invoiceId, projectId)` method already implemented; reused in `LinkInvoiceToProjectUseCase`
+  
+- **Tests**: Full TDD coverage (1375+ tests pass):
+  - Unit tests: `LinkPaymentToProjectUseCase` (pending flow, status guards, not-found errors)
+  - Unit tests: `LinkInvoiceToProjectUseCase` (unpaid invoice flow, cancelled/paid guards)
+  - Unit tests: `PaymentErrors` (error types and messaging)
+  - Integration tests: `LinkPaymentToProject` (full Drizzle flow: save pending payment → link → verify updated `projectId`)
+  - Integration tests: `LinkInvoiceToProject` (full Drizzle flow: save invoice → link → verify project assignment)
+  - UI integration tests: `PaymentDetailsSyntheticProject` (synthetic row project display, tappable state, read-only guard for settled payments)
+  - UI integration tests: `PendingPaymentForm` (form rendering, field edits, save flow, project picker integration)
+  - Snapshot tests: Form layouts, modal states, project row display variants
+  
+- **Code Quality**:
+  - ✅ TypeScript strict mode: `npx tsc --noEmit` passes with zero errors (fixed missing import in integration test)
+  - ✅ All 15 acceptance criteria met (AC-1 through AC-15)
+
+### Acceptance Criteria  
+All 15 acceptance criteria met:
+- ✅ AC-1: PaymentDetails shows Project row for both real and synthetic invoice-payable rows
+- ✅ AC-2: For synthetic rows, project resolved from `invoice.projectId`; shows "Unassigned" if none
+- ✅ AC-3: Tapping project row on pending payment opens `ProjectPickerModal`
+- ✅ AC-4: Real pending payment project selection calls `LinkPaymentToProjectUseCase`; persists `projectId`
+- ✅ AC-5: Synthetic invoice-payable row calls `LinkInvoiceToProjectUseCase`; persists invoice `projectId`
+- ✅ AC-6: Clearing project (via modal) sets `projectId = undefined`
+- ✅ AC-7: Cache invalidation on assignment: `paymentsAll`, `projectPayments()`, `unassignedPaymentsGlobal`, `invoices()` cleared
+- ✅ AC-8: Settled/cancelled payments show read-only project row (no chevron, non-tappable)
+- ✅ AC-9: `LinkPaymentToProjectUseCase` throws `PaymentNotPendingError` for non-pending status
+- ✅ AC-10: `LinkInvoiceToProjectUseCase` throws `InvoiceNotEditableError` when invoice cancelled or paid
+- ✅ AC-11: Edit (pencil) icon visible in PaymentDetails header only for pending real payments
+- ✅ AC-12: `PendingPaymentForm` has editable fields (date, dueDate, method, notes, reference, projectId)
+- ✅ AC-13: Form save calls `paymentRepo.update()` + optional `LinkPaymentToProjectUseCase` if projectId changed
+- ✅ AC-14: TypeScript strict mode passes (`npx tsc --noEmit`)
+- ✅ AC-15: All test plan items (§7) have passing tests
+
+---
+
 ## ✅ Issue #195 — Create Task for Quotation + Approve Action + Task Detail Linking  
 **Status**: COMPLETED  
 **Branch**: `feature-195-create-task-for-quotation`  

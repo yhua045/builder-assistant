@@ -138,7 +138,7 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
             updatedAt: now,
         };
         
-        if (updates.projectId !== undefined) updateData.projectId = updates.projectId;
+        if ('projectId' in updates) updateData.projectId = updates.projectId ?? null;
         if (updates.externalId !== undefined) updateData.externalId = this.normalizeExternalKey(updates.externalId);
         if (updates.externalReference !== undefined) updateData.externalReference = this.normalizeExternalKey(updates.externalReference);
         if (updates.issuerName !== undefined) updateData.issuerName = updates.issuerName;
