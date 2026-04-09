@@ -2,6 +2,8 @@ import { GetTaskDetailUseCase } from '../../src/application/usecases/task/GetTas
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { DelayReason } from '../../src/domain/entities/DelayReason';
+import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
+import { Quotation } from '../../src/domain/entities/Quotation';
 
 function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {
@@ -97,5 +99,54 @@ describe('GetTaskDetailUseCase', () => {
     expect(result).not.toBeNull();
     expect(result!.dependencyTasks).toEqual([]);
     expect(result!.delayReasons).toEqual([]);
+  });
+
+  it('returns empty linkedQuotations when no QuotationRepository injected', async () => {
+    const task = makeTask('task-3');
+    const repo = makeMockRepo({
+      findById: jest.fn().mockResolvedValue(task),
+    });
+    const uc = new GetTaskDetailUseCase(repo);
+
+    const result = await uc.execute('task-3');
+
+    expect(result).not.toBeNull();
+    expect(result!.linkedQuotations).toEqual([]);
+  });
+
+  it('returns linkedQuotations from QuotationRepository.findByTask when injected', async () => {
+    const task = makeTask('task-4');
+    const quotation: Quotation = {
+      id: 'quot-1',
+      reference: 'QUO-001',
+      date: '2026-04-09',
+      total: 5000,
+      currency: 'AUD',
+      status: 'pending_approval',
+      taskId: 'task-4',
+      createdAt: '2026-04-09T00:00:00.000Z',
+      updatedAt: '2026-04-09T00:00:00.000Z',
+    };
+    const repo = makeMockRepo({
+      findById: jest.fn().mockResolvedValue(task),
+    });
+    const quotationRepo: QuotationRepository = {
+      createQuotation: jest.fn(),
+      getQuotation: jest.fn(),
+      updateQuotation: jest.fn(),
+      deleteQuotation: jest.fn(),
+      findByReference: jest.fn(),
+      findByTask: jest.fn().mockResolvedValue([quotation]),
+      findByProjectId: jest.fn().mockResolvedValue([]),
+      listQuotations: jest.fn(),
+    } as unknown as QuotationRepository;
+
+    const uc = new GetTaskDetailUseCase(repo, quotationRepo);
+    const result = await uc.execute('task-4');
+
+    expect(result).not.toBeNull();
+    expect(result!.linkedQuotations).toHaveLength(1);
+    expect(result!.linkedQuotations[0].id).toBe('quot-1');
+    expect((quotationRepo.findByTask as jest.Mock).mock.calls[0][0]).toBe('task-4');
   });
 });

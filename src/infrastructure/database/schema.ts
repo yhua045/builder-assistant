@@ -486,7 +486,7 @@ export const quotations = sqliteTable('quotations', {
   
   // Status
   status: text('status', {
-    enum: ['draft', 'sent', 'accepted', 'declined']
+    enum: ['draft', 'sent', 'pending_approval', 'accepted', 'declined']
   }).notNull().default('draft'),
   
   // Audit

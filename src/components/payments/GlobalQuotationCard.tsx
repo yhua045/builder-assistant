@@ -14,6 +14,7 @@ const STATUS_CONFIG: Record<
 > = {
   draft:    { label: 'Draft',    bg: '#f4f4f5', text: '#71717a' },
   sent:     { label: 'Sent',     bg: '#eff6ff', text: '#2563eb' },
+  pending_approval: { label: 'Pending', bg: '#fef3c7', text: '#d97706' },
   accepted: { label: 'Accepted', bg: '#f0fdf4', text: '#16a34a' },
   declined: { label: 'Declined', bg: '#fef2f2', text: '#dc2626' },
 };

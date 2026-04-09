@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight, X, DollarSign } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Pencil, X, DollarSign } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { container } from 'tsyringe';
 import { Payment } from '../../domain/entities/Payment';
@@ -26,8 +26,11 @@ import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
 import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
+import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
+import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
 import { invalidations, queryKeys } from '../../hooks/queryKeys';
+import { PendingPaymentForm } from '../../components/payments/PendingPaymentForm';
 import { ProjectPickerModal } from '../../components/shared/ProjectPickerModal';
 import '../../infrastructure/di/registerServices';
 
@@ -69,6 +72,7 @@ export default function PaymentDetails() {
   const [linkedPayments, setLinkedPayments] = useState<Payment[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [projectPickerVisible, setProjectPickerVisible] = useState(false);
+  const [pendingFormVisible, setPendingFormVisible] = useState(false);
   const [loading, setLoading] = useState(!syntheticRow);
   const [marking, setMarking] = useState(false);
   const [partialModalVisible, setPartialModalVisible] = useState(false);
@@ -98,6 +102,14 @@ export default function PaymentDetails() {
     () => new RecordPaymentUseCase(paymentRepo, invoiceRepo),
     [paymentRepo, invoiceRepo],
   );
+  const linkPaymentUc = React.useMemo(
+    () => new LinkPaymentToProjectUseCase(paymentRepo),
+    [paymentRepo],
+  );
+  const linkInvoiceUc = React.useMemo(
+    () => new LinkInvoiceToProjectUseCase(invoiceRepo),
+    [invoiceRepo],
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -112,15 +124,19 @@ export default function PaymentDetails() {
 
       setPayment(resolved);
 
-      // Load project if present (and not a synthetic row)
-      if (!isSynthetic && resolved?.projectId) {
+      // Load project — for synthetic rows resolve from invoice.projectId
+      const projectId = isSynthetic
+        ? undefined // will be loaded after invoice fetch below
+        : resolved?.projectId;
+
+      if (!isSynthetic && projectId) {
         try {
-          const proj = await projectRepo.findById(resolved.projectId);
+          const proj = await projectRepo.findById(projectId);
           setProject(proj);
         } catch {
           setProject(null);
         }
-      } else {
+      } else if (!isSynthetic) {
         setProject(null);
       }
 
@@ -133,6 +149,18 @@ export default function PaymentDetails() {
         ]);
         setInvoice(inv);
         setLinkedPayments(payments.filter((p) => p.id !== resolved?.id));
+
+        // For synthetic rows load project from the invoice
+        if (isSynthetic && inv?.projectId) {
+          try {
+            const proj = await projectRepo.findById(inv.projectId);
+            setProject(proj);
+          } catch {
+            setProject(null);
+          }
+        } else if (isSynthetic) {
+          setProject(null);
+        }
       }
     } catch (e: any) {
       Alert.alert('Error', e?.message ?? 'Failed to load payment details');
@@ -143,52 +171,60 @@ export default function PaymentDetails() {
 
   const handleSelectProject = useCallback(
     async (selectedProject: Project | undefined) => {
-      if (!payment || payment.id.startsWith('invoice-payable:')) return;
+      if (!payment) return;
+      const isSynth = payment.id.startsWith('invoice-payable:');
       const oldProjectId = previousProjectIdRef.current;
       const newProjectId = selectedProject?.id;
       try {
-        await paymentRepo.update({ ...payment, projectId: newProjectId });
-        // Invalidate affected cache entries
-        const keysToInvalidate = [
-          queryKeys.paymentsAll(),
-          queryKeys.paidPaymentsGlobal(),
-          queryKeys.unassignedPaymentsGlobal(),
-          ...(oldProjectId ? [queryKeys.projectPayments(oldProjectId)] : []),
-          ...(newProjectId ? [queryKeys.projectPayments(newProjectId)] : []),
-        ];
+        if (isSynth) {
+          // Synthetic row — update the parent invoice
+          const invoiceId = payment.invoiceId;
+          if (!invoiceId) return;
+          await linkInvoiceUc.execute({ invoiceId, projectId: newProjectId });
+        } else {
+          await linkPaymentUc.execute({ paymentId: payment.id, projectId: newProjectId });
+        }
         await Promise.all(
-          keysToInvalidate.map((key) => queryClient.invalidateQueries({ queryKey: key })),
+          invalidations.paymentProjectAssigned({
+            oldProjectId,
+            newProjectId,
+            isInvoice: isSynth,
+          }).map((key) => queryClient.invalidateQueries({ queryKey: key })),
         );
         await loadData();
       } catch (e: any) {
         Alert.alert('Error', e?.message ?? 'Failed to update project assignment');
       }
     },
-    [payment, paymentRepo, queryClient, loadData],
+    [payment, linkPaymentUc, linkInvoiceUc, queryClient, loadData],
   );
 
+  const resolvedProjectId = payment?.id?.startsWith('invoice-payable:')
+    ? invoice?.projectId
+    : payment?.projectId;
+
   const handleNavigateToProject = useCallback(() => {
-    if (!payment?.projectId) return;
+    if (!resolvedProjectId) return;
     navigation.dispatch(
       CommonActions.navigate({
         name: 'Projects',
         params: {
           screen: 'ProjectDetail',
-          params: { projectId: payment.projectId },
+          params: { projectId: resolvedProjectId },
           initial: false,
         },
       }),
     );
-  }, [payment, navigation]);
+  }, [resolvedProjectId, navigation]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Track previousProjectId before each assignment
+  // Track previousProjectId before each assignment (covers both real and synthetic paths)
   useEffect(() => {
-    previousProjectIdRef.current = payment?.projectId;
-  }, [payment?.projectId]);
+    previousProjectIdRef.current = resolvedProjectId;
+  }, [resolvedProjectId]);
 
   const handleMarkAsPaid = () => {
     // Invoice-linked path: record a new settled payment against the invoice
@@ -311,7 +347,8 @@ export default function PaymentDetails() {
     );
   }
 
-  const isSynthetic = payment.id.startsWith('invoice-payable:');
+  const isSyntheticRow = payment.id.startsWith('invoice-payable:');
+  const resolvedProjectIdInRender = isSyntheticRow ? invoice?.projectId : payment.projectId;
   const dueStatus = payment.dueDate ? getDueStatus(payment.dueDate) : null;
   const totalSettled = linkedPayments
     .filter((p) => p.status === 'settled')
@@ -323,7 +360,10 @@ export default function PaymentDetails() {
     (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial') &&
     remainingBalance > 0;
   const showMarkAsPaidFallback =
-    !invoice && payment.status === 'pending' && !isSynthetic;
+    !invoice && payment.status === 'pending' && !isSyntheticRow;
+  const isPending = payment.status === 'pending' || payment.status == null;
+  const projectRowInteractive = isPending;
+  const showEditIcon = isPending && !isSyntheticRow;
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -339,6 +379,16 @@ export default function PaymentDetails() {
         <Text className="text-xl font-bold text-foreground flex-1" numberOfLines={1}>
           {payment.contractorName ?? 'Payment Detail'}
         </Text>
+        {showEditIcon && (
+          <TouchableOpacity
+            testID="edit-payment-btn"
+            onPress={() => setPendingFormVisible(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            className="ml-2"
+          >
+            <Pencil size={16} color={iconColor} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={styles.content}>
@@ -410,8 +460,8 @@ export default function PaymentDetails() {
           <Row label="Reference" value={payment.reference ?? '—'} />
           {payment.notes ? <Row label="Notes" value={payment.notes} /> : null}
 
-          {/* Project row — only for non-synthetic payments */}
-          {!isSynthetic && (
+          {/* Project row — visible for both real and synthetic rows */}
+          {projectRowInteractive ? (
             <TouchableOpacity
               testID="project-row"
               onPress={() => setProjectPickerVisible(true)}
@@ -432,6 +482,24 @@ export default function PaymentDetails() {
                 <ChevronRight size={14} color={isDark ? '#a1a1aa' : '#71717a'} />
               </View>
             </TouchableOpacity>
+          ) : (
+            <View
+              testID="project-row"
+              className="flex-row justify-between items-center py-1.5"
+            >
+              <Text className="text-sm text-muted-foreground">Project</Text>
+              <View className="flex-row items-center gap-1 flex-shrink ml-4">
+                {project ? (
+                  <Text className="text-sm text-foreground font-medium text-right" numberOfLines={1}>
+                    {project.name}
+                  </Text>
+                ) : (
+                  <Text className="text-sm text-muted-foreground font-medium text-right">
+                    Unassigned
+                  </Text>
+                )}
+              </View>
+            </View>
           )}
         </View>
 
@@ -492,14 +560,27 @@ export default function PaymentDetails() {
         )}
       </ScrollView>
 
-      {/* Project Picker Modal — #191 */}
+      {/* Project Picker Modal — #191 / #196 */}
       <ProjectPickerModal
         visible={projectPickerVisible}
-        currentProjectId={payment?.projectId}
+        currentProjectId={resolvedProjectIdInRender}
         onSelect={handleSelectProject}
         onNavigate={handleNavigateToProject}
         onClose={() => setProjectPickerVisible(false)}
       />
+
+      {/* Pending Payment Form — #196 */}
+      {showEditIcon && (
+        <PendingPaymentForm
+          visible={pendingFormVisible}
+          payment={payment}
+          onClose={() => setPendingFormVisible(false)}
+          onSaved={async () => {
+            setPendingFormVisible(false);
+            await loadData();
+          }}
+        />
+      )}
 
       {/* Partial Payment Modal */}
       <Modal
