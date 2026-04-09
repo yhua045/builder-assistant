@@ -1,6 +1,58 @@
 # Project Progress — Summary (updated 2026-04-09)
 
-<<<<<<< issue-198-refine-mark-task-completed
+## ✅ Issue #199 — Update Payments List in Project Detail
+**Status**: COMPLETED  
+**Branch**: `issue-199-payments-list-project-detail`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **New Domain Entity**: `PaymentFeedItem` discriminated union (`'payment' | 'invoice'`) representing unified payment/invoice feed items in project detail
+- **New Use Case**: `ListProjectPaymentsFeedUseCase` combining both unlinked payments and all invoices (all statuses: Draft, Issued, Overdue, Paid, Cancelled, etc.) for a project
+- **New Component**: `TimelineInvoiceCard` (parallel to `TimelinePaymentCard`) with amber left-border accent, status chips display, and quick actions (View, Mark Paid, Attach)
+- **Updated Hook**: `usePaymentsTimeline` now returns `items: PaymentFeedItem[]` instead of `payments: Payment[]`; grouped by date via `groupFeedItemsByDay` helper
+- **Updated Screen**: `ProjectDetail.tsx` renders mixed payment/invoice grid; new handlers for `onViewInvoice`, `onMarkInvoiceAsPaid`, `onInvoiceAttachDocument`
+- **Navigation Route**: Added `InvoiceDetail` to `ProjectsStackParamList` with `openMarkAsPaid` and `openDocument` params (consistent with `QuotationDetail` pattern)
+- **Algorithm**: Filters to unlinked payments (`invoiceId === null || undefined`) + all invoices; sorts by due date ascending; applies MAX_ITEMS=500 guard with truncation flag
+- **Tests**: Full TDD coverage (1396 tests pass):
+  - Unit tests: `ListProjectPaymentsFeedUseCase`, `groupFeedItemsByDay`, `TimelineInvoiceCard` rendering and actions
+  - Integration tests: ProjectDetail mixed payments/invoices, navigation, empty states
+  - No schema changes required; both `PaymentRepository.findByProjectId` and `InvoiceRepository.listInvoices` already exist
+
+### Acceptance Criteria  
+All criteria met:
+# Project Progress — Summary (updated 2026-04-09)
+
+## ✅ Issue #199 — Update Payments List in Project Detail
+**Status**: COMPLETED  
+**Branch**: `issue-199-payments-list-project-detail`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **New Domain Entity**: `PaymentFeedItem` discriminated union (`'payment' | 'invoice'`) representing unified payment/invoice feed items in project detail
+- **New Use Case**: `ListProjectPaymentsFeedUseCase` combining both unlinked payments and all invoices (all statuses: Draft, Issued, Overdue, Paid, Cancelled, etc.) for a project
+- **New Component**: `TimelineInvoiceCard` (parallel to `TimelinePaymentCard`) with amber left-border accent, status chips display, and quick actions (View, Mark Paid, Attach)
+- **Updated Hook**: `usePaymentsTimeline` now returns `items: PaymentFeedItem[]` instead of `payments: Payment[]`; grouped by date via `groupFeedItemsByDay` helper
+- **Updated Screen**: `ProjectDetail.tsx` renders mixed payment/invoice grid; new handlers for `onViewInvoice`, `onMarkInvoiceAsPaid`, `onInvoiceAttachDocument`
+- **Navigation Route**: Added `InvoiceDetail` to `ProjectsStackParamList` with `openMarkAsPaid` and `openDocument` params (consistent with `QuotationDetail` pattern)
+- **Algorithm**: Filters to unlinked payments (`invoiceId === null || undefined`) + all invoices; sorts by due date ascending; applies MAX_ITEMS=500 guard with truncation flag
+- **Tests**: Full TDD coverage (1396 tests pass):
+  - Unit tests: `ListProjectPaymentsFeedUseCase`, `groupFeedItemsByDay`, `TimelineInvoiceCard` rendering and actions
+  - Integration tests: ProjectDetail mixed payments/invoices, navigation, empty states
+  - No schema changes required; both `PaymentRepository.findByProjectId` and `InvoiceRepository.listInvoices` already exist
+
+### Acceptance Criteria  
+All criteria met:
+- ✅ `PaymentFeedItem` discriminated union defined in domain layer
+- ✅ `ListProjectPaymentsFeedUseCase` combines unlinked payments + all invoices
+- ✅ `TimelineInvoiceCard` renders with status chips (invoice.status + invoice.paymentStatus)
+- ✅ `usePaymentsTimeline` updated to return `PaymentFeedItem[]` grouped by date
+- ✅ ProjectDetail renders mixed list with correct handlers
+- ✅ InvoiceDetail route added to ProjectsNavigator with overlay params
+- ✅ Sorting by due date (Payment: `dueDate ?? date`; Invoice: `dateDue ?? dueDate ?? issueDate`)
+- ✅ Unit & integration tests pass with full coverage
+- ✅ TypeScript strict mode passes; ESLint 0 errors (71 pre-existing warnings)
+- ✅ MAX_ITEMS=500 guard with truncation flag
+
 ## ✅ Issue #198 — Refine "Mark Task Completed" — Payment Validation (Feature 1)
 **Status**: COMPLETED  
 **Branch**: `issue-198-refine-mark-task-completed`  
@@ -30,11 +82,10 @@
   - Unit tests: `CompleteTaskAndSettlePaymentsUseCase` for full two-phase flow
   - Integration test: End-to-end flow — pending payment on accepted-quotation invoice → use case execution → task completed and payment marked paid in SQLite
   - UI snapshot test: TaskDetailsPage rendering with alert dialog
-- **Code Quality**:
+  - **Code Quality**:
   - ✅ TypeScript strict mode: 0 new errors (all earlier issues fixed)
   - ✅ ESLint: 0 errors (71 pre-existing warnings from earlier issues)
   - ✅ All 13 acceptance criteria met (AC-1 through AC-13)
-  - Fixed test suite errors: corrected Invoice field names (`vendor` vs `vendorName`, `total` vs `totalAmount`), added missing mock method
 
 ### Acceptance Criteria
 All 13 acceptance criteria met:
@@ -43,7 +94,7 @@ All 13 acceptance criteria met:
 - ✅ AC-6 to AC-8: UI catches error and presents 2-button alert with correct behavior
 - ✅ AC-9 to AC-12: Full unit and integration test coverage
 - ✅ AC-13: TypeScript strict mode passes
-=======
+
 ## ✅ Issue #196 — Link Payment to Project in Pending Payment Screen
 **Status**: COMPLETED  
 **Branch**: `issue-196-link-payment-to-project`  
@@ -122,28 +173,6 @@ All 15 acceptance criteria met:
 - ✅ AC-15: All test plan items (§7) have passing tests
 
 ---
-
-## ✅ Issue #195 — Create Task for Quotation + Approve Action + Task Detail Linking  
-**Status**: COMPLETED  
-**Branch**: `feature-195-create-task-for-quotation`  
-**Date Completed**: 2026-04-09
-
-### Changes Made
-- **Quotation Entity & Schema**: 
-  - Added `'pending_approval'` status to `Quotation` entity type union (`'draft' | 'sent' | 'pending_approval' | 'accepted' | 'declined'`)
-  - Updated Drizzle schema with new status enum variant; migration auto-generated and applied
-  - `STATUS_CONFIG` in QuotationDetail updated with `pending_approval` (yellow badge: `bg-yellow-100`, `text-yellow-700`)
-  
-- **CreateQuotationWithTaskUseCase** (new):
-  - Validates `projectId` is present; throws `QUOTATION_PROJECT_REQUIRED` if missing/empty
-  - Auto-creates linked Task with `title = "Review Quotation: {vendorName ?? reference}"`, `status = 'pending'`, `taskType = 'contract_work'`, `quoteStatus = 'issued'`, `quoteAmount = quotation.total`
-  - Sets `quotation.status = 'pending_approval'` and writes `taskId` back to quotation record
-  - Orchestrates Task + Quotation creation atomically via `TaskRepository.save()` → `QuotationRepository.createQuotation()`
-  
-- **ApproveQuotationUseCase & DeclineQuotationUseCase** (new):
-  - **Approve**: Validates `status === 'pending_approval'`; creates Invoice; sets quotation `status = 'accepted'`; if `quotation.taskId` set, updates task `quoteStatus = 'accepted'` and `quoteInvoiceId = invoice.id`
-  - **Decline**: Validates `status === 'pending_approval'`; sets quotation `status = 'declined'`; if `quotation.taskId` set, updates task `quoteStatus = 'declined'`
-  
 - **GetTaskDetailUseCase** (extended):
   - Added `linkedQuotations: Quotation[]` to `TaskDetail` interface
   - Injects optional `QuotationRepository`; hydrates `linkedQuotations` via `quotationRepository.findByTask(taskId)` (zero regression on existing callers without injection)
@@ -204,7 +233,6 @@ All 15 acceptance criteria met:
 - ✅ AC-13: All use cases and components have unit tests
 - ✅ AC-14: Two integration tests pass (CreateQuotationWithTask + ApproveQuotation flows)
 - ✅ AC-15: TypeScript strict mode passes
->>>>>>> master
 
 ---
 

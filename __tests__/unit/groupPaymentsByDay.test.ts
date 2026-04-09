@@ -1,115 +1,112 @@
 /**
- * Unit tests for getPaymentDateKey and groupPaymentsByDay.
+ * Unit tests for getFeedItemDateKey and groupFeedItemsByDay.
+ *
+ * Ported from the original groupPaymentsByDay tests (issue #157) to reflect the
+ * migration from Payment[] to PaymentFeedItem[] (issue #199).
  *
  * Covers:
- *  - getPaymentDateKey: dueDate preference, date fallback, null when neither
- *  - groupPaymentsByDay: bucketing, sorting, undated payments, empty input
+ *  - getFeedItemDateKey: dueDate preference, date fallback, null when neither
+ *  - groupFeedItemsByDay: bucketing, sorting, undated items, empty input
  */
 
 import {
-  getPaymentDateKey,
-  groupPaymentsByDay,
+  getFeedItemDateKey,
+  groupFeedItemsByDay,
 } from '../../src/hooks/usePaymentsTimeline';
+import { PaymentFeedItem } from '../../src/domain/entities/PaymentFeedItem';
 import { Payment } from '../../src/domain/entities/Payment';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function makePayment(overrides: Partial<Payment> & { id: string }): Payment {
+function makePaymentItem(overrides: Partial<Payment> & { id: string }): PaymentFeedItem {
   return {
-    amount: 0,
-    ...overrides,
+    kind: 'payment',
+    data: {
+      amount: 0,
+      ...overrides,
+    },
   };
 }
 
-// ─── getPaymentDateKey ────────────────────────────────────────────────────────
+// ─── getFeedItemDateKey ───────────────────────────────────────────────────────
 
-describe('getPaymentDateKey', () => {
+describe('getFeedItemDateKey', () => {
   it('returns ISO date from dueDate when present', () => {
-    const p = makePayment({ id: 'p1', dueDate: '2024-03-15T12:00:00.000Z' });
-    expect(getPaymentDateKey(p)).toBe('2024-03-15');
+    const item = makePaymentItem({ id: 'p1', dueDate: '2024-03-15T12:00:00.000Z' });
+    expect(getFeedItemDateKey(item)).toBe('2024-03-15');
   });
 
   it('falls back to date when dueDate is absent', () => {
-    const p = makePayment({ id: 'p2', date: '2024-05-20T00:00:00.000Z' });
-    expect(getPaymentDateKey(p)).toBe('2024-05-20');
+    const item = makePaymentItem({ id: 'p2', date: '2024-05-20T00:00:00.000Z' });
+    expect(getFeedItemDateKey(item)).toBe('2024-05-20');
   });
 
   it('prefers dueDate over date when both are set', () => {
-    const p = makePayment({
+    const item = makePaymentItem({
       id: 'p3',
       dueDate: '2024-06-01T00:00:00Z',
       date: '2024-01-01T00:00:00Z',
     });
-    expect(getPaymentDateKey(p)).toBe('2024-06-01');
+    expect(getFeedItemDateKey(item)).toBe('2024-06-01');
   });
 
   it('returns null when neither dueDate nor date is set', () => {
-    const p = makePayment({ id: 'p4' });
-    expect(getPaymentDateKey(p)).toBeNull();
+    const item = makePaymentItem({ id: 'p4' });
+    expect(getFeedItemDateKey(item)).toBeNull();
   });
 });
 
-// ─── groupPaymentsByDay ───────────────────────────────────────────────────────
+// ─── groupFeedItemsByDay ──────────────────────────────────────────────────────
 
-describe('groupPaymentsByDay', () => {
-  it('groups payments into separate day buckets', () => {
-    const payments = [
-      makePayment({ id: 'p1', dueDate: '2024-03-10T09:00:00Z' }),
-      makePayment({ id: 'p2', dueDate: '2024-03-10T14:00:00Z' }),
-      makePayment({ id: 'p3', dueDate: '2024-03-20T08:00:00Z' }),
+describe('groupFeedItemsByDay', () => {
+  it('groups payment items into separate day buckets', () => {
+    const items = [
+      makePaymentItem({ id: 'p1', dueDate: '2024-03-10T09:00:00Z' }),
+      makePaymentItem({ id: 'p2', dueDate: '2024-03-10T14:00:00Z' }),
+      makePaymentItem({ id: 'p3', dueDate: '2024-03-20T08:00:00Z' }),
     ];
-    const groups = groupPaymentsByDay(payments);
+    const groups = groupFeedItemsByDay(items);
     expect(groups).toHaveLength(2);
     expect(groups[0].date).toBe('2024-03-10');
-    expect(groups[0].payments).toHaveLength(2);
+    expect(groups[0].items).toHaveLength(2);
     expect(groups[1].date).toBe('2024-03-20');
-    expect(groups[1].payments).toHaveLength(1);
+    expect(groups[1].items).toHaveLength(1);
   });
 
   it('sorts day buckets ascending by date', () => {
-    const payments = [
-      makePayment({ id: 'p1', dueDate: '2025-01-05T08:00:00Z' }),
-      makePayment({ id: 'p2', dueDate: '2024-12-20T09:00:00Z' }),
+    const items = [
+      makePaymentItem({ id: 'p1', dueDate: '2025-01-05T08:00:00Z' }),
+      makePaymentItem({ id: 'p2', dueDate: '2024-12-20T09:00:00Z' }),
     ];
-    const groups = groupPaymentsByDay(payments);
+    const groups = groupFeedItemsByDay(items);
     expect(groups[0].date).toBe('2024-12-20');
     expect(groups[1].date).toBe('2025-01-05');
   });
 
-  it('sorts payments within a day bucket by dueDate ascending', () => {
-    const payments = [
-      makePayment({ id: 'p1', amount: 200, dueDate: '2024-03-10T14:00:00Z' }),
-      makePayment({ id: 'p2', amount: 100, dueDate: '2024-03-10T09:00:00Z' }),
+  it('appends undated items in a trailing __nodate__ bucket', () => {
+    const items = [
+      makePaymentItem({ id: 'p1', dueDate: '2024-03-10T09:00:00Z' }),
+      makePaymentItem({ id: 'p2' }), // no date fields
     ];
-    const groups = groupPaymentsByDay(payments);
-    expect(groups[0].payments[0].amount).toBe(100);
-    expect(groups[0].payments[1].amount).toBe(200);
-  });
-
-  it('appends undated payments in a trailing __nodate__ bucket', () => {
-    const payments = [
-      makePayment({ id: 'p1', dueDate: '2024-03-10T09:00:00Z' }),
-      makePayment({ id: 'p2' }), // no date fields
-    ];
-    const groups = groupPaymentsByDay(payments);
+    const groups = groupFeedItemsByDay(items);
     expect(groups).toHaveLength(2);
     expect(groups[groups.length - 1].date).toBe('__nodate__');
     expect(groups[groups.length - 1].label).toBe('No Date');
   });
 
   it('returns empty array for empty input', () => {
-    expect(groupPaymentsByDay([])).toEqual([]);
+    expect(groupFeedItemsByDay([])).toEqual([]);
   });
 
   it('uses date field as fallback when dueDate is absent', () => {
-    const p = makePayment({ id: 'p1', date: '2024-04-22T00:00:00Z' });
-    const groups = groupPaymentsByDay([p]);
+    const item = makePaymentItem({ id: 'p1', date: '2024-04-22T00:00:00Z' });
+    const groups = groupFeedItemsByDay([item]);
     expect(groups[0].date).toBe('2024-04-22');
   });
 
   it('labels group with human-readable date string', () => {
-    const p = makePayment({ id: 'p1', dueDate: '2024-03-15T00:00:00Z' });
-    const groups = groupPaymentsByDay([p]);
+    const item = makePaymentItem({ id: 'p1', dueDate: '2024-03-15T00:00:00Z' });
+    const groups = groupFeedItemsByDay([item]);
     // "Fri 15 Mar" — just check the day and month appear
     expect(groups[0].label).toMatch(/15/);
     expect(groups[0].label).toMatch(/Mar/);

@@ -1,0 +1,134 @@
+
+> builder-assistant-app@0.0.1 lint
+> eslint .
+
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/DashboardAdHocTask.integration.test.tsx
+  27:1  warning  Disabled test suite  jest/no-disabled-tests
+  28:3  warning  Disabled test        jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/InvoiceScreen.integration.test.tsx
+   85:1  warning  Disabled test suite  jest/no-disabled-tests
+  262:1  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/SnapReceiptCamera.integration.test.tsx
+   38:1  warning  Disabled test suite  jest/no-disabled-tests
+   75:3  warning  Disabled test        jest/no-disabled-tests
+  181:3  warning  Disabled test        jest/no-disabled-tests
+  237:3  warning  Disabled test        jest/no-disabled-tests
+  283:3  warning  Disabled test        jest/no-disabled-tests
+  311:3  warning  Disabled test        jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/TaskPage.voice.integration.test.tsx
+  66:9  warning  'React' is already declared in the upper scope on line 14 column 8  @typescript-eslint/no-shadow
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/TaskScreen.integration.test.tsx
+  17:1  warning  Disabled test suite  jest/no-disabled-tests
+  18:3  warning  Disabled test        jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/integration/useProjects.integration.test.tsx
+  59:1  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/InvoiceForm.test.tsx
+    7:1  warning  Disabled test suite  jest/no-disabled-tests
+   16:3  warning  Disabled test suite  jest/no-disabled-tests
+  103:3  warning  Disabled test suite  jest/no-disabled-tests
+  268:3  warning  Disabled test suite  jest/no-disabled-tests
+  350:3  warning  Disabled test suite  jest/no-disabled-tests
+  496:3  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/InvoiceScreen.test.tsx
+   34:1  warning  Disabled test suite  jest/no-disabled-tests
+  400:1  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/ManualProjectEntry.test.tsx
+  47:9  warning  'React' is already declared in the upper scope on line 1 column 8  @typescript-eslint/no-shadow
+  52:9  warning  'React' is already declared in the upper scope on line 1 column 8  @typescript-eslint/no-shadow
+  57:9  warning  'React' is already declared in the upper scope on line 1 column 8  @typescript-eslint/no-shadow
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/ManualProjectEntryForm.test.tsx
+  17:150  warning  'React' is already declared in the upper scope on line 6 column 8  @typescript-eslint/no-shadow
+  19:144  warning  'React' is already declared in the upper scope on line 6 column 8  @typescript-eslint/no-shadow
+  21:150  warning  'React' is already declared in the upper scope on line 6 column 8  @typescript-eslint/no-shadow
+  23:194  warning  'React' is already declared in the upper scope on line 6 column 8  @typescript-eslint/no-shadow
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/ProjectsPage.test.tsx
+  15:9  warning  'React' is already declared in the upper scope on line 1 column 8  @typescript-eslint/no-shadow
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/useCriticalPath.test.tsx
+   99:1  warning  Disabled test suite  jest/no-disabled-tests
+  444:3  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/__tests__/unit/useTaskForm.test.tsx
+  106:1  warning  Disabled test suite  jest/no-disabled-tests
+  136:1  warning  Disabled test suite  jest/no-disabled-tests
+  153:1  warning  Disabled test suite  jest/no-disabled-tests
+  168:1  warning  Disabled test suite  jest/no-disabled-tests
+  189:1  warning  Disabled test suite  jest/no-disabled-tests
+  232:1  warning  Disabled test suite  jest/no-disabled-tests
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/application/ai/InvoiceNormalizer.ts
+   64:58  warning  Unnecessary escape character: \/  no-useless-escape
+   65:51  warning  Unnecessary escape character: \/  no-useless-escape
+   66:31  warning  Unnecessary escape character: \/  no-useless-escape
+   84:20  warning  Unnecessary escape character: \/  no-useless-escape
+   84:22  warning  Unnecessary escape character: \-  no-useless-escape
+   84:35  warning  Unnecessary escape character: \/  no-useless-escape
+   84:37  warning  Unnecessary escape character: \-  no-useless-escape
+  126:22  warning  Unnecessary escape character: \/  no-useless-escape
+  126:24  warning  Unnecessary escape character: \-  no-useless-escape
+  126:37  warning  Unnecessary escape character: \/  no-useless-escape
+  126:39  warning  Unnecessary escape character: \-  no-useless-escape
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/inputs/Dropdown.tsx
+  90:20  warning  Inline style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/invoices/InvoiceForm.tsx
+  134:13  warning  'totalNum' is already declared in the upper scope on line 95 column 11  @typescript-eslint/no-shadow
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/projects/TimelineDayGroup.tsx
+  56:52  warning  Inline style: { paddingTop: 10 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/projects/TimelineList.tsx
+  104:58  warning  Inline style: { paddingTop: 10 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/tasks/BlockerCarousel.tsx
+  104:43  warning  Inline style: { color: "isDark ? '#f8fafc' : '#0f172a'" }                             react-native/no-inline-styles
+  135:43  warning  Inline style: { color: "isDark ? '#f8fafc' : '#0f172a'" }                             react-native/no-inline-styles
+  174:23  warning  Inline style: { backgroundColor: '#ef4444', width: '85%' }                            react-native/no-inline-styles
+  175:23  warning  Inline style: { backgroundColor: '#f59e0b', width: '70%' }                            react-native/no-inline-styles
+  182:47  warning  Inline style: { color: "isDark ? '#f8fafc' : '#0f172a'" }                             react-native/no-inline-styles
+  191:21  warning  Inline style: { backgroundColor: "item.severity === 'red' ? '#3b82f6' : '#10b981'" }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/components/tasks/TaskDocumentSection.tsx
+  77:94  warning  Inline style: { paddingHorizontal: 2 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/payments/PaymentDetails.tsx
+  374:28  warning  Inline style: {
+  color: "dueStatus.style === 'overdue' ? '#dc2626' : dueStatus.style === 'due-soon' ? '#d97706' : '#16a34a'"
+}  react-native/no-inline-styles
+  579:89  warning  Inline style: { marginRight: 8 }                                                                                                 react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/payments/index.tsx
+  109:54  warning  Inline style: { marginRight: 8 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/projects/ProjectDetail.tsx
+   94:52  warning  Inline style: { paddingTop: 10 }      react-native/no-inline-styles
+  101:50  warning  Inline style: { paddingTop: 10 }      react-native/no-inline-styles
+  567:32  warning  Inline style: { paddingBottom: 128 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/projects/ProjectEditScreen.tsx
+  46:20  warning  Inline style: { flex: 1, justifyContent: 'center', alignItems: 'center' }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/projects/QuotationDetail.tsx
+  141:44  warning  Inline style: { paddingBottom: 64 }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/pages/tasks/TaskDetailsPage.tsx
+  473:42  warning  Inline style: { paddingBottom: 'isCompleted ? 24 : 120' }  react-native/no-inline-styles
+
+/Users/boqi/OwnerBuilder/worktrees/issue-199-payments-list-project-detail/src/utils/stableId.ts
+  18:5  warning  Unexpected use of '^='   no-bitwise
+  19:9  warning  Unexpected use of '>>>'  no-bitwise
+
+✖ 71 problems (0 errors, 71 warnings)
+

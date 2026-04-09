@@ -108,6 +108,18 @@ const samplePayment2 = {
   dueDate: '2026-04-05T00:00:00Z',
 };
 
+const sampleInvoice = {
+  id: 'inv-1',
+  total: 4200,
+  currency: 'AUD',
+  status: 'issued' as const,
+  paymentStatus: 'unpaid' as const,
+  issuerName: 'ABC Plumbing',
+  externalReference: 'INV-0042',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
 const sampleQuotation = {
   id: 'quot-1',
   reference: 'QT-001',
@@ -187,7 +199,7 @@ describe('ProjectDetail — sections', () => {
   it('Payments section starts COLLAPSED (no payment cards visible)', async () => {
     setupDefaultMocks({
       paymentsTimeline: {
-        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', payments: [samplePayment] }],
+        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', items: [{ kind: 'payment', data: samplePayment }] }],
       },
     });
     let tree: renderer.ReactTestRenderer;
@@ -219,7 +231,7 @@ describe('ProjectDetail — sections', () => {
   it('toggling Payments section header reveals payment cards', async () => {
     setupDefaultMocks({
       paymentsTimeline: {
-        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', payments: [samplePayment] }],
+        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', items: [{ kind: 'payment', data: samplePayment }] }],
       },
     });
     let tree: renderer.ReactTestRenderer;
@@ -240,7 +252,7 @@ describe('ProjectDetail — sections', () => {
   it('toggling Payments twice collapses it again', async () => {
     setupDefaultMocks({
       paymentsTimeline: {
-        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', payments: [samplePayment] }],
+        paymentDayGroups: [{ date: '2026-04-01', label: 'Wed 1 Apr', items: [{ kind: 'payment', data: samplePayment }] }],
       },
     });
     let tree: renderer.ReactTestRenderer;
@@ -285,7 +297,10 @@ describe('ProjectDetail — sections', () => {
           {
             date: '2026-04-01',
             label: 'Wed 1 Apr',
-            payments: [samplePayment, samplePayment2],
+            items: [
+              { kind: 'payment', data: samplePayment },
+              { kind: 'payment', data: samplePayment2 },
+            ],
           },
         ],
       },
@@ -360,5 +375,131 @@ describe('ProjectDetail — sections', () => {
     expect(mockInvalidateTasks).toHaveBeenCalled();
     expect(mockInvalidatePayments).toHaveBeenCalled();
     expect(mockInvalidateQuotations).toHaveBeenCalled();
+  });
+
+  // ── P1–P5: Mixed feed (invoice + payment items) ───────────────────────────
+
+  // P1: mixed group has both TimelinePaymentCard and TimelineInvoiceCard
+  it('P1: renders both TimelinePaymentCard and TimelineInvoiceCard in a mixed group', async () => {
+    setupDefaultMocks({
+      paymentsTimeline: {
+        paymentDayGroups: [
+          {
+            date: '2026-04-01',
+            label: 'Wed 1 Apr',
+            items: [
+              { kind: 'payment', data: samplePayment },
+              { kind: 'invoice', data: sampleInvoice },
+            ],
+          },
+        ],
+      },
+    });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ProjectDetailScreen />);
+    });
+
+    const paymentsHeader = findPressable(tree!, 'section-header-payments');
+    await act(async () => { paymentsHeader!.props.onPress(); });
+
+    expect(tree!.root.findAllByProps({ testID: 'payment-card-pay-1' }).length).toBeGreaterThan(0);
+    expect(tree!.root.findAllByProps({ testID: 'invoice-card-inv-1' }).length).toBeGreaterThan(0);
+  });
+
+  // P2: only invoice items → only TimelineInvoiceCard, no TimelinePaymentCard
+  it('P2: renders only TimelineInvoiceCard when group has only invoice items', async () => {
+    setupDefaultMocks({
+      paymentsTimeline: {
+        paymentDayGroups: [
+          {
+            date: '2026-04-01',
+            label: 'Wed 1 Apr',
+            items: [{ kind: 'invoice', data: sampleInvoice }],
+          },
+        ],
+      },
+    });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ProjectDetailScreen />);
+    });
+
+    const paymentsHeader = findPressable(tree!, 'section-header-payments');
+    await act(async () => { paymentsHeader!.props.onPress(); });
+
+    expect(tree!.root.findAllByProps({ testID: 'invoice-card-inv-1' }).length).toBeGreaterThan(0);
+    expect(tree!.root.findAllByProps({ testID: 'payment-card-pay-1' }).length).toBe(0);
+  });
+
+  // P3: only payment items → only TimelinePaymentCard, no TimelineInvoiceCard
+  it('P3: renders only TimelinePaymentCard when group has only payment items', async () => {
+    setupDefaultMocks({
+      paymentsTimeline: {
+        paymentDayGroups: [
+          {
+            date: '2026-04-01',
+            label: 'Wed 1 Apr',
+            items: [{ kind: 'payment', data: samplePayment }],
+          },
+        ],
+      },
+    });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ProjectDetailScreen />);
+    });
+
+    const paymentsHeader = findPressable(tree!, 'section-header-payments');
+    await act(async () => { paymentsHeader!.props.onPress(); });
+
+    expect(tree!.root.findAllByProps({ testID: 'payment-card-pay-1' }).length).toBeGreaterThan(0);
+    expect(tree!.root.findAllByProps({ testID: 'invoice-card-inv-1' }).length).toBe(0);
+  });
+
+  // P4: empty feed → shows empty state message
+  it('P4: shows empty state when feed has no items', async () => {
+    setupDefaultMocks({ paymentsTimeline: { paymentDayGroups: [] } });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ProjectDetailScreen />);
+    });
+
+    const paymentsHeader = findPressable(tree!, 'section-header-payments');
+    await act(async () => { paymentsHeader!.props.onPress(); });
+
+    const empty = tree!.root.findAllByProps({ testID: 'payments-empty' });
+    expect(empty.length).toBeGreaterThan(0);
+    const emptyText = empty[0];
+    expect(String(emptyText.props.children)).toBe('No payments or invoices for this project.');
+  });
+
+  // P5: tapping invoice 'View' navigates to InvoiceDetail with invoiceId
+  it('P5: tapping invoice View navigates to InvoiceDetail', async () => {
+    setupDefaultMocks({
+      paymentsTimeline: {
+        paymentDayGroups: [
+          {
+            date: '2026-04-01',
+            label: 'Wed 1 Apr',
+            items: [{ kind: 'invoice', data: sampleInvoice }],
+          },
+        ],
+      },
+    });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ProjectDetailScreen />);
+    });
+
+    // Expand payments section
+    const paymentsHeader = findPressable(tree!, 'section-header-payments');
+    await act(async () => { paymentsHeader!.props.onPress(); });
+
+    // Tap the View button on the invoice card
+    const viewBtn = tree!.root.findByProps({ testID: 'invoice-action-view' });
+    await act(async () => { viewBtn.props.onPress(); });
+
+    expect(mockNavigate).toHaveBeenCalledWith('InvoiceDetail', { invoiceId: sampleInvoice.id });
   });
 });

@@ -1,9 +1,9 @@
 /**
  * usePaymentsTimeline
  *
- * Fetches payments for a project and groups them into day buckets
- * for the project detail timeline. Exposes a recordPayment mutation
- * that invalidates the appropriate query keys.
+ * Fetches the unified payments feed (unlinked payments + all invoices) for a
+ * project and groups them into day buckets for the project detail timeline.
+ * Exposes a recordPayment mutation that invalidates the appropriate query keys.
  *
  * Cache key: queryKeys.projectPayments(projectId)
  */
@@ -12,20 +12,25 @@ import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { Payment } from '../domain/entities/Payment';
+import { PaymentFeedItem } from '../domain/entities/PaymentFeedItem';
 import { PaymentRepository } from '../domain/repositories/PaymentRepository';
-import { ListProjectPaymentsUseCase } from '../application/usecases/payment/ListProjectPaymentsUseCase';
+import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
+import { ListProjectPaymentsFeedUseCase } from '../application/usecases/payment/ListProjectPaymentsFeedUseCase';
 import { queryKeys, invalidations } from './queryKeys';
 import '../infrastructure/di/registerServices';
 
+// Re-export for consumers
+export type { PaymentFeedItem };
+
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-/** A single day bucket with its payments sorted by dueDate ascending. */
+/** A single day bucket with its feed items sorted by dueDate ascending. */
 export interface PaymentDayGroup {
   /** ISO date string YYYY-MM-DD, or '__nodate__' */
   date: string;
   /** Human-readable label, e.g. "Thu 20 Mar" */
   label: string;
-  payments: Payment[];
+  items: PaymentFeedItem[];
 }
 
 export interface UsePaymentsTimelineReturn {
@@ -39,15 +44,19 @@ export interface UsePaymentsTimelineReturn {
 
 // ─── Pure grouping helpers (exported for unit testing) ───────────────────────
 
-/** Extract YYYY-MM-DD key from a Payment using dueDate ?? date. */
-export function getPaymentDateKey(payment: Payment): string | null {
-  const raw = payment.dueDate ?? payment.date;
-  if (!raw) return null;
-  return raw.slice(0, 10);
+/** Extract YYYY-MM-DD key from a PaymentFeedItem. */
+export function getFeedItemDateKey(item: PaymentFeedItem): string | null {
+  if (item.kind === 'payment') {
+    const raw = item.data.dueDate ?? item.data.date;
+    return raw ? raw.slice(0, 10) : null;
+  }
+  // invoice: dateDue ?? dueDate alias ?? issueDate alias
+  const raw = item.data.dateDue ?? item.data.dueDate ?? item.data.issueDate;
+  return raw ? raw.slice(0, 10) : null;
 }
 
 /** Format a YYYY-MM-DD string as "Thu 20 Mar". */
-function formatPaymentDayLabel(dateKey: string): string {
+function formatDayLabel(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00Z`);
   const weekday = d.toLocaleDateString('en-AU', { weekday: 'short', timeZone: 'UTC' });
   const day = d.getUTCDate();
@@ -55,20 +64,15 @@ function formatPaymentDayLabel(dateKey: string): string {
   return `${weekday} ${day} ${month}`;
 }
 
-/** Group and sort payments into PaymentDayGroup[]. No-date payments trail at the end. */
-export function groupPaymentsByDay(payments: Payment[]): PaymentDayGroup[] {
-  const buckets = new Map<string, Payment[]>();
+/** Group and sort PaymentFeedItems into PaymentDayGroup[]. No-date items trail at the end. */
+export function groupFeedItemsByDay(items: PaymentFeedItem[]): PaymentDayGroup[] {
+  const buckets = new Map<string, PaymentFeedItem[]>();
 
-  for (const payment of payments) {
-    const key = getPaymentDateKey(payment) ?? '__nodate__';
+  for (const item of items) {
+    const key = getFeedItemDateKey(item) ?? '__nodate__';
     if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key)!.push(payment);
+    buckets.get(key)!.push(item);
   }
-
-  const sortKey = (p: Payment): number => {
-    const raw = p.dueDate ?? p.date;
-    return raw ? new Date(raw).getTime() : 0;
-  };
 
   const groups: PaymentDayGroup[] = [];
 
@@ -76,17 +80,17 @@ export function groupPaymentsByDay(payments: Payment[]): PaymentDayGroup[] {
     .filter(([k]) => k !== '__nodate__')
     .sort(([a], [b]) => a.localeCompare(b));
 
-  for (const [date, paymentsInBucket] of dateBuckets) {
+  for (const [date, itemsInBucket] of dateBuckets) {
     groups.push({
       date,
-      label: formatPaymentDayLabel(date),
-      payments: [...paymentsInBucket].sort((a, b) => sortKey(a) - sortKey(b)),
+      label: formatDayLabel(date),
+      items: itemsInBucket,
     });
   }
 
   const undated = buckets.get('__nodate__');
   if (undated?.length) {
-    groups.push({ date: '__nodate__', label: 'No Date', payments: undated });
+    groups.push({ date: '__nodate__', label: 'No Date', items: undated });
   }
 
   return groups;
@@ -102,9 +106,14 @@ export function usePaymentsTimeline(projectId: string): UsePaymentsTimelineRetur
     [],
   );
 
+  const invoiceRepository = useMemo(
+    () => container.resolve<InvoiceRepository>('InvoiceRepository'),
+    [],
+  );
+
   const listUseCase = useMemo(
-    () => new ListProjectPaymentsUseCase(paymentRepository),
-    [paymentRepository],
+    () => new ListProjectPaymentsFeedUseCase(paymentRepository, invoiceRepository),
+    [paymentRepository, invoiceRepository],
   );
 
   const {
@@ -118,10 +127,10 @@ export function usePaymentsTimeline(projectId: string): UsePaymentsTimelineRetur
     enabled: Boolean(projectId),
   });
 
-  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
+  const feedItems = useMemo(() => data?.items ?? [], [data?.items]);
   const truncated = data?.truncated ?? false;
 
-  const paymentDayGroups = useMemo(() => groupPaymentsByDay(payments), [payments]);
+  const paymentDayGroups = useMemo(() => groupFeedItemsByDay(feedItems), [feedItems]);
 
   const recordPayment = useCallback(
     async (_payment: Payment) => {
