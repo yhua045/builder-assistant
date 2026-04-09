@@ -1,5 +1,38 @@
 # Project Progress — Summary (updated 2026-04-09)
 
+## ✅ Issue #199 — Update Payments List in Project Detail
+**Status**: COMPLETED  
+**Branch**: `issue-199-payments-list-project-detail`  
+**Date Completed**: 2026-04-09
+
+### Changes Made
+- **New Domain Entity**: `PaymentFeedItem` discriminated union (`'payment' | 'invoice'`) representing unified payment/invoice feed items in project detail
+- **New Use Case**: `ListProjectPaymentsFeedUseCase` combining both unlinked payments and all invoices (all statuses: Draft, Issued, Overdue, Paid, Cancelled, etc.) for a project
+- **New Component**: `TimelineInvoiceCard` (parallel to `TimelinePaymentCard`) with amber left-border accent, status chips display, and quick actions (View, Mark Paid, Attach)
+- **Updated Hook**: `usePaymentsTimeline` now returns `items: PaymentFeedItem[]` instead of `payments: Payment[]`; grouped by date via `groupFeedItemsByDay` helper
+- **Updated Screen**: `ProjectDetail.tsx` renders mixed payment/invoice grid; new handlers for `onViewInvoice`, `onMarkInvoiceAsPaid`, `onInvoiceAttachDocument`
+- **Navigation Route**: Added `InvoiceDetail` to `ProjectsStackParamList` with `openMarkAsPaid` and `openDocument` params (consistent with `QuotationDetail` pattern)
+- **Algorithm**: Filters to unlinked payments (`invoiceId === null || undefined`) + all invoices; sorts by due date ascending; applies MAX_ITEMS=500 guard with truncation flag
+- **Tests**: Full TDD coverage (1396 tests pass):
+  - Unit tests: `ListProjectPaymentsFeedUseCase`, `groupFeedItemsByDay`, `TimelineInvoiceCard` rendering and actions
+  - Integration tests: ProjectDetail mixed payments/invoices, navigation, empty states
+  - No schema changes required; both `PaymentRepository.findByProjectId` and `InvoiceRepository.listInvoices` already exist
+
+### Acceptance Criteria  
+All criteria met:
+- ✅ `PaymentFeedItem` discriminated union defined in domain layer
+- ✅ `ListProjectPaymentsFeedUseCase` combines unlinked payments + all invoices
+- ✅ `TimelineInvoiceCard` renders with status chips (invoice.status + invoice.paymentStatus)
+- ✅ `usePaymentsTimeline` updated to return `PaymentFeedItem[]` grouped by date
+- ✅ ProjectDetail renders mixed list with correct handlers
+- ✅ InvoiceDetail route added to ProjectsNavigator with overlay params
+- ✅ Sorting by due date (Payment: `dueDate ?? date`; Invoice: `dateDue ?? dueDate ?? issueDate`)
+- ✅ Unit & integration tests pass with full coverage
+- ✅ TypeScript strict mode passes; ESLint 0 errors (71 pre-existing warnings)
+- ✅ MAX_ITEMS=500 guard with truncation flag
+
+---
+
 ## ✅ Issue #192 — Add Quotation: Project Field + Subcontractor Picker  
 **Status**: COMPLETED  
 **Branch**: `issue-192-add-quotation-project-subcontractor`  

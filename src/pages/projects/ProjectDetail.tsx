@@ -39,9 +39,11 @@ import { useQuotationsTimeline, QuotationDayGroup } from '../../hooks/useQuotati
 import { TimelineDayGroup } from '../../components/projects/TimelineDayGroup';
 import { TimelineSectionHeader } from '../../components/projects/TimelineSectionHeader';
 import { TimelinePaymentCard } from '../../components/projects/TimelinePaymentCard';
+import { TimelineInvoiceCard } from '../../components/projects/TimelineInvoiceCard';
 import { TimelineQuotationCard } from '../../components/projects/TimelineQuotationCard';
 import { Task } from '../../domain/entities/Task';
 import { Payment } from '../../domain/entities/Payment';
+import { Invoice } from '../../domain/entities/Invoice';
 import { Quotation } from '../../domain/entities/Quotation';
 import { DayGroup } from '../../hooks/useTaskTimeline';
 
@@ -240,6 +242,24 @@ export default function ProjectDetailScreen() {
     [navigation],
   );
 
+  // ── Invoice quick-action handlers ────────────────────────────────────────
+  const handleViewInvoice = useCallback(
+    (invoice: Invoice) => navigation.navigate('InvoiceDetail', { invoiceId: invoice.id }),
+    [navigation],
+  );
+
+  const handleMarkInvoiceAsPaid = useCallback(
+    (invoice: Invoice) =>
+      navigation.navigate('InvoiceDetail', { invoiceId: invoice.id, openMarkAsPaid: true }),
+    [navigation],
+  );
+
+  const handleInvoiceAttachDocument = useCallback(
+    (invoice: Invoice) =>
+      navigation.navigate('InvoiceDetail', { invoiceId: invoice.id, openDocument: true }),
+    [navigation],
+  );
+
   // ── Quotation action handler ─────────────────────────────────────────────
   const handleViewQuotationTask = useCallback(
     (quotation: Quotation) => {
@@ -252,7 +272,7 @@ export default function ProjectDetailScreen() {
 
   // ── SectionList data ─────────────────────────────────────────────────────
   const totalTaskItems = dayGroups.reduce((s, g) => s + g.tasks.length, 0);
-  const totalPaymentItems = paymentDayGroups.reduce((s, g) => s + g.payments.length, 0);
+  const totalPaymentItems = paymentDayGroups.reduce((s, g) => s + g.items.length, 0);
   const totalQuotationItems = quotationDayGroups.reduce((s, g) => s + g.quotations.length, 0);
 
   const sections: ProjectSection[] = [
@@ -423,20 +443,31 @@ export default function ProjectDetailScreen() {
               <Text className="text-xs text-muted-foreground font-medium">{group.label}</Text>
               <View className="ml-1 px-1.5 py-0.5 bg-muted rounded-full">
                 <Text className="text-[10px] text-muted-foreground font-semibold">
-                  {group.payments.length}
+                  {group.items.length}
                 </Text>
               </View>
             </View>
-            {group.payments.map((payment) => (
-              <TimelinePaymentCard
-                key={payment.id}
-                payment={payment}
-                onView={handleViewPayment}
-                onRecordPayment={handleRecordPayment}
-                onAttachDocument={handlePaymentAttachDocument}
-                testID={`payment-card-${payment.id}`}
-              />
-            ))}
+            {group.items.map((feedItem) =>
+              feedItem.kind === 'payment' ? (
+                <TimelinePaymentCard
+                  key={feedItem.data.id}
+                  payment={feedItem.data}
+                  onView={handleViewPayment}
+                  onRecordPayment={handleRecordPayment}
+                  onAttachDocument={handlePaymentAttachDocument}
+                  testID={`payment-card-${feedItem.data.id}`}
+                />
+              ) : (
+                <TimelineInvoiceCard
+                  key={feedItem.data.id}
+                  invoice={feedItem.data}
+                  onView={handleViewInvoice}
+                  onMarkAsPaid={handleMarkInvoiceAsPaid}
+                  onAttachDocument={handleInvoiceAttachDocument}
+                  testID={`invoice-card-${feedItem.data.id}`}
+                />
+              ),
+            )}
           </View>
         </View>
       );
@@ -487,7 +518,7 @@ export default function ProjectDetailScreen() {
     if (!collapsed[section.key] && section.data.length === 0 && !section.loading) {
       const emptyMessages: Record<SectionKey, string> = {
         tasks: 'No tasks scheduled for this project.',
-        payments: 'No payments recorded for this project.',
+        payments: 'No payments or invoices for this project.',
         quotes: 'No quotations linked to this project.',
       };
       return (

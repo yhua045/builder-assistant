@@ -7,6 +7,7 @@ import QuotationDetailScreen from './QuotationDetail';
 import TaskDetailsPage from '../tasks/TaskDetailsPage';
 import CreateTaskPage from '../tasks/CreateTaskPage';
 import EditTaskPage from '../tasks/EditTaskPage';
+import InvoiceDetailPage from '../invoices/InvoiceDetailPage';
 
 export type ProjectsStackParamList = {
   ProjectsList: undefined;
@@ -18,6 +19,8 @@ export type ProjectsStackParamList = {
   EditTask: { taskId: string };
   /** Pushed when user taps "Open" on a QuotationCard in the Quotes section */
   QuotationDetail: { quotationId: string };
+  /** Pushed when user taps View/Mark Paid/Attach on an InvoiceCard in the Payments section */
+  InvoiceDetail: { invoiceId: string; openMarkAsPaid?: boolean; openDocument?: boolean };
 };
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +57,11 @@ export default function ProjectsNavigator() {
       <Stack.Screen
         name="QuotationDetail"
         component={QuotationDetailScreen}
+        options={{ presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="InvoiceDetail"
+        component={InvoiceDetailPage}
         options={{ presentation: 'card' }}
       />
     </Stack.Navigator>
