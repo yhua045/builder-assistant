@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
@@ -14,18 +14,21 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, X, DollarSign } from 'lucide-react-native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import { ChevronLeft, ChevronRight, X, DollarSign } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { container } from 'tsyringe';
 import { Payment } from '../../domain/entities/Payment';
 import { Invoice } from '../../domain/entities/Invoice';
+import { Project } from '../../domain/entities/Project';
 import { PaymentRepository } from '../../domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
+import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
 import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
-import { invalidations } from '../../hooks/queryKeys';
+import { invalidations, queryKeys } from '../../hooks/queryKeys';
+import { ProjectPickerModal } from '../../components/payments/ProjectPickerModal';
 import '../../infrastructure/di/registerServices';
 
 const formatCurrency = (amount: number): string =>
@@ -64,6 +67,8 @@ export default function PaymentDetails() {
   const [payment, setPayment] = useState<Payment | null>(syntheticRow ?? null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [linkedPayments, setLinkedPayments] = useState<Payment[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [projectPickerVisible, setProjectPickerVisible] = useState(false);
   const [loading, setLoading] = useState(!syntheticRow);
   const [marking, setMarking] = useState(false);
   const [partialModalVisible, setPartialModalVisible] = useState(false);
@@ -71,12 +76,18 @@ export default function PaymentDetails() {
   const [partialAmountError, setPartialAmountError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const previousProjectIdRef = useRef<string | undefined>(undefined);
+
   const paymentRepo = React.useMemo(
     () => container.resolve<PaymentRepository>('PaymentRepository' as any),
     [],
   );
   const invoiceRepo = React.useMemo(
     () => container.resolve<InvoiceRepository>('InvoiceRepository' as any),
+    [],
+  );
+  const projectRepo = React.useMemo(
+    () => container.resolve<ProjectRepository>('ProjectRepository' as any),
     [],
   );
   const markPaidUc = React.useMemo(
@@ -101,6 +112,18 @@ export default function PaymentDetails() {
 
       setPayment(resolved);
 
+      // Load project if present (and not a synthetic row)
+      if (!isSynthetic && resolved?.projectId) {
+        try {
+          const proj = await projectRepo.findById(resolved.projectId);
+          setProject(proj);
+        } catch {
+          setProject(null);
+        }
+      } else {
+        setProject(null);
+      }
+
       // Load parent invoice for context
       const invoiceId = resolved?.invoiceId;
       if (invoiceId) {
@@ -116,11 +139,56 @@ export default function PaymentDetails() {
     } finally {
       setLoading(false);
     }
-  }, [paymentId, syntheticRow, paymentRepo, invoiceRepo]);
+  }, [paymentId, syntheticRow, paymentRepo, invoiceRepo, projectRepo]);
+
+  const handleSelectProject = useCallback(
+    async (selectedProject: Project | undefined) => {
+      if (!payment || payment.id.startsWith('invoice-payable:')) return;
+      const oldProjectId = previousProjectIdRef.current;
+      const newProjectId = selectedProject?.id;
+      try {
+        await paymentRepo.update({ ...payment, projectId: newProjectId });
+        // Invalidate affected cache entries
+        const keysToInvalidate = [
+          queryKeys.paymentsAll(),
+          queryKeys.paidPaymentsGlobal(),
+          queryKeys.unassignedPaymentsGlobal(),
+          ...(oldProjectId ? [queryKeys.projectPayments(oldProjectId)] : []),
+          ...(newProjectId ? [queryKeys.projectPayments(newProjectId)] : []),
+        ];
+        await Promise.all(
+          keysToInvalidate.map((key) => queryClient.invalidateQueries({ queryKey: key })),
+        );
+        await loadData();
+      } catch (e: any) {
+        Alert.alert('Error', e?.message ?? 'Failed to update project assignment');
+      }
+    },
+    [payment, paymentRepo, queryClient, loadData],
+  );
+
+  const handleNavigateToProject = useCallback(() => {
+    if (!payment?.projectId) return;
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Projects',
+        params: {
+          screen: 'ProjectDetail',
+          params: { projectId: payment.projectId },
+          initial: false,
+        },
+      }),
+    );
+  }, [payment, navigation]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Track previousProjectId before each assignment
+  useEffect(() => {
+    previousProjectIdRef.current = payment?.projectId;
+  }, [payment?.projectId]);
 
   const handleMarkAsPaid = () => {
     // Invoice-linked path: record a new settled payment against the invoice
@@ -341,6 +409,30 @@ export default function PaymentDetails() {
           <Row label="Method" value={payment.method ?? '—'} />
           <Row label="Reference" value={payment.reference ?? '—'} />
           {payment.notes ? <Row label="Notes" value={payment.notes} /> : null}
+
+          {/* Project row — only for non-synthetic payments */}
+          {!isSynthetic && (
+            <TouchableOpacity
+              testID="project-row"
+              onPress={() => setProjectPickerVisible(true)}
+              className="flex-row justify-between items-center py-1.5"
+              activeOpacity={0.7}
+            >
+              <Text className="text-sm text-muted-foreground">Project</Text>
+              <View className="flex-row items-center gap-1 flex-shrink ml-4">
+                {project ? (
+                  <Text className="text-sm text-primary font-medium text-right" numberOfLines={1}>
+                    {project.name}
+                  </Text>
+                ) : (
+                  <Text className="text-sm text-muted-foreground font-medium text-right">
+                    Unassigned
+                  </Text>
+                )}
+                <ChevronRight size={14} color={isDark ? '#a1a1aa' : '#71717a'} />
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Payment history for this invoice */}
@@ -399,6 +491,15 @@ export default function PaymentDetails() {
           </View>
         )}
       </ScrollView>
+
+      {/* Project Picker Modal — #191 */}
+      <ProjectPickerModal
+        visible={projectPickerVisible}
+        currentProjectId={payment?.projectId}
+        onSelect={handleSelectProject}
+        onNavigate={handleNavigateToProject}
+        onClose={() => setProjectPickerVisible(false)}
+      />
 
       {/* Partial Payment Modal */}
       <Modal
