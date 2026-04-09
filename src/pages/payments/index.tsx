@@ -28,6 +28,10 @@ const EMPTY_MESSAGES: Record<string, { title: string; subtitle: (hasSearch: bool
     title: 'No paid payments',
     subtitle: () => 'No paid payments recorded yet.',
   },
+  unassigned: {
+    title: 'No unassigned payments',
+    subtitle: (s) => s ? 'No unassigned payments match that name.' : 'All payments are linked to a project.',
+  },
   all: {
     title: 'No payments found',
     subtitle: (s) => s ? 'No payments match that search.' : 'No payments found.',
@@ -48,6 +52,7 @@ export default function PaymentsScreen() {
     quotations,
     pendingPayments,
     paidPayments,
+    unassignedPayments,
     amountPayable,
     loading,
     refresh,
@@ -71,6 +76,8 @@ export default function PaymentsScreen() {
       ? pendingPayments
       : filter === 'paid'
       ? paidPayments
+      : filter === 'unassigned'
+      ? unassignedPayments
       : filter === 'all'
       ? [...pendingPayments, ...paidPayments]
       : [];

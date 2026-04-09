@@ -95,6 +95,12 @@ export const queryKeys = {
     (contractorSearch
       ? ['payments', 'paid', contractorSearch]
       : ['payments', 'paid']) as readonly string[],
+
+  /** Global unassigned payments (Finances screen Unassigned filter). Added in #191. */
+  unassignedPaymentsGlobal: (contractorSearch?: string) =>
+    (contractorSearch
+      ? ['payments', 'unassigned', contractorSearch]
+      : ['payments', 'unassigned']) as readonly string[],
 };
 
 // ─── Context types for the invalidation map ───────────────────────────────────

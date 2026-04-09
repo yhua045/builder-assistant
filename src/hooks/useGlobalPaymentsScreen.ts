@@ -11,7 +11,7 @@ import { sortByPaymentPriority, sortByPaidDateDesc } from '../utils/sortByPaymen
 import { queryKeys } from './queryKeys';
 import '../infrastructure/di/registerServices';
 
-export type PaymentsFilterOption = 'quotations' | 'pending' | 'paid' | 'all';
+export type PaymentsFilterOption = 'quotations' | 'pending' | 'paid' | 'all' | 'unassigned';
 
 export interface UseGlobalPaymentsScreenOptions {
   /** Override payment repo for testing */
@@ -33,6 +33,7 @@ export interface UseGlobalPaymentsScreenReturn {
   // Payments
   pendingPayments: PaymentWithProject[];   // priority-sorted
   paidPayments: Payment[];                 // paid-date-desc sorted
+  unassignedPayments: Payment[];           // no-project payments (#191)
   amountPayable: number;                   // sum of pending amounts
 
   // Loading / refresh
@@ -93,6 +94,21 @@ export function useGlobalPaymentsScreen(
     staleTime: Infinity,
   });
 
+  // ── Unassigned payments data (#191) ──────────────────────────────────────
+  const unassignedSearch = filter === 'unassigned' ? search : undefined;
+
+  const { data: unassignedData, isFetching: unassignedFetching } = useQuery({
+    queryKey: queryKeys.unassignedPaymentsGlobal(unassignedSearch),
+    queryFn: async () => {
+      const result = await listGlobalUc.execute({
+        noProject: true,
+        contractorSearch: unassignedSearch,
+      });
+      return result.items;
+    },
+    staleTime: Infinity,
+  });
+
   // ── Derived / sorted results ─────────────────────────────────────────────
   const pendingPayments = useMemo(
     () => sortByPaymentPriority(globalPayments ?? []),
@@ -104,14 +120,20 @@ export function useGlobalPaymentsScreen(
     [paidData],
   );
 
+  const unassignedPayments = useMemo(
+    () => unassignedData ?? [],
+    [unassignedData],
+  );
+
   // ── Refresh all queries ──────────────────────────────────────────────────
   const refresh = () => {
     refreshPending();
     refreshQuotations();
     queryClient.invalidateQueries({ queryKey: queryKeys.paidPaymentsGlobal() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.unassignedPaymentsGlobal() });
   };
 
-  const loading = pendingLoading || quotationsLoading || paidFetching;
+  const loading = pendingLoading || quotationsLoading || paidFetching || unassignedFetching;
 
   return {
     filter,
@@ -121,6 +143,7 @@ export function useGlobalPaymentsScreen(
     quotations,
     pendingPayments,
     paidPayments,
+    unassignedPayments,
     amountPayable: globalAmountPayable,
     loading,
     refresh,

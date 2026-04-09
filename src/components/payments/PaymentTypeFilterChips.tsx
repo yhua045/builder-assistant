@@ -11,6 +11,7 @@ export interface PaymentTypeFilterChipsProps {
 const CHIPS: { option: PaymentsFilterOption; label: string }[] = [
   { option: 'pending',    label: 'Pending' },
   { option: 'paid',       label: 'Paid' },
+  { option: 'unassigned', label: 'Unassigned' },
   { option: 'quotations', label: 'Quotations' },
   { option: 'all',        label: 'All' },
 ];

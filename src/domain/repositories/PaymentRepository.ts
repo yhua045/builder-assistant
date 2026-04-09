@@ -13,6 +13,8 @@ export interface PaymentFilters {
   allProjects?: boolean;        // if true, projectId is ignored — queries across all projects
   contractorSearch?: string;    // case-insensitive partial match on contractor_name
   paymentCategory?: 'contract' | 'variation' | 'other';
+  /** If true, return only payments with no linked project (project_id IS NULL). Added in #191. */
+  noProject?: boolean;
 }
 
 export interface PaymentListResult {

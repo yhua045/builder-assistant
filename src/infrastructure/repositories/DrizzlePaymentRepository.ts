@@ -199,6 +199,11 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       params.push(filters.paymentCategory);
     }
 
+    // noProject filter: return only payments with project_id IS NULL
+    if (filters?.noProject) {
+      where.push('project_id IS NULL');
+    }
+
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     // Count total
