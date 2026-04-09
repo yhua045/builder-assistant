@@ -269,4 +269,23 @@ export const invalidations = {
     queryKeys.tasks(ctx.projectId),
     queryKeys.projectsOverview(),
   ],
+
+  /**
+   * A payment or invoice was linked / unlinked from a project (#196).
+   * Affects: global payment lists, project-scoped payment lists (old and new project),
+   * unassigned payments, and — for the invoice path — the invoice list.
+   */
+  paymentProjectAssigned: (ctx: {
+    oldProjectId?: string;
+    newProjectId?: string;
+    /** Pass true when the link target is an invoice (synthetic row). */
+    isInvoice?: boolean;
+  }) => [
+    queryKeys.paymentsAll(),
+    queryKeys.paidPaymentsGlobal(),
+    queryKeys.unassignedPaymentsGlobal(),
+    ...(ctx.oldProjectId ? [queryKeys.projectPayments(ctx.oldProjectId)] : []),
+    ...(ctx.newProjectId ? [queryKeys.projectPayments(ctx.newProjectId)] : []),
+    ...(ctx.isInvoice ? [queryKeys.invoices()] : []),
+  ],
 };
