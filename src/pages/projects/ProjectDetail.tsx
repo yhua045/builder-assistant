@@ -222,29 +222,28 @@ export default function ProjectDetailScreen() {
   );
 
   // ── Payment quick-action handlers ────────────────────────────────────────
-  const handleViewPayment = useCallback(
+  const handleEditPayment = useCallback(
     (payment: Payment) => navigation.navigate('PaymentDetail', { paymentId: payment.id }),
     [navigation],
   );
 
-  const handleRecordPayment = useCallback(
+  const handleReviewPayment = useCallback(
     (payment: Payment) => {
-      // Navigate to PaymentDetail with openRecordPayment param.
-      // The payment detail screen handles the record-payment sheet.
-      navigation.navigate('PaymentDetail', { paymentId: payment.id, openRecordPayment: true });
+      (navigation as any).navigate('PaymentDetails', { paymentId: payment.id });
     },
     [navigation],
   );
 
   // ── Invoice quick-action handlers ────────────────────────────────────────
-  const handleViewInvoice = useCallback(
+  const handleEditInvoice = useCallback(
     (invoice: Invoice) => navigation.navigate('InvoiceDetail', { invoiceId: invoice.id }),
     [navigation],
   );
 
-  const handleMarkInvoiceAsPaid = useCallback(
-    (invoice: Invoice) =>
-      navigation.navigate('InvoiceDetail', { invoiceId: invoice.id, openMarkAsPaid: true }),
+  const handleReviewInvoicePayment = useCallback(
+    (invoice: Invoice) => {
+      (navigation as any).navigate('PaymentDetails', { invoiceId: invoice.id });
+    },
     [navigation],
   );
 
@@ -440,16 +439,16 @@ export default function ProjectDetailScreen() {
                 <TimelinePaymentCard
                   key={feedItem.data.id}
                   payment={feedItem.data}
-                  onPress={() => handleViewPayment(feedItem.data)}
-                  onMarkPaid={() => handleRecordPayment(feedItem.data)}
+                  onEdit={() => handleEditPayment(feedItem.data)}
+                  onReviewPayment={feedItem.data.status !== 'settled' ? () => handleReviewPayment(feedItem.data) : undefined}
                   testID={`payment-card-${feedItem.data.id}`}
                 />
               ) : (
                 <TimelineInvoiceCard
                   key={feedItem.data.id}
                   invoice={feedItem.data}
-                  onPress={() => handleViewInvoice(feedItem.data)}
-                  onMarkPaid={() => handleMarkInvoiceAsPaid(feedItem.data)}
+                  onEdit={() => handleEditInvoice(feedItem.data)}
+                  onReviewPayment={feedItem.data.paymentStatus !== 'paid' ? () => handleReviewInvoicePayment(feedItem.data) : undefined}
                   testID={`invoice-card-${feedItem.data.id}`}
                 />
               ),

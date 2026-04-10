@@ -474,7 +474,7 @@ describe('ProjectDetail — sections', () => {
     expect(String(emptyText.props.children)).toBe('No payments or invoices for this project.');
   });
 
-  // P5: tapping invoice 'View' navigates to InvoiceDetail with invoiceId
+  // P5: tapping invoice Edit button navigates to InvoiceDetail with invoiceId
   it('P5: tapping invoice View navigates to InvoiceDetail', async () => {
     setupDefaultMocks({
       paymentsTimeline: {
@@ -496,9 +496,9 @@ describe('ProjectDetail — sections', () => {
     const paymentsHeader = findPressable(tree!, 'section-header-payments');
     await act(async () => { paymentsHeader!.props.onPress(); });
 
-    // Tap the invoice card (whole card is pressable in the new interface)
-    const invoiceCard = tree!.root.findByProps({ testID: 'invoice-card-inv-1' });
-    await act(async () => { invoiceCard.props.onPress(); });
+    // Tap the Edit button on the invoice card
+    const editBtn = findPressable(tree!, 'invoice-action-edit');
+    await act(async () => { editBtn!.props.onPress(); });
 
     expect(mockNavigate).toHaveBeenCalledWith('InvoiceDetail', { invoiceId: sampleInvoice.id });
   });

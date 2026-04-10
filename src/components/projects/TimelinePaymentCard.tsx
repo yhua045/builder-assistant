@@ -99,17 +99,17 @@ function StatusChip({ payment }: { payment: Payment }) {
 
 export interface TimelinePaymentCardProps {
   payment: Payment;
-  /** Navigate to PaymentDetails screen */
-  onPress: () => void;
-  /** When defined, shows the Mark Paid button; omit for settled payments */
-  onMarkPaid?: () => void;
+  /** Navigates to PaymentDetails for editing */
+  onEdit: () => void;
+  /** When provided, shows the Review Payment button */
+  onReviewPayment?: () => void;
   testID?: string;
 }
 
 export function TimelinePaymentCard({
   payment,
-  onPress,
-  onMarkPaid,
+  onEdit,
+  onReviewPayment,
   testID,
 }: TimelinePaymentCardProps) {
   const label = categoryLabel(payment.paymentCategory, payment.stageLabel);
@@ -127,12 +127,10 @@ export function TimelinePaymentCard({
     : isSettled ? 'Paid' : null;
 
   return (
-    <Pressable
-      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden active:opacity-80"
+    <View
+      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden"
       testID={testID}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`View payment: ${payment.contractorName ?? 'Unknown'}, ${formatCurrency(payment.amount)}`}
+      accessibilityLabel={`Payment card: ${payment.contractorName ?? 'Unknown'}, ${formatCurrency(payment.amount)}`}
     >
       <View className="px-4 pt-3 pb-2">
         <View className="flex-row items-start justify-between mb-2">
@@ -169,20 +167,29 @@ export function TimelinePaymentCard({
           </Text>
         ) : null}
 
-        {/* Mark Paid action — shown only for pending payments */}
-        {onMarkPaid ? (
-          <View className="pt-2 mt-2 border-t border-border/50">
+        {/* Action row — shown only for non-settled payments */}
+        {!isSettled ? (
+          <View className="pt-2 mt-2 border-t border-border/50 flex-row gap-2">
             <Pressable
-              testID={testID ? `${testID}-mark-paid` : 'payment-action-mark-paid'}
-              onPress={(e) => { e.stopPropagation?.(); onMarkPaid(); }}
+              testID={testID ? `${testID}-edit` : 'payment-action-edit'}
+              onPress={onEdit}
               className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
             >
-              <DollarSign size={12} className="text-muted-foreground" />
-              <Text className="text-xs font-medium text-foreground">Mark Paid</Text>
+              <Text className="text-xs font-medium text-foreground">Edit</Text>
             </Pressable>
+            {onReviewPayment ? (
+              <Pressable
+                testID={testID ? `${testID}-review-payment` : 'payment-action-review-payment'}
+                onPress={onReviewPayment}
+                className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
+              >
+                <DollarSign size={12} className="text-muted-foreground" />
+                <Text className="text-xs font-medium text-foreground">Review Payment</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
       </View>
-    </Pressable>
+    </View>
   );
 }

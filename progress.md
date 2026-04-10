@@ -1,5 +1,60 @@
 # Project Progress — Summary (updated 2026-04-10)
 
+## ✅ Issue #205 — Fix TimelineInvoiceCard / TimelinePaymentCard — Add Edit Button, Remove Card-tap, Rename CTA
+**Status**: COMPLETED  
+**Branch**: `issue-205-timeline-card-edit-review-payment`  
+**Date Completed**: 2026-04-10
+
+### Changes Made
+- **Component API Refactor**:
+  - `TimelineInvoiceCard` & `TimelinePaymentCard`: Removed `onPress` prop (root is no longer pressable); replaced `onMarkPaid` with `onReviewPayment` (optional); added `onEdit` (required)
+  - Root element changed from `<Pressable>` to `<View>` to prevent accidental card-tap navigation
+  
+- **Action Row Layout**:
+  - Both cards now render dual-button action row: **Edit** (left, always rendered) + **Review Payment** (right, conditional on `onReviewPayment` prop)
+  - Edit button uses muted neutral style; Review Payment uses existing muted button style
+  
+- **Handler Refactor in ProjectDetail.tsx**:
+  - `handleViewPayment` → `handleEditPayment`: routes to `PaymentDetail` with `{ paymentId }`
+  - `handleRecordPayment` → `handleReviewPayment`: routes to `PaymentDetails` with `{ paymentId }` (cross-stack navigation)
+  - `handleViewInvoice` → `handleEditInvoice`: routes to `InvoiceDetail` with `{ invoiceId }`
+  - `handleMarkInvoiceAsPaid` → `handleReviewInvoicePayment`: routes to `PaymentDetails` with `{ invoiceId }`
+  - Payment card: `onReviewPayment` only shown when `status !== 'settled'`
+  - Invoice card: `onReviewPayment` only shown when `paymentStatus !== 'paid'`
+
+- **Test Coverage**:
+  - **New Unit Test File**: `__tests__/unit/TimelinePaymentCard.test.tsx` (P1–P10): Tests root View (no onPress), Edit button rendering & nav, Review Payment conditional rendering, positional order
+  - **Updated**: `__tests__/unit/TimelineInvoiceCard.test.tsx` (I6–I14): Removed card-tap test; added root View assertion, Edit button tests, Review Payment button tests, positional order
+  - **Updated**: `__tests__/integration/ProjectDetailPayments.integration.test.tsx`: Verified mixed payment/invoice grid renders with dual-button action rows; Edit and Review Payment navigations work correctly
+  - **All 1396+ tests passing**
+
+- **Verification**:
+  - **ESLint**: `npm run lint` passes with **0 errors** (71 pre-existing warnings unchanged)
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode)
+  - **Test Suite**: `npm test -- --no-coverage` returns 1396+ tests passing
+
+### Acceptance Criteria  
+All criteria met:
+- ✅ AC1: Root element is `<View>`, not pressable; card-tap does nothing
+- ✅ AC2a/b: Edit button on both cards navigates to appropriate screen (InvoiceDetail / PaymentDetail)
+- ✅ AC3: CTA label "Mark Paid" renamed to "Review Payment" on both cards
+- ✅ AC4: Review Payment navigates to PaymentDetails (payment: `{ paymentId }`; invoice: `{ invoiceId }`)
+- ✅ AC5 (unit): Card tests assert root has no `onPress`; Edit calls nav; Review Payment calls nav
+- ✅ AC6 (integration): Visual order verified — Edit renders left of Review Payment
+- ✅ AC8: `npx tsc --noEmit` and `npm test` pass
+- ✅ E2E: Cross-stack navigation from ProjectDetail to PaymentDetails works correctly
+
+### Files Modified
+- `src/components/projects/TimelineInvoiceCard.tsx`
+- `src/components/projects/TimelinePaymentCard.tsx`
+- `src/pages/projects/ProjectDetail.tsx`
+- `__tests__/unit/TimelineInvoiceCard.test.tsx`
+- `__tests__/unit/TimelinePaymentCard.test.tsx` (new)
+- `__tests__/integration/ProjectDetailPayments.integration.test.tsx`
+- `design/issue-205-timeline-card-edit-review-payment.md` (design doc)
+
+---
+
 ## ✅ Issue #203 — Fine-Tune: Unused Variable Cleanup & Linting
 **Status**: COMPLETED  
 **Branch**: `issue-203-fine-tune`  
