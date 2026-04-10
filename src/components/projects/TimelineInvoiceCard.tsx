@@ -9,12 +9,11 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ExternalLink, Paperclip, CheckCircle, AlertCircle, Clock, FileText } from 'lucide-react-native';
+import { CheckCircle, AlertCircle, Clock, FileText } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { Invoice } from '../../domain/entities/Invoice';
+import { getDueStatus } from '../../utils/getDueStatus';
 
-cssInterop(ExternalLink, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Paperclip, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -66,9 +65,10 @@ function PaymentStatusChip({ status }: { status: Invoice['paymentStatus'] }) {
 
 export interface TimelineInvoiceCardProps {
   invoice: Invoice;
-  onView: (invoice: Invoice) => void;
-  onMarkAsPaid: (invoice: Invoice) => void;
-  onAttachDocument: (invoice: Invoice) => void;
+  /** Navigate to PaymentDetails screen */
+  onPress: () => void;
+  /** When defined, shows the Mark Paid button; omit for already-paid invoices */
+  onMarkPaid?: () => void;
   testID?: string;
 }
 
@@ -76,20 +76,32 @@ export interface TimelineInvoiceCardProps {
 
 export function TimelineInvoiceCard({
   invoice,
-  onView,
-  onMarkAsPaid,
-  onAttachDocument,
+  onPress,
+  onMarkPaid,
   testID,
 }: TimelineInvoiceCardProps) {
   const issuerLabel =
-    invoice.issuerName ?? invoice.vendor ?? 'Unknown Vendor';
+    invoice.issuerName ?? (invoice as any).vendor ?? 'Unknown Vendor';
   const referenceLabel =
     invoice.externalReference ?? invoice.invoiceNumber ?? '';
+  const isPaid = invoice.paymentStatus === 'paid';
+
+  // Date footer helpers
+  const dueDateText = !isPaid && invoice.dateDue
+    ? getDueStatus(invoice.dateDue).text
+    : null;
+  const paidDateText = isPaid && invoice.paymentDate
+    ? `Paid on ${new Date(invoice.paymentDate).toLocaleDateString('en-AU', {
+        day: 'numeric', month: 'short', year: 'numeric',
+      })}`
+    : isPaid ? 'Paid' : null;
 
   return (
-    <View
+    <Pressable
       testID={testID ?? `invoice-card-${invoice.id}`}
-      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden"
+      onPress={onPress}
+      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden active:opacity-80"
+      accessibilityRole="button"
     >
       {/* Amber left-border accent */}
       <View className="flex-row">
@@ -117,42 +129,43 @@ export function TimelineInvoiceCard({
           ) : null}
 
           {/* Status chips row */}
-          <View className="flex-row gap-1.5 mb-3">
+          <View className="flex-row gap-1.5 mb-2">
             <InvoiceStatusChip status={invoice.status} />
             <PaymentStatusChip status={invoice.paymentStatus} />
           </View>
 
-          {/* Quick-action row */}
-          <View className="flex-row gap-2 pt-2 border-t border-border/50">
-            <Pressable
-              testID="invoice-action-view"
-              onPress={() => onView(invoice)}
-              className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg"
+          {/* Date footer */}
+          {paidDateText ? (
+            <Text
+              testID="invoice-paid-date"
+              className="text-xs font-medium text-green-700 mt-1"
             >
-              <ExternalLink size={12} className="text-muted-foreground" />
-              <Text className="text-xs font-medium text-foreground">View</Text>
-            </Pressable>
+              {paidDateText}
+            </Text>
+          ) : dueDateText ? (
+            <Text
+              testID="invoice-due-date"
+              className="text-xs text-muted-foreground mt-1"
+            >
+              {dueDateText}
+            </Text>
+          ) : null}
 
-            <Pressable
-              testID="invoice-action-mark-paid"
-              onPress={() => onMarkAsPaid(invoice)}
-              className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg"
-            >
-              <CheckCircle size={12} className="text-muted-foreground" />
-              <Text className="text-xs font-medium text-foreground">Mark Paid</Text>
-            </Pressable>
-
-            <Pressable
-              testID="invoice-action-attach"
-              onPress={() => onAttachDocument(invoice)}
-              className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg"
-            >
-              <Paperclip size={12} className="text-muted-foreground" />
-              <Text className="text-xs font-medium text-foreground">Attach</Text>
-            </Pressable>
-          </View>
+          {/* Mark Paid action — shown only for pending invoices */}
+          {onMarkPaid ? (
+            <View className="pt-2 mt-2 border-t border-border/50">
+              <Pressable
+                testID="invoice-action-mark-paid"
+                onPress={(e) => { e?.stopPropagation?.(); onMarkPaid(); }}
+                className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
+              >
+                <CheckCircle size={12} className="text-muted-foreground" />
+                <Text className="text-xs font-medium text-foreground">Mark Paid</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }

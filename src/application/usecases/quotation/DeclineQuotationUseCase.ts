@@ -1,4 +1,3 @@
-import { Quotation } from '../../../domain/entities/Quotation';
 import { Task } from '../../../domain/entities/Task';
 import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
 import { TaskRepository } from '../../../domain/repositories/TaskRepository';

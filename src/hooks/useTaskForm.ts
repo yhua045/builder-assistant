@@ -13,7 +13,7 @@ import { ContactRepository } from '../domain/repositories/ContactRepository';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
-import { invalidations, queryKeys } from './queryKeys';
+import { invalidations } from './queryKeys';
 import { useCreateAuditLog } from './useCreateAuditLog';
 
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
@@ -485,7 +485,10 @@ export function useTaskForm({
           return taskWithInvoice;
         }
 
-        await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(newTask.projectId) });
+        await Promise.all(
+          invalidations.tasksCreated({ projectId: newTask.projectId ?? '' })
+            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+        );
         if (newTask.projectId) {
           await createAuditEntry({
             projectId: newTask.projectId,

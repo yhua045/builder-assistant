@@ -6,12 +6,10 @@
  * and a quick-action row (View, Record Payment, Attach Document).
  */
 
-import React, { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable } from 'react-native';
 import {
-  ExternalLink,
   DollarSign,
-  Paperclip,
   AlertCircle,
   Clock,
   CheckCircle,
@@ -20,9 +18,7 @@ import { cssInterop } from 'nativewind';
 import { Payment } from '../../domain/entities/Payment';
 import { getDueStatus } from '../../utils/getDueStatus';
 
-cssInterop(ExternalLink, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(DollarSign, { className: { target: 'style', nativeStyleToProp: { color: true } } });
-cssInterop(Paperclip, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -103,45 +99,42 @@ function StatusChip({ payment }: { payment: Payment }) {
 
 export interface TimelinePaymentCardProps {
   payment: Payment;
-  onView: (payment: Payment) => void;
-  onRecordPayment: (payment: Payment) => void;
-  onAttachDocument: (payment: Payment) => void;
+  /** Navigate to PaymentDetails screen */
+  onPress: () => void;
+  /** When defined, shows the Mark Paid button; omit for settled payments */
+  onMarkPaid?: () => void;
   testID?: string;
 }
 
 export function TimelinePaymentCard({
   payment,
-  onView,
-  onRecordPayment,
-  onAttachDocument,
+  onPress,
+  onMarkPaid,
   testID,
 }: TimelinePaymentCardProps) {
-  const [recordingPayment, setRecordingPayment] = useState(false);
-
   const label = categoryLabel(payment.paymentCategory, payment.stageLabel);
-  const isPending = payment.status === 'pending' || !payment.status;
+  const isSettled = payment.status === 'settled';
 
-  const handleRecordPayment = async () => {
-    setRecordingPayment(true);
-    try {
-      onRecordPayment(payment);
-    } finally {
-      setRecordingPayment(false);
-    }
-  };
+  // Date footer helpers
+  const dueDateText = !isSettled && payment.dueDate
+    ? getDueStatus(payment.dueDate).text
+    : null;
+  const paidAt = (payment as any).paidAt as string | undefined;
+  const paidDateText = isSettled && paidAt
+    ? `Paid on ${new Date(paidAt).toLocaleDateString('en-AU', {
+        day: 'numeric', month: 'short', year: 'numeric',
+      })}`
+    : isSettled ? 'Paid' : null;
 
   return (
-    <View
-      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden"
+    <Pressable
+      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden active:opacity-80"
       testID={testID}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`View payment: ${payment.contractorName ?? 'Unknown'}, ${formatCurrency(payment.amount)}`}
     >
-      {/* Body */}
-      <Pressable
-        onPress={() => onView(payment)}
-        className="px-4 pt-3 pb-2 active:opacity-70"
-        accessibilityRole="button"
-        accessibilityLabel={`View payment: ${payment.contractorName ?? 'Unknown'}, ${formatCurrency(payment.amount)}`}
-      >
+      <View className="px-4 pt-3 pb-2">
         <View className="flex-row items-start justify-between mb-2">
           <View className="flex-1 mr-3">
             <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
@@ -158,48 +151,38 @@ export function TimelinePaymentCard({
           </Text>
         </View>
         <StatusChip payment={payment} />
-      </Pressable>
 
-      {/* Quick-action row */}
-      <View className="flex-row border-t border-border/50">
-        <Pressable
-          onPress={() => onView(payment)}
-          className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 active:bg-muted/30"
-          accessibilityRole="button"
-          accessibilityLabel="View payment details"
-        >
-          <ExternalLink size={13} color="#6b7280" />
-          <Text className="text-xs text-muted-foreground font-medium">View</Text>
-        </Pressable>
-
-        {isPending ? (
-          <Pressable
-            onPress={handleRecordPayment}
-            disabled={recordingPayment}
-            className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 border-l border-border/50 active:bg-muted/30"
-            accessibilityRole="button"
-            accessibilityLabel="Record payment"
-            testID={testID ? `${testID}-record` : undefined}
+        {/* Date footer */}
+        {paidDateText ? (
+          <Text
+            testID="payment-paid-date"
+            className="text-xs font-medium text-green-700 mt-2"
           >
-            {recordingPayment ? (
-              <ActivityIndicator size={13} />
-            ) : (
-              <DollarSign size={13} color="#6b7280" />
-            )}
-            <Text className="text-xs text-muted-foreground font-medium">Pay</Text>
-          </Pressable>
+            {paidDateText}
+          </Text>
+        ) : dueDateText ? (
+          <Text
+            testID="payment-due-date"
+            className="text-xs text-muted-foreground mt-2"
+          >
+            {dueDateText}
+          </Text>
         ) : null}
 
-        <Pressable
-          onPress={() => onAttachDocument(payment)}
-          className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 border-l border-border/50 active:bg-muted/30"
-          accessibilityRole="button"
-          accessibilityLabel="Attach document"
-        >
-          <Paperclip size={13} color="#6b7280" />
-          <Text className="text-xs text-muted-foreground font-medium">Attach</Text>
-        </Pressable>
+        {/* Mark Paid action — shown only for pending payments */}
+        {onMarkPaid ? (
+          <View className="pt-2 mt-2 border-t border-border/50">
+            <Pressable
+              testID={testID ? `${testID}-mark-paid` : 'payment-action-mark-paid'}
+              onPress={(e) => { e.stopPropagation?.(); onMarkPaid(); }}
+              className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
+            >
+              <DollarSign size={12} className="text-muted-foreground" />
+              <Text className="text-xs font-medium text-foreground">Mark Paid</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
-    </View>
+    </Pressable>
   );
 }

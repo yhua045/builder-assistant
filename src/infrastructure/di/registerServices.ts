@@ -21,6 +21,7 @@ import { DrizzleAuditLogRepository } from '../repositories/DrizzleAuditLogReposi
 import { NullLookupProvider } from '../lookup/NullLookupProvider';
 import { MobileFileSystemAdapter } from '../files/MobileFileSystemAdapter';
 import { MobileCameraAdapter } from '../camera/MobileCameraAdapter';
+import { MobileFilePickerAdapter } from '../files/MobileFilePickerAdapter';
 import { DrizzleStoredLocationRepository } from '../location/DrizzleStoredLocationRepository';
 import { DeviceGpsService } from '../location/DeviceGpsService';
 import { LocalLocationAdapter } from '../location/LocalLocationAdapter';
@@ -48,6 +49,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('LookupProvider', NullLookupProvider);
 	container.registerSingleton('FileSystemAdapter', MobileFileSystemAdapter);
 	container.registerSingleton('CameraService', MobileCameraAdapter);
+	container.registerSingleton('IFilePickerAdapter', MobileFilePickerAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
 

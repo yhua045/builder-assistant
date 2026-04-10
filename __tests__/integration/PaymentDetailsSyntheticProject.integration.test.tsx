@@ -13,7 +13,7 @@
  * async loadData() to complete; then assert on rendered testIDs.
  */
 import React from 'react';
-import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PaymentDetails from '../../src/pages/payments/PaymentDetails';
 

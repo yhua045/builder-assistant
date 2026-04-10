@@ -3,7 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Payment } from '../../domain/entities/Payment';
 import { getDueStatus } from '../../utils/getDueStatus';
 
-export type PaymentCardPayment = Payment & { projectName?: string };
+export type PaymentCardPayment = Payment & {
+  projectName?: string;
+  /** ISO date string; shown as "Paid on DD Mon YYYY" when status === 'settled' */
+  paidDate?: string;
+};
 
 interface PaymentCardProps {
   payment: PaymentCardPayment;
@@ -71,8 +75,20 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
         <Text className="text-lg font-bold text-foreground">{formatCurrency(payment.amount)}</Text>
       </View>
 
-      {/* Footer — dead-invoice banner or due status */}
-      {isDeadInvoice ? (
+      {/* Footer — settled, dead-invoice banner, or due status */}
+      {payment.status === 'settled' ? (
+        <View style={[styles.footer, styles.footerOnTime]} className="px-4 py-2 flex-row items-center">
+          <Text style={styles.footerTextOnTime} className="text-xs font-semibold">
+            {payment.paidDate
+              ? `Paid on ${new Date(payment.paidDate).toLocaleDateString('en-AU', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}`
+              : 'Paid'}
+          </Text>
+        </View>
+      ) : isDeadInvoice ? (
         <View style={styles.footerDeadInvoice} className="px-4 py-2 flex-row items-center">
           <Text style={styles.footerTextDeadInvoice} className="text-xs font-semibold">
             {payment.invoiceStatus === 'cancelled'
@@ -87,6 +103,7 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
           </Text>
           {payment.status === 'pending' && onPayNow ? (
             <TouchableOpacity
+              testID="pay-now-btn"
               onPress={() => onPayNow(payment)}
               className="bg-white/20 rounded px-3 py-1"
               activeOpacity={0.8}

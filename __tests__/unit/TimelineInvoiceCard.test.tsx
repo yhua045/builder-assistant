@@ -50,9 +50,7 @@ describe('TimelineInvoiceCard', () => {
       tree = renderer.create(
         <TimelineInvoiceCard
           invoice={invoice}
-          onView={noop}
-          onMarkAsPaid={noop}
-          onAttachDocument={noop}
+          onPress={noop}
         />,
       );
     });
@@ -67,7 +65,7 @@ describe('TimelineInvoiceCard', () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={noop} onAttachDocument={noop} />,
+        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
       );
     });
     const texts = tree!.root.findAllByType('Text' as any);
@@ -81,7 +79,7 @@ describe('TimelineInvoiceCard', () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={noop} onAttachDocument={noop} />,
+        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
       );
     });
     const texts = tree!.root.findAllByType('Text' as any);
@@ -95,7 +93,7 @@ describe('TimelineInvoiceCard', () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={noop} onAttachDocument={noop} />,
+        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
       );
     });
     const texts = tree!.root.findAllByType('Text' as any);
@@ -109,7 +107,7 @@ describe('TimelineInvoiceCard', () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={noop} onAttachDocument={noop} />,
+        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
       );
     });
     const texts = tree!.root.findAllByType('Text' as any);
@@ -117,48 +115,33 @@ describe('TimelineInvoiceCard', () => {
     expect(found).toBe(true);
   });
 
-  // I6: tap View → onView called with invoice
-  it('I6: calls onView when View button is tapped', async () => {
+  // I6: tap card → onPress called
+  it('I6: calls onPress when the card is tapped', async () => {
     const invoice = makeInvoice();
-    const onView = jest.fn();
+    const onPress = jest.fn();
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={onView} onMarkAsPaid={noop} onAttachDocument={noop} testID="inv-card" />,
+        <TimelineInvoiceCard invoice={invoice} onPress={onPress} testID="inv-card" />,
       );
     });
-    const viewBtn = tree!.root.findByProps({ testID: 'invoice-action-view' });
-    await act(async () => { viewBtn.props.onPress(); });
-    expect(onView).toHaveBeenCalledWith(invoice);
+    const card = tree!.root.findByProps({ testID: 'inv-card' });
+    await act(async () => { card.props.onPress(); });
+    expect(onPress).toHaveBeenCalled();
   });
 
-  // I7: tap Mark Paid → onMarkAsPaid called with invoice
-  it('I7: calls onMarkAsPaid when Mark Paid button is tapped', async () => {
+  // I7: tap Mark Paid → onMarkPaid called
+  it('I7: calls onMarkPaid when Mark Paid button is tapped', async () => {
     const invoice = makeInvoice();
-    const onMarkAsPaid = jest.fn();
+    const onMarkPaid = jest.fn();
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={onMarkAsPaid} onAttachDocument={noop} testID="inv-card" />,
+        <TimelineInvoiceCard invoice={invoice} onPress={noop} onMarkPaid={onMarkPaid} testID="inv-card" />,
       );
     });
     const markPaidBtn = tree!.root.findByProps({ testID: 'invoice-action-mark-paid' });
     await act(async () => { markPaidBtn.props.onPress(); });
-    expect(onMarkAsPaid).toHaveBeenCalledWith(invoice);
-  });
-
-  // I8: tap Attach → onAttachDocument called with invoice
-  it('I8: calls onAttachDocument when Attach button is tapped', async () => {
-    const invoice = makeInvoice();
-    const onAttachDocument = jest.fn();
-    let tree: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onView={noop} onMarkAsPaid={noop} onAttachDocument={onAttachDocument} testID="inv-card" />,
-      );
-    });
-    const attachBtn = tree!.root.findByProps({ testID: 'invoice-action-attach' });
-    await act(async () => { attachBtn.props.onPress(); });
-    expect(onAttachDocument).toHaveBeenCalledWith(invoice);
+    expect(onMarkPaid).toHaveBeenCalled();
   });
 });

@@ -29,7 +29,7 @@ import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordP
 import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
 import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
 import { getDueStatus } from '../../utils/getDueStatus';
-import { invalidations, queryKeys } from '../../hooks/queryKeys';
+import { invalidations } from '../../hooks/queryKeys';
 import { PendingPaymentForm } from '../../components/payments/PendingPaymentForm';
 import { ProjectPickerModal } from '../../components/shared/ProjectPickerModal';
 import '../../infrastructure/di/registerServices';
@@ -62,9 +62,10 @@ export default function PaymentDetails() {
   const iconColor = isDark ? '#e4e4e7' : '#18181b';
   const queryClient = useQueryClient();
 
-  const { paymentId, syntheticRow } = route.params as {
+  const { paymentId, syntheticRow, invoiceId: invoiceIdParam } = route.params as {
     paymentId?: string;
     syntheticRow?: Payment;
+    invoiceId?: string;
   };
 
   const [payment, setPayment] = useState<Payment | null>(syntheticRow ?? null);
@@ -73,7 +74,7 @@ export default function PaymentDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [projectPickerVisible, setProjectPickerVisible] = useState(false);
   const [pendingFormVisible, setPendingFormVisible] = useState(false);
-  const [loading, setLoading] = useState(!syntheticRow);
+  const [loading, setLoading] = useState(!syntheticRow || !!invoiceIdParam);
   const [marking, setMarking] = useState(false);
   const [partialModalVisible, setPartialModalVisible] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
@@ -113,6 +114,24 @@ export default function PaymentDetails() {
 
   const loadData = useCallback(async () => {
     try {
+      // Invoice-entry path: opened from a TimelineInvoiceCard with invoiceId param
+      if (invoiceIdParam && !paymentId && !syntheticRow) {
+        const inv = await invoiceRepo.getInvoice(invoiceIdParam);
+        setInvoice(inv);
+        if (inv?.projectId) {
+          try {
+            const proj = await projectRepo.findById(inv.projectId);
+            setProject(proj);
+          } catch {
+            setProject(null);
+          }
+        }
+        // No standalone payment row for invoice-first navigation
+        setPayment(null);
+        setLinkedPayments([]);
+        return;
+      }
+
       let resolved = syntheticRow ?? null;
 
       // Synthetic rows (id starts with "invoice-payable:") don't exist in DB
@@ -167,7 +186,7 @@ export default function PaymentDetails() {
     } finally {
       setLoading(false);
     }
-  }, [paymentId, syntheticRow, paymentRepo, invoiceRepo, projectRepo]);
+  }, [paymentId, syntheticRow, invoiceIdParam, paymentRepo, invoiceRepo, projectRepo]);
 
   const handleSelectProject = useCallback(
     async (selectedProject: Project | undefined) => {

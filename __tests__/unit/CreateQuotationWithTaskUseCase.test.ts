@@ -130,7 +130,7 @@ describe('CreateQuotationWithTaskUseCase', () => {
   it('creates quotation with status pending_approval and taskId set', async () => {
     const createdQuotations: Quotation[] = [];
     const taskRepo = makeMockTaskRepo({
-      save: jest.fn(async (t: Task) => {
+      save: jest.fn(async (_t: Task) => {
         // simulate save returning nothing; task.id is pre-assigned
       }),
     });

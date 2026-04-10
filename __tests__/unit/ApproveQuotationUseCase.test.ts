@@ -6,7 +6,6 @@ import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { InvoiceRepository } from '../../src/domain/repositories/InvoiceRepository';
 import {
   ApproveQuotationUseCase,
-  ApproveQuotationInput,
 } from '../../src/application/usecases/quotation/ApproveQuotationUseCase';
 
 // ── Mock factories ────────────────────────────────────────────────────────────
