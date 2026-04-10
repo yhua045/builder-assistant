@@ -496,9 +496,9 @@ describe('ProjectDetail — sections', () => {
     const paymentsHeader = findPressable(tree!, 'section-header-payments');
     await act(async () => { paymentsHeader!.props.onPress(); });
 
-    // Tap the View button on the invoice card
-    const viewBtn = tree!.root.findByProps({ testID: 'invoice-action-view' });
-    await act(async () => { viewBtn.props.onPress(); });
+    // Tap the invoice card (whole card is pressable in the new interface)
+    const invoiceCard = tree!.root.findByProps({ testID: 'invoice-card-inv-1' });
+    await act(async () => { invoiceCard.props.onPress(); });
 
     expect(mockNavigate).toHaveBeenCalledWith('InvoiceDetail', { invoiceId: sampleInvoice.id });
   });

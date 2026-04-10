@@ -236,12 +236,6 @@ export default function ProjectDetailScreen() {
     [navigation],
   );
 
-  const handlePaymentAttachDocument = useCallback(
-    (payment: Payment) =>
-      navigation.navigate('PaymentDetail', { paymentId: payment.id, openDocument: true }),
-    [navigation],
-  );
-
   // ── Invoice quick-action handlers ────────────────────────────────────────
   const handleViewInvoice = useCallback(
     (invoice: Invoice) => navigation.navigate('InvoiceDetail', { invoiceId: invoice.id }),
@@ -251,12 +245,6 @@ export default function ProjectDetailScreen() {
   const handleMarkInvoiceAsPaid = useCallback(
     (invoice: Invoice) =>
       navigation.navigate('InvoiceDetail', { invoiceId: invoice.id, openMarkAsPaid: true }),
-    [navigation],
-  );
-
-  const handleInvoiceAttachDocument = useCallback(
-    (invoice: Invoice) =>
-      navigation.navigate('InvoiceDetail', { invoiceId: invoice.id, openDocument: true }),
     [navigation],
   );
 
@@ -452,18 +440,16 @@ export default function ProjectDetailScreen() {
                 <TimelinePaymentCard
                   key={feedItem.data.id}
                   payment={feedItem.data}
-                  onView={handleViewPayment}
-                  onRecordPayment={handleRecordPayment}
-                  onAttachDocument={handlePaymentAttachDocument}
+                  onPress={() => handleViewPayment(feedItem.data)}
+                  onMarkPaid={() => handleRecordPayment(feedItem.data)}
                   testID={`payment-card-${feedItem.data.id}`}
                 />
               ) : (
                 <TimelineInvoiceCard
                   key={feedItem.data.id}
                   invoice={feedItem.data}
-                  onView={handleViewInvoice}
-                  onMarkAsPaid={handleMarkInvoiceAsPaid}
-                  onAttachDocument={handleInvoiceAttachDocument}
+                  onPress={() => handleViewInvoice(feedItem.data)}
+                  onMarkPaid={() => handleMarkInvoiceAsPaid(feedItem.data)}
                   testID={`invoice-card-${feedItem.data.id}`}
                 />
               ),

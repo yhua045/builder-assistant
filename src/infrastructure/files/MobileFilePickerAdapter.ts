@@ -10,7 +10,7 @@ export class MobileFilePickerAdapter implements IFilePickerAdapter {
   async pickDocument(): Promise<FilePickerResult> {
     try {
       const result = await DocumentPicker.pick({
-        type: [DocumentPicker.types.pdf],
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images],
         copyTo: 'cachesDirectory', // Copy to app cache to ensure access
       });
 

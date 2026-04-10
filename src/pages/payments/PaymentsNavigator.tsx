@@ -7,7 +7,14 @@ import { Payment } from '../../domain/entities/Payment';
 
 export type PaymentsStackParamList = {
   PaymentsList: undefined;
-  PaymentDetails: { paymentId?: string; syntheticRow?: Payment };
+  PaymentDetails: {
+    paymentId?: string;
+    syntheticRow?: Payment;
+    /** Navigate here when originating from a TimelineInvoiceCard */
+    invoiceId?: string;
+    /** When true, action buttons (Make Payment / Make Partial Payment) are hidden */
+    readOnly?: boolean;
+  };
   QuotationDetail: { quotationId: string };
 };
 

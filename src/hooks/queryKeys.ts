@@ -263,9 +263,10 @@ export const invalidations = {
 
   /**
    * Bulk tasks were created for a project (e.g. critical-path scaffold).
-   * Affects: task list, projects overview.
+   * Affects: task list (global + project-scoped), projects overview.
    */
   tasksCreated: (ctx: TasksCreatedCtx) => [
+    queryKeys.tasks(),              // global unscoped key — used by TasksScreen
     queryKeys.tasks(ctx.projectId),
     queryKeys.projectsOverview(),
   ],
