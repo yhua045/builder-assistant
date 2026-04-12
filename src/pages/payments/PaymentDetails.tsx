@@ -114,21 +114,49 @@ export default function PaymentDetails() {
 
   const loadData = useCallback(async () => {
     try {
-      // Invoice-entry path: opened from a TimelineInvoiceCard with invoiceId param
+      // Invoice-entry path: opened from a TimelineInvoiceCard with invoiceId param.
+      // Build a synthetic row (same shape as the Payments screen "pending payment") so
+      // the full PaymentDetails UI renders with all action buttons available.
       if (invoiceIdParam && !paymentId && !syntheticRow) {
-        const inv = await invoiceRepo.getInvoice(invoiceIdParam);
+        const [inv, payments] = await Promise.all([
+          invoiceRepo.getInvoice(invoiceIdParam),
+          paymentRepo.findByInvoice(invoiceIdParam),
+        ]);
         setInvoice(inv);
-        if (inv?.projectId) {
-          try {
-            const proj = await projectRepo.findById(inv.projectId);
-            setProject(proj);
-          } catch {
-            setProject(null);
+        setLinkedPayments(payments);
+
+        if (inv) {
+          const settled = payments
+            .filter((p) => p.status === 'settled')
+            .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+          const outstanding = inv.total - settled;
+          const syntheticPayment: Payment = {
+            id: `invoice-payable:${inv.id}`,
+            invoiceId: inv.id,
+            projectId: inv.projectId,
+            amount: outstanding,
+            currency: inv.currency,
+            date: inv.dateIssued ?? inv.issueDate,
+            dueDate: inv.dateDue ?? inv.dueDate ?? null,
+            status: 'pending',
+            contractorName: inv.issuerName ?? inv.vendor ?? 'Invoice Payable',
+            notes: inv.notes,
+            reference: inv.externalReference ?? inv.externalId ?? inv.id,
+            stageLabel: inv.externalReference ?? inv.invoiceNumber,
+          } as unknown as Payment;
+          setPayment(syntheticPayment);
+
+          if (inv.projectId) {
+            try {
+              const proj = await projectRepo.findById(inv.projectId);
+              setProject(proj);
+            } catch {
+              setProject(null);
+            }
           }
+        } else {
+          setPayment(null);
         }
-        // No standalone payment row for invoice-first navigation
-        setPayment(null);
-        setLinkedPayments([]);
         return;
       }
 

@@ -8,6 +8,8 @@ import TaskDetailsPage from '../tasks/TaskDetailsPage';
 import CreateTaskPage from '../tasks/CreateTaskPage';
 import EditTaskPage from '../tasks/EditTaskPage';
 import InvoiceDetailPage from '../invoices/InvoiceDetailPage';
+import PaymentDetails from '../payments/PaymentDetails';
+import { Payment } from '../../domain/entities/Payment';
 
 export type ProjectsStackParamList = {
   ProjectsList: undefined;
@@ -21,6 +23,13 @@ export type ProjectsStackParamList = {
   QuotationDetail: { quotationId: string };
   /** Pushed when user taps View/Mark Paid/Attach on an InvoiceCard in the Payments section */
   InvoiceDetail: { invoiceId: string; openMarkAsPaid?: boolean; openDocument?: boolean };
+  /** Pushed from Review Payment on a timeline card — mirrors PaymentsNavigator entry */
+  PaymentDetails: {
+    paymentId?: string;
+    syntheticRow?: Payment;
+    invoiceId?: string;
+    readOnly?: boolean;
+  };
 };
 
 const Stack = createNativeStackNavigator();
@@ -62,6 +71,11 @@ export default function ProjectsNavigator() {
       <Stack.Screen
         name="InvoiceDetail"
         component={InvoiceDetailPage}
+        options={{ presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="PaymentDetails"
+        component={PaymentDetails}
         options={{ presentation: 'card' }}
       />
     </Stack.Navigator>
