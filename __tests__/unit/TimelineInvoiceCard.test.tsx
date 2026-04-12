@@ -48,10 +48,7 @@ describe('TimelineInvoiceCard', () => {
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard
-          invoice={invoice}
-          onPress={noop}
-        />,
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} />,
       );
     });
     const texts = tree!.root.findAllByType('Text' as any);
@@ -64,9 +61,7 @@ describe('TimelineInvoiceCard', () => {
     const invoice = makeInvoice({ total: 4200, currency: 'AUD' });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
-      );
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} />);
     });
     const texts = tree!.root.findAllByType('Text' as any);
     const found = texts.some((t) => String(t.props.children).includes('4,200'));
@@ -78,9 +73,7 @@ describe('TimelineInvoiceCard', () => {
     const invoice = makeInvoice({ status: 'overdue' });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
-      );
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} />);
     });
     const texts = tree!.root.findAllByType('Text' as any);
     const found = texts.some((t) => String(t.props.children).toLowerCase().includes('overdue'));
@@ -92,9 +85,7 @@ describe('TimelineInvoiceCard', () => {
     const invoice = makeInvoice({ status: 'draft' });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
-      );
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} />);
     });
     const texts = tree!.root.findAllByType('Text' as any);
     const found = texts.some((t) => String(t.props.children).toLowerCase().includes('draft'));
@@ -106,42 +97,118 @@ describe('TimelineInvoiceCard', () => {
     const invoice = makeInvoice({ paymentStatus: 'partial' });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
-      tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={noop} />,
-      );
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} />);
     });
     const texts = tree!.root.findAllByType('Text' as any);
     const found = texts.some((t) => String(t.props.children).toLowerCase().includes('partial'));
     expect(found).toBe(true);
   });
 
-  // I6: tap card → onPress called
-  it('I6: calls onPress when the card is tapped', async () => {
+  // I8: root element has no onPress (card is not pressable)
+  it('I8: root element has no onPress handler', async () => {
     const invoice = makeInvoice();
-    const onPress = jest.fn();
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={onPress} testID="inv-card" />,
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} testID="inv-card" />,
       );
     });
-    const card = tree!.root.findByProps({ testID: 'inv-card' });
-    await act(async () => { card.props.onPress(); });
-    expect(onPress).toHaveBeenCalled();
+    const root = tree!.root.findByProps({ testID: 'inv-card' });
+    expect(root.props.onPress).toBeUndefined();
   });
 
-  // I7: tap Mark Paid → onMarkPaid called
-  it('I7: calls onMarkPaid when Mark Paid button is tapped', async () => {
+  // I9: Edit button is rendered for non-paid invoices
+  it('I9: Edit button is rendered for non-paid invoice', async () => {
+    const invoice = makeInvoice({ paymentStatus: 'unpaid' });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} testID="inv-card" />);
+    });
+    const editBtn = tree!.root.findByProps({ testID: 'invoice-action-edit' });
+    expect(editBtn).toBeTruthy();
+  });
+
+  // I10: tapping Edit calls onEdit
+  it('I10: tapping Edit button calls onEdit', async () => {
     const invoice = makeInvoice();
-    const onMarkPaid = jest.fn();
+    const onEdit = jest.fn();
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={onEdit} testID="inv-card" />);
+    });
+    const editBtn = tree!.root.findByProps({ testID: 'invoice-action-edit' });
+    await act(async () => { editBtn.props.onPress(); });
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  // I11: Review Payment button is rendered when onReviewPayment is provided
+  it('I11: Review Payment button is rendered when onReviewPayment is provided', async () => {
+    const invoice = makeInvoice({ paymentStatus: 'unpaid' });
     let tree: renderer.ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(
-        <TimelineInvoiceCard invoice={invoice} onPress={noop} onMarkPaid={onMarkPaid} testID="inv-card" />,
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} onReviewPayment={noop} testID="inv-card" />,
       );
     });
-    const markPaidBtn = tree!.root.findByProps({ testID: 'invoice-action-mark-paid' });
-    await act(async () => { markPaidBtn.props.onPress(); });
-    expect(onMarkPaid).toHaveBeenCalled();
+    const reviewBtn = tree!.root.findByProps({ testID: 'invoice-action-review-payment' });
+    expect(reviewBtn).toBeTruthy();
+  });
+
+  // I12: tapping Review Payment calls onReviewPayment
+  it('I12: tapping Review Payment calls onReviewPayment', async () => {
+    const invoice = makeInvoice();
+    const onReviewPayment = jest.fn();
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} onReviewPayment={onReviewPayment} testID="inv-card" />,
+      );
+    });
+    const reviewBtn = tree!.root.findByProps({ testID: 'invoice-action-review-payment' });
+    await act(async () => { reviewBtn.props.onPress(); });
+    expect(onReviewPayment).toHaveBeenCalledTimes(1);
+  });
+
+  // I13: Review Payment button is NOT rendered when onReviewPayment is omitted
+  it('I13: Review Payment button is not rendered when onReviewPayment is omitted', async () => {
+    const invoice = makeInvoice({ paymentStatus: 'unpaid' });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<TimelineInvoiceCard invoice={invoice} onEdit={noop} testID="inv-card" />);
+    });
+    const found = tree!.root.findAll((node) => node.props.testID === 'invoice-action-review-payment');
+    expect(found).toHaveLength(0);
+  });
+
+  // I14: Edit button renders before (left of) Review Payment in the DOM tree
+  it('I14: Edit button renders before Review Payment button in the tree', async () => {
+    const invoice = makeInvoice({ paymentStatus: 'unpaid' });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} onReviewPayment={noop} testID="inv-card" />,
+      );
+    });
+    const json = JSON.stringify(tree!.toJSON());
+    const editIdx = json.indexOf('"invoice-action-edit"');
+    const reviewIdx = json.indexOf('"invoice-action-review-payment"');
+    expect(editIdx).toBeGreaterThan(-1);
+    expect(reviewIdx).toBeGreaterThan(-1);
+    expect(editIdx).toBeLessThan(reviewIdx);
+  });
+
+  // I7 (updated): tapping Review Payment calls onReviewPayment (replaces old Mark Paid test)
+  it('I7: calls onReviewPayment when Review Payment button is tapped', async () => {
+    const invoice = makeInvoice();
+    const onReviewPayment = jest.fn();
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <TimelineInvoiceCard invoice={invoice} onEdit={noop} onReviewPayment={onReviewPayment} testID="inv-card" />,
+      );
+    });
+    const reviewBtn = tree!.root.findByProps({ testID: 'invoice-action-review-payment' });
+    await act(async () => { reviewBtn.props.onPress(); });
+    expect(onReviewPayment).toHaveBeenCalled();
   });
 });

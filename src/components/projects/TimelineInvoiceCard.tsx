@@ -65,10 +65,10 @@ function PaymentStatusChip({ status }: { status: Invoice['paymentStatus'] }) {
 
 export interface TimelineInvoiceCardProps {
   invoice: Invoice;
-  /** Navigate to PaymentDetails screen */
-  onPress: () => void;
-  /** When defined, shows the Mark Paid button; omit for already-paid invoices */
-  onMarkPaid?: () => void;
+  /** Navigates to InvoiceDetail for editing */
+  onEdit: () => void;
+  /** When provided, shows the Review Payment button */
+  onReviewPayment?: () => void;
   testID?: string;
 }
 
@@ -76,8 +76,8 @@ export interface TimelineInvoiceCardProps {
 
 export function TimelineInvoiceCard({
   invoice,
-  onPress,
-  onMarkPaid,
+  onEdit,
+  onReviewPayment,
   testID,
 }: TimelineInvoiceCardProps) {
   const issuerLabel =
@@ -97,11 +97,9 @@ export function TimelineInvoiceCard({
     : isPaid ? 'Paid' : null;
 
   return (
-    <Pressable
+    <View
       testID={testID ?? `invoice-card-${invoice.id}`}
-      onPress={onPress}
-      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden active:opacity-80"
-      accessibilityRole="button"
+      className="ml-4 mb-3 bg-card border border-border rounded-xl overflow-hidden"
     >
       {/* Amber left-border accent */}
       <View className="flex-row">
@@ -151,21 +149,30 @@ export function TimelineInvoiceCard({
             </Text>
           ) : null}
 
-          {/* Mark Paid action — shown only for pending invoices */}
-          {onMarkPaid ? (
-            <View className="pt-2 mt-2 border-t border-border/50">
+          {/* Action row — shown only for non-paid invoices */}
+          {!isPaid ? (
+            <View className="pt-2 mt-2 border-t border-border/50 flex-row gap-2">
               <Pressable
-                testID="invoice-action-mark-paid"
-                onPress={(e) => { e?.stopPropagation?.(); onMarkPaid(); }}
+                testID="invoice-action-edit"
+                onPress={onEdit}
                 className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
               >
-                <CheckCircle size={12} className="text-muted-foreground" />
-                <Text className="text-xs font-medium text-foreground">Mark Paid</Text>
+                <Text className="text-xs font-medium text-foreground">Edit</Text>
               </Pressable>
+              {onReviewPayment ? (
+                <Pressable
+                  testID="invoice-action-review-payment"
+                  onPress={onReviewPayment}
+                  className="flex-row items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg self-start"
+                >
+                  <CheckCircle size={12} className="text-muted-foreground" />
+                  <Text className="text-xs font-medium text-foreground">Review Payment</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
