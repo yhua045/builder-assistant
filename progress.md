@@ -1,4 +1,66 @@
-# Project Progress — Summary (updated 2026-04-10)
+# Project Progress — Summary (updated 2026-04-20)
+
+## ✅ LLM Quotation Parser Feature — Enhanced Quotation Extraction & Form Population
+**Status**: COMPLETED  
+**Branch**: `feature/llm-quotation-parser`  
+**Date Completed**: 2026-04-20
+
+### Changes Made
+- **New Domain/Application Layer**:
+  - `src/application/ai/IQuotationParsingStrategy.ts`: Strategy interface + `NormalizedQuotation` type (supplier, items, totals)
+  - `src/application/ai/QuotationParserFactory.ts`: Config-driven factory for strategy creation (Groq LLM)
+  - `src/application/usecases/quotation/ProcessQuotationUploadUseCase.ts`: Quotation-specific upload pipeline (OCR → parsing → form mapping)
+
+- **New Infrastructure/Utils**:
+  - `src/infrastructure/ai/LlmQuotationParser.ts`: Groq-powered LLM parser (follows GroqTranscriptParser pattern)
+  - `src/utils/normalizedQuotationToFormValues.ts`: Maps `NormalizedQuotation` → `Partial<Quotation>` form values
+
+- **UI Integration**:
+  - `src/pages/quotations/QuotationScreen.tsx`: Replaced `IInvoiceNormalizer` with `IQuotationParsingStrategy`; uses `ProcessQuotationUploadUseCase` + form mapping
+  - `src/pages/dashboard/index.tsx`: Creates `LlmQuotationParser` via `useMemo` with `GROQ_API_KEY`; passes to `QuotationScreen` with OCR adapter + PDF converter
+
+- **Test Coverage**:
+  - **New Unit Tests**: `LlmQuotationParser.test.ts`, `QuotationParserFactory.test.ts`, `ProcessQuotationUploadUseCase.test.ts`, `normalizedQuotationToFormValues.test.ts` (36 new assertions)
+  - **Updated**: `QuotationScreen.upload.test.tsx` (mocks updated from `IInvoiceNormalizer` to `IQuotationParsingStrategy`)
+  - **Test Results**: 223 suites (+4 new), 1465 tests passed (+36 new), 0 failures
+
+- **Verification**:
+  - **ESLint**: `npm run lint` passes with **0 errors** (77 pre-existing warnings unchanged)
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode)
+  - **Test Suite**: All 1465 tests passing
+
+### Acceptance Criteria
+All criteria met:
+- ✅ `IQuotationParsingStrategy` interface defined with `parse()` method
+- ✅ `LlmQuotationParser` implements strategy using Groq API
+- ✅ `ProcessQuotationUploadUseCase` handles full quotation extraction pipeline
+- ✅ `normalizedQuotationToFormValues` maps extracted data to Quotation form
+- ✅ QuotationScreen integrates new strategy via dependency injection
+- ✅ Dashboard creates parser and injects dependencies correctly
+- ✅ All 36 new test assertions passing
+- ✅ ESLint: 0 errors; TypeScript: strict mode passes
+- ✅ 1465 tests passing (including 36 new test cases)
+
+### Files Added (9)
+- `src/application/ai/IQuotationParsingStrategy.ts`
+- `src/infrastructure/ai/LlmQuotationParser.ts`
+- `src/application/ai/QuotationParserFactory.ts`
+- `src/application/usecases/quotation/ProcessQuotationUploadUseCase.ts`
+- `src/utils/normalizedQuotationToFormValues.ts`
+- `__tests__/unit/LlmQuotationParser.test.ts`
+- `__tests__/unit/QuotationParserFactory.test.ts`
+- `__tests__/unit/ProcessQuotationUploadUseCase.test.ts`
+- `__tests__/unit/normalizedQuotationToFormValues.test.ts`
+
+### Files Modified (3)
+- `src/pages/quotations/QuotationScreen.tsx`
+- `src/pages/dashboard/index.tsx`
+- `__tests__/unit/QuotationScreen.upload.test.tsx`
+
+### Design Doc
+- `design/quotation-ocr-enhancement.md`
+
+---
 
 ## ✅ Issue #205 — Fix TimelineInvoiceCard / TimelinePaymentCard — Add Edit Button, Remove Card-tap, Rename CTA
 **Status**: COMPLETED  

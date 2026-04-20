@@ -11,7 +11,7 @@ import { useQuotations } from '../../src/hooks/useQuotations';
 import { IFilePickerAdapter, FilePickerResult } from '../../src/infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
 import { IOcrAdapter } from '../../src/application/services/IOcrAdapter';
-import { IInvoiceNormalizer, NormalizedInvoice } from '../../src/application/ai/IInvoiceNormalizer';
+import { IQuotationParsingStrategy, NormalizedQuotation } from '../../src/application/ai/IQuotationParsingStrategy';
 
 jest.mock('../../src/hooks/useQuotations');
 // Mock pickers so SubcontractorPickerModal / ProjectPickerModal don't require
@@ -54,18 +54,26 @@ function makeFileSystem(): IFileSystemAdapter {
   };
 }
 
-function makeNormalizedInvoice(): NormalizedInvoice {
+function makeNormalizedQuotation(): NormalizedQuotation {
   return {
+    reference: 'Q-001',
     vendor: 'Builder Co',
-    invoiceNumber: 'Q-001',
-    invoiceDate: new Date('2026-03-01'),
-    dueDate: new Date('2026-04-01'),
+    vendorEmail: null,
+    vendorPhone: null,
+    vendorAddress: null,
+    taxId: null,
+    date: new Date('2026-03-01'),
+    expiryDate: new Date('2026-04-01'),
+    currency: 'AUD',
     subtotal: 1000,
     tax: 100,
     total: 1100,
-    currency: 'AUD',
     lineItems: [],
-    confidence: { overall: 0.9, vendor: 0.9, invoiceNumber: 0.8, invoiceDate: 0.9, total: 0.95 },
+    paymentTerms: null,
+    scope: null,
+    exclusions: null,
+    notes: null,
+    confidence: { overall: 0.9, vendor: 0.9, reference: 0.8, date: 0.9, total: 0.95 },
     suggestedCorrections: [],
   };
 }
@@ -80,20 +88,11 @@ function makeOcrAdapter(): IOcrAdapter {
   };
 }
 
-function makeInvoiceNormalizer(normalized?: NormalizedInvoice): IInvoiceNormalizer {
-  const n = normalized ?? makeNormalizedInvoice();
+function makeQuotationParser(normalized?: NormalizedQuotation): IQuotationParsingStrategy {
+  const n = normalized ?? makeNormalizedQuotation();
   return {
-    extractCandidates: jest.fn().mockReturnValue({
-      vendors: ['Builder Co'],
-      invoiceNumbers: ['Q-001'],
-      dates: [new Date('2026-03-01')],
-      dueDates: [],
-      amounts: [1100],
-      subtotals: [],
-      taxAmounts: [],
-      lineItems: [],
-    }),
-    normalize: jest.fn().mockResolvedValue(n),
+    strategyType: 'llm',
+    parse: jest.fn().mockResolvedValue(n),
   };
 }
 
@@ -226,7 +225,7 @@ describe('QuotationScreen — upload UX', () => {
       const filePicker = makeFilePicker({ type: 'image/jpeg', name: 'quote.jpg' });
     const fileSystem = makeFileSystem();
     const ocrAdapter = makeOcrAdapter();
-    const invoiceNormalizer = makeInvoiceNormalizer();
+    const parsingStrategy = makeQuotationParser();
 
     let tr: renderer.ReactTestRenderer | undefined;
     await act(async () => {
@@ -237,7 +236,7 @@ describe('QuotationScreen — upload UX', () => {
           filePickerAdapter={filePicker}
           fileSystemAdapter={fileSystem}
           ocrAdapter={ocrAdapter}
-          invoiceNormalizer={invoiceNormalizer}
+          parsingStrategy={parsingStrategy}
         />
       );
     });
@@ -258,7 +257,7 @@ describe('QuotationScreen — upload UX', () => {
     const ocrAdapter: IOcrAdapter = {
       extractText: jest.fn().mockRejectedValue(new Error('OCR service unavailable')),
     };
-    const invoiceNormalizer = makeInvoiceNormalizer();
+    const parsingStrategy = makeQuotationParser();
 
     let tr: renderer.ReactTestRenderer | undefined;
     await act(async () => {
@@ -269,7 +268,7 @@ describe('QuotationScreen — upload UX', () => {
           filePickerAdapter={filePicker}
           fileSystemAdapter={fileSystem}
           ocrAdapter={ocrAdapter}
-          invoiceNormalizer={invoiceNormalizer}
+          parsingStrategy={parsingStrategy}
         />
       );
     });

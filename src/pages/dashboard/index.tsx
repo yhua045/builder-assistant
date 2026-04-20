@@ -15,6 +15,8 @@ import { QuotationScreen } from '../quotations/QuotationScreen';
 import { MobileOcrAdapter } from '../../infrastructure/ocr/MobileOcrAdapter';
 import { InvoiceNormalizer } from '../../application/ai/InvoiceNormalizer';
 import { PdfThumbnailConverter } from '../../infrastructure/files/PdfThumbnailConverter';
+import { LlmQuotationParser } from '../../infrastructure/ai/LlmQuotationParser';
+import { GROQ_API_KEY } from '@env';
 
 type DashboardNavigationProp = any;
 
@@ -40,6 +42,10 @@ export default function DashboardScreen() {
   const invoiceOcrAdapter = useMemo(() => new MobileOcrAdapter(), []);
   const invoiceNormalizer = useMemo(() => new InvoiceNormalizer(), []);
   const invoicePdfConverter = useMemo(() => new PdfThumbnailConverter(), []);
+  const quotationParser = useMemo(
+    () => (GROQ_API_KEY ? new LlmQuotationParser(GROQ_API_KEY) : undefined),
+    [],
+  );
 
   const handleQuickAction = (actionId: string) => {
     setShowQuickActions(false);
@@ -221,6 +227,9 @@ export default function DashboardScreen() {
         visible={showQuotation}
         onClose={() => setShowQuotation(false)}
         onSuccess={() => {}}
+        ocrAdapter={invoiceOcrAdapter}
+        pdfConverter={invoicePdfConverter}
+        parsingStrategy={quotationParser}
       />
     </SafeAreaView>
   );
