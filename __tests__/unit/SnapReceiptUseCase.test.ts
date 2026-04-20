@@ -163,10 +163,13 @@ describe('SnapReceiptUseCase', () => {
                 vendor: 'Home Depot',
                 date: new Date('2026-02-10'),
                 total: 100.00,
+                subtotal: 100.00,
                 tax: null,
                 currency: 'USD',
+                paymentMethod: null,
                 receiptNumber: null,
                 lineItems: [],
+                notes: null,
                 confidence: { overall: 0.8, vendor: 0.9, date: 0.8, total: 0.9 },
                 suggestedCorrections: []
             };
@@ -195,10 +198,13 @@ describe('SnapReceiptUseCase', () => {
                 vendor: 'Home Depot',
                 date: new Date('2026-02-10'),
                 total: 100.00,
+                subtotal: 90.00,
                 tax: 10.00,
                 currency: 'USD',
+                paymentMethod: 'card',
                 receiptNumber: 'INV-123',
                 lineItems: [],
+                notes: null,
                 confidence: { overall: 0.8, vendor: 0.9, date: 0.8, total: 0.9 },
                 suggestedCorrections: ['Check tax amount']
             };

@@ -57,10 +57,13 @@ export class NoOpReceiptNormalizer implements IReceiptNormalizer {
       vendor,
       date,
       total,
+      subtotal: null,
       tax,
-      currency: 'USD',  // Default
+      currency: 'AUD',
+      paymentMethod: null,
       receiptNumber,
       lineItems,
+      notes: null,
       confidence,
       suggestedCorrections
     };
