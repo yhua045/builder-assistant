@@ -13,12 +13,12 @@ import { MobileFileSystemAdapter } from '../../infrastructure/files/MobileFileSy
 import { validatePdfFile } from '../../utils/fileValidation';
 import { PdfFileMetadata } from '../../types/PdfFileMetadata';
 import { IOcrAdapter } from '../../application/services/IOcrAdapter';
-import { IInvoiceNormalizer } from '../../application/ai/IInvoiceNormalizer';
+import { IQuotationParsingStrategy } from '../../application/ai/IQuotationParsingStrategy';
 import {
-  ProcessInvoiceUploadUseCase,
-} from '../../application/usecases/invoice/ProcessInvoiceUploadUseCase';
+  ProcessQuotationUploadUseCase,
+} from '../../application/usecases/quotation/ProcessQuotationUploadUseCase';
 import { IPdfConverter } from '../../infrastructure/files/IPdfConverter';
-import { normalizedInvoiceToQuotationFormValues } from '../../utils/normalizedInvoiceToQuotationFormValues';
+import { normalizedQuotationToFormValues } from '../../utils/normalizedQuotationToFormValues';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
@@ -32,8 +32,8 @@ interface Props {
   filePickerAdapter?: IFilePickerAdapter;
   fileSystemAdapter?: IFileSystemAdapter;
   ocrAdapter?: IOcrAdapter;
-  invoiceNormalizer?: IInvoiceNormalizer;
   pdfConverter?: IPdfConverter;
+  parsingStrategy?: IQuotationParsingStrategy;
 }
 
 export const QuotationScreen: React.FC<Props> = ({
@@ -43,8 +43,8 @@ export const QuotationScreen: React.FC<Props> = ({
   filePickerAdapter,
   fileSystemAdapter,
   ocrAdapter,
-  invoiceNormalizer,
   pdfConverter,
+  parsingStrategy,
 }) => {
   const { createQuotation, loading } = useQuotations();
 
@@ -57,9 +57,9 @@ export const QuotationScreen: React.FC<Props> = ({
   const filePicker = filePickerAdapter ?? new MobileFilePickerAdapter();
   const fileSystem = fileSystemAdapter ?? new MobileFileSystemAdapter();
 
-  const buildUseCase = (): ProcessInvoiceUploadUseCase | null => {
-    if (ocrAdapter && invoiceNormalizer) {
-      return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter);
+  const buildUseCase = (): ProcessQuotationUploadUseCase | null => {
+    if (ocrAdapter && parsingStrategy) {
+      return new ProcessQuotationUploadUseCase(ocrAdapter, parsingStrategy, pdfConverter);
     }
     return null;
   };
@@ -83,7 +83,7 @@ export const QuotationScreen: React.FC<Props> = ({
         fileSize: pdfFile.size,
       });
 
-      const initialValues = normalizedInvoiceToQuotationFormValues(output.normalized);
+      const initialValues = normalizedQuotationToFormValues(output.normalized);
       setFormInitialValues(initialValues);
       setFormPdfFile(pdfFile);
       setProcessingStep('idle');
