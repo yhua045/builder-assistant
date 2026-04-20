@@ -1,6 +1,10 @@
 module.exports = {
   preset: 'react-native',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    // Map the Babel virtual module @env to a manual mock so Jest can resolve it
+    '^@env$': '<rootDir>/__mocks__/@env.js',
+  },
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@react-navigation|@react-native-async-storage|@react-native-ml-kit|react-native-image-picker|react-native-nitro-sound|react-native-permissions|nativewind|react-native-css-interop|lucide-react-native)/)',
   ],

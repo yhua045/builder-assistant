@@ -1,25 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { useProjectsOverview } from '../../hooks/useProjectsOverview';
 import { ProjectOverviewCard } from './components/ProjectOverviewCard';
 import HeroSection from './components/HeroSection';
 import { Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CommonActions } from '@react-navigation/native';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
-import { MobileOcrAdapter } from '../../infrastructure/ocr/MobileOcrAdapter';
-import { InvoiceNormalizer } from '../../application/ai/InvoiceNormalizer';
-import { PdfThumbnailConverter } from '../../infrastructure/files/PdfThumbnailConverter';
-import { LlmQuotationParser } from '../../infrastructure/ai/LlmQuotationParser';
-import { LlmReceiptParser } from '../../infrastructure/ai/LlmReceiptParser';
-import { GROQ_API_KEY } from '@env';
-
-type DashboardNavigationProp = any;
+import TaskScreen from '../tasks/TaskScreen';
+import { useDashboard } from '../../hooks/useDashboard';
 
 const quickActions = [
   { id: '1', title: 'Snap Receipt', icon: Camera, color: 'bg-chart-1' },
@@ -30,62 +21,7 @@ const quickActions = [
 ];
 
 export default function DashboardScreen() {
-  const { data: overviews, isLoading, error } = useProjectsOverview();
-  const navigation = useNavigation<DashboardNavigationProp>();
-
-  const [createKey, setCreateKey] = useState(0);
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showSnapReceipt, setShowSnapReceipt] = useState(false);
-  const [showAddInvoice, setShowAddInvoice] = useState(false);
-  const [showAdHocTask, setShowAdHocTask] = useState(false);
-  const [showQuotation, setShowQuotation] = useState(false);
-
-  const invoiceOcrAdapter = useMemo(() => new MobileOcrAdapter(), []);
-  const invoiceNormalizer = useMemo(() => new InvoiceNormalizer(), []);
-  const invoicePdfConverter = useMemo(() => new PdfThumbnailConverter(), []);
-  const quotationParser = useMemo(
-    () => (GROQ_API_KEY ? new LlmQuotationParser(GROQ_API_KEY) : undefined),
-    [],
-  );
-
-  const receiptParser = useMemo(
-    () => (GROQ_API_KEY ? new LlmReceiptParser(GROQ_API_KEY) : undefined),
-    [],
-  );
-
-  const handleQuickAction = (actionId: string) => {
-    setShowQuickActions(false);
-    if (actionId === '1') {
-      setShowSnapReceipt(true);
-    } else if (actionId === '2') {
-      setShowAddInvoice(true);
-    } else if (actionId === '3') {
-      // TODO: Log Payment
-    } else if (actionId === '4') {
-      setShowQuotation(true);
-    } else if (actionId === '5') {
-      setShowAdHocTask(true);
-    }
-  };
-
-  const hasProjects = (overviews?.length ?? 0) > 0;
-
-  const navigateToProject = (projectId: string) => {
-    // Dispatch the full stack state so ProjectsList is always the base screen.
-    // A plain navigate('Projects', { screen: 'ProjectDetail' }) only targets the
-    // leaf screen and can leave the stack as [ProjectDetail] with no base,
-    // causing the back button to jump to the Dashboard tab instead of ProjectsList.
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Projects',
-        params: {
-          screen: 'ProjectDetail',
-          params: { projectId },
-          initial: false,
-        },
-      }),
-    );
-  };
+  const vm = useDashboard();
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -102,32 +38,32 @@ export default function DashboardScreen() {
 
       {/* eslint-disable-next-line react-native/no-inline-styles */}
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-        {isLoading && (
+        {vm.isLoading && (
           <View className="px-6 mt-4">
             <Text className="text-muted-foreground">Loading projects...</Text>
           </View>
         )}
 
-        {error && (
+        {vm.error && (
           <View className="px-6 mt-4 p-4 bg-destructive/10 rounded-xl">
             <Text className="text-destructive">Failed to load overview data</Text>
           </View>
         )}
 
-        {!isLoading && !error && !hasProjects && (
-          <HeroSection onManualEntry={() => setCreateKey(k => k + 1)} />
+        {!vm.isLoading && !vm.error && !vm.hasProjects && (
+          <HeroSection onManualEntry={vm.onManualEntry} />
         )}
 
-        {!isLoading && !error && hasProjects && overviews && (
+        {!vm.isLoading && !vm.error && vm.hasProjects && vm.overviews && (
           <View className="px-6 mt-2">
              <Text className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-               Active Projects ({overviews.length})
+               {`Active Projects (${vm.overviews.length})`}
              </Text>
-            {overviews.map(overview => (
+            {vm.overviews.map(overview => (
               <ProjectOverviewCard
                 key={overview.project.id}
                 overview={overview}
-                onPress={() => navigateToProject(overview.project.id)}
+                onPress={() => vm.navigateToProject(overview.project.id)}
               />
             ))}
           </View>
@@ -135,12 +71,13 @@ export default function DashboardScreen() {
       </ScrollView>
 
       {/* Always-mounted ManualProjectEntry — survives hasProjects transition so step 2 task selection is not lost */}
-      <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
+      <ManualProjectEntry key={vm.createKey} initialVisible={vm.createKey > 0} hideButton />
 
       {/* Quick Actions - Floating Action Button */}
       <View className="absolute bottom-24 right-6">
         <Pressable
-          onPress={() => setShowQuickActions(true)}
+          testID="quick-actions-fab"
+          onPress={vm.openQuickActions}
           className="bg-primary rounded-full w-16 h-16 items-center justify-center shadow-lg active:opacity-80"
         >
           <Plus className="text-primary-foreground" size={28} />
@@ -149,15 +86,15 @@ export default function DashboardScreen() {
 
       {/* Quick Actions Modal */}
       <Modal
-        visible={showQuickActions}
+        visible={vm.showQuickActions}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowQuickActions(false)}
+        onRequestClose={vm.closeQuickActions}
       >
         <Pressable 
           className="flex-1 justify-end"
           style={styles.modalBackdrop}
-          onPress={() => setShowQuickActions(false)}
+          onPress={vm.closeQuickActions}
         >
           <Pressable 
             style={styles.modalContainer}
@@ -166,7 +103,7 @@ export default function DashboardScreen() {
           >
             <View className="flex-row items-center justify-between mb-6">
               <Text className="text-xl font-bold text-foreground">Quick Actions</Text>
-              <Pressable onPress={() => setShowQuickActions(false)}>
+              <Pressable onPress={vm.closeQuickActions}>
                 <X className="text-muted-foreground" size={24} />
               </Pressable>
             </View>
@@ -177,7 +114,7 @@ export default function DashboardScreen() {
                 return (
                   <Pressable
                     key={action.id}
-                    onPress={() => handleQuickAction(action.id)}
+                    onPress={() => vm.handleQuickAction(action.id)}
                     className="bg-card border border-border rounded-xl p-4 flex-row items-center active:opacity-70"
                   >
                     <View className={`${action.color}/10 p-3 rounded-lg mr-4`}>
@@ -196,50 +133,47 @@ export default function DashboardScreen() {
 
       {/* Snap Receipt Modal */}
       <Modal
-        visible={showSnapReceipt}
+        visible={vm.showSnapReceipt}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowSnapReceipt(false)}
+        onRequestClose={vm.closeSnapReceipt}
       >
         <SnapReceiptScreen
-          onClose={() => setShowSnapReceipt(false)}
+          onClose={vm.closeSnapReceipt}
           enableOcr={true}
-          receiptParsingStrategy={receiptParser}
+          receiptParsingStrategy={vm.receiptParser}
         />
       </Modal>
 
       {/* Add Invoice Modal */}
       <Modal
-        visible={showAddInvoice}
+        visible={vm.showAddInvoice}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowAddInvoice(false)}
+        onRequestClose={vm.closeAddInvoice}
         testID="add-invoice-modal"
       >
         <InvoiceScreen
-          onClose={() => setShowAddInvoice(false)}
-          ocrAdapter={invoiceOcrAdapter}
-          invoiceNormalizer={invoiceNormalizer}
-          pdfConverter={invoicePdfConverter}
+          onClose={vm.closeAddInvoice}
+          ocrAdapter={vm.invoiceOcrAdapter}
+          invoiceNormalizer={vm.invoiceNormalizer}
+          pdfConverter={vm.invoicePdfConverter}
         />
       </Modal>
 
       {/* Ad Hoc Task (TaskScreen manages its own Modal) */}
-      {showAdHocTask && (
-        (() => {
-          const TaskScreen = require('../tasks/TaskScreen').default;
-          return <TaskScreen onClose={() => setShowAdHocTask(false)} />;
-        })()
+      {vm.showAdHocTask && (
+        <TaskScreen onClose={vm.closeAdHocTask} />
       )}
 
       {/* Quotation Modal */}
       <QuotationScreen
-        visible={showQuotation}
-        onClose={() => setShowQuotation(false)}
+        visible={vm.showQuotation}
+        onClose={vm.closeQuotation}
         onSuccess={() => {}}
-        ocrAdapter={invoiceOcrAdapter}
-        pdfConverter={invoicePdfConverter}
-        parsingStrategy={quotationParser}
+        ocrAdapter={vm.invoiceOcrAdapter}
+        pdfConverter={vm.invoicePdfConverter}
+        parsingStrategy={vm.quotationParser}
       />
     </SafeAreaView>
   );

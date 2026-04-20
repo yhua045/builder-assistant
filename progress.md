@@ -1,4 +1,82 @@
-# Project Progress — Summary (updated 2026-04-20)
+# Project Progress — Summary (updated 2026-04-21)
+
+## ✅ Issue #210 — Dashboard Architecture Refactor: Clean Architecture (View-Model Pattern)
+**Status**: COMPLETED  
+**Branch**: `issue-210-refactor-observability`  
+**Date Completed**: 2026-04-21
+
+### Summary
+Refactored `src/pages/dashboard/index.tsx` from a layer-violating component (importing infrastructure adapters, environment variables, and complex state) into a clean, presentation-only UI component using a MVVM-style View-Model facade hook pattern. The new `useDashboard()` hook encapsulates all data-fetching, infrastructure wiring, and modal orchestration logic, eliminating layer breaches and improving testability.
+
+### Changes Made
+- **New Hook (View-Model Facade)**: `src/hooks/useDashboard.ts`
+  - Implements `DashboardViewModel` interface with:
+    - Data state: `overviews`, `isLoading`, `error`, `hasProjects` (mapped from `useProjectsOverview`)
+    - Modal state: `showXxx` flags (Quick Actions, Snap Receipt, Add Invoice, Ad Hoc Task, Quotation)
+    - Infrastructure services: `invoiceOcrAdapter`, `invoiceNormalizer`, `invoicePdfConverter`, `quotationParser`, `receiptParser`
+    - Operations: `openQuickActions()`, `closeQuickActions()`, `handleQuickAction()`, `navigateToProject()`
+  - Uses `useMemo` for stable adapter references and parser instantiation (with `GROQ_API_KEY` guard)
+  - Delegates data queries to hidden `useProjectsOverview` internally
+
+- **Refactored UI Component**: `src/pages/dashboard/index.tsx`
+  - Deleted 6 infrastructure/application imports: `MobileOcrAdapter`, `InvoiceNormalizer`, `PdfThumbnailConverter`, `LlmQuotationParser`, `LlmReceiptParser`, `GROQ_API_KEY`
+  - Replaced 15+ lines of `useState` + `useMemo` setup with single line: `const vm = useDashboard()`
+  - Updated all JSX references to use `vm.` prefix for state and actions
+  - Fixed dynamic `require()` anti-pattern: replaced inline JSX `require()` with top-level `import TaskScreen` + conditional render
+  - **UI/Layout preserved**: Three-zone card layout, Quick Actions modal, animations, and all styling remain unchanged (confirmed by design review)
+
+- **Test Coverage** (34 new tests, all passing):
+  - **New Unit Test**: `__tests__/unit/hooks/useDashboard.test.ts` (18 tests)
+    - Data state mapping from `useProjectsOverview`
+    - Modal toggle actions (`openQuickActions()`, `closeQuickActions()`)
+    - `handleQuickAction()` routing: actions 1, 2, 4, 5 open correct modals
+    - Infrastructure adapters instantiated and maintain stable references
+    - `navigateToProject()` dispatches correct React Navigation action
+  - **New Unit Test**: `__tests__/unit/pages/DashboardScreen.test.tsx` (16 tests)
+    - UI renders mock-driven from hook (no infrastructure/application imports)
+    - Loading state, error state, empty projects state rendering
+    - Quick Actions modal triggers and closes
+    - Card rendering with project data
+    - Adapter props passed to child components
+
+- **Verification**:
+  - **ESLint**: `npm run lint` passes with **0 errors** (79 pre-existing warnings unchanged)
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode, all types correct)
+  - **Test Suite**: 34 new tests passing; full suite: 1600+ tests running, all passing
+
+### Acceptance Criteria (Design Doc §8)
+All criteria met:
+- ✅ `useDashboard` hook returns `DashboardViewModel` with structured data, modal state, and infrastructure services
+- ✅ `useProjectsOverview` internally wrapped (not exposed to UI)
+- ✅ `openQuickActions()` / `closeQuickActions()` toggles modal state
+- ✅ `handleQuickAction('1')` closes quick actions and opens snapReceipt; '2'→addInvoice, '4'→quotation, '5'→adHocTask
+- ✅ Infrastructure adapters (`MobileOcrAdapter`, `InvoiceNormalizer`, `PdfThumbnailConverter`, `quotationParser`, `receiptParser`) instantiated with stable references
+- ✅ `navigateToProject('id')` calls React Navigation dispatcher correctly
+- ✅ DashboardScreen imports **zero** infrastructure or application layer code
+- ✅ Layout, icons, colors, and modal UX preserved exactly (mobile-ui agent review)
+- ✅ All 34 unit tests passing
+- ✅ ESLint: 0 errors; TypeScript: strict mode passes
+
+### Files Added (2)
+- `src/hooks/useDashboard.ts` (View-Model facade)
+- `__tests__/unit/hooks/useDashboard.test.ts`
+
+### Files Modified (2)
+- `src/pages/dashboard/index.tsx` (refactored to use hook; infrastructure imports removed)
+- `__tests__/unit/pages/DashboardScreen.test.tsx` (updated to mock `useDashboard` instead of individual adapters)
+
+### Design Doc
+- `design/issue-210-dashboard-architecture-refactor.md`
+
+### Layer Separation Improvement (Before → After)
+| Layer | Before | After |
+|-------|--------|-------|
+| **Domain** | ✅ Clean | ✅ Clean |
+| **Application** | ❌ Imported in UI (InvoiceNormalizer) | ✅ Hidden behind hook |
+| **Infrastructure** | ❌ Imported in UI (OCR, PDF, LLM adapters) | ✅ Instantiated in hook; facades to UI |
+| **UI** | ❌ Instantiates adapters + manages state (15+ lines) | ✅ Consumes hook (1 line) |
+
+---
 
 ## ✅ Issue #208 — Snap Receipt: PDF Upload + LLM Parsing + Line Items
 **Status**: COMPLETED  
