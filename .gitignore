@@ -76,6 +76,7 @@ test_output*.txt
 !.yarn/sdks
 !.yarn/versions
 worktrees/
+worktree/
 
 # Xcode build logs and activity bundles
 xcodebuild.log
