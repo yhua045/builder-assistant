@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SnapReceiptDTO, ReceiptLineItemDTO } from '../../application/usecases/receipt/SnapReceiptUseCase';
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
 import { CheckCircle, AlertCircle, AlertTriangle, X, Plus } from 'lucide-react-native';
 import OptionList from '../inputs/OptionList';
-
 import { ContractorLookupField } from '../inputs/ContractorLookupField';
+import { ProjectPickerModal } from '../shared/ProjectPickerModal';
+import { Project } from '../../domain/entities/Project';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;
@@ -15,6 +16,8 @@ interface ReceiptFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   isProcessing?: boolean;  // OCR is running
+  /** Pre-selected projectId (e.g. when opened from ProjectDetail) */
+  projectId?: string;
 }
 
 const PAYMENT_METHODS = [
@@ -30,10 +33,28 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
   onSubmit, 
   onCancel, 
   isLoading,
-  isProcessing 
+  isProcessing,
+  projectId: propProjectId,
 }) => {
   const [vendor, setVendor] = useState(initialValues?.vendor || '');
   const [vendorId, setVendorId] = useState('');
+
+  // ── Project picker state ─────────────────────────────────────────────────
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
+    initialValues?.projectId ?? propProjectId ?? undefined,
+  );
+  const [selectedProjectName, setSelectedProjectName] = useState<string | undefined>(undefined);
+  const [projectPickerVisible, setProjectPickerVisible] = useState(false);
+
+  const handleProjectSelect = (project: Project | undefined) => {
+    if (project) {
+      setSelectedProjectId(project.id);
+      setSelectedProjectName(project.name);
+    } else {
+      setSelectedProjectId(undefined);
+      setSelectedProjectName(undefined);
+    }
+  };
   const [amount, setAmount] = useState(initialValues?.amount?.toString() || '');
   const [date, setDate] = useState<Date | null>(initialValues?.date ? new Date(initialValues.date) : new Date());
   const [paymentMethod, setPaymentMethod] = useState<string>(initialValues?.paymentMethod || 'card');
@@ -132,6 +153,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         amount: parseFloat(amount),
         date: date!.toISOString(),
         paymentMethod: paymentMethod as any,
+        projectId: selectedProjectId,
         notes,
         currency: 'AUD', // Default
         lineItems: lineItems.length > 0 ? lineItems : undefined,
@@ -172,7 +194,22 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
           ))}
         </View>
       )}
-      
+
+      {/* Project Picker */}
+      <View className="mb-4">
+        <Text className="font-medium text-foreground mb-2">Project (optional)</Text>
+        <TouchableOpacity
+          testID="receipt-project-picker-row"
+          onPress={() => setProjectPickerVisible(true)}
+          className="border border-input rounded-xl p-4 bg-card flex-row items-center justify-between"
+        >
+          <Text className={selectedProjectId ? 'text-foreground text-base' : 'text-muted-foreground text-base'}>
+            {selectedProjectName ?? (selectedProjectId ? selectedProjectId : 'Select a project')}
+          </Text>
+          <Text className="text-muted-foreground text-xs">▾</Text>
+        </TouchableOpacity>
+      </View>
+
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
           {/* Label is handled by ContractorLookupField if we want, but we have OCR confidence icons here */}
@@ -371,6 +408,13 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
           </Text>
         </Pressable>
       </View>
+      {/* Project Picker Modal */}
+      <ProjectPickerModal
+        visible={projectPickerVisible}
+        currentProjectId={selectedProjectId}
+        onSelect={handleProjectSelect}
+        onClose={() => setProjectPickerVisible(false)}
+      />
     </ScrollView>
   );
 };

@@ -6,9 +6,18 @@ import { NormalizedReceipt } from '../application/receipt/IReceiptNormalizer';
 import { MobileOcrAdapter } from '../infrastructure/ocr/MobileOcrAdapter';
 import { ReceiptFieldParser } from '../application/receipt/ReceiptFieldParser';
 import { DeterministicReceiptNormalizer } from '../application/receipt/DeterministicReceiptNormalizer';
+import { IReceiptParsingStrategy } from '../application/receipt/IReceiptParsingStrategy';
+import {
+    ProcessReceiptUploadUseCase,
+    ProcessReceiptUploadInput,
+} from '../application/usecases/receipt/ProcessReceiptUploadUseCase';
+import { PdfThumbnailConverter } from '../infrastructure/files/PdfThumbnailConverter';
 import '../infrastructure/di/registerServices';
 
-export const useSnapReceipt = (enableOcr: boolean = false) => {
+export const useSnapReceipt = (
+    enableOcr: boolean = false,
+    receiptParsingStrategy?: IReceiptParsingStrategy,
+) => {
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -29,6 +38,17 @@ export const useSnapReceipt = (enableOcr: boolean = false) => {
         return new SnapReceiptUseCase(receiptRepo);
     }, [receiptRepo, enableOcr]);
 
+    // PDF upload use case — instantiated only when a parsing strategy is supplied
+    const pdfUploadUseCase = useMemo(() => {
+        if (!receiptParsingStrategy) return null;
+        const ocrAdapter = new MobileOcrAdapter();
+        return new ProcessReceiptUploadUseCase(
+            ocrAdapter,
+            receiptParsingStrategy,
+            new PdfThumbnailConverter(),
+        );
+    }, [receiptParsingStrategy]);
+
     const processReceipt = async (imageUri: string): Promise<NormalizedReceipt | null> => {
         if (!enableOcr) {
             setError('OCR feature is not enabled');
@@ -42,6 +62,27 @@ export const useSnapReceipt = (enableOcr: boolean = false) => {
             return normalized;
         } catch (e: any) {
             setError(e.message || 'Failed to process receipt');
+            return null;
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const processPdfReceipt = async (
+        input: ProcessReceiptUploadInput,
+    ): Promise<NormalizedReceipt | null> => {
+        if (!pdfUploadUseCase) {
+            setError('PDF parsing is not configured. Please set up a parsing strategy.');
+            return null;
+        }
+
+        setProcessing(true);
+        setError(null);
+        try {
+            const output = await pdfUploadUseCase.execute(input);
+            return output.normalized;
+        } catch (e: any) {
+            setError(e.message || 'Failed to process PDF receipt');
             return null;
         } finally {
             setProcessing(false);
@@ -93,6 +134,7 @@ export const useSnapReceipt = (enableOcr: boolean = false) => {
     return { 
         saveReceipt, 
         processReceipt,
+        processPdfReceipt,
         saveNormalizedReceipt,
         loading, 
         processing,

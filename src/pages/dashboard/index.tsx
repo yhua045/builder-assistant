@@ -16,6 +16,7 @@ import { MobileOcrAdapter } from '../../infrastructure/ocr/MobileOcrAdapter';
 import { InvoiceNormalizer } from '../../application/ai/InvoiceNormalizer';
 import { PdfThumbnailConverter } from '../../infrastructure/files/PdfThumbnailConverter';
 import { LlmQuotationParser } from '../../infrastructure/ai/LlmQuotationParser';
+import { LlmReceiptParser } from '../../infrastructure/ai/LlmReceiptParser';
 import { GROQ_API_KEY } from '@env';
 
 type DashboardNavigationProp = any;
@@ -44,6 +45,11 @@ export default function DashboardScreen() {
   const invoicePdfConverter = useMemo(() => new PdfThumbnailConverter(), []);
   const quotationParser = useMemo(
     () => (GROQ_API_KEY ? new LlmQuotationParser(GROQ_API_KEY) : undefined),
+    [],
+  );
+
+  const receiptParser = useMemo(
+    () => (GROQ_API_KEY ? new LlmReceiptParser(GROQ_API_KEY) : undefined),
     [],
   );
 
@@ -195,7 +201,11 @@ export default function DashboardScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowSnapReceipt(false)}
       >
-        <SnapReceiptScreen onClose={() => setShowSnapReceipt(false)} enableOcr={true} />
+        <SnapReceiptScreen
+          onClose={() => setShowSnapReceipt(false)}
+          enableOcr={true}
+          receiptParsingStrategy={receiptParser}
+        />
       </Modal>
 
       {/* Add Invoice Modal */}
