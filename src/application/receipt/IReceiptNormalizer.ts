@@ -13,10 +13,13 @@ export interface NormalizedReceipt {
   vendor: string | null;
   date: Date | null;
   total: number | null;
+  subtotal: number | null;
   tax: number | null;
-  currency: string;            // Default: "USD"
+  currency: string;            // Default: "AUD"
+  paymentMethod: 'card' | 'cash' | 'bank' | 'other' | null;
   receiptNumber: string | null;
   lineItems: NormalizedLineItem[];
+  notes: string | null;
   confidence: {
     overall: number;           // 0.0-1.0
     vendor: number;

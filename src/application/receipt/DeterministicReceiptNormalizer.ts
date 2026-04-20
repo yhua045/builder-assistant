@@ -73,10 +73,13 @@ export class DeterministicReceiptNormalizer implements IReceiptNormalizer {
       vendor,
       date,
       total,
+      subtotal: null,
       tax,
       currency,
+      paymentMethod: null,
       receiptNumber,
       lineItems,
+      notes: null,
       confidence: {
         overall: overallConfidence,
         vendor: vendorConfidence,

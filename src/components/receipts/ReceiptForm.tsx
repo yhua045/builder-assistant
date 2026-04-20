@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { SnapReceiptDTO } from '../../application/usecases/receipt/SnapReceiptUseCase';
+import { SnapReceiptDTO, ReceiptLineItemDTO } from '../../application/usecases/receipt/SnapReceiptUseCase';
 import { NormalizedReceipt } from '../../application/receipt/IReceiptNormalizer';
 import DatePickerInput from '../inputs/DatePickerInput';
-import { CheckCircle, AlertCircle, AlertTriangle, X } from 'lucide-react-native';
+import { CheckCircle, AlertCircle, AlertTriangle, X, Plus } from 'lucide-react-native';
 import OptionList from '../inputs/OptionList';
 
 import { ContractorLookupField } from '../inputs/ContractorLookupField';
@@ -38,6 +38,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
   const [date, setDate] = useState<Date | null>(initialValues?.date ? new Date(initialValues.date) : new Date());
   const [paymentMethod, setPaymentMethod] = useState<string>(initialValues?.paymentMethod || 'card');
   const [notes, setNotes] = useState(initialValues?.notes || '');
+  const [lineItems, setLineItems] = useState<ReceiptLineItemDTO[]>(initialValues?.lineItems || []);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -55,6 +56,47 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       }
     }
   }, [normalizedData]);
+
+  // ── Line item helpers ──────────────────────────────────────────────────────
+  const addLineItem = () => {
+    setLineItems((prev) => [
+      ...prev,
+      { description: '', quantity: 1, unitPrice: 0, total: 0 },
+    ]);
+  };
+
+  const removeLineItem = (index: number) => {
+    setLineItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateLineItem = (
+    index: number,
+    field: keyof ReceiptLineItemDTO,
+    value: string,
+  ) => {
+    setLineItems((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[index] };
+
+      if (field === 'description') {
+        item.description = value;
+      } else if (field === 'quantity') {
+        item.quantity = parseFloat(value) || 0;
+        item.total = item.quantity * item.unitPrice;
+      } else if (field === 'unitPrice') {
+        item.unitPrice = parseFloat(value) || 0;
+        item.total = item.quantity * item.unitPrice;
+      }
+
+      updated[index] = item;
+
+      // Auto-update amount to match subtotal from line items
+      const subtotal = updated.reduce((sum, li) => sum + li.total, 0);
+      setAmount(subtotal.toFixed(2));
+
+      return updated;
+    });
+  };
 
   const getConfidenceIcon = (confidence: number) => {
     if (confidence >= 0.8) {
@@ -91,7 +133,8 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         date: date!.toISOString(),
         paymentMethod: paymentMethod as any,
         notes,
-        currency: 'AUD' // Default
+        currency: 'AUD', // Default
+        lineItems: lineItems.length > 0 ? lineItems : undefined,
       });
     }
   };
@@ -203,6 +246,96 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
           options={PAYMENT_METHODS}
           testID="option-list-payment-method"
         />
+      </View>
+
+      {/* ── Line Items (optional) ── */}
+      <View className="mb-6" testID="receipt-line-items-section">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="font-medium text-foreground">Line Items (optional)</Text>
+          <Pressable
+            testID="receipt-add-line-item"
+            onPress={addLineItem}
+            className="flex-row items-center bg-primary px-3 py-2 rounded-lg active:opacity-80"
+          >
+            <Plus size={16} color="#fff" />
+            <Text className="text-primary-foreground ml-1 font-medium">Add Item</Text>
+          </Pressable>
+        </View>
+
+        {lineItems.map((item, index) => (
+          <View
+            key={index}
+            testID={`receipt-line-item-${index}`}
+            className="bg-card border border-input rounded-xl p-4 mb-3"
+          >
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="font-medium text-foreground">Item {index + 1}</Text>
+              <Pressable
+                testID={`receipt-remove-line-item-${index}`}
+                onPress={() => removeLineItem(index)}
+              >
+                <X size={20} color="#ef4444" />
+              </Pressable>
+            </View>
+
+            <TextInput
+              testID={`receipt-line-item-description-${index}`}
+              className="border border-input rounded-lg p-2 mb-2 bg-background text-foreground"
+              value={item.description}
+              onChangeText={(val) => updateLineItem(index, 'description', val)}
+              placeholder="Description"
+              placeholderTextColor="#9ca3af"
+            />
+
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Qty</Text>
+                <TextInput
+                  testID={`receipt-line-item-qty-${index}`}
+                  className="border border-input rounded-lg p-2 bg-background text-foreground"
+                  value={item.quantity.toString()}
+                  onChangeText={(val) => updateLineItem(index, 'quantity', val)}
+                  keyboardType="numeric"
+                  placeholder="1"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Unit Price</Text>
+                <TextInput
+                  testID={`receipt-line-item-unitprice-${index}`}
+                  className="border border-input rounded-lg p-2 bg-background text-foreground"
+                  value={item.unitPrice.toString()}
+                  onChangeText={(val) => updateLineItem(index, 'unitPrice', val)}
+                  keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-xs text-muted-foreground mb-1">Total</Text>
+                <TextInput
+                  testID={`receipt-line-item-total-${index}`}
+                  className="border border-input rounded-lg p-2 bg-background text-foreground"
+                  value={item.total.toFixed(2)}
+                  editable={false}
+                  placeholder="0.00"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+            </View>
+          </View>
+        ))}
+
+        {lineItems.length > 0 && (
+          <View className="border-t border-border pt-2 mt-1">
+            <Text className="text-sm text-muted-foreground text-right">
+              Subtotal: ${lineItems.reduce((s, li) => s + li.total, 0).toFixed(2)}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View className="mb-8">

@@ -5,6 +5,13 @@ import { IOcrAdapter } from '../../services/IOcrAdapter';
 import { ReceiptFieldParser } from '../../receipt/ReceiptFieldParser';
 import { IReceiptNormalizer, NormalizedReceipt } from '../../receipt/IReceiptNormalizer';
 
+export interface ReceiptLineItemDTO {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 export interface SnapReceiptDTO {
   vendorId: string;
   vendor: string;
@@ -15,6 +22,7 @@ export interface SnapReceiptDTO {
   category?: string;
   currency?: string;
   notes?: string;
+  lineItems?: ReceiptLineItemDTO[];
 }
 
 export class SnapReceiptUseCase {
@@ -42,9 +50,19 @@ export class SnapReceiptUseCase {
     const currency = input.currency || 'AUD';
 
     // 1. Create Invoice
+    const lineItemDTOs = input.lineItems && input.lineItems.length > 0
+      ? input.lineItems
+      : undefined;
+
+    // When line items are present, subtotal = sum of line item totals
+    const lineItemSubtotal = lineItemDTOs
+      ? lineItemDTOs.reduce((sum, item) => sum + item.total, 0)
+      : undefined;
+
     const invoiceEntity = InvoiceEntity.create({
       issuerName: input.vendor,
       total: input.amount,
+      subtotal: lineItemSubtotal,
       currency,
       status: 'paid', // Immediately paid
       paymentStatus: 'paid',
@@ -52,6 +70,14 @@ export class SnapReceiptUseCase {
       paymentDate: input.date, // Paid on same day
       projectId: input.projectId,
       notes: input.notes,
+      lineItems: lineItemDTOs
+        ? lineItemDTOs.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+          }))
+        : undefined,
       metadata: {
         ...(input.category ? { category: input.category } : {}),
         vendorId: input.vendorId,

@@ -1,5 +1,73 @@
 # Project Progress — Summary (updated 2026-04-20)
 
+## ✅ Issue #208 — Snap Receipt: PDF Upload + LLM Parsing + Line Items
+**Status**: COMPLETED  
+**Branch**: `feature/issue-208-snap-receipt-pdf-llm`  
+**Date Completed**: 2026-04-20
+
+### Changes Made
+- **New Domain/Application Layer**:
+  - `src/application/receipt/IReceiptParsingStrategy.ts`: Strategy interface for pluggable receipt parsers (mirrors `IQuotationParsingStrategy`)
+  - `src/application/usecases/receipt/ProcessReceiptUploadUseCase.ts`: PDF-to-receipt pipeline (PDF → images → OCR → LLM → `NormalizedReceipt`)
+  - Extended `NormalizedReceipt` interface in `src/application/receipt/IReceiptNormalizer.ts`: Added `subtotal`, `paymentMethod`, `notes` fields for LLM output
+
+- **New Infrastructure/Utils**:
+  - `src/infrastructure/ai/LlmReceiptParser.ts`: Groq-powered LLM parser for receipts (follows `LlmQuotationParser` pattern)
+  - `src/utils/normalizedReceiptToFormValues.ts`: Maps `NormalizedReceipt` → `Partial<SnapReceiptDTO>` (mirrors quotation pattern)
+  - Extended `SnapReceiptUseCase.saveReceipt()` to persist `lineItems` as JSON in `invoices.lineItems` column (no DB migration needed)
+
+- **Test Coverage**:
+  - **New Unit Tests** (5 new test files):
+    - `LlmReceiptParser.test.ts`: Mock Groq API responses for valid/invalid receipts
+    - `ProcessReceiptUploadUseCase.receipt.test.ts`: Image/PDF paths, OCR merge, error wrapping
+    - `SnapReceiptUseCase.test.ts`: OCR pipeline integration, `saveReceipt()` with normalized data
+    - `SnapReceiptUseCase.lineItems.test.ts`: Line items persistence to `invoices.lineItems`
+    - `normalizedReceiptToFormValues.test.ts`: Mapping logic for DTO population
+  - **Test Results**: 38 new assertions all passing across 5 suites
+  - **Mock Fixes**: Auto-corrected missing properties (`getPageCount`, `subtotal`, `paymentMethod`, `notes`) in mocks
+  
+- **Verification**:
+  - **ESLint**: `npm run lint` passes with **0 errors** (79 pre-existing warnings only)
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode, all types correct)
+  - **Test Suite**: All 38 new tests passing + existing test suite unaffected
+
+### Acceptance Criteria
+All criteria met:
+- ✅ `IReceiptParsingStrategy` interface defined with `parse()` method for receipt extraction
+- ✅ `LlmReceiptParser` implements strategy using Groq API (llama-3.3-70b-versatile)
+- ✅ `ProcessReceiptUploadUseCase` handles full PDF extraction pipeline (PDF → images → OCR → LLM)
+- ✅ `NormalizedReceipt` extended with `subtotal`, `paymentMethod`, `notes` fields
+- ✅ `normalizedReceiptToFormValues` utility maps extracted data to `SnapReceiptDTO`
+- ✅ `SnapReceiptUseCase.saveReceipt()` persists `lineItems` JSON in `invoices.lineItems`
+- ✅ All 38 new test assertions passing
+- ✅ ESLint: 0 errors; TypeScript: strict mode passes
+- ✅ Mock fixes applied: `getPageCount`, `subtotal`, `paymentMethod`, `notes` all included
+
+### Files Added (5)
+- `src/application/receipt/IReceiptParsingStrategy.ts`
+- `src/infrastructure/ai/LlmReceiptParser.ts`
+- `src/application/usecases/receipt/ProcessReceiptUploadUseCase.ts`
+- `src/utils/normalizedReceiptToFormValues.ts`
+- `__tests__/unit/LlmReceiptParser.test.ts`
+
+### Files Modified (5)
+- `src/application/receipt/IReceiptNormalizer.ts` (extended `NormalizedReceipt` interface)
+- `src/application/usecases/receipt/SnapReceiptUseCase.ts` (saveReceipt lineItems persistence)
+- `__tests__/unit/ProcessReceiptUploadUseCase.receipt.test.ts` (mock fixes)
+- `__tests__/unit/SnapReceiptUseCase.lineItems.test.ts` (mock fixes)
+- `__tests__/unit/SnapReceiptUseCase.test.ts` (mock fixes)
+
+### Test Files Added (4)
+- `__tests__/unit/ProcessReceiptUploadUseCase.receipt.test.ts`
+- `__tests__/unit/SnapReceiptUseCase.lineItems.test.ts`
+- `__tests__/unit/SnapReceiptUseCase.test.ts`
+- `__tests__/unit/normalizedReceiptToFormValues.test.ts`
+
+### Design Doc
+- `design/issue-208-snap-receipt-pdf-llm.md`
+
+---
+
 ## ✅ LLM Quotation Parser Feature — Enhanced Quotation Extraction & Form Population
 **Status**: COMPLETED  
 **Branch**: `feature/llm-quotation-parser`  
