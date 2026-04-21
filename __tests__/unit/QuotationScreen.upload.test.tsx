@@ -315,9 +315,11 @@ describe('QuotationScreen — upload UX', () => {
     const saveButton = root.findByProps({ testID: 'quotation-save-button' });
     await act(async () => { saveButton.props.onPress(); });
 
+    // Now that QuotationEntity creation is delegated to the Application layer,
+    // the UI just passes what the form has (empty reference)
     expect(defaultCreateQuotation).toHaveBeenCalledWith(
       expect.objectContaining({
-        reference: expect.stringMatching(/^QUO-\d{8}-[A-Z0-9]{6}$/),
+        reference: '',
         total: 500,
       })
     );

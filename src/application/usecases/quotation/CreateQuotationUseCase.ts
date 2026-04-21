@@ -1,10 +1,13 @@
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation, QuotationEntity } from '../../../domain/entities/Quotation';
 import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+
+export type CreateQuotationDTO = Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>;
 
 export class CreateQuotationUseCase {
   constructor(private readonly repo: QuotationRepository) {}
 
-  async execute(quotation: Quotation): Promise<Quotation> {
-    return this.repo.createQuotation(quotation);
+  async execute(dto: CreateQuotationDTO): Promise<Quotation> {
+    const entity = QuotationEntity.create(dto as any);
+    return this.repo.createQuotation(entity.data());
   }
 }

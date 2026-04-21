@@ -40,7 +40,17 @@ jest.mock('../../../src/infrastructure/files/MobileFileSystemAdapter', () => ({
 
 jest.mock('../../../src/application/usecases/quotation/ProcessQuotationUploadUseCase', () => ({
   ProcessQuotationUploadUseCase: jest.fn().mockImplementation(() => ({
-    execute: jest.fn(),
+    execute: jest.fn().mockImplementation(async (input: any) => {
+      // Mock validation behavior mimicking the real UseCase
+      if (input.mimeType !== 'application/pdf' && !input.mimeType.startsWith('image/')) {
+         throw new Error('Validation failed: Invalid file format');
+      }
+      return {
+        normalized: { confidence: { overall: 0 } },
+        documentRef: { localPath: input.fileUri },
+        rawOcrText: '',
+      };
+    }),
   })),
 }));
 

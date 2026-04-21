@@ -2,9 +2,11 @@ import { IOcrAdapter } from '../../services/IOcrAdapter';
 import { IQuotationParsingStrategy, NormalizedQuotation } from '../../ai/IQuotationParsingStrategy';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IOcrDocumentService, OcrDocumentService } from '../../services/IOcrDocumentService';
+import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { validatePdfFile } from '../../../utils/fileValidation';
 
 export interface ProcessQuotationUploadInput {
-  /** App-private URI to the file (already copied by QuotationScreen) */
+  /** The original URI from the file picker */
   fileUri: string;
   filename: string;
   mimeType: string;
@@ -28,28 +30,50 @@ export interface ProcessQuotationUploadOutput {
 /**
  * ProcessQuotationUploadUseCase
  *
- * Orchestrates the end-to-end pipeline after a file has been selected and
- * copied to app private storage:
- *   1. (PDF only) Convert PDF pages to images via IPdfConverter
- *   2. OCR → extract raw text from the image(s)
- *   3. parse → strategy parses OcrResult into NormalizedQuotation
- *   4. Return normalized result + a QuotationDocumentRef ready for atomic save
+ * Orchestrates the end-to-end pipeline after a file has been selected:
+ *   1. Validation: Ensures the file passes cross-cutting PDF validation rules
+ *   2. File IO: Copies the file to app private storage (if fileSystemAdapter provided)
+ *   3. (PDF only) Convert PDF pages to images via IPdfConverter
+ *   4. OCR → extract raw text from the image(s)
+ *   5. parse → strategy parses OcrResult into NormalizedQuotation
+ *   6. Return normalized result + a QuotationDocumentRef ready for atomic save
  */
 export class ProcessQuotationUploadUseCase {
+  private readonly ocrDocumentService?: IOcrDocumentService;
+
   constructor(
-    private readonly ocrAdapter: IOcrAdapter,
-    private readonly parsingStrategy: IQuotationParsingStrategy,
+    private readonly parsingStrategy?: IQuotationParsingStrategy,
     private readonly pdfConverter?: IPdfConverter,
-    private readonly ocrDocumentService: IOcrDocumentService = new OcrDocumentService(ocrAdapter),
-  ) {}
+    private readonly fileSystemAdapter?: IFileSystemAdapter,
+    private readonly ocrAdapter?: IOcrAdapter,
+  ) {
+    if (ocrAdapter) {
+      this.ocrDocumentService = new OcrDocumentService(ocrAdapter);
+    }
+  }
 
   async execute(
     input: ProcessQuotationUploadInput,
   ): Promise<ProcessQuotationUploadOutput> {
-    const { fileUri, filename, mimeType, fileSize } = input;
+    const { fileUri: originalUri, filename, mimeType, fileSize } = input;
+
+    // 1. Cross-cutting file validation
+    const validation = validatePdfFile(mimeType, fileSize);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.error || 'Invalid file'}`);
+    }
+
+    // 2. IO logic moved to application layer: copy to private storage
+    let localPath = originalUri;
+    if (this.fileSystemAdapter) {
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).slice(2, 8);
+      const destinationFilename = `quote_${timestamp}_${randomSuffix}.pdf`;
+      localPath = await this.fileSystemAdapter.copyToAppStorage(originalUri, destinationFilename);
+    }
 
     const documentRef: QuotationDocumentRef = {
-      localPath: fileUri,
+      localPath,
       filename,
       size: fileSize,
       mimeType,
@@ -57,7 +81,7 @@ export class ProcessQuotationUploadUseCase {
 
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
-      if (!this.pdfConverter) {
+      if (!this.pdfConverter || !this.parsingStrategy || !this.ocrDocumentService) {
         return {
           normalized: emptyNormalizedQuotation(),
           documentRef,
@@ -66,7 +90,7 @@ export class ProcessQuotationUploadUseCase {
       }
 
       try {
-        return await this.processPdf(fileUri, documentRef);
+        return await this.processPdf(localPath, documentRef);
       } catch (err: any) {
         throw new Error(
           `Quotation processing failed: ${err?.message ?? 'Unknown error'}`,
@@ -75,8 +99,16 @@ export class ProcessQuotationUploadUseCase {
     }
 
     // ── Image path ───────────────────────────────────────────────────────────
+    if (!this.ocrAdapter || !this.parsingStrategy) {
+      return {
+        normalized: emptyNormalizedQuotation(),
+        documentRef,
+        rawOcrText: '',
+      };
+    }
+
     try {
-      const ocrResult = await this.ocrAdapter.extractText(fileUri);
+      const ocrResult = await this.ocrAdapter.extractText(localPath);
       const rawOcrText = ocrResult.fullText;
 
       const normalized = await this.parsingStrategy.parse(ocrResult);
@@ -93,7 +125,10 @@ export class ProcessQuotationUploadUseCase {
     pdfUri: string,
     documentRef: QuotationDocumentRef,
   ): Promise<ProcessQuotationUploadOutput> {
-    const pages = await this.pdfConverter!.convertToImages(pdfUri);
+    if (!this.pdfConverter || !this.ocrDocumentService || !this.parsingStrategy) {
+        throw new Error('Dependencies missing for PDF parsing');
+    }
+    const pages = await this.pdfConverter.convertToImages(pdfUri);
 
     if (pages.length === 0) {
       return {

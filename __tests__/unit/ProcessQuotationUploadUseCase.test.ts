@@ -8,10 +8,18 @@ import {
   NormalizedQuotation,
 } from '../../src/application/ai/IQuotationParsingStrategy';
 import { IPdfConverter } from '../../src/infrastructure/files/IPdfConverter';
+import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
 
 function makeOcrResult(text = 'OCR text'): OcrResult {
   return { fullText: text, tokens: [], imageUri: 'file:///tmp/img.jpg' };
 }
+
+const mockFileSystem: IFileSystemAdapter = {
+  copyToAppStorage: jest.fn().mockImplementation((uri) => Promise.resolve(uri)),
+  exists: jest.fn().mockResolvedValue(true),
+  deleteFile: jest.fn().mockResolvedValue(undefined),
+  getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
+};
 
 function makeNormalizedQuotation(
   overrides: Partial<NormalizedQuotation> = {},
@@ -72,7 +80,7 @@ describe('ProcessQuotationUploadUseCase', () => {
     it('returns normalized quotation and documentRef for image file', async () => {
       const ocrAdapter = makeOcrAdapter();
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       const output = await useCase.execute(imageInput);
 
@@ -89,7 +97,7 @@ describe('ProcessQuotationUploadUseCase', () => {
       const ocrResult = makeOcrResult('Custom OCR text');
       const ocrAdapter = makeOcrAdapter(ocrResult);
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       await useCase.execute(imageInput);
 
@@ -99,7 +107,7 @@ describe('ProcessQuotationUploadUseCase', () => {
     it('rawOcrText is the fullText from OCR', async () => {
       const ocrAdapter = makeOcrAdapter(makeOcrResult('Some OCR text'));
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       const output = await useCase.execute(imageInput);
 
@@ -111,7 +119,7 @@ describe('ProcessQuotationUploadUseCase', () => {
         extractText: jest.fn().mockRejectedValue(new Error('OCR service down')),
       };
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       await expect(useCase.execute(imageInput)).rejects.toThrow(
         'Quotation processing failed: OCR service down',
@@ -124,7 +132,7 @@ describe('ProcessQuotationUploadUseCase', () => {
         strategyType: 'llm',
         parse: jest.fn().mockRejectedValue(new Error('LLM error')),
       };
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       await expect(useCase.execute(imageInput)).rejects.toThrow(
         'Quotation processing failed: LLM error',
@@ -136,7 +144,7 @@ describe('ProcessQuotationUploadUseCase', () => {
     it('returns empty NormalizedQuotation gracefully', async () => {
       const ocrAdapter = makeOcrAdapter();
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
 
       const output = await useCase.execute(pdfInput);
 
@@ -159,7 +167,7 @@ describe('ProcessQuotationUploadUseCase', () => {
       };
       const ocrAdapter = makeOcrAdapter(makeOcrResult('Page OCR'));
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy, pdfConverter);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
 
       const output = await useCase.execute(pdfInput);
 
@@ -176,7 +184,7 @@ describe('ProcessQuotationUploadUseCase', () => {
       };
       const ocrAdapter = makeOcrAdapter();
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy, pdfConverter);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
 
       const output = await useCase.execute(pdfInput);
 
@@ -192,7 +200,7 @@ describe('ProcessQuotationUploadUseCase', () => {
       };
       const ocrAdapter = makeOcrAdapter();
       const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(ocrAdapter, strategy, pdfConverter);
+      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
 
       await expect(useCase.execute(pdfInput)).rejects.toThrow(
         'Quotation processing failed: PDF conversion failed',

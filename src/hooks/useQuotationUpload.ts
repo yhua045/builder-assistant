@@ -18,11 +18,10 @@ import { IFilePickerAdapter } from '../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../infrastructure/files/MobileFilePickerAdapter';
 import { MobileFileSystemAdapter } from '../infrastructure/files/MobileFileSystemAdapter';
-import { validatePdfFile } from '../utils/fileValidation';
 import { PdfFileMetadata } from '../types/PdfFileMetadata';
 import { ProcessQuotationUploadUseCase } from '../application/usecases/quotation/ProcessQuotationUploadUseCase';
 import { normalizedQuotationToFormValues } from '../utils/normalizedQuotationToFormValues';
-import { Quotation, QuotationEntity } from '../domain/entities/Quotation';
+import { Quotation } from '../domain/entities/Quotation';
 
 export type QuotationProcessingStep = 'idle' | 'copying' | 'ocr' | 'error';
 
@@ -82,42 +81,70 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     [fileSystemAdapter],
   );
 
-  const buildUseCase = (): ProcessQuotationUploadUseCase | null => {
-    if (ocrAdapter && parsingStrategy) {
-      return new ProcessQuotationUploadUseCase(ocrAdapter, parsingStrategy, pdfConverter);
-    }
-    return null;
+  const buildUseCase = (): ProcessQuotationUploadUseCase => {
+    return new ProcessQuotationUploadUseCase(
+      parsingStrategy,
+      pdfConverter,
+      fileSystem,
+      ocrAdapter
+    );
   };
 
-  const runProcessingPipeline = async (pdfFile: PdfFileMetadata) => {
+  const runProcessingPipeline = async (
+    originalUri: string,
+    filename: string,
+    mimeType: string,
+    size: number
+  ) => {
     const useCase = buildUseCase();
-    if (!useCase) {
-      // No OCR adapters — show form without pre-fill (graceful degradation)
-      setProcessingStep('idle');
-      setFormPdfFile(pdfFile);
-      setFormInitialValues(undefined);
-      return;
-    }
 
     setProcessingStep('ocr');
     try {
       const output = await useCase.execute({
-        fileUri: pdfFile.uri,
-        filename: pdfFile.name,
-        mimeType: pdfFile.mimeType ?? 'application/pdf',
-        fileSize: pdfFile.size,
+        fileUri: originalUri,
+        filename,
+        mimeType,
+        fileSize: size,
       });
 
-      const initialValues = normalizedQuotationToFormValues(output.normalized);
-      setFormInitialValues(initialValues);
-      setFormPdfFile(pdfFile);
+      // Distinguish between successful OCR vs fallback (empty values because OCR is off or missing)
+      const isFallback = !output.rawOcrText && output.normalized.confidence.overall === 0;
+      
+      if (isFallback) {
+         setFormInitialValues(undefined);
+      } else {
+         setFormInitialValues(normalizedQuotationToFormValues(output.normalized));
+      }
+
+      // Capture the file metadata generated inside the Use Case
+      setFormPdfFile({
+        uri: output.documentRef.localPath,
+        originalUri,
+        name: filename,
+        size: size,
+        mimeType: mimeType,
+      });
       setProcessingStep('idle');
       setProcessingError(null);
     } catch (err: any) {
-      setProcessingError(err?.message || 'OCR processing failed');
+      const msg = err?.message || 'OCR processing failed';
+      
+      if (msg.includes('Validation failed:')) {
+        Alert.alert('Invalid File', msg.replace('Validation failed: ', ''));
+        setProcessingStep('idle');
+        return;
+      }
+
+      setProcessingError(msg);
       setProcessingStep('error');
-      // Form remains editable — non-blocking error
-      setFormPdfFile(pdfFile);
+      // Set the minimal info so the UI can fall back to manual entry
+      setFormPdfFile({
+        uri: originalUri,
+        originalUri,
+        name: filename,
+        size,
+        mimeType,
+      });
     }
   };
 
@@ -132,28 +159,12 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
         return;
       }
 
-      const validation = validatePdfFile(result.type, result.size);
-      if (!validation.isValid) {
-        setProcessingStep('idle');
-        const alertTitle = validation.error?.includes('20MB') ? 'File Too Large' : 'Invalid File';
-        Alert.alert(alertTitle, validation.error || 'Invalid file');
-        return;
-      }
-
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).slice(2, 8);
-      const destinationFilename = `quote_${timestamp}_${randomSuffix}.pdf`;
-      const appStorageUri = await fileSystem.copyToAppStorage(result.uri!, destinationFilename);
-
-      const pdfFile: PdfFileMetadata = {
-        uri: appStorageUri,
-        originalUri: result.uri!,
-        name: result.name!,
-        size: result.size!,
-        mimeType: result.type || 'application/pdf',
-      };
-
-      await runProcessingPipeline(pdfFile);
+      await runProcessingPipeline(
+        result.uri!,
+        result.name!,
+        result.type || 'application/pdf',
+        result.size!
+      );
     } catch (err: any) {
       setProcessingError(err?.message || 'Failed to process quote');
       setProcessingStep('error');
@@ -162,9 +173,8 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
 
   const handleSubmit = async (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const entity = QuotationEntity.create(data as any);
-      const validated = entity.data();
-      const created = await createQuotation(validated);
+      // createQuotation delegates to CreateQuotationUseCase which handles QuotationEntity instantiation
+      const created = await createQuotation(data);
       onSuccess?.(created);
       onClose();
     } catch (error) {
