@@ -150,11 +150,6 @@ export function useSnapReceiptScreen(
       const picked = await filePicker.pickDocument();
       if (picked.cancelled || !picked.uri) return;
 
-      if (picked.type && picked.type !== 'application/pdf') {
-        Alert.alert('Unsupported File', 'Please select a PDF file.');
-        return;
-      }
-
       setView('processing');
       const normalizedResult = await processPdfReceipt({
         fileUri: picked.uri,

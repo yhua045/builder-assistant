@@ -155,4 +155,34 @@ describe('ProcessReceiptUploadUseCase', () => {
       );
     });
   });
+
+  // ─── Validation (moved from View-Model layer) ─────────────────────────────
+
+  describe('validation', () => {
+    it('throws Validation failed for an unsupported MIME type', async () => {
+      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
+
+      await expect(
+        useCase.execute({
+          fileUri: 'file:///tmp/doc.docx',
+          filename: 'doc.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          fileSize: 50000,
+        }),
+      ).rejects.toThrow('Validation failed:');
+    });
+
+    it('throws Validation failed when file is over 20 MB', async () => {
+      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
+
+      await expect(
+        useCase.execute({ ...imageInput, fileSize: 25 * 1024 * 1024 }),
+      ).rejects.toThrow('Validation failed:');
+    });
+
+    it('does not throw for a valid image within size limit', async () => {
+      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
+      await expect(useCase.execute(imageInput)).resolves.toBeDefined();
+    });
+  });
 });

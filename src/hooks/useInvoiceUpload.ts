@@ -6,6 +6,9 @@
  * Encapsulates all state (multi-step pipeline), adapter wiring, and Use Case
  * orchestration for the invoice upload flow. InvoiceScreen becomes a pure
  * presentation component.
+ *
+ * File validation and file IO (copy to app storage) are delegated entirely to
+ * ProcessInvoiceUploadUseCase — no application-level logic remains here.
  */
 
 import { useState, useMemo } from 'react';
@@ -18,7 +21,6 @@ import { IFilePickerAdapter } from '../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../infrastructure/files/MobileFilePickerAdapter';
 import { MobileFileSystemAdapter } from '../infrastructure/files/MobileFileSystemAdapter';
-import { validatePdfFile } from '../utils/fileValidation';
 import { PdfFileMetadata } from '../types/PdfFileMetadata';
 import { ProcessInvoiceUploadUseCase } from '../application/usecases/invoice/ProcessInvoiceUploadUseCase';
 import { normalizedInvoiceToFormValues } from '../utils/normalizedInvoiceToFormValues';
@@ -79,7 +81,13 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   const [processingStep, setProcessingStep] = useState<InvoiceProcessingStep>('idle');
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [normalizedResult, setNormalizedResult] = useState<NormalizedInvoice | null>(null);
-  const [cachedPdfFile, setCachedPdfFile] = useState<PdfFileMetadata | null>(null);
+  // Stores the raw picker result so handleRetryExtraction can re-run the full pipeline
+  const [cachedPickerResult, setCachedPickerResult] = useState<{
+    uri: string;
+    name: string;
+    size: number;
+    mimeType: string;
+  } | null>(null);
   const [view, setView] = useState<InvoiceUploadView>('upload');
   const [formInitialValues, setFormInitialValues] = useState<Partial<Invoice> | undefined>(
     undefined,
@@ -97,39 +105,63 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
     [fileSystemAdapter],
   );
 
-  const buildUseCase = (): ProcessInvoiceUploadUseCase | null => {
-    if (ocrAdapter && invoiceNormalizer) {
-      return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter);
-    }
-    return null;
-  };
+  /**
+   * Builds the ProcessInvoiceUploadUseCase with all available adapters.
+   * Validation and file IO are always delegated to the use case.
+   */
+  const buildUseCase = (): ProcessInvoiceUploadUseCase =>
+    new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter, fileSystem);
 
-  const runProcessingPipeline = async (pdfFile: PdfFileMetadata) => {
+  /**
+   * Runs the full pipeline: validation → file copy → OCR → normalisation.
+   * All application logic executes inside ProcessInvoiceUploadUseCase.
+   */
+  const runProcessingPipeline = async (
+    originalUri: string,
+    filename: string,
+    mimeType: string,
+    size: number,
+  ) => {
     const useCase = buildUseCase();
-    if (!useCase) {
-      // No OCR adapters — skip to form directly (graceful degradation)
-      setProcessingStep('idle');
-      setFormPdfFile(pdfFile);
-      setFormInitialValues(undefined);
-      setView('form');
-      return;
-    }
-
     setProcessingStep('ocr');
-    const output = await useCase.execute({
-      fileUri: pdfFile.uri,
-      filename: pdfFile.name,
-      mimeType: pdfFile.mimeType ?? 'application/pdf',
-      fileSize: pdfFile.size,
-    });
+    try {
+      const output = await useCase.execute({
+        fileUri: originalUri,
+        filename,
+        mimeType,
+        fileSize: size,
+      });
 
-    // Populate form directly with normalized OCR result
-    setNormalizedResult(output.normalized);
-    const initialValues = normalizedInvoiceToFormValues(output.normalized);
-    setFormInitialValues(initialValues);
-    setFormPdfFile(pdfFile);
-    setProcessingStep('idle');
-    setView('form');
+      // Detect graceful-degradation (no OCR result) vs real extraction
+      const isFallback = !output.rawOcrText && output.normalized.confidence.overall === 0;
+
+      setNormalizedResult(output.normalized);
+      setFormInitialValues(isFallback ? undefined : normalizedInvoiceToFormValues(output.normalized));
+      setFormPdfFile({
+        uri: output.documentRef.localPath,
+        originalUri,
+        name: filename,
+        size,
+        mimeType,
+      });
+      setProcessingStep('idle');
+      setView('form');
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to process invoice';
+
+      // Validation errors (bad file type / file too large) are non-critical —
+      // surface them as an alert and return to idle rather than the error screen.
+      if (errorMessage.includes('Validation failed:')) {
+        Alert.alert('Invalid File', errorMessage.replace('Validation failed: ', ''));
+        setProcessingStep('idle');
+        return;
+      }
+
+      setProcessingError(errorMessage);
+      setProcessingStep('error');
+      // Provide minimal formPdfFile so the error screen can show the filename
+      setFormPdfFile({ uri: originalUri, originalUri, name: filename, size, mimeType });
+    }
   };
 
   const handleUploadPdf = async () => {
@@ -144,35 +176,20 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
         return;
       }
 
-      const validation = validatePdfFile(result.type, result.size);
-      if (!validation.isValid) {
-        setProcessingStep('idle');
-        const alertTitle = validation.error?.includes('20MB')
-          ? 'File Too Large'
-          : 'Invalid File';
-        Alert.alert(alertTitle, validation.error || 'Invalid file');
-        return;
-      }
-
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).slice(2, 8);
-      const destinationFilename = `invoice_${timestamp}_${randomSuffix}.pdf`;
-
-      const appStorageUri = await fileSystem.copyToAppStorage(
-        result.uri!,
-        destinationFilename,
-      );
-
-      const pdfFile: PdfFileMetadata = {
-        uri: appStorageUri,
-        originalUri: result.uri!,
+      const pickerResult = {
+        uri: result.uri!,
         name: result.name!,
         size: result.size!,
         mimeType: result.type || 'application/pdf',
       };
-      setCachedPdfFile(pdfFile);
+      setCachedPickerResult(pickerResult);
 
-      await runProcessingPipeline(pdfFile);
+      await runProcessingPipeline(
+        pickerResult.uri,
+        pickerResult.name,
+        pickerResult.mimeType,
+        pickerResult.size,
+      );
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to process invoice';
       setProcessingError(errorMessage);
@@ -181,27 +198,26 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   };
 
   const handleAcceptExtraction = (result: NormalizedInvoice) => {
-    const initialValues = normalizedInvoiceToFormValues(result);
-    setFormInitialValues(initialValues);
-    setFormPdfFile(cachedPdfFile ?? undefined);
+    setFormInitialValues(normalizedInvoiceToFormValues(result));
+    // formPdfFile is already set from the pipeline run; no need to reset it here
     setView('form');
   };
 
   const handleRetryExtraction = async () => {
-    if (!cachedPdfFile) return;
+    if (!cachedPickerResult) return;
     setNormalizedResult(null);
     setProcessingError(null);
-    try {
-      await runProcessingPipeline(cachedPdfFile);
-    } catch (err: any) {
-      setProcessingError(err?.message || 'Retry failed');
-      setProcessingStep('error');
-    }
+    await runProcessingPipeline(
+      cachedPickerResult.uri,
+      cachedPickerResult.name,
+      cachedPickerResult.mimeType,
+      cachedPickerResult.size,
+    );
   };
 
   const handleFallbackToManual = () => {
     setFormInitialValues(undefined);
-    setFormPdfFile(cachedPdfFile ?? undefined);
+    // formPdfFile retains whatever was set by the pipeline run
     setView('form');
   };
 

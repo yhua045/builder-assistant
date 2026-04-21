@@ -1,10 +1,12 @@
 import { IOcrAdapter } from '../../services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../../ai/IInvoiceNormalizer';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
+import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { IOcrDocumentService, OcrDocumentService } from '../../services/IOcrDocumentService';
+import { validatePdfFile } from '../../../utils/fileValidation';
 
 export interface ProcessInvoiceUploadInput {
-  /** App-private URI to the file (already copied by InvoiceScreen) */
+  /** Original URI of the selected file — copying is handled internally by this use case. */
   fileUri: string;
   filename: string;
   mimeType: string;
@@ -28,37 +30,66 @@ export interface ProcessInvoiceUploadOutput {
 /**
  * ProcessInvoiceUploadUseCase
  *
- * Orchestrates the end-to-end pipeline after a file has been selected and
- * copied to app private storage:
- *   1. (PDF only) Convert PDF pages to images via IPdfConverter
- *   2. OCR → extract raw text from the image(s)
- *   3. extractCandidates → convert raw text into structured field candidates
- *   4. normalize → apply business rules and return a NormalizedInvoice
- *   5. Return normalized result + a DocumentRef ready for atomic save
+ * Orchestrates the end-to-end pipeline after a file has been selected:
+ *   1. Validation: Ensures the file passes cross-cutting PDF/image validation rules
+ *   2. File IO: Copies the file to app private storage (if fileSystemAdapter provided)
+ *   3. (PDF only) Convert PDF pages to images via IPdfConverter
+ *   4. OCR → extract raw text from the image(s)
+ *   5. extractCandidates → convert raw text into structured field candidates
+ *   6. normalize → apply business rules and return a NormalizedInvoice
+ *   7. Return normalized result + a DocumentRef ready for atomic save
  *
- * When `pdfConverter` is provided and the uploaded file is a PDF, each page is
- * rendered to a raster image and fed through the OCR pipeline. If no
- * `pdfConverter` is supplied, PDF uploads fall back to returning an empty
- * NormalizedInvoice so the user can fill the form manually (backward-compatible
- * behaviour).
+ * All OCR and normalizer adapters are optional: when absent the use case still
+ * validates and copies the file and returns an empty NormalizedInvoice so the
+ * caller can fall back to manual entry (graceful degradation).
  */
 export class ProcessInvoiceUploadUseCase {
+  private readonly ocrDocumentService?: IOcrDocumentService;
+
   constructor(
-    private readonly ocrAdapter: IOcrAdapter,
-    private readonly normalizer: IInvoiceNormalizer,
+    private readonly ocrAdapter?: IOcrAdapter,
+    private readonly normalizer?: IInvoiceNormalizer,
     private readonly pdfConverter?: IPdfConverter,
-    private readonly ocrDocumentService: IOcrDocumentService = new OcrDocumentService(ocrAdapter),
-  ) {}
+    private readonly fileSystemAdapter?: IFileSystemAdapter,
+  ) {
+    if (ocrAdapter) {
+      this.ocrDocumentService = new OcrDocumentService(ocrAdapter);
+    }
+  }
 
   async execute(input: ProcessInvoiceUploadInput): Promise<ProcessInvoiceUploadOutput> {
-    const { fileUri, filename, mimeType, fileSize } = input;
+    const { fileUri: originalUri, filename, mimeType, fileSize } = input;
+
+    // 1. Cross-cutting file validation
+    const validation = validatePdfFile(mimeType, fileSize);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.error || 'Invalid file'}`);
+    }
+
+    // 2. IO logic: copy to app-private storage (when adapter provided)
+    let localUri = originalUri;
+    if (this.fileSystemAdapter) {
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).slice(2, 8);
+      const destinationFilename = `invoice_${timestamp}_${randomSuffix}.pdf`;
+      localUri = await this.fileSystemAdapter.copyToAppStorage(originalUri, destinationFilename);
+    }
 
     const documentRef: DocumentRef = {
-      localPath: fileUri,
+      localPath: localUri,
       filename,
       size: fileSize,
       mimeType,
     };
+
+    // 3. If OCR adapters are absent, return empty result (graceful degradation)
+    if (!this.ocrAdapter || !this.normalizer) {
+      return {
+        normalized: this.emptyNormalizedInvoice(),
+        documentRef,
+        rawOcrText: '',
+      };
+    }
 
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
@@ -72,7 +103,7 @@ export class ProcessInvoiceUploadUseCase {
       }
 
       try {
-        return await this.processPdf(fileUri, documentRef);
+        return await this.processPdf(localUri, documentRef);
       } catch (err: any) {
         throw new Error(
           `Invoice processing failed: ${err?.message ?? 'Unknown error'}`,
@@ -82,11 +113,11 @@ export class ProcessInvoiceUploadUseCase {
 
     // ── Image path ───────────────────────────────────────────────────────────
     try {
-      const ocrResult = await this.ocrAdapter.extractText(fileUri);
+      const ocrResult = await this.ocrAdapter.extractText(localUri);
       const rawOcrText = ocrResult.fullText;
 
       console.log('[InvoiceOCR] Single file OCR extracted', {
-        fileUri,
+        localUri,
         fullTextLength: ocrResult.fullText.length,
         tokenCount: ocrResult.tokens.length,
         ocrResult,
@@ -94,13 +125,13 @@ export class ProcessInvoiceUploadUseCase {
 
       const candidates = this.normalizer.extractCandidates(rawOcrText);
       console.log('[InvoiceOCR] Candidate extraction (single file)', {
-        fileUri,
+        localUri,
         candidates,
       });
 
       const normalized = await this.normalizer.normalize(candidates, ocrResult);
       console.log('[InvoiceOCR] Normalized invoice (single file)', {
-        fileUri,
+        localUri,
         normalized,
       });
 
@@ -140,7 +171,9 @@ export class ProcessInvoiceUploadUseCase {
     }
 
     const pageImageUris = pages.map((page) => page.uri);
-    const documentOcrResult = await this.ocrDocumentService.extractFromPages(pageImageUris);
+    // ocrDocumentService and normalizer are guaranteed non-null here:
+    // processPdf is only called after the guard `if (!this.ocrAdapter || !this.normalizer)` above.
+    const documentOcrResult = await this.ocrDocumentService!.extractFromPages(pageImageUris);
     const rawOcrText = documentOcrResult.rawText;
 
     console.log('[InvoiceOCR] OCR extracted from converted pages', {
@@ -151,14 +184,14 @@ export class ProcessInvoiceUploadUseCase {
       mergedOcrResult: documentOcrResult.merged,
     });
 
-    const candidates = this.normalizer.extractCandidates(rawOcrText);
+    const candidates = this.normalizer!.extractCandidates(rawOcrText);
     console.log('[InvoiceOCR] Candidate extraction (PDF)', {
       pdfUri,
       pageCount: documentOcrResult.pageCount,
       candidates,
     });
 
-    const normalized = await this.normalizer.normalize(candidates, documentOcrResult.merged);
+    const normalized = await this.normalizer!.normalize(candidates, documentOcrResult.merged);
     console.log('[InvoiceOCR] Normalized invoice (PDF)', {
       pdfUri,
       pageCount: documentOcrResult.pageCount,

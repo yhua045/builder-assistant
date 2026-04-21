@@ -5,10 +5,10 @@
  * Acceptance criteria:
  * - Initial state: view='upload', processingStep='idle', processingError=null, normalizedResult=null
  * - handleUploadPdf() with cancelled picker → processingStep='idle', no state change
- * - handleUploadPdf() with invalid file type/size → processingStep='idle', Alert shown
- * - handleUploadPdf() without ocrAdapter/invoiceNormalizer → skips pipeline, view='form'
+ * - handleUploadPdf() when use case throws 'Validation failed:' → processingStep='idle', Alert shown
+ * - handleUploadPdf() without ocrAdapter/invoiceNormalizer → use case returns empty, view='form', formInitialValues=undefined
  * - handleUploadPdf() with full mock adapters → transitions 'idle'→'copying'→'ocr'→view='form'
- * - handleRetryExtraction() with cached PDF re-runs pipeline
+ * - handleRetryExtraction() with cached picker result re-runs pipeline
  * - handleFallbackToManual() → view='form', formInitialValues=undefined
  * - handleFormSave() on success calls onClose
  * - handleFormSave() on failure shows Alert
@@ -42,7 +42,22 @@ jest.mock('../../../src/infrastructure/files/MobileFileSystemAdapter', () => ({
 
 jest.mock('../../../src/application/usecases/invoice/ProcessInvoiceUploadUseCase', () => ({
   ProcessInvoiceUploadUseCase: jest.fn().mockImplementation(() => ({
-    execute: jest.fn(),
+    // Default: return an empty (no-OCR) result so the hook navigates to the form
+    execute: jest.fn().mockResolvedValue({
+      normalized: {
+        vendor: null,
+        total: null,
+        confidence: { overall: 0 },
+        suggestedCorrections: [],
+      },
+      documentRef: {
+        localPath: 'file:///app/storage/invoice.pdf',
+        filename: 'invoice.pdf',
+        size: 102400,
+        mimeType: 'application/pdf',
+      },
+      rawOcrText: '',
+    }),
   })),
 }));
 
@@ -129,10 +144,31 @@ function makeInvoiceNormalizer(): IInvoiceNormalizer {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
+const DEFAULT_USE_CASE_OUTPUT = {
+  normalized: {
+    vendor: null,
+    total: null,
+    confidence: { overall: 0 },
+    suggestedCorrections: [],
+  },
+  documentRef: {
+    localPath: 'file:///app/storage/invoice.pdf',
+    filename: 'invoice.pdf',
+    size: 102400,
+    mimeType: 'application/pdf',
+  },
+  rawOcrText: '',
+};
+
 describe('useInvoiceUpload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseInvoices.mockReturnValue({ ...DEFAULT_USE_INVOICES } as any);
+    // Restore default (empty/fallback) use-case mock so invalid-file tests
+    // don't pollute subsequent tests.
+    MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
+      execute: jest.fn().mockResolvedValue({ ...DEFAULT_USE_CASE_OUTPUT }),
+    }));
   });
 
   // AC: Initial state
@@ -167,11 +203,17 @@ describe('useInvoiceUpload', () => {
     });
   });
 
-  // AC: handleUploadPdf with invalid file
-  describe('handleUploadPdf — invalid file', () => {
-    it('sets processingStep="idle" and shows Alert for unsupported file type', async () => {
+  // AC: handleUploadPdf when use case rejects with validation error
+  describe('handleUploadPdf — validation error from use case', () => {
+    it('sets processingStep="idle" and shows Alert when use case throws Validation failed', async () => {
       const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
       const picker = makeFilePicker({ type: 'application/msword', name: 'document.doc' });
+
+      MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
+        execute: jest.fn().mockRejectedValue(
+          new Error('Validation failed: Please select a PDF or image file'),
+        ),
+      }) as any);
 
       const { result } = renderHook(() =>
         useInvoiceUpload({ onClose: jest.fn(), filePickerAdapter: picker }),
@@ -182,12 +224,18 @@ describe('useInvoiceUpload', () => {
       });
 
       expect(result.current.processingStep).toBe('idle');
-      expect(alertSpy).toHaveBeenCalled();
+      expect(alertSpy).toHaveBeenCalledWith('Invalid File', expect.any(String));
     });
 
-    it('shows "File Too Large" alert for file over 20MB', async () => {
+    it('shows "Invalid File" alert for file over 20MB', async () => {
       const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
       const picker = makeFilePicker({ size: 25 * 1024 * 1024 }); // 25MB
+
+      MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
+        execute: jest.fn().mockRejectedValue(
+          new Error('Validation failed: File must be under 20MB'),
+        ),
+      }) as any);
 
       const { result } = renderHook(() =>
         useInvoiceUpload({ onClose: jest.fn(), filePickerAdapter: picker }),
@@ -197,16 +245,17 @@ describe('useInvoiceUpload', () => {
         await result.current.handleUploadPdf();
       });
 
-      expect(alertSpy).toHaveBeenCalledWith('File Too Large', expect.any(String));
+      expect(alertSpy).toHaveBeenCalledWith('Invalid File', expect.stringContaining('20MB'));
     });
   });
 
-  // AC: handleUploadPdf without OCR adapters — skips pipeline
+  // AC: handleUploadPdf without OCR adapters — use case returns empty result
   describe('handleUploadPdf — no OCR adapters', () => {
-    it('transitions to view="form" directly when ocrAdapter/invoiceNormalizer are absent', async () => {
+    it('transitions to view="form" with formInitialValues=undefined when use case returns empty result', async () => {
       const picker = makeFilePicker();
       const fileSystem = makeFileSystem();
 
+      // Default mock returns empty result (no rawOcrText, confidence.overall === 0)
       const { result } = renderHook(() =>
         useInvoiceUpload({
           onClose: jest.fn(),
