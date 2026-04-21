@@ -69,7 +69,82 @@ All criteria met:
 ### Design Doc
 - `design/issue-210-dashboard-architecture-refactor.md`
 
+---
+
+## ✅ Issue #210 Phase 1 — ProjectsPage MVVM Refactor (UI Architecture Audit)
+**Status**: COMPLETED  
+**Branch**: `issue-210-refactor-observability`  
+**Date Completed**: 2026-04-21
+
+### Summary
+Refactored `src/pages/projects/ProjectsPage.tsx` to eliminate data transformation logic leakage into the UI layer. Introduced a MVVM-style View-Model facade hook (`useProjectsPage`) that encapsulates project data mapping and navigation state, leaving the React component as a pure presentation layer.
+
+### Changes Made
+- **New Hook (View-Model Facade)**: `src/hooks/useProjectsPage.ts`
+  - Implements `ProjectsPageViewModel` interface with:
+    - Data state: `projectDtos` (mapped from domain `ProjectDetails[]`), `loading`, `error`, `hasProjects`
+    - UI state: `createKey` (for ManualProjectEntry remount pattern)
+    - Operations: `openCreate()`, `navigateToProject(projectId: string)`
+  - Encapsulates private mapping function `toProjectCardDto()`: transforms `ProjectDetails` → `ProjectCardDto` with fallbacks:
+    - `owner`: Falls back to `project.name` if no owner.name
+    - `address`: Falls back to `project.location`, then "No Address"
+    - `contact`: Falls back to email, then "No contact"
+    - `lastCompletedTask.completedDate`: Uses `project.createdAt`, shows "-" if undefined
+  - Uses `useMemo` for stable `projectDtos` array reference (preventing unnecessary re-renders)
+  - Uses `useCallback` for stable action references (`openCreate`, `navigateToProject`)
+
+- **Refactored UI Component**: `src/pages/projects/ProjectsPage.tsx`
+  - Deleted all inline data mapping logic (previously 10+ lines of `useMemo`)
+  - Replaced with single line: `const vm = useProjectsPage()`
+  - Updated all JSX references to use `vm.` prefix (state and actions)
+  - Component now pure presentation: renders loading, error, empty, and list states based on vm props
+  - Maintains existing UI layout and styling (no visual changes)
+
+- **Test Coverage** (20 new tests, all passing):
+  - **New Unit Test**: `__tests__/unit/hooks/useProjectsPage.test.ts` (20 tests)
+    - Data mapping: empty projects, hasProjects flag, loading/error pass-through
+    - DTO transformation: full mapping of all fields from `ProjectDetails` to `ProjectCardDto`
+    - Fallback logic: owner, address, contact, createdAt edge cases
+    - State management: `createKey` increments correctly, navigation dispatch
+  - **Updated**: `__tests__/unit/ProjectsPage.test.tsx` (mocked `useProjectsPage` hook instead of direct data queries)
+
+- **Verification**:
+  - **ESLint**: `npm run lint` passes with **0 errors** (pre-existing warnings unchanged)
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode)
+  - **Test Suite**: 20 new tests passing; full suite unaffected
+
+### Acceptance Criteria (Design §8.1)
+All criteria met:
+- ✅ Returns `ProjectsPageViewModel` with structured data mapping from `useProjects`
+- ✅ `projectDtos` correctly maps `ProjectDetails[]` → `ProjectCardDto[]` with all fallbacks
+- ✅ `openCreate()` increments `createKey` for remount trigger
+- ✅ `navigateToProject('id')` dispatches React Navigation action correctly
+- ✅ `loading`, `error`, `hasProjects` pass through from upstream hook
+- ✅ ProjectsPage imports **zero** application or infrastructure layer code
+- ✅ UI is pure presentation (loads, errors, empty, list rendering)
+- ✅ All 20 unit tests passing
+- ✅ ESLint: 0 errors; TypeScript: strict mode passes
+
+### Files Added (2)
+- `src/hooks/useProjectsPage.ts` (View-Model facade)
+- `__tests__/unit/hooks/useProjectsPage.test.ts` (20 tests)
+
+### Files Modified (1)
+- `src/pages/projects/ProjectsPage.tsx` (refactored to use hook; inline mapping removed)
+
+### Design Doc
+- `design/issue-210-ui-architecture-audit.md` (audit findings + refactoring strategy)
+
 ### Layer Separation Improvement (Before → After)
+| Layer | Before | After |
+|-------|--------|-------|
+| **Data Mapping** | ❌ Inline in UI (`useMemo`) | ✅ Hidden in hook |
+| **Navigation** | ❌ Direct in component | ✅ Facade action `navigateToProject()` |
+| **UI Presentation** | ⚠️ Mixed concerns | ✅ Pure rendering |
+
+---
+
+### Layer Separation Improvement (Dashboard Before → After)
 | Layer | Before | After |
 |-------|--------|-------|
 | **Domain** | ✅ Clean | ✅ Clean |
