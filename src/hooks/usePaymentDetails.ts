@@ -1,3 +1,6 @@
+import { formatCurrency, formatDate } from "../utils/displayFormatters";
+
+
 /**
  * usePaymentDetails — View-Model Facade for PaymentDetails screen.
  *
@@ -37,26 +40,7 @@ export type { DueStatus };
 
 // ── AUD / en-AU formatting helpers (stable module-level functions) ─────────────
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
 
-function formatDate(iso?: string | null): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-AU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
 
 // ── Public interface ──────────────────────────────────────────────────────────
 
@@ -92,8 +76,6 @@ export interface PaymentDetailsViewModel {
   partialAmountError: string;
 
   // ── Formatting helpers (AUD / en-AU locale) ────────────────────────────────
-  formatCurrency: (amount: number) => string;
-  formatDate: (iso?: string | null) => string;
 
   // ── Actions ────────────────────────────────────────────────────────────────
   handleMarkAsPaid: () => void;
@@ -504,8 +486,6 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
     partialModalVisible,
     partialAmount: partialAmountRaw,
     partialAmountError,
-    formatCurrency,
-    formatDate,
     handleMarkAsPaid,
     handlePartialPaymentSubmit,
     handleSelectProject,

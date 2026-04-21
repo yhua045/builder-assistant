@@ -1,3 +1,5 @@
+import { formatCurrency, formatDate } from "../../utils/displayFormatters";
+
 import React from 'react';
 import {
   View,
@@ -70,7 +72,7 @@ export default function PaymentDetails() {
         {/* Amount + Status */}
         <View className="bg-card border border-border rounded-xl p-4 mb-4">
           <Text className="text-3xl font-bold text-foreground mb-1">
-            {vm.formatCurrency(vm.payment.amount ?? 0)}
+            {formatCurrency(vm.payment.amount ?? 0)}
           </Text>
           <View className="flex-row items-center gap-2">
             <View
@@ -111,9 +113,9 @@ export default function PaymentDetails() {
             </Text>
             <Row label="Reference" value={vm.invoice.externalReference ?? vm.invoice.invoiceNumber ?? vm.invoice.id} />
             <Row label="Issued by" value={vm.invoice.issuerName ?? '—'} />
-            <Row label="Issue date" value={vm.formatDate(vm.invoice.dateIssued ?? vm.invoice.issueDate)} />
-            <Row label="Due date" value={vm.formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)} />
-            <Row label="Total" value={vm.formatCurrency(vm.invoice.total)} />
+            <Row label="Issue date" value={formatDate(vm.invoice.dateIssued ?? vm.invoice.issueDate)} />
+            <Row label="Due date" value={formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)} />
+            <Row label="Total" value={formatCurrency(vm.invoice.total)} />
             <Row label="Payment status" value={vm.invoice.paymentStatus} />
             {vm.invoice.status === 'cancelled' && (
               <View className="mt-2 bg-red-50 rounded px-3 py-2">
@@ -130,7 +132,7 @@ export default function PaymentDetails() {
           </Text>
           <Row label="Category" value={vm.payment.paymentCategory ?? '—'} />
           <Row label="Stage" value={vm.payment.stageLabel ?? '—'} />
-          <Row label="Due" value={vm.formatDate(vm.payment.dueDate)} />
+          <Row label="Due" value={formatDate(vm.payment.dueDate)} />
           <Row label="Method" value={vm.payment.method ?? '—'} />
           <Row label="Reference" value={vm.payment.reference ?? '—'} />
           {vm.payment.notes ? <Row label="Notes" value={vm.payment.notes} /> : null}
@@ -187,16 +189,16 @@ export default function PaymentDetails() {
             {vm.linkedPayments.map((p) => (
               <View key={p.id} className="flex-row items-center justify-between py-2 border-b border-border last:border-0">
                 <View>
-                  <Text className="text-sm text-foreground">{vm.formatDate(p.date ?? p.updatedAt)}</Text>
+                  <Text className="text-sm text-foreground">{formatDate(p.date ?? p.updatedAt)}</Text>
                   <Text className="text-xs text-muted-foreground capitalize">{p.status}</Text>
                 </View>
-                <Text className="text-sm font-semibold text-foreground">{vm.formatCurrency(p.amount ?? 0)}</Text>
+                <Text className="text-sm font-semibold text-foreground">{formatCurrency(p.amount ?? 0)}</Text>
               </View>
             ))}
             {vm.totalSettled > 0 && (
               <View className="flex-row justify-between pt-2 mt-1">
                 <Text className="text-sm font-semibold text-foreground">Total settled</Text>
-                <Text className="text-sm font-semibold text-green-600">{vm.formatCurrency(vm.totalSettled)}</Text>
+                <Text className="text-sm font-semibold text-green-600">{formatCurrency(vm.totalSettled)}</Text>
               </View>
             )}
           </View>
@@ -303,7 +305,7 @@ export default function PaymentDetails() {
                         <View className="items-end">
                           <Text className="text-xs text-gray-500 dark:text-gray-400">Due date</Text>
                           <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                            {vm.formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)}
+                            {formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)}
                           </Text>
                         </View>
                       </View>
@@ -313,12 +315,12 @@ export default function PaymentDetails() {
                       <View>
                         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Invoice</Text>
                         <Text className="text-base text-gray-400 dark:text-gray-500 line-through">
-                          {vm.formatCurrency(vm.invoice.total)}
+                          {formatCurrency(vm.invoice.total)}
                         </Text>
                       </View>
                       <View className="items-end">
                         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Remaining Balance</Text>
-                        <Text className="text-xl font-bold text-primary">{vm.formatCurrency(vm.remainingBalance)}</Text>
+                        <Text className="text-xl font-bold text-primary">{formatCurrency(vm.remainingBalance)}</Text>
                       </View>
                     </View>
                   </View>

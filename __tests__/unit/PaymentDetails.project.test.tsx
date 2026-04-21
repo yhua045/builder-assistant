@@ -132,8 +132,6 @@ function makeVm(overrides: Partial<PaymentDetailsViewModel> = {}): PaymentDetail
     partialModalVisible: false,
     partialAmount: '',
     partialAmountError: '',
-    formatCurrency: (n: number) => `$${n}`,
-    formatDate: (s?: string | null) => s ?? '—',
     handleMarkAsPaid: jest.fn(),
     handlePartialPaymentSubmit: jest.fn().mockResolvedValue(undefined),
     handleSelectProject: jest.fn().mockResolvedValue(undefined),

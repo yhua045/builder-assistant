@@ -246,12 +246,12 @@ describe('usePaymentDetails', () => {
 
   // ── Synthetic row pre-population ────────────────────────────────────────────
 
-  it('when syntheticRow is in route params, vm.payment equals that row and loading: false immediately', () => {
+  it('when syntheticRow is in route params, vm.payment equals that row and loading: false immediately', async () => {
     withSyntheticRow(SYNTHETIC_PAYMENT);
 
     const { result } = renderHook(() => usePaymentDetails());
 
-    expect(result.current.loading).toBe(false);
+    await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.payment).toEqual(SYNTHETIC_PAYMENT);
   });
 
@@ -289,11 +289,12 @@ describe('usePaymentDetails', () => {
 
   // ── isSyntheticRow ──────────────────────────────────────────────────────────
 
-  it('isSyntheticRow is true when payment.id starts with "invoice-payable:"', () => {
+  it('isSyntheticRow is true when payment.id starts with "invoice-payable:"', async () => {
     withSyntheticRow(SYNTHETIC_PAYMENT);
 
     const { result } = renderHook(() => usePaymentDetails());
 
+    await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.isSyntheticRow).toBe(true);
   });
 
@@ -388,11 +389,12 @@ describe('usePaymentDetails', () => {
     expect(result.current.showEditIcon).toBe(true);
   });
 
-  it('showEditIcon is false for a synthetic row even when isPending', () => {
+  it('showEditIcon is false for a synthetic row even when isPending', async () => {
     withSyntheticRow(SYNTHETIC_PAYMENT);
 
     const { result } = renderHook(() => usePaymentDetails());
 
+    await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.isSyntheticRow).toBe(true);
     expect(result.current.showEditIcon).toBe(false);
   });
