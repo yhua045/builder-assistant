@@ -1,263 +1,78 @@
-import React, { useState } from 'react';
-import { View, Alert, Text, Pressable, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Paperclip } from 'lucide-react-native';
-import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
-import { MobileFilePickerAdapter } from '../../infrastructure/files/MobileFilePickerAdapter';
-import { MobileFileSystemAdapter } from '../../infrastructure/files/MobileFileSystemAdapter';
-import { validatePdfFile } from '../../utils/fileValidation';
-import { PdfFileMetadata } from '../../types/PdfFileMetadata';
-import { IOcrAdapter } from '../../application/services/IOcrAdapter';
-import { IInvoiceNormalizer, NormalizedInvoice } from '../../application/ai/IInvoiceNormalizer';
-import {
-  ProcessInvoiceUploadUseCase,
-} from '../../application/usecases/invoice/ProcessInvoiceUploadUseCase';
-import { IPdfConverter } from '../../infrastructure/files/IPdfConverter';
 import { ExtractionResultsPanel } from '../../components/invoices/ExtractionResultsPanel';
 import { InvoiceForm } from '../../components/invoices/InvoiceForm';
-import { useInvoices } from '../../hooks/useInvoices';
-import { normalizedInvoiceToFormValues } from '../../utils/normalizedInvoiceToFormValues';
-import { Invoice } from '../../domain/entities/Invoice';
-
-/** Steps in the upload processing pipeline. */
-type ProcessingStep = 'idle' | 'copying' | 'ocr' | 'normalizing' | 'review' | 'error';
+import { IOcrAdapter } from '../../application/services/IOcrAdapter';
+import { IInvoiceNormalizer } from '../../application/ai/IInvoiceNormalizer';
+import { IPdfConverter } from '../../infrastructure/files/IPdfConverter';
+import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
+import { useInvoiceUpload } from '../../hooks/useInvoiceUpload';
 
 interface InvoiceScreenProps {
   onClose: () => void;
-  /** @deprecated: prefer inline form via view state; kept for backward compat in tests */
-  onNavigateToForm?: (options: {
-    mode: 'create';
-    pdfFile?: PdfFileMetadata;
-    initialValues?: Partial<Invoice>;
-  }) => void;
-  /** Optional for dependency injection (testing) */
-  filePickerAdapter?: IFilePickerAdapter;
-  fileSystemAdapter?: IFileSystemAdapter;
-  /** Optional OCR / AI adapters for dependency injection (testing) */
+  /** Optional OCR / AI adapters — forwarded to useInvoiceUpload */
   ocrAdapter?: IOcrAdapter;
   invoiceNormalizer?: IInvoiceNormalizer;
-  /** Optional PDF converter for dependency injection. When provided, PDF uploads
-   * are converted to images before OCR. Defaults to no conversion (empty result). */
   pdfConverter?: IPdfConverter;
-  /** Feature flag — currently unused; reserved for future PDF OCR support */
-  enablePdfParsing?: boolean;
+  /** File adapter overrides — for testing only */
+  filePickerAdapter?: IFilePickerAdapter;
+  fileSystemAdapter?: IFileSystemAdapter;
+  /** @deprecated Navigation is handled inline; kept for backward compat with tests */
+  onNavigateToForm?: () => void;
 }
 
 export const InvoiceScreen = ({
   onClose,
-  onNavigateToForm: _onNavigateToForm,
-  filePickerAdapter,
-  fileSystemAdapter,
   ocrAdapter,
   invoiceNormalizer,
   pdfConverter,
-  enablePdfParsing = false,
+  filePickerAdapter,
+  fileSystemAdapter,
 }: InvoiceScreenProps) => {
-  const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
-  const [processingError, setProcessingError] = useState<string | null>(null);
-  const [normalizedResult, setNormalizedResult] = useState<NormalizedInvoice | null>(null);
-  const [cachedPdfFile, setCachedPdfFile] = useState<PdfFileMetadata | null>(null);
-  // View state for inline form embedding
-  const [view, setView] = useState<'upload' | 'form' | 'review' | 'error'>('upload');
-  const [formInitialValues, setFormInitialValues] = useState<Partial<Invoice> | undefined>(undefined);
-  const [formPdfFile, setFormPdfFile] = useState<PdfFileMetadata | undefined>(undefined);
-
-  const { createInvoice, loading: invoicesLoading } = useInvoices();
-
-  // Use provided adapters or create default instances
-  const filePicker = filePickerAdapter ?? new MobileFilePickerAdapter();
-  const fileSystem = fileSystemAdapter ?? new MobileFileSystemAdapter();
-
-  const buildUseCase = (): ProcessInvoiceUploadUseCase | null => {
-    console.log('[InvoiceScreen] OCR dependency check', {
-      hasOcrAdapter: !!ocrAdapter,
-      hasInvoiceNormalizer: !!invoiceNormalizer,
-      hasPdfConverter: !!pdfConverter,
-      enablePdfParsing,
-    });
-
-    if (ocrAdapter && invoiceNormalizer) {
-      console.log('[InvoiceScreen] Building ProcessInvoiceUploadUseCase with dependencies', {
-        hasOcrAdapter: true,
-        hasInvoiceNormalizer: true,
-        hasPdfConverter: !!pdfConverter,
-      });
-      return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter);
-    }
-
-    console.log('[InvoiceScreen] OCR pipeline disabled - missing dependencies', {
-      hasOcrAdapter: !!ocrAdapter,
-      hasInvoiceNormalizer: !!invoiceNormalizer,
-      hasPdfConverter: !!pdfConverter,
-    });
-
-    return null;
-  };
-
-  const runProcessingPipeline = async (pdfFile: PdfFileMetadata) => {
-    const useCase = buildUseCase();
-    if (!useCase) {
-      // No OCR adapters injected — skip to form directly
-      console.log('[InvoiceScreen] Skipping OCR pipeline and opening manual form (no use case)');
-      setProcessingStep('idle');
-      setFormPdfFile(pdfFile);
-      setFormInitialValues(undefined);
-      setView('form');
-      return;
-    }
-
-    setProcessingStep('ocr');
-    const output = await useCase.execute({
-      fileUri: pdfFile.uri,
-      filename: pdfFile.name,
-      mimeType: pdfFile.mimeType ?? 'application/pdf',
-      fileSize: pdfFile.size,
-    });
-    
-    // Populate form directly with normalized OCR result (skip intermediate review)
-    setNormalizedResult(output.normalized);
-    const initialValues = normalizedInvoiceToFormValues(output.normalized);
-    setFormInitialValues(initialValues);
-    setFormPdfFile(pdfFile);
-    setProcessingStep('idle');
-    setView('form');
-  };
-
-  const handleUploadPdf = async () => {
-    try {
-      setProcessingStep('copying');
-      setProcessingError(null);
-
-      // Step 1: Open file picker
-      const result = await filePicker.pickDocument();
-
-      if (result.cancelled) {
-        setProcessingStep('idle');
-        return;
-      }
-
-      // Step 2: Validate file
-      const validation = validatePdfFile(result.type, result.size);
-      if (!validation.isValid) {
-        setProcessingStep('idle');
-        const alertTitle = validation.error?.includes('20MB')
-          ? 'File Too Large'
-          : 'Invalid File';
-        Alert.alert(alertTitle, validation.error || 'Invalid file');
-        return;
-      }
-
-      // Step 3: Copy file to app's private storage
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).slice(2, 8);
-      const destinationFilename = `invoice_${timestamp}_${randomSuffix}.pdf`;
-
-      const appStorageUri = await fileSystem.copyToAppStorage(
-        result.uri!,
-        destinationFilename,
-      );
-
-      // Step 4: Cache metadata in memory
-      const pdfFile: PdfFileMetadata = {
-        uri: appStorageUri,
-        originalUri: result.uri!,
-        name: result.name!,
-        size: result.size!,
-        mimeType: result.type || 'application/pdf',
-      };
-      setCachedPdfFile(pdfFile);
-
-      // Step 5: Run OCR + normalization pipeline
-      await runProcessingPipeline(pdfFile);
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to process invoice';
-      setProcessingError(errorMessage);
-      setProcessingStep('error');
-    }
-  };
-
-
-
-  const handleAcceptExtraction = (result: NormalizedInvoice) => {
-    const initialValues = normalizedInvoiceToFormValues(result);
-    setFormInitialValues(initialValues);
-    setFormPdfFile(cachedPdfFile ?? undefined);
-    setView('form');
-  };
-
-  const handleRetryExtraction = async () => {
-    if (!cachedPdfFile) return;
-    setNormalizedResult(null);
-    setProcessingError(null);
-    try {
-      await runProcessingPipeline(cachedPdfFile);
-    } catch (err: any) {
-      setProcessingError(err?.message || 'Retry failed');
-      setProcessingStep('error');
-    }
-  };
-
-  const handleFallbackToManual = () => {
-    setFormInitialValues(undefined);
-    setFormPdfFile(cachedPdfFile ?? undefined);
-    setView('form');
-  };
-
-  const handleFormSave = async (data: any) => {
-    // data is the invoice DTO from InvoiceForm
-    const result = await createInvoice(data);
-    if (result.success) {
-      onClose();
-    } else {
-      Alert.alert('Error', result.error || 'Failed to save invoice');
-    }
-  };
-
-  const handleFormCancel = () => {
-    // Return to upload view
-    setView('upload');
-  };
+  const vm = useInvoiceUpload({ onClose, ocrAdapter, invoiceNormalizer, pdfConverter, filePickerAdapter, fileSystemAdapter });
 
   // ── Render: ExtractionResultsPanel (review state) ───────────────────────
-  if (processingStep === 'review' && normalizedResult && view !== 'form') {
+  if (vm.processingStep === 'review' && vm.normalizedResult && vm.view !== 'form') {
     return (
       <View className="flex-1 bg-background" testID="invoice-screen">
         <View className="px-4 pt-8 pb-2 flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-foreground">Review Extraction</Text>
           <Pressable
-            onPress={handleFallbackToManual}
+            onPress={vm.handleFallbackToManual}
             testID="skip-extraction-button"
           >
             <Text className="text-primary font-medium">Skip</Text>
           </Pressable>
         </View>
         <ExtractionResultsPanel
-          extractionResult={normalizedResult}
-          onAccept={handleAcceptExtraction}
-          onRetry={handleRetryExtraction}
-          onEdit={() => {/* inline edits tracked inside ExtractionResultsPanel */}}
+          extractionResult={vm.normalizedResult}
+          onAccept={vm.handleAcceptExtraction}
+          onRetry={vm.handleRetryExtraction}
+          onEdit={() => { /* inline edits tracked inside ExtractionResultsPanel */ }}
         />
       </View>
     );
   }
 
-  // Render inline form when view === 'form'
-  if (view === 'form') {
+  // ── Render: inline form when view === 'form' ─────────────────────────────
+  if (vm.view === 'form') {
     return (
       <View className="flex-1 bg-background" testID="invoice-screen">
         <View className="px-4 pt-4 pb-2 flex-row items-center">
-          <Pressable onPress={() => setView('upload')} testID="invoice-form-back">
+          <Pressable onPress={vm.handleFormCancel} testID="invoice-form-back">
             <Text className="text-primary">← Back</Text>
           </Pressable>
           <Text className="text-2xl font-bold text-foreground ml-4">New Invoice</Text>
         </View>
         <InvoiceForm
           mode="create"
-          initialValues={formInitialValues}
-          onCreate={handleFormSave}
-          onCancel={handleFormCancel}
-          isLoading={invoicesLoading}
-          pdfFile={formPdfFile}
+          initialValues={vm.formInitialValues}
+          onCreate={vm.handleFormSave}
+          onCancel={vm.handleFormCancel}
+          isLoading={vm.invoicesLoading}
+          pdfFile={vm.formPdfFile}
           embedded
         />
       </View>
@@ -265,17 +80,17 @@ export const InvoiceScreen = ({
   }
 
   // ── Render: Error state ──────────────────────────────────────────────────
-  if (processingStep === 'error') {
+  if (vm.processingStep === 'error') {
     return (
       <View className="flex-1 bg-background p-4 pt-8 justify-center" testID="invoice-screen">
         <Text className="text-2xl font-bold text-foreground mb-4">Processing Failed</Text>
         <Text className="text-muted-foreground mb-8" testID="ocr-error-message">
-          {processingError || 'An unexpected error occurred while processing the invoice.'}
+          {vm.processingError || 'An unexpected error occurred while processing the invoice.'}
         </Text>
 
         <Pressable
           className="bg-primary rounded-lg p-4 mb-4 items-center"
-          onPress={handleRetryExtraction}
+          onPress={vm.handleRetryExtraction}
           testID="retry-ocr-button"
         >
           <Text className="text-white font-semibold text-lg">Retry OCR</Text>
@@ -283,7 +98,7 @@ export const InvoiceScreen = ({
 
         <Pressable
           className="bg-secondary rounded-lg p-4 mb-4 items-center"
-          onPress={handleFallbackToManual}
+          onPress={vm.handleFallbackToManual}
           testID="fallback-manual-button"
         >
           <Text className="text-foreground font-semibold text-lg">Enter Manually</Text>
@@ -301,11 +116,6 @@ export const InvoiceScreen = ({
   }
 
   // ── Render: Default upload view — PDF button at top, form immediately below ──
-  const isProcessing =
-    processingStep === 'copying' ||
-    processingStep === 'ocr' ||
-    processingStep === 'normalizing';
-
   return (
     <View className="flex-1 bg-background" testID="invoice-screen">
       {/* Upload Invoice PDF — always shown at the top */}
@@ -313,17 +123,17 @@ export const InvoiceScreen = ({
         <Text className="text-2xl font-bold text-foreground mb-4">New Invoice</Text>
         <Pressable
           testID="upload-pdf-button"
-          onPress={handleUploadPdf}
-          disabled={isProcessing}
+          onPress={vm.handleUploadPdf}
+          disabled={vm.isProcessing}
           className="bg-primary/10 border border-primary/30 p-4 rounded-xl flex-row items-center justify-center active:opacity-70"
         >
-          {isProcessing ? (
+          {vm.isProcessing ? (
             <ActivityIndicator size="small" color="#6366f1" />
           ) : (
             <Paperclip size={20} color="#6366f1" />
           )}
           <Text className="text-primary font-semibold ml-2">
-            {isProcessing ? 'Processing PDF…' : formPdfFile ? formPdfFile.name : 'Upload Invoice PDF'}
+            {vm.isProcessing ? 'Processing PDF…' : vm.formPdfFile ? vm.formPdfFile.name : 'Upload Invoice PDF'}
           </Text>
         </Pressable>
       </View>
@@ -331,11 +141,11 @@ export const InvoiceScreen = ({
       {/* Invoice form — always visible below the upload button */}
       <InvoiceForm
         mode="create"
-        initialValues={formInitialValues}
-        onCreate={handleFormSave}
+        initialValues={vm.formInitialValues}
+        onCreate={vm.handleFormSave}
         onCancel={onClose}
-        isLoading={invoicesLoading}
-        pdfFile={formPdfFile}
+        isLoading={vm.invoicesLoading}
+        pdfFile={vm.formPdfFile}
         embedded
       />
     </View>

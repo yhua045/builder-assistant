@@ -76,7 +76,7 @@ jest.mock('../../../src/application/usecases/payment/AssignProjectToPaymentRecor
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { Alert } from 'react-native';

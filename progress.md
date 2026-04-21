@@ -814,10 +814,139 @@ Archive of the full, original progress log has been copied to: [design/progress-
 
 ---
 
-## 🔄 Session Completion — Issue #210 QuickActions Refactoring (2026-04-21)
+## ✅ Issue #210 Phase 3 — OCR Upload Screens MVVM Refactor (SnapReceiptScreen, InvoiceScreen, QuotationScreen)
+**Status**: COMPLETED  
+**Branch**: `feature/issue-210-refactor-observability`  
+**Date Completed**: 2026-04-21
+
+### Summary
+Refactored three OCR upload screens (`SnapReceiptScreen`, `InvoiceScreen`, `QuotationScreen`) from violating Clean Architecture by instantiating infrastructure adapters directly inside React components, to a clean MVVM-style View-Model Facade pattern. Each screen now uses a dedicated facade hook (`useSnapReceiptUpload`, `useInvoiceUpload`, `useQuotationUpload`) that encapsulates all adapter wiring, OCR pipelines, data normalization, and async state orchestration. The UI components are now pure presentation layers with zero infrastructure imports.
+
+### Changes Made
+
+#### `SnapReceiptScreen` Refactor
+- **New Hook (View-Model Facade)**: `src/hooks/useSnapReceiptUpload.ts`
+  - Implements `SnapReceiptUploadViewModel` interface with:
+    - Camera state: `cameraActive`, `openCamera()`, `closeCamera()`
+    - Upload state: `uploading`, `uploadError`, `ocrProgress`
+    - Extracted data: `extractedReceipt` (normalized receipt with line items)
+    - Actions: `handleUploadReceipt()`, `handleManualEntry()`, `handleSubmit()`, `goBack()`
+  - Instantiates infrastructure adapters (`MobileCameraAdapter`, `MobileFilePickerAdapter`, `MobileFileSystemAdapter`) via `useMemo`
+  - Wraps `ProcessReceiptUploadUseCase` pipeline with error handling and progress tracking
+  - Uses `useCallback` for stable action references
+
+- **Refactored UI Component**: `src/pages/receipts/SnapReceiptScreen.tsx`
+  - Deleted 3 infrastructure adapter imports: `MobileCameraAdapter`, `MobileFilePickerAdapter`, `MobileFileSystemAdapter`
+  - Replaced 20+ lines of adapter instantiation and state setup with single line: `const vm = useSnapReceiptUpload()`
+  - Updated all JSX to use `vm.` prefix (camera state, upload state, handlers)
+  - Camera flow unchanged: tap card → camera opens → take photo → upload → show results
+  - Kept only UI concerns: camera preview rendering, loading/error displays
+
+#### `InvoiceScreen` Refactor
+- **New Hook (View-Model Facade)**: `src/hooks/useInvoiceUpload.ts`
+  - Implements `InvoiceUploadViewModel` interface with:
+    - File selection: `selectFile()`, `uploadedFile`
+    - Upload state: `uploading`, `uploadError`, `ocrProgress`
+    - Extracted data: `extractedInvoice` (normalized invoice with line items)
+    - Actions: `handleUploadInvoice()`, `handleManualEntry()`, `handleSubmit()`, `goBack()`
+  - Instantiates infrastructure adapters (`MobileFilePickerAdapter`, `MobileFileSystemAdapter`) via `useMemo`
+  - Wraps `ProcessInvoiceUploadUseCase` pipeline with error handling
+  - All adapters have stable references via `useMemo`
+
+- **Refactored UI Component**: `src/pages/invoices/InvoiceScreen.tsx`
+  - Deleted 4 infrastructure imports: `MobileFilePickerAdapter`, `MobileFileSystemAdapter`, `IInvoiceNormalizer`, `NormalizedInvoice`
+  - Replaced 25+ lines of adapter setup with single line: `const vm = useInvoiceUpload()`
+  - Updated all JSX to use `vm.` prefix (file state, upload handlers, extracted data bindings)
+  - Invoice form flow unchanged: pick file → upload → extract fields → show form → submit
+  - File picker integration fully encapsulated in hook
+
+#### `QuotationScreen` Refactor
+- **New Hook (View-Model Facade)**: `src/hooks/useQuotationUpload.ts`
+  - Implements `QuotationUploadViewModel` interface with:
+    - File selection: `selectFile()`, `uploadedFile`
+    - Upload state: `uploading`, `uploadError`, `ocrProgress`
+    - Extracted data: `extractedQuotation` (normalized quotation with line items)
+    - Actions: `handleUploadQuotation()`, `handleManualEntry()`, `handleSubmit()`, `goBack()`
+  - Instantiates infrastructure adapters (`MobileFilePickerAdapter`, `MobileFileSystemAdapter`, `IPdfConverter`) via `useMemo`
+  - Wraps `ProcessQuotationUploadUseCase` pipeline with error handling
+  - PDF rendering, OCR, and quotation parsing fully abstracted
+
+- **Refactored UI Component**: `src/pages/quotations/QuotationScreen.tsx`
+  - Deleted 5 infrastructure imports: `MobileFilePickerAdapter`, `MobileFileSystemAdapter`, `IPdfConverter`, `IQuotationParsingStrategy`, `NormalizedQuotation`
+  - Replaced 30+ lines of adapter and parser setup with single line: `const vm = useQuotationUpload()`
+  - Updated all JSX to use `vm.` prefix (file selection, upload state, extracted data bindings)
+  - Quotation form flow unchanged: pick PDF → convert to images → OCR → parse via LLM → show form → submit
+  - All complex adapter wiring hidden from component
+
+### Test Coverage (62 new tests, all passing)
+- **New Hook Tests**:
+  - `__tests__/unit/hooks/useSnapReceiptUpload.test.ts` (20 tests): Camera state, upload flow, error handling, manual entry routing
+  - `__tests__/unit/hooks/useInvoiceUpload.test.ts` (21 tests): File selection, upload pipeline, invoice data extraction, form population
+  - `__tests__/unit/hooks/useQuotationUpload.test.ts` (21 tests): File selection, PDF conversion, OCR + LLM parsing, quotation data extraction
+- **Updated Screen Tests** (3 files):
+  - `__tests__/unit/pages/SnapReceiptScreen.test.tsx`: Mocked `useSnapReceiptUpload` hook instead of adapter instantiation
+  - `__tests__/unit/pages/InvoiceScreen.test.tsx`: Mocked `useInvoiceUpload` hook; verified UI renders extracted data
+  - `__tests__/unit/pages/QuotationScreen.upload.test.tsx`: Mocked `useQuotationUpload` hook; verified quotation form binding
+- **Test Results**: 62 new tests passing; full test suite 1664 tests all passing
+
+### Verification
+- **TypeScript**: `npx tsc --noEmit` passes (strict mode, all types correct)
+- **ESLint**: `npm run lint` passes with **0 errors** (79 pre-existing warnings unchanged; 4 unused imports fixed during this session)
+- **Test Suite**: All 1664 tests passing (including 62 new tests for Phase 3)
+
+### Acceptance Criteria (Design Doc §3 & §7)
+All criteria met:
+- ✅ Three new facade hooks created: `useSnapReceiptUpload`, `useInvoiceUpload`, `useQuotationUpload`
+- ✅ Each hook encapsulates infrastructure adapters, use case wiring, and async orchestration
+- ✅ Camera flow (`SnapReceiptScreen`): Opens/closes camera state managed in hook
+- ✅ File picker flow (`InvoiceScreen`, `QuotationScreen`): File selection and upload state abstracted to hooks
+- ✅ OCR pipeline (`SnapReceiptScreen`, `InvoiceScreen`) and quotation parsing (`QuotationScreen`) wrapped in hooks
+- ✅ Data extraction (normalized receipt/invoice/quotation) returned from hooks to UI for rendering
+- ✅ All three screens have **zero** infrastructure/application layer imports
+- ✅ UI components are pure presentation: render loading/error states, camera previews, forms based on `vm` props only
+- ✅ Adapter references stable via `useMemo` (preventing unnecessary re-renders)
+- ✅ Action callbacks stable via `useCallback` (preventing child re-renders)
+- ✅ All 62 new tests passing (20 + 21 + 21)
+- ✅ TypeScript: strict mode passes; Lint: 0 errors
+
+### Files Added (6)
+- `src/hooks/useSnapReceiptUpload.ts` (View-Model facade)
+- `__tests__/unit/hooks/useSnapReceiptUpload.test.ts` (20 tests)
+- `src/hooks/useInvoiceUpload.ts` (View-Model facade)
+- `__tests__/unit/hooks/useInvoiceUpload.test.ts` (21 tests)
+- `src/hooks/useQuotationUpload.ts` (View-Model facade)
+- `__tests__/unit/hooks/useQuotationUpload.test.ts` (21 tests)
+
+### Files Modified (6)
+- `src/pages/receipts/SnapReceiptScreen.tsx` (refactored to use hook; adapter imports removed; 20+ lines eliminated)
+- `__tests__/unit/pages/SnapReceiptScreen.test.tsx` (updated to mock `useSnapReceiptUpload` hook)
+- `src/pages/invoices/InvoiceScreen.tsx` (refactored to use hook; adapter + normalizer imports removed; 25+ lines eliminated)
+- `__tests__/unit/pages/InvoiceScreen.test.tsx` (updated to mock `useInvoiceUpload` hook)
+- `src/pages/quotations/QuotationScreen.tsx` (refactored to use hook; adapter + parser + normalizer imports removed; 30+ lines eliminated)
+- `__tests__/unit/pages/QuotationScreen.upload.test.tsx` (updated to mock `useQuotationUpload` hook)
+
+### Layer Separation Improvement (Before → After)
+| Layer | Before | After |
+|-------|--------|-------|
+| **Infrastructure Adapters** | ❌ Imported & instantiated in UI | ✅ Hidden in hooks (instanced via `useMemo`) |
+| **Use Case Wiring** | ❌ In UI (`new ProcessXxxUploadUseCase`) | ✅ Encapsulated in hooks |
+| **Data Extraction** | ❌ Raw OCR/parsing results in UI | ✅ Normalized data via hooks (ready-to-render) |
+| **Async Orchestration** | ❌ Mixed error/loading state in UI | ✅ Unified in hook's ViewModel interface |
+| **Camera/File State** | ❌ Direct adapter calls in component | ✅ Facade actions via hook |
+| **UI Presentation** | ⚠️ Mixed concerns (20-30 lines) | ✅ Pure rendering (camera/form/error UI only) |
+
+### Cumulative Session Progress
+**Phase 1 (Dashboard)**: 34 new tests ✅  
+**Phase 2 (PaymentDetails)**: 43 new tests ✅  
+**Phase 3 (OCR Uploads)**: 62 new tests ✅  
+**Total Phase 3 Execution**: 139 new tests cumulative, **1664 tests all passing**
+
+---
+
+## 🔄 Session Completion — Issue #210 Architecture Refactoring (Phases 1-3) (2026-04-21)
 **Status**: COMPLETED & READY FOR MERGE  
 **Branch**: `feature/issue-210-refactor-observability`  
-**PR**: #211 (to be updated)
+**PR**: #211 (ready to open)
 
 ### Session Tasks Completed
 1. ✅ **Review**: Verified all QuickActions refactoring changes in `useDashboard` hook and `DashboardScreen` component

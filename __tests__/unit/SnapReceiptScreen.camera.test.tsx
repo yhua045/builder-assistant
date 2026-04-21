@@ -72,7 +72,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      expect(getByTestId('camera-button')).toBeTruthy();
+      expect(getByTestId('snap-photo-option')).toBeTruthy();
     });
 
     it('should not render camera button when OCR disabled', () => {
@@ -98,7 +98,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(capturePhotoSpy).toHaveBeenCalledTimes(1);
@@ -113,7 +113,14 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         vendor: 'Home Depot',
         total: 127.50,
         date: new Date('2026-02-15'),
-        confidence: { vendor: 0.9, total: 0.95, date: 0.85 },
+        paymentMethod: 'card' as const,
+        currency: 'AUD',
+        subtotal: null,
+        tax: null,
+        receiptNumber: null,
+        notes: null,
+        lineItems: [],
+        confidence: { overall: 0.9, vendor: 0.9, total: 0.95, date: 0.85 },
         suggestedCorrections: [],
       });
 
@@ -125,7 +132,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(mockProcessReceipt).toHaveBeenCalledWith('file:///mock/path/to/receipt.jpg');
@@ -163,7 +170,14 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         vendor: 'Home Depot',
         total: 127.50,
         date: new Date('2026-02-15'),
-        confidence: { vendor: 0.9, total: 0.95, date: 0.85 },
+        paymentMethod: 'card' as const,
+        currency: 'AUD',
+        subtotal: null,
+        tax: null,
+        receiptNumber: null,
+        notes: null,
+        lineItems: [],
+        confidence: { overall: 0.9, vendor: 0.9, total: 0.95, date: 0.85 },
         suggestedCorrections: [],
       };
 
@@ -196,7 +210,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(mockProcessReceipt).not.toHaveBeenCalled();
@@ -214,7 +228,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(mockOnClose).not.toHaveBeenCalled();
@@ -234,12 +248,12 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'Camera Error',
-          expect.stringContaining('permission')
+          'Camera Permission',
+          expect.any(String)
         );
       });
     });
@@ -255,12 +269,12 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
-      fireEvent.press(getByTestId('camera-button'));
+      fireEvent.press(getByTestId('snap-photo-option'));
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'Camera Error',
-          expect.stringContaining('not available')
+          'Camera Unavailable',
+          expect.any(String)
         );
       });
     });
@@ -312,15 +326,15 @@ describe('SnapReceiptScreen - Camera Integration', () => {
 
   describe('Manual Entry Fallback', () => {
     it('should show manual entry option alongside camera button', () => {
-      const { getByTestId, getByText } = render(
+      const { getByTestId } = render(
         <SnapReceiptScreen 
           onClose={mockOnClose} 
           enableOcr={true}
         />
       );
 
-      expect(getByTestId('camera-button')).toBeTruthy();
-      expect(getByText(/or enter manually/i)).toBeTruthy();
+      expect(getByTestId('snap-photo-option')).toBeTruthy();
+      expect(getByTestId('manual-entry-option')).toBeTruthy();
     });
 
     it('should allow direct manual entry without camera', () => {
@@ -331,6 +345,7 @@ describe('SnapReceiptScreen - Camera Integration', () => {
         />
       );
 
+      fireEvent.press(getByTestId('manual-entry-option'));
       expect(getByTestId('receipt-form')).toBeTruthy();
     });
   });

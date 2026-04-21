@@ -12,11 +12,7 @@
  * - All three paths call repos with correct arguments
  */
 
-import {
-  GetPaymentDetailsUseCase,
-  GetPaymentDetailsInput,
-  PaymentDetailsDTO,
-} from '../../../../../src/application/usecases/payment/GetPaymentDetailsUseCase';
+import { GetPaymentDetailsUseCase } from '../../../../../src/application/usecases/payment/GetPaymentDetailsUseCase';
 import { Payment } from '../../../../../src/domain/entities/Payment';
 import { Invoice } from '../../../../../src/domain/entities/Invoice';
 import { Project } from '../../../../../src/domain/entities/Project';
