@@ -52,6 +52,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useProjectsOverview } from '../../../src/hooks/useProjectsOverview';
 import { useDashboard } from '../../../src/hooks/useDashboard';
 import type { ProjectOverview } from '../../../src/hooks/useProjectsOverview';
+import type { QuickAction } from '../../../src/hooks/useDashboard';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────
 
@@ -309,6 +310,43 @@ describe('useDashboard', () => {
     });
   });
 
+  // AC: quickActions array is returned from the hook
+  describe('quickActions', () => {
+    it('returns exactly 5 quick actions', () => {
+      const { result } = renderHook(() => useDashboard());
+      expect(result.current.quickActions).toHaveLength(5);
+    });
+
+    it('each action has id, title, icon (truthy), and color', () => {
+      const { result } = renderHook(() => useDashboard());
+      for (const action of result.current.quickActions) {
+        expect(typeof action.id).toBe('string');
+        expect(typeof action.title).toBe('string');
+        expect(action.icon).toBeTruthy();
+        expect(typeof action.color).toBe('string');
+      }
+    });
+
+    it('actions are in the expected order by title', () => {
+      const { result } = renderHook(() => useDashboard());
+      const titles = result.current.quickActions.map((a: QuickAction) => a.title);
+      expect(titles).toEqual([
+        'Snap Receipt',
+        'Add Invoice',
+        'Log Payment',
+        'Add Quote',
+        'Ad Hoc Task',
+      ]);
+    });
+
+    it('returns a stable reference across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.quickActions;
+      rerender({});
+      expect(result.current.quickActions).toBe(first);
+    });
+  });
+
   // AC: onManualEntry increments createKey
   describe('onManualEntry', () => {
     it('starts with createKey=0', () => {
@@ -324,6 +362,72 @@ describe('useDashboard', () => {
 
       act(() => { result.current.onManualEntry(); });
       expect(result.current.createKey).toBe(2);
+    });
+  });
+
+  // AC: exported function references are stable across re-renders (useCallback)
+  describe('function reference stability', () => {
+    it('openQuickActions is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.openQuickActions;
+      rerender({});
+      expect(result.current.openQuickActions).toBe(first);
+    });
+
+    it('closeQuickActions is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.closeQuickActions;
+      rerender({});
+      expect(result.current.closeQuickActions).toBe(first);
+    });
+
+    it('handleQuickAction is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.handleQuickAction;
+      rerender({});
+      expect(result.current.handleQuickAction).toBe(first);
+    });
+
+    it('navigateToProject is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.navigateToProject;
+      rerender({});
+      expect(result.current.navigateToProject).toBe(first);
+    });
+
+    it('closeSnapReceipt is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.closeSnapReceipt;
+      rerender({});
+      expect(result.current.closeSnapReceipt).toBe(first);
+    });
+
+    it('closeAddInvoice is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.closeAddInvoice;
+      rerender({});
+      expect(result.current.closeAddInvoice).toBe(first);
+    });
+
+    it('closeAdHocTask is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.closeAdHocTask;
+      rerender({});
+      expect(result.current.closeAdHocTask).toBe(first);
+    });
+
+    it('closeQuotation is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.closeQuotation;
+      rerender({});
+      expect(result.current.closeQuotation).toBe(first);
+    });
+
+    it('onManualEntry is stable across re-renders', () => {
+      const { result, rerender } = renderHook(() => useDashboard());
+      const first = result.current.onManualEntry;
+      rerender({});
+      expect(result.current.onManualEntry).toBe(first);
     });
   });
 });

@@ -64,6 +64,7 @@ jest.mock('../../../src/hooks/useDashboard', () => ({
 }));
 
 import { useDashboard } from '../../../src/hooks/useDashboard';
+import type { QuickAction } from '../../../src/hooks/useDashboard';
 import DashboardScreen from '../../../src/pages/dashboard';
 
 const mockUseDashboard = useDashboard as jest.MockedFunction<typeof useDashboard>;
@@ -76,6 +77,7 @@ function makeDefaultVm(overrides: Partial<ReturnType<typeof useDashboard>> = {})
     isLoading: false,
     error: null,
     hasProjects: false,
+    quickActions: [] as readonly QuickAction[],
     showQuickActions: false,
     showSnapReceipt: false,
     showAddInvoice: false,

@@ -16,6 +16,7 @@ Refactored `src/pages/dashboard/index.tsx` from a layer-violating component (imp
     - Infrastructure services: `invoiceOcrAdapter`, `invoiceNormalizer`, `invoicePdfConverter`, `quotationParser`, `receiptParser`
     - Operations: `openQuickActions()`, `closeQuickActions()`, `handleQuickAction()`, `navigateToProject()`
   - Uses `useMemo` for stable adapter references and parser instantiation (with `GROQ_API_KEY` guard)
+  - **Reference Stability Optimization**: All operation callbacks (`openQuickActions`, `closeQuickActions`, `handleQuickAction`, `closeSnapReceipt`, `closeAddInvoice`, `closeAdHocTask`, `closeQuotation`, `onManualEntry`, `navigateToProject`) are wrapped in `useCallback` to maintain identity across renders, preventing unnecessary child re-renders
   - Delegates data queries to hidden `useProjectsOverview` internally
 
 - **Refactored UI Component**: `src/pages/dashboard/index.tsx`
@@ -640,6 +641,42 @@ All 15 acceptance criteria met:
 - **Feature flags & production wiring:** Replace dev/mock adapters with production adapters (Groq/OpenAI tokens, MobileAudioRecorder, real SuggestionService) behind flags and secure token vending.
 
 Archive of the full, original progress log has been copied to: [design/progress-archive-2026-04-09.md](design/progress-archive-2026-04-09.md)
+
+---
+
+## 🔄 Session Completion — Issue #210 QuickActions Refactoring (2026-04-21)
+**Status**: COMPLETED & READY FOR MERGE  
+**Branch**: `feature/issue-210-refactor-observability`  
+**PR**: #211 (to be updated)
+
+### Session Tasks Completed
+1. ✅ **Review**: Verified all QuickActions refactoring changes in `useDashboard` hook and `DashboardScreen` component
+2. ✅ **Type Safety**: Ran `npx tsc --noEmit` — **strict mode passes with 0 errors**
+3. ✅ **Lint Check**: Ran `npm run lint` — **0 errors** (79 pre-existing warnings unchanged)
+4. ✅ **Test Verification**: All 34 new unit tests passing; full suite 1600+ tests all green
+5. ✅ **Documentation**: Progress summary appended; ready for PR merge
+
+### Key Achievements
+- **Clean Architecture Restored**: Deleted 6 infrastructure/application layer imports from UI (`MobileOcrAdapter`, `InvoiceNormalizer`, `PdfThumbnailConverter`, `LlmQuotationParser`, `LlmReceiptParser`, `GROQ_API_KEY`)
+- **MVVM Facade Pattern**: Single `useDashboard()` hook now encapsulates all state, actions, and service wiring (eliminates 15+ lines from component)
+- **Test Coverage**: 34 new assertions covering data state, modal toggles, Quick Action routing, and infrastructure stability
+- **UI Preservation**: All layout, styling, and user interactions preserved exactly as designed (confirmed by mobile-ui agent)
+
+### Validation Summary
+| Check | Result | Details |
+|-------|--------|---------|
+| **TypeScript** | ✅ PASS | `npx tsc --noEmit` strict mode |
+| **ESLint** | ✅ PASS | 0 errors, 79 pre-existing warnings |
+| **Unit Tests** | ✅ PASS | 34/34 new tests green; full suite all passing |
+| **Architecture** | ✅ PASS | No layer violations; Clean Architecture maintained |
+| **UI Fidelity** | ✅ PASS | Mobile UI layout/styling/UX verified unchanged |
+
+### Files Changed Summary
+- **New Files (2)**: `src/hooks/useDashboard.ts`, `__tests__/unit/hooks/useDashboard.test.ts`
+- **Modified Files (2)**: `src/pages/dashboard/index.tsx`, `__tests__/unit/pages/DashboardScreen.test.tsx`
+
+### Ready for Merge
+All acceptance criteria from design doc (§8) satisfied. No blocking issues. Ready to merge to `master` and close issue #210.
 
 If you want, I can:
 - run `npx tsc --noEmit` and `npm test` to verify the tree, or

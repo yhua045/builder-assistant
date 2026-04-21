@@ -4,21 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ProjectOverviewCard } from './components/ProjectOverviewCard';
 import HeroSection from './components/HeroSection';
-import { Camera, Receipt, DollarSign, FileText, Wrench, X, Plus } from 'lucide-react-native';
+import { X, Plus } from 'lucide-react-native';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SnapReceiptScreen } from '../receipts/SnapReceiptScreen';
 import { InvoiceScreen } from '../invoices/InvoiceScreen';
 import { QuotationScreen } from '../quotations/QuotationScreen';
 import TaskScreen from '../tasks/TaskScreen';
 import { useDashboard } from '../../hooks/useDashboard';
-
-const quickActions = [
-  { id: '1', title: 'Snap Receipt', icon: Camera, color: 'bg-chart-1' },
-  { id: '2', title: 'Add Invoice', icon: Receipt, color: 'bg-chart-5' },
-  { id: '3', title: 'Log Payment', icon: DollarSign, color: 'bg-chart-2' },
-  { id: '4', title: 'Add Quote', icon: FileText, color: 'bg-chart-3' },
-  { id: '5', title: 'Ad Hoc Task', icon: Wrench, color: 'bg-chart-4' }
-];
 
 export default function DashboardScreen() {
   const vm = useDashboard();
@@ -109,7 +101,7 @@ export default function DashboardScreen() {
             </View>
 
             <View className="gap-3">
-              {quickActions.map((action) => {
+              {vm.quickActions.map((action) => {
                 const IconComponent = action.icon;
                 return (
                   <Pressable

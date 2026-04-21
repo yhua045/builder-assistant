@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, ComponentType } from 'react';
+import { Camera, Receipt, DollarSign, FileText, Wrench } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import { useProjectsOverview } from './useProjectsOverview';
@@ -12,12 +13,30 @@ import { GROQ_API_KEY } from '@env';
 import type { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
 import type { IReceiptParsingStrategy } from '../application/receipt/IReceiptParsingStrategy';
 
+export interface QuickAction {
+  id: string;
+  title: string;
+  icon: ComponentType<{ size?: number; className?: string; color?: string }>;
+  color: string;
+}
+
+const QUICK_ACTIONS: readonly QuickAction[] = [
+  { id: '1', title: 'Snap Receipt', icon: Camera, color: 'bg-chart-1' },
+  { id: '2', title: 'Add Invoice', icon: Receipt, color: 'bg-chart-5' },
+  { id: '3', title: 'Log Payment', icon: DollarSign, color: 'bg-chart-2' },
+  { id: '4', title: 'Add Quote', icon: FileText, color: 'bg-chart-3' },
+  { id: '5', title: 'Ad Hoc Task', icon: Wrench, color: 'bg-chart-4' },
+];
+
 export interface DashboardViewModel {
   // Data state
   overviews?: ProjectOverview[];
   isLoading: boolean;
   error: Error | null;
   hasProjects: boolean;
+
+  // Presentation config
+  quickActions: readonly QuickAction[];
 
   // Modal / UI state
   showQuickActions: boolean;
@@ -71,7 +90,7 @@ export function useDashboard(): DashboardViewModel {
 
   const hasProjects = (overviews?.length ?? 0) > 0;
 
-  const handleQuickAction = (actionId: string) => {
+  const handleQuickAction = useCallback((actionId: string) => {
     setShowQuickActions(false);
     if (actionId === '1') {
       setShowSnapReceipt(true);
@@ -83,9 +102,9 @@ export function useDashboard(): DashboardViewModel {
       setShowAdHocTask(true);
     }
     // actionId '3' (Log Payment) — TODO: not yet implemented
-  };
+  }, []);
 
-  const navigateToProject = (projectId: string) => {
+  const navigateToProject = useCallback((projectId: string) => {
     navigation.dispatch(
       CommonActions.navigate({
         name: 'Projects',
@@ -96,11 +115,20 @@ export function useDashboard(): DashboardViewModel {
         },
       }),
     );
-  };
+  }, [navigation]);
+
+  const openQuickActions = useCallback(() => setShowQuickActions(true), []);
+  const closeQuickActions = useCallback(() => setShowQuickActions(false), []);
+  const closeSnapReceipt = useCallback(() => setShowSnapReceipt(false), []);
+  const closeAddInvoice = useCallback(() => setShowAddInvoice(false), []);
+  const closeAdHocTask = useCallback(() => setShowAdHocTask(false), []);
+  const closeQuotation = useCallback(() => setShowQuotation(false), []);
+  const onManualEntry = useCallback(() => setCreateKey(k => k + 1), []);
 
   return {
     overviews,
     isLoading,
+    quickActions: QUICK_ACTIONS,
     error: error ?? null,
     hasProjects,
     showQuickActions,
@@ -114,14 +142,14 @@ export function useDashboard(): DashboardViewModel {
     invoicePdfConverter,
     quotationParser,
     receiptParser,
-    openQuickActions: () => setShowQuickActions(true),
-    closeQuickActions: () => setShowQuickActions(false),
+    openQuickActions,
+    closeQuickActions,
     handleQuickAction,
-    closeSnapReceipt: () => setShowSnapReceipt(false),
-    closeAddInvoice: () => setShowAddInvoice(false),
-    closeAdHocTask: () => setShowAdHocTask(false),
-    closeQuotation: () => setShowQuotation(false),
-    onManualEntry: () => setCreateKey(k => k + 1),
+    closeSnapReceipt,
+    closeAddInvoice,
+    closeAdHocTask,
+    closeQuotation,
+    onManualEntry,
     navigateToProject,
   };
 }
