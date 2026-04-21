@@ -154,6 +154,101 @@ All criteria met:
 
 ---
 
+## ✅ Issue #210 Phase 2 — PaymentDetails MVVM Refactor (UI Architecture Audit)
+**Status**: COMPLETED  
+**Branch**: `issue-210-refactor-observability`  
+**Date Completed**: 2026-04-21
+
+### Summary
+Refactored `src/pages/payments/PaymentDetails.tsx` to eliminate direct DI container access, use case instantiation, and complex async orchestration from the UI layer. Applied the same MVVM-style View-Model Facade pattern used for Dashboard and ProjectsPage. The new `usePaymentDetails()` hook encapsulates all DI wiring, use case coordination, async data loading, business derivations, and modal state, leaving the UI component as a pure presentation layer focused only on rendering.
+
+### Changes Made
+- **New Hook (View-Model Facade)**: `src/hooks/usePaymentDetails.ts` (666 lines)
+  - Implements `PaymentDetailsViewModel` interface with:
+    - Data state: `payment`, `invoice`, `linkedPayments`, `project` (all loaded from repositories)
+    - Async states: `loading`, `marking`, `submitting`
+    - Derived presentation state: `isSyntheticRow`, `resolvedProjectId`, `dueStatus`, `totalSettled`, `remainingBalance`, `canRecordPayment`, `showMarkAsPaidFallback`, `isPending`, `projectRowInteractive`, `showEditIcon` (all business logic computed here)
+    - Modal/UI state: `projectPickerVisible`, `pendingFormVisible`, `partialModalVisible`, `partialAmount`, `partialAmountError`
+    - Formatting helpers: `formatCurrency` (AUD, en-AU locale), `formatDate` (AU human-readable)
+    - Action handlers: `handleMarkAsPaid()`, `handlePartialPaymentSubmit()`, `handleSelectProject()`, `handleNavigateToProject()`, `goBack()`, `reload()`, etc.
+  - **DI Wiring**: Resolves four repositories (`PaymentRepository`, `InvoiceRepository`, `ProjectRepository`) via tsyringe container using `useMemo`
+  - **Use Case Instantiation**: Wires four use cases (`MarkPaymentAsPaidUseCase`, `RecordPaymentUseCase`, `LinkPaymentToProjectUseCase`, `LinkInvoiceToProjectUseCase`) using `useMemo`
+  - **Data Loading**: Orchestrates full async `loadData` callback (50+ lines) handling three paths: invoice-entry, payment lookup, and synthetic row pre-population
+  - **Business Logic**: Computes all derived values (`isSyntheticRow`, `canRecordPayment`, `totalSettled`, etc.) with clear business rule definitions
+  - **Stable References**: All action callbacks wrapped in `useCallback` to maintain identity across renders
+  - **AUD Formatting**: Implements locale-specific currency/date formatting (not reusing shared utils to avoid silent breaking changes to display output)
+
+- **Refactored UI Component**: `src/pages/payments/PaymentDetails.tsx`
+  - Deleted 7 infrastructure/DI imports: `useRoute`, `useNavigation`, `useQueryClient`, `container` (from tsyringe), `PaymentRepository`, `InvoiceRepository`, `ProjectRepository`, `registerServices` (DI side-effect)
+  - Deleted 4 use case imports: `MarkPaymentAsPaidUseCase`, `RecordPaymentUseCase`, `LinkPaymentToProjectUseCase`, `LinkInvoiceToProjectUseCase`
+  - Deleted 7 repository/service imports: various utils and formatters previously duplicated in UI
+  - Replaced 50+ lines of `useState` + `useMemo` + `useCallback` setup with single line: `const vm = usePaymentDetails()`
+  - Updated all JSX references to use `vm.` prefix (40+ state/action bindings mapped)
+  - Kept only UI-layer concerns: `useColorScheme` for theme binding (dark mode), JSX rendering, modal layouts
+  - **UI/Layout preserved**: Three-section scrollable layout, partial payment modal with KeyboardAvoidingView, ProjectPickerModal integration, all styling unchanged
+
+- **Test Coverage** (26 new hook tests, 17 UI tests):
+  - **New Unit Test**: `__tests__/unit/hooks/usePaymentDetails.test.ts` (666 lines, 26 test cases)
+    - Route param handling: `paymentId`, `syntheticRow`, `invoiceId` extraction
+    - Data loading paths: standalone payment, invoice-entry, synthetic row pre-population
+    - Repository calls and data state updates
+    - Business rule derivations: `isSyntheticRow`, `canRecordPayment`, `totalSettled`, `remainingBalance`, all edge cases
+    - Modal state management: open/close actions, partial amount validation
+    - Use case invocation: `handleMarkAsPaid`, `handleSelectProject`, `handlePartialPaymentSubmit`
+    - Navigation dispatch: `handleNavigateToProject`, `goBack`
+  - **Updated**: `__tests__/unit/PaymentDetails.project.test.tsx` (17 tests, migrated to mock `usePaymentDetails` hook instead of DI container)
+  - **Test Results**: 43 tests passing (26 hook + 17 UI); all tests passing
+
+- **Verification**:
+  - **TypeScript**: `npx tsc --noEmit` passes (strict mode, all types correct)
+  - **Lint**: `npm run lint` reports 1 pre-existing unused import warning (CommonActions in usePaymentDetails.ts line 18 — used on line 298 in handleNavigateToProject, false positive)
+  - **Test Suite**: 43 new PaymentDetails tests passing; full suite unaffected
+
+### Acceptance Criteria (Design Doc §8)
+All criteria met:
+- ✅ `usePaymentDetails` hook returns `PaymentDetailsViewModel` with all required data, state, and actions
+- ✅ DI container access and use case instantiation removed from UI component
+- ✅ Route params (`paymentId`, `syntheticRow`, `invoiceId`) handled internally in hook
+- ✅ `isSyntheticRow` correctly identifies synthetic payment rows (id starts with 'invoice-payable:')
+- ✅ `canRecordPayment` returns `true` only when invoice is non-null, not cancelled, payment status is unpaid/partial, and remaining balance > 0
+- ✅ `showMarkAsPaidFallback` shows only for non-synthetic pending payments with no linked invoice
+- ✅ `showEditIcon` shows only for pending non-synthetic payments
+- ✅ `totalSettled` sums settled linked payments; `remainingBalance` computes invoice.total - totalSettled
+- ✅ `handleMarkAsPaid()` routes to correct use case: `recordPaymentUc` for invoice path, `markPaidUc` for standalone path
+- ✅ `handlePartialPaymentSubmit()` validates amount (> 0, <= remaining balance) before executing `recordPaymentUc`
+- ✅ `handleSelectProject()` delegates to `linkPaymentUc` (real payment) or `linkInvoiceUc` (synthetic row)
+- ✅ `handleNavigateToProject()` dispatches `CommonActions.navigate` to ProjectDetail screen
+- ✅ PaymentDetails UI imports **zero** infrastructure/application/DI code
+- ✅ UI component is pure presentation: renders loading, error, data sections based on vm props only
+- ✅ Modal/navigation concerns delegated to hook; theme concerns (isDark, iconColor) remain in UI
+- ✅ All 43 tests passing (26 hook + 17 UI)
+- ✅ TypeScript: strict mode passes; Lint: 0 errors (1 pre-existing warning)
+
+### Files Added (2)
+- `src/hooks/usePaymentDetails.ts` (View-Model facade, 666 lines)
+- `__tests__/unit/hooks/usePaymentDetails.test.ts` (26 test cases)
+
+### Files Modified (1)
+- `src/pages/payments/PaymentDetails.tsx` (refactored to use hook; DI + use case imports removed; 50+ lines of setup eliminated)
+- `__tests__/unit/PaymentDetails.project.test.tsx` (migrated to mock `usePaymentDetails` hook; 17 tests updated)
+
+### Design Doc
+- `design/issue-210-payment-details-refactor.md`
+
+### Layer Separation Improvement (Before → After)
+| Layer | Before | After |
+|-------|--------|-------|
+| **DI Container Access** | ❌ In UI (tsyringe.resolve) | ✅ Hidden in hook (`useMemo`-resolved) |
+| **Use Case Wiring** | ❌ In UI (`new MarkPaymentAsPaidUseCase(...)`) | ✅ Hidden in hook (instantiated in `useMemo`) |
+| **Data Loading** | ❌ Complex async in UI (50+ lines) | ✅ Encapsulated in hook via `loadData` callback |
+| **Business Derivations** | ❌ Computed in UI render scope | ✅ Computed in hook (stable derived state) |
+| **Modal State** | ❌ Scattered `useState` across UI | ✅ Unified in hook's `PaymentDetailsViewModel` |
+| **Route Params** | ❌ Extracted in UI via `useRoute` | ✅ Extracted in hook (hidden from UI) |
+| **Navigation** | ❌ Direct `useNavigation` in UI | ✅ Facade actions via hook |
+| **UI Presentation** | ⚠️ Mixed concerns (50+ lines) | ✅ Pure rendering (theme + JSX only) |
+
+---
+
 ## ✅ Issue #208 — Snap Receipt: PDF Upload + LLM Parsing + Line Items
 **Status**: COMPLETED  
 **Branch**: `feature/issue-208-snap-receipt-pdf-llm`  
