@@ -67,17 +67,10 @@ jest.mock('../../../src/application/usecases/payment/RecordPaymentUseCase', () =
   })),
 }));
 
-const mockLinkPaymentExecute = jest.fn().mockResolvedValue({});
-jest.mock('../../../src/application/usecases/payment/LinkPaymentToProjectUseCase', () => ({
-  LinkPaymentToProjectUseCase: jest.fn().mockImplementation(() => ({
-    execute: mockLinkPaymentExecute,
-  })),
-}));
-
-const mockLinkInvoiceExecute = jest.fn().mockResolvedValue(undefined);
-jest.mock('../../../src/application/usecases/invoice/LinkInvoiceToProjectUseCase', () => ({
-  LinkInvoiceToProjectUseCase: jest.fn().mockImplementation(() => ({
-    execute: mockLinkInvoiceExecute,
+const mockAssignProjectExecute = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../../src/application/usecases/payment/AssignProjectToPaymentRecordUseCase', () => ({
+  AssignProjectToPaymentRecordUseCase: jest.fn().mockImplementation(() => ({
+    execute: mockAssignProjectExecute,
   })),
 }));
 
@@ -88,6 +81,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { Alert } from 'react-native';
 import { usePaymentDetails } from '../../../src/hooks/usePaymentDetails';
+import { GetPaymentDetailsUseCase } from '../../../src/application/usecases/payment/GetPaymentDetailsUseCase';
+import { MarkPaymentAsPaidUseCase } from '../../../src/application/usecases/payment/MarkPaymentAsPaidUseCase';
+import { RecordPaymentUseCase } from '../../../src/application/usecases/payment/RecordPaymentUseCase';
+import { AssignProjectToPaymentRecordUseCase } from '../../../src/application/usecases/payment/AssignProjectToPaymentRecordUseCase';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────
 
@@ -196,10 +193,18 @@ beforeEach(() => {
   };
 
   mockContainerResolve.mockImplementation((token: any) => {
-    const t = String(token);
-    if (t === 'PaymentRepository') return mockPaymentRepo;
-    if (t === 'InvoiceRepository') return mockInvoiceRepo;
-    if (t === 'ProjectRepository') return mockProjectRepo;
+    if (token === GetPaymentDetailsUseCase) {
+      return new GetPaymentDetailsUseCase(mockPaymentRepo, mockInvoiceRepo, mockProjectRepo);
+    }
+    if (token === MarkPaymentAsPaidUseCase) {
+      return new (MarkPaymentAsPaidUseCase as any)(mockPaymentRepo, mockInvoiceRepo);
+    }
+    if (token === RecordPaymentUseCase) {
+      return new (RecordPaymentUseCase as any)(mockPaymentRepo, mockInvoiceRepo);
+    }
+    if (token === AssignProjectToPaymentRecordUseCase) {
+      return new (AssignProjectToPaymentRecordUseCase as any)(mockPaymentRepo, mockInvoiceRepo);
+    }
     return {};
   });
 
@@ -446,13 +451,14 @@ describe('usePaymentDetails', () => {
   // ── handleMarkAsPaid (invoice path) ────────────────────────────────────────
 
   it('handleMarkAsPaid (invoice path): calls recordPaymentUc.execute with invoiceId, full remaining balance, status: settled', async () => {
-    withPaymentId('pay-123');
-    mockPaymentRepo.findById.mockResolvedValue(PAYMENT_FIXTURE);
+    // Synthetic rows (isSyntheticRow=true) own the invoice-record path under the new design.
+    withSyntheticRow(SYNTHETIC_PAYMENT);
     mockInvoiceRepo.getInvoice.mockResolvedValue(INVOICE_FIXTURE); // total: 1000
     mockPaymentRepo.findByInvoice.mockResolvedValue([]); // no prior settled payments
 
     const { result } = renderHook(() => usePaymentDetails());
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    // Wait for loadData to populate derivedData (canRecordPayment, remainingBalance).
+    await waitFor(() => expect(result.current.canRecordPayment).toBe(true));
 
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
 
@@ -469,7 +475,6 @@ describe('usePaymentDetails', () => {
       expect.objectContaining({
         invoiceId: 'inv-1',
         amount: 1000, // full balance (no prior settled payments)
-        status: 'settled',
       }),
     );
     alertSpy.mockRestore();
@@ -524,7 +529,6 @@ describe('usePaymentDetails', () => {
       expect.objectContaining({
         invoiceId: 'inv-1',
         amount: 500,
-        status: 'settled',
       }),
     );
     expect(result.current.partialModalVisible).toBe(false);
@@ -566,9 +570,9 @@ describe('usePaymentDetails', () => {
     expect(mockRecordPaymentExecute).not.toHaveBeenCalled();
   });
 
-  // ── handleSelectProject (real payment) ─────────────────────────────────────
+  // ── handleSelectProject (standalone payment) ──────────────────────────────
 
-  it('handleSelectProject (real payment): calls linkPaymentUc.execute with paymentId and projectId', async () => {
+  it('handleSelectProject (standalone payment): calls assignProjectUc.execute with recordContext standalone-payment and paymentId', async () => {
     withPaymentId('pay-456');
     mockPaymentRepo.findById.mockResolvedValue(STANDALONE_PAYMENT);
     mockInvoiceRepo.getInvoice.mockResolvedValue(null);
@@ -580,14 +584,18 @@ describe('usePaymentDetails', () => {
       await result.current.handleSelectProject({ id: 'proj-2', name: 'Granny Flat' } as any);
     });
 
-    expect(mockLinkPaymentExecute).toHaveBeenCalledWith(
-      expect.objectContaining({ paymentId: 'pay-456', projectId: 'proj-2' }),
+    expect(mockAssignProjectExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recordContext: 'standalone-payment',
+        targetId: 'pay-456',
+        projectId: 'proj-2',
+      }),
     );
   });
 
   // ── handleSelectProject (synthetic row) ────────────────────────────────────
 
-  it('handleSelectProject (synthetic row): calls linkInvoiceUc.execute with invoiceId and projectId', async () => {
+  it('handleSelectProject (synthetic row): calls assignProjectUc.execute with recordContext synthetic-invoice and invoiceId', async () => {
     withSyntheticRow(SYNTHETIC_PAYMENT);
     mockPaymentRepo.findByInvoice.mockResolvedValue([]);
     mockInvoiceRepo.getInvoice.mockResolvedValue(INVOICE_FIXTURE);
@@ -599,10 +607,13 @@ describe('usePaymentDetails', () => {
       await result.current.handleSelectProject({ id: 'proj-2', name: 'Granny Flat' } as any);
     });
 
-    expect(mockLinkInvoiceExecute).toHaveBeenCalledWith(
-      expect.objectContaining({ invoiceId: 'inv-1', projectId: 'proj-2' }),
+    expect(mockAssignProjectExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recordContext: 'synthetic-invoice',
+        targetId: 'inv-1',
+        projectId: 'proj-2',
+      }),
     );
-    expect(mockLinkPaymentExecute).not.toHaveBeenCalled();
   });
 
   // ── goBack ──────────────────────────────────────────────────────────────────
@@ -664,5 +675,67 @@ describe('usePaymentDetails', () => {
     // Now call setPartialAmount — should clear error
     act(() => { result.current.setPartialAmount('500'); });
     expect(result.current.partialAmountError).toBe('');
+  });
+
+  // ── GetPaymentDetailsUseCase discriminated input resolution ─────────────────
+
+  describe('loadData — getDetailsUc.execute() discriminated input', () => {
+    it('calls execute with { paymentId } when route has paymentId', async () => {
+      withPaymentId('pay-123');
+      mockPaymentRepo.findById.mockResolvedValue(STANDALONE_PAYMENT);
+      mockInvoiceRepo.getInvoice.mockResolvedValue(null);
+
+      const spy = jest.spyOn(GetPaymentDetailsUseCase.prototype, 'execute');
+
+      const { result } = renderHook(() => usePaymentDetails());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(spy).toHaveBeenCalledWith({ paymentId: 'pay-123' });
+      spy.mockRestore();
+    });
+
+    it('calls execute with { invoiceId } when route has invoiceId', async () => {
+      withInvoiceId('inv-1');
+      mockInvoiceRepo.getInvoice.mockResolvedValue(INVOICE_FIXTURE);
+      mockPaymentRepo.findByInvoice.mockResolvedValue([]);
+      mockProjectRepo.findById.mockResolvedValue(PROJECT_FIXTURE);
+
+      const spy = jest.spyOn(GetPaymentDetailsUseCase.prototype, 'execute');
+
+      const { result } = renderHook(() => usePaymentDetails());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(spy).toHaveBeenCalledWith({ invoiceId: 'inv-1' });
+      spy.mockRestore();
+    });
+
+    it('calls execute with { syntheticRow } when route has syntheticRow', async () => {
+      withSyntheticRow(SYNTHETIC_PAYMENT);
+
+      const spy = jest.spyOn(GetPaymentDetailsUseCase.prototype, 'execute');
+
+      const { result } = renderHook(() => usePaymentDetails());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(spy).toHaveBeenCalledWith({ syntheticRow: SYNTHETIC_PAYMENT });
+      spy.mockRestore();
+    });
+
+    it('state is populated from the DTO returned by execute', async () => {
+      withPaymentId('pay-123');
+      mockPaymentRepo.findById.mockResolvedValue(PAYMENT_FIXTURE);
+      mockInvoiceRepo.getInvoice.mockResolvedValue(INVOICE_FIXTURE);
+      mockPaymentRepo.findByInvoice.mockResolvedValue([]);
+      mockProjectRepo.findById.mockResolvedValue(PROJECT_FIXTURE);
+
+      const { result } = renderHook(() => usePaymentDetails());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.payment).toEqual(PAYMENT_FIXTURE);
+      expect(result.current.invoice).toEqual(INVOICE_FIXTURE);
+      expect(result.current.project).toEqual(PROJECT_FIXTURE);
+      expect(result.current.linkedPayments).toEqual([]);
+      expect(result.current.isSyntheticRow).toBe(false);
+    });
   });
 });

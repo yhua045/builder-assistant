@@ -24,19 +24,28 @@ import { container } from 'tsyringe';
 import { Payment } from '../domain/entities/Payment';
 import { Invoice } from '../domain/entities/Invoice';
 import { Project } from '../domain/entities/Project';
-import { PaymentRepository } from '../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
-import { ProjectRepository } from '../domain/repositories/ProjectRepository';
+import { GetPaymentDetailsUseCase, PaymentDetailsDTO } from '../application/usecases/payment/GetPaymentDetailsUseCase';
 import { MarkPaymentAsPaidUseCase } from '../application/usecases/payment/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../application/usecases/payment/RecordPaymentUseCase';
-import { LinkPaymentToProjectUseCase } from '../application/usecases/payment/LinkPaymentToProjectUseCase';
-import { LinkInvoiceToProjectUseCase } from '../application/usecases/invoice/LinkInvoiceToProjectUseCase';
-import { getDueStatus } from '../utils/getDueStatus';
+import { AssignProjectToPaymentRecordUseCase } from '../application/usecases/payment/AssignProjectToPaymentRecordUseCase';
 import type { DueStatus } from '../utils/getDueStatus';
 import { invalidations } from './queryKeys';
 import '../infrastructure/di/registerServices';
 
 export type { DueStatus };
+
+// ── Input resolver (private helper) ──────────────────────────────────────────
+
+function resolveInput(params: {
+  paymentId?: string;
+  syntheticRow?: Payment;
+  invoiceId?: string;
+}) {
+  if (params.syntheticRow) return { syntheticRow: params.syntheticRow };
+  if (params.paymentId)    return { paymentId: params.paymentId };
+  if (params.invoiceId)    return { invoiceId: params.invoiceId };
+  throw new Error('GetPaymentDetailsUseCase: no valid input provided');
+}
 
 // ── AUD / en-AU formatting helpers (stable module-level functions) ─────────────
 
@@ -118,159 +127,72 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
   const [partialAmountRaw, setPartialAmountRaw] = useState('');
   const [partialAmountError, setPartialAmountError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [derivedData, setDerivedData] = useState<Partial<PaymentDetailsDTO>>({});
 
   const previousProjectIdRef = useRef<string | undefined>(undefined);
+  const targetIdForUpdatesRef = useRef<string>('');
+
+  // recordContext: initialised from syntheticRow param so first render is correct;
+  // overwritten by loadData once the DTO arrives.
+  const [recordContext, setRecordContext] = useState<'synthetic-invoice' | 'standalone-payment'>(() => {
+    if (!syntheticRow) return 'standalone-payment';
+    return (syntheticRow.id ?? '').startsWith('invoice-payable:') ? 'synthetic-invoice' : 'standalone-payment';
+  });
 
   // ── DI resolution (once per mount) ────────────────────────────────────────
 
-  const paymentRepo = useMemo(
-    () => container.resolve<PaymentRepository>('PaymentRepository' as any),
+  const getDetailsUc = useMemo(
+    () => container.resolve(GetPaymentDetailsUseCase),
     [],
   );
-  const invoiceRepo = useMemo(
-    () => container.resolve<InvoiceRepository>('InvoiceRepository' as any),
-    [],
-  );
-  const projectRepo = useMemo(
-    () => container.resolve<ProjectRepository>('ProjectRepository' as any),
-    [],
-  );
-
-  // ── Use-case wiring ────────────────────────────────────────────────────────
-
   const markPaidUc = useMemo(
-    () => new MarkPaymentAsPaidUseCase(paymentRepo, invoiceRepo),
-    [paymentRepo, invoiceRepo],
+    () => container.resolve(MarkPaymentAsPaidUseCase),
+    [],
   );
   const recordPaymentUc = useMemo(
-    () => new RecordPaymentUseCase(paymentRepo, invoiceRepo),
-    [paymentRepo, invoiceRepo],
+    () => container.resolve(RecordPaymentUseCase),
+    [],
   );
-  const linkPaymentUc = useMemo(
-    () => new LinkPaymentToProjectUseCase(paymentRepo),
-    [paymentRepo],
-  );
-  const linkInvoiceUc = useMemo(
-    () => new LinkInvoiceToProjectUseCase(invoiceRepo),
-    [invoiceRepo],
+  const assignProjectUc = useMemo(
+    () => container.resolve(AssignProjectToPaymentRecordUseCase),
+    [],
   );
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     try {
-      // Invoice-entry path: opened from a TimelineInvoiceCard with invoiceId param.
-      if (invoiceIdParam && !paymentId && !syntheticRow) {
-        const [inv, payments] = await Promise.all([
-          invoiceRepo.getInvoice(invoiceIdParam),
-          paymentRepo.findByInvoice(invoiceIdParam),
-        ]);
-        setInvoice(inv);
-        setLinkedPayments(payments);
+      const input = resolveInput({ paymentId, syntheticRow, invoiceId: invoiceIdParam });
+      const dto = await getDetailsUc.execute(input);
 
-        if (inv) {
-          const settled = payments
-            .filter((p) => p.status === 'settled')
-            .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-          const outstanding = inv.total - settled;
-          const syntheticPayment: Payment = {
-            id: `invoice-payable:${inv.id}`,
-            invoiceId: inv.id,
-            projectId: inv.projectId,
-            amount: outstanding,
-            currency: inv.currency,
-            date: inv.dateIssued ?? inv.issueDate,
-            dueDate: inv.dateDue ?? inv.dueDate ?? null,
-            status: 'pending',
-            contractorName: inv.issuerName ?? inv.vendor ?? 'Invoice Payable',
-            notes: inv.notes,
-            reference: inv.externalReference ?? inv.externalId ?? inv.id,
-            stageLabel: inv.externalReference ?? inv.invoiceNumber,
-          } as unknown as Payment;
-          setPayment(syntheticPayment);
-
-          if (inv.projectId) {
-            try {
-              const proj = await projectRepo.findById(inv.projectId);
-              setProject(proj);
-            } catch {
-              setProject(null);
-            }
-          }
-        } else {
-          setPayment(null);
-        }
-        return;
-      }
-
-      let resolved = syntheticRow ?? null;
-      const isSynthetic = resolved?.id?.startsWith('invoice-payable:');
-
-      if (!isSynthetic && paymentId) {
-        resolved = await paymentRepo.findById(paymentId);
-      }
-
-      setPayment(resolved);
-
-      const projectId = isSynthetic ? undefined : resolved?.projectId;
-
-      if (!isSynthetic && projectId) {
-        try {
-          const proj = await projectRepo.findById(projectId);
-          setProject(proj);
-        } catch {
-          setProject(null);
-        }
-      } else if (!isSynthetic) {
-        setProject(null);
-      }
-
-      const resolvedInvoiceId = resolved?.invoiceId;
-      if (resolvedInvoiceId) {
-        const [inv, payments] = await Promise.all([
-          invoiceRepo.getInvoice(resolvedInvoiceId),
-          paymentRepo.findByInvoice(resolvedInvoiceId),
-        ]);
-        setInvoice(inv);
-        setLinkedPayments(payments.filter((p) => p.id !== resolved?.id));
-
-        if (isSynthetic && inv?.projectId) {
-          try {
-            const proj = await projectRepo.findById(inv.projectId);
-            setProject(proj);
-          } catch {
-            setProject(null);
-          }
-        } else if (isSynthetic) {
-          setProject(null);
-        }
-      }
+      setPayment(dto.payment);
+      setInvoice(dto.invoice);
+      setLinkedPayments(dto.linkedPayments);
+      setProject(dto.project);
+      setRecordContext(dto.recordContext);
+      setDerivedData(dto);
+      targetIdForUpdatesRef.current = dto.targetIdForUpdates;
     } catch (e: any) {
       Alert.alert('Error', e?.message ?? 'Failed to load payment details');
     } finally {
       setLoading(false);
     }
-  }, [paymentId, syntheticRow, invoiceIdParam, paymentRepo, invoiceRepo, projectRepo]);
+  }, [getDetailsUc, paymentId, syntheticRow, invoiceIdParam]);
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
-  const isSyntheticRow = (payment?.id ?? '').startsWith('invoice-payable:');
-  const resolvedProjectId = isSyntheticRow ? invoice?.projectId : payment?.projectId;
-  const dueStatus = payment?.dueDate ? getDueStatus(payment.dueDate) : null;
-  const totalSettled = linkedPayments
-    .filter((p) => p.status === 'settled')
-    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  const remainingBalance = invoice ? invoice.total - totalSettled : 0;
-  const canRecordPayment =
-    invoice !== null &&
-    invoice.status !== 'cancelled' &&
-    (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial') &&
-    remainingBalance > 0;
-  const showMarkAsPaidFallback =
-    !invoice && payment?.status === 'pending' && !isSyntheticRow;
-  const isPending = payment?.status === 'pending' || payment?.status == null;
+  const isSyntheticRow = recordContext === 'synthetic-invoice';
+  const resolvedProjectId = derivedData.resolvedProjectId;
+  const dueStatus = derivedData.dueStatus ?? null;
+  const totalSettled = derivedData.totalSettled ?? 0;
+  const remainingBalance = derivedData.remainingBalance ?? 0;
+  const canRecordPayment = derivedData.canRecordPayment ?? false;
+  // Fall back to local computation before loadData populates derivedData (e.g. syntheticRow pre-render)
+  const isPending = derivedData.isPending ?? (payment?.status === 'pending' || payment?.status == null);
+  // UI rules: read from derivedData
+  const showMarkAsPaidFallback = !invoice && isPending && !isSyntheticRow;
   const projectRowInteractive = isPending;
-  const showEditIcon = !!(isPending && !isSyntheticRow);
+  const showEditIcon = isPending && !isSyntheticRow;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -290,21 +212,18 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
 
   const handleSelectProject = useCallback(
     async (selectedProject: Project | undefined) => {
-      if (!payment) return;
-      const isSynth = payment.id.startsWith('invoice-payable:');
+      if (!targetIdForUpdatesRef.current) return;
       const oldProjectId = previousProjectIdRef.current;
       const newProjectId = selectedProject?.id;
       try {
-        if (isSynth) {
-          const invoiceId = payment.invoiceId;
-          if (!invoiceId) return;
-          await linkInvoiceUc.execute({ invoiceId, projectId: newProjectId });
-        } else {
-          await linkPaymentUc.execute({ paymentId: payment.id, projectId: newProjectId });
-        }
+        await assignProjectUc.execute({
+          recordContext,
+          targetId: targetIdForUpdatesRef.current,
+          projectId: newProjectId,
+        });
         await Promise.all(
           invalidations
-            .paymentProjectAssigned({ oldProjectId, newProjectId, isInvoice: isSynth })
+            .paymentProjectAssigned({ oldProjectId, newProjectId, isInvoice: recordContext === 'synthetic-invoice' })
             .map((key) => queryClient.invalidateQueries({ queryKey: key })),
         );
         await loadData();
@@ -312,40 +231,28 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
         Alert.alert('Error', e?.message ?? 'Failed to update project assignment');
       }
     },
-    [payment, linkPaymentUc, linkInvoiceUc, queryClient, loadData],
+    [recordContext, assignProjectUc, queryClient, loadData],
   );
 
   const handleMarkAsPaid = useCallback(() => {
-    // Invoice-linked path: record a new settled payment against the invoice
-    if (
-      invoice &&
-      invoice.status !== 'cancelled' &&
-      (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial')
-    ) {
-      const settled = linkedPayments
-        .filter((p) => p.status === 'settled')
-        .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-      const balance = invoice.total - settled;
-      if (balance <= 0) return;
+    // Invoice-linked path (synthetic row): record a new settled payment against the invoice
+    if (isSyntheticRow) {
+      if (!canRecordPayment) return;
 
-      Alert.alert('Mark as Paid', `Confirm full payment of ${formatCurrency(balance)}?`, [
+      Alert.alert('Mark as Paid', `Confirm full payment of ${formatCurrency(remainingBalance)}?`, [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Confirm',
           onPress: async () => {
             setMarking(true);
             try {
-              const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
               await recordPaymentUc.execute({
-                id,
-                invoiceId: invoice.id,
-                amount: balance,
-                status: 'settled',
-                date: new Date().toISOString(),
-              } as Payment);
+                invoiceId: invoice!.id,
+                amount: remainingBalance,
+              });
               await Promise.all(
                 invalidations
-                  .paymentRecorded({ projectId: invoice.projectId })
+                  .paymentRecorded({ projectId: invoice?.projectId })
                   .map((key) => queryClient.invalidateQueries({ queryKey: key })),
               );
               Alert.alert('Done', 'Payment recorded.', [
@@ -363,7 +270,7 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
     }
 
     // Fallback: standalone payment record (no linked invoice)
-    if (!payment || payment.id.startsWith('invoice-payable:')) return;
+    if (!payment) return;
     Alert.alert('Mark as Paid', `Confirm payment of ${formatCurrency(payment.amount ?? 0)}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -388,30 +295,22 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
         },
       },
     ]);
-  }, [invoice, payment, linkedPayments, markPaidUc, recordPaymentUc, queryClient, navigation]);
+  }, [isSyntheticRow, canRecordPayment, remainingBalance, invoice, payment, markPaidUc, recordPaymentUc, queryClient, navigation]);
 
   const handlePartialPaymentSubmit = useCallback(async () => {
-    const settled = linkedPayments
-      .filter((p) => p.status === 'settled')
-      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-    const balance = invoice ? invoice.total - settled : 0;
     const amountNum = parseFloat(partialAmountRaw);
-    if (!amountNum || amountNum <= 0 || amountNum > balance) {
+    if (!amountNum || amountNum <= 0 || amountNum > remainingBalance) {
       setPartialAmountError(
-        `Enter a valid amount between $0.01 and ${formatCurrency(balance)}.`,
+        `Enter a valid amount between $0.01 and ${formatCurrency(remainingBalance)}.`,
       );
       return;
     }
     setSubmitting(true);
     try {
-      const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       await recordPaymentUc.execute({
-        id,
         invoiceId: invoice!.id,
         amount: amountNum,
-        status: 'settled',
-        date: new Date().toISOString(),
-      } as Payment);
+      });
       await Promise.all(
         invalidations
           .paymentRecorded({ projectId: invoice?.projectId })
@@ -426,7 +325,7 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
     } finally {
       setSubmitting(false);
     }
-  }, [linkedPayments, invoice, partialAmountRaw, recordPaymentUc, queryClient, loadData]);
+  }, [remainingBalance, invoice, partialAmountRaw, recordPaymentUc, queryClient, loadData]);
 
   const openPartialModal = useCallback(() => {
     setPartialAmountRaw(remainingBalance.toString());

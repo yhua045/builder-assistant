@@ -99,8 +99,7 @@ describe('RecordPaymentUseCase integration', () => {
     const inv = InvoiceEntity.create({ total: 200, status: 'issued' }).data();
     await invoiceRepo.createInvoice(inv);
 
-    const p = PaymentEntity.create({ projectId: inv.projectId ?? 'p', invoiceId: inv.id, amount: 200 }).data();
-    await uc.execute(p);
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
 
     const updated = await invoiceRepo.getInvoice(inv.id);
     expect(updated).toBeDefined();
@@ -112,8 +111,7 @@ describe('RecordPaymentUseCase integration', () => {
     const inv = InvoiceEntity.create({ total: 500 }).data();
     await invoiceRepo.createInvoice(inv);
 
-    const p = PaymentEntity.create({ projectId: inv.projectId ?? 'p', invoiceId: inv.id, amount: 200 }).data();
-    await uc.execute(p);
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
 
     const updated = await invoiceRepo.getInvoice(inv.id);
     expect(updated).toBeDefined();
@@ -130,8 +128,7 @@ describe('RecordPaymentUseCase integration', () => {
     await paymentRepo.save(cancelled);
 
     // Now record a small partial payment via the use case
-    const partial = PaymentEntity.create({ invoiceId: inv.id, amount: 100 }).data();
-    await uc.execute({ ...partial, status: 'settled' });
+    await uc.execute({ invoiceId: inv.id, amount: 100 });
 
     const updated = await invoiceRepo.getInvoice(inv.id);
     expect(updated?.paymentStatus).toBe('partial');
@@ -142,13 +139,11 @@ describe('RecordPaymentUseCase integration', () => {
     const inv = InvoiceEntity.create({ total: 300, status: 'issued' }).data();
     await invoiceRepo.createInvoice(inv);
 
-    const p1 = PaymentEntity.create({ invoiceId: inv.id, amount: 100 }).data();
-    await uc.execute({ ...p1, status: 'settled' });
+    await uc.execute({ invoiceId: inv.id, amount: 100 });
     const after1 = await invoiceRepo.getInvoice(inv.id);
     expect(after1?.paymentStatus).toBe('partial');
 
-    const p2 = PaymentEntity.create({ invoiceId: inv.id, amount: 200 }).data();
-    await uc.execute({ ...p2, status: 'settled' });
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
     const after2 = await invoiceRepo.getInvoice(inv.id);
     expect(after2?.paymentStatus).toBe('paid');
     expect(after2?.status).toBe('paid');

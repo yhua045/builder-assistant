@@ -110,12 +110,7 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record a payment for the full amount
-      const payment = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 1000,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 1000 });
 
       // Verify invoice status is updated
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
@@ -135,12 +130,7 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record a partial payment
-      const payment = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 400,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 400 });
 
       // Verify invoice paymentStatus is partial
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
@@ -159,34 +149,19 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record first partial payment (500)
-      const payment1 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 500,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment1);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 500 });
 
       let updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
       expect(updatedInvoice!.paymentStatus).toBe('partial');
 
       // Record second partial payment (500)
-      const payment2 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 500,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment2);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 500 });
 
       updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
       expect(updatedInvoice!.paymentStatus).toBe('partial');
 
       // Record final payment (500) to complete
-      const payment3 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 500,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment3);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 500 });
 
       updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
       expect(updatedInvoice!.paymentStatus).toBe('paid');
@@ -203,12 +178,7 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record a payment exceeding the total
-      const payment = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 1000,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 1000 });
 
       // Verify invoice is marked as paid
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
@@ -236,26 +206,13 @@ describe('InvoicePayment Integration', () => {
 
   describe('edge cases', () => {
     it('handles payment with no invoice link gracefully', async () => {
-      // Record a payment without an invoiceId
-      const payment = PaymentEntity.create({
-        amount: 300,
-        projectId: 'proj_1',
-      }).data();
-
-      // Should not throw an error
-      await expect(recordPaymentUseCase.execute(payment)).resolves.not.toThrow();
+      // Record a payment with a nonexistent invoice (use case requires invoiceId; gracefully skips status update)
+      await expect(recordPaymentUseCase.execute({ invoiceId: 'nonexistent_invoice', amount: 300 })).resolves.not.toThrow();
     });
 
     it('handles payment linked to non-existent invoice gracefully', async () => {
-      // Record a payment with a non-existent invoiceId
-      const payment = PaymentEntity.create({
-        invoiceId: 'nonexistent_invoice',
-        amount: 200,
-        projectId: 'proj_1',
-      }).data();
-
       // Should not throw an error
-      await expect(recordPaymentUseCase.execute(payment)).resolves.not.toThrow();
+      await expect(recordPaymentUseCase.execute({ invoiceId: 'nonexistent_invoice', amount: 200 })).resolves.not.toThrow();
     });
 
     it('correctly accumulates payments from multiple sources', async () => {
@@ -268,29 +225,11 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record payments with different methods
-      const payment1 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 400,
-        projectId: 'proj_1',
-        method: 'bank',
-      }).data();
-      await recordPaymentUseCase.execute(payment1);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 400 });
 
-      const payment2 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 300,
-        projectId: 'proj_1',
-        method: 'cash',
-      }).data();
-      await recordPaymentUseCase.execute(payment2);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 300 });
 
-      const payment3 = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 300,
-        projectId: 'proj_1',
-        method: 'card',
-      }).data();
-      await recordPaymentUseCase.execute(payment3);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 300 });
 
       // Verify all payments are accumulated correctly
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
@@ -314,12 +253,7 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record full payment
-      const payment = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 600,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 600 });
 
       // Verify transition to paid
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);
@@ -337,12 +271,7 @@ describe('InvoicePayment Integration', () => {
       await invoiceRepo.createInvoice(invoice);
 
       // Record payment
-      const payment = PaymentEntity.create({
-        invoiceId: invoice.id,
-        amount: 700,
-        projectId: 'proj_1',
-      }).data();
-      await recordPaymentUseCase.execute(payment);
+      await recordPaymentUseCase.execute({ invoiceId: invoice.id, amount: 700 });
 
       // Verify paymentStatus is updated but status remains draft
       const updatedInvoice = await invoiceRepo.getInvoice(invoice.id);

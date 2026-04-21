@@ -55,18 +55,30 @@ const mockProjectRepo = {
   delete: jest.fn(),
 };
 
-jest.mock('tsyringe', () => ({
-  container: {
-    resolve: (token: string) => {
-      if (token === 'PaymentRepository') return mockPaymentRepo;
-      if (token === 'InvoiceRepository') return mockInvoiceRepo;
-      if (token === 'ProjectRepository') return mockProjectRepo;
-      return {};
-    },
-  },
-  injectable: () => () => {},
-  inject: () => () => {},
-}));
+jest.mock('tsyringe', () => {
+  // Import use case classes lazily to avoid circular mock issues
+  const { GetPaymentDetailsUseCase } = require('../../src/application/usecases/payment/GetPaymentDetailsUseCase');
+  const { MarkPaymentAsPaidUseCase } = require('../../src/application/usecases/payment/MarkPaymentAsPaidUseCase');
+  const { RecordPaymentUseCase } = require('../../src/application/usecases/payment/RecordPaymentUseCase');
+  const { AssignProjectToPaymentRecordUseCase } = require('../../src/application/usecases/payment/AssignProjectToPaymentRecordUseCase');
+
+  const resolve = (token: any) => {
+    if (token === 'PaymentRepository') return mockPaymentRepo;
+    if (token === 'InvoiceRepository') return mockInvoiceRepo;
+    if (token === 'ProjectRepository') return mockProjectRepo;
+    if (token === GetPaymentDetailsUseCase) return new GetPaymentDetailsUseCase(mockPaymentRepo, mockInvoiceRepo, mockProjectRepo);
+    if (token === MarkPaymentAsPaidUseCase) return new MarkPaymentAsPaidUseCase(mockPaymentRepo, mockInvoiceRepo);
+    if (token === RecordPaymentUseCase) return new RecordPaymentUseCase(mockPaymentRepo, mockInvoiceRepo);
+    if (token === AssignProjectToPaymentRecordUseCase) return new AssignProjectToPaymentRecordUseCase(mockPaymentRepo, mockInvoiceRepo);
+    return {};
+  };
+
+  return {
+    container: { resolve },
+    injectable: () => () => {},
+    inject: () => () => {},
+  };
+});
 
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
