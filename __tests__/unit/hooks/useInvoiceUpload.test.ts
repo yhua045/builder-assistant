@@ -168,7 +168,9 @@ describe('useInvoiceUpload', () => {
     // don't pollute subsequent tests.
     MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
       execute: jest.fn().mockResolvedValue({ ...DEFAULT_USE_CASE_OUTPUT }),
-    }));
+      processPdf: jest.fn(),
+      emptyNormalizedInvoice: jest.fn(),
+    } as any));
   });
 
   // AC: Initial state

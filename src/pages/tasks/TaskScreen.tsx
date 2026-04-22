@@ -1,143 +1,26 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
 import { X } from 'lucide-react-native';
-import { container } from 'tsyringe';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { TaskPhotoPreview } from '../../components/tasks/TaskPhotoPreview';
-import MockVoiceParsingService from '../../infrastructure/voice/MockVoiceParsingService';
-import MockAudioRecorder from '../../infrastructure/voice/MockAudioRecorder';
-import { useVoiceTask } from '../../hooks/useVoiceTask';
-import { useCameraTask, type UseCameraTaskReturn } from '../../hooks/useCameraTask';
-import { IVoiceParsingService, TaskDraft } from '../../application/services/IVoiceParsingService';
 import { IAudioRecorder } from '../../application/services/IAudioRecorder';
+import { IVoiceParsingService } from '../../application/services/IVoiceParsingService';
 import { ICameraService } from '../../application/services/ICameraService';
-import type { Task } from '../../domain/entities/Task';
-
-type ViewMode = 'choose' | 'preview' | 'form';
+import { type UseCameraTaskReturn } from '../../hooks/useCameraTask';
+import { useTaskScreen } from '../../hooks/useTaskScreen';
 
 interface Props {
   onClose: () => void;
-  audioRecorder?: any;
-  voiceParsingService?: any;
+  audioRecorder?: IAudioRecorder;
+  voiceParsingService?: IVoiceParsingService;
   /** Optional camera adapter override (used in tests) */
   cameraAdapter?: ICameraService;
   /** Optional pre-built camera hook override (used in tests) */
   cameraHook?: UseCameraTaskReturn;
 }
 
-export default function TaskScreen({ onClose, audioRecorder, voiceParsingService, cameraAdapter, cameraHook: cameraHookProp }: Props) {
-  const recorder = useMemo(() => {
-    if (audioRecorder) return audioRecorder;
-    try {
-      const resolved = container.resolve<IAudioRecorder>('IAudioRecorder');
-      console.log('[TaskScreen] using DI audio recorder:', resolved?.constructor?.name ?? typeof resolved);
-      return resolved;
-    } catch (error) {
-      console.log('[TaskScreen] fallback to MockAudioRecorder (DI resolve failed):', error);
-      return new MockAudioRecorder();
-    }
-  }, [audioRecorder]);
-
-  const voiceService = useMemo(() => {
-    if (voiceParsingService) return voiceParsingService;
-    try {
-      const resolved = container.resolve<IVoiceParsingService>('IVoiceParsingService');
-      console.log('[TaskScreen] using DI voice service:', resolved?.constructor?.name ?? typeof resolved);
-      return resolved;
-    } catch (error) {
-      console.log('[TaskScreen] fallback to MockVoiceParsingService (DI resolve failed):', error);
-      return new MockVoiceParsingService();
-    }
-  }, [voiceParsingService]);
-
-  const { state, startRecording, stopAndParse } = useVoiceTask(recorder, voiceService);
-  const internalCameraHook = useCameraTask(cameraAdapter);
-  const cameraHook = cameraHookProp ?? internalCameraHook;
-
-  const [view, setView] = useState<ViewMode>('choose');
-  const [initialDraft, setInitialDraft] = useState<TaskDraft | undefined>(undefined);
-
-  // Camera flow state
-  const [capturedUri, setCapturedUri] = useState<string | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [createdTask, setCreatedTask] = useState<Task | null>(null);
-
-  // ---------------------------------------------------------------------------
-  // Voice handlers
-  // ---------------------------------------------------------------------------
-
-  const handleStartVoice = async () => {
-    try {
-      await startRecording();
-    } catch (e: any) {
-      Alert.alert('Recording failed', e?.message ?? '');
-    }
-  };
-
-  const handleStopVoice = async () => {
-    try {
-      const draft = await stopAndParse();
-      setInitialDraft(draft);
-      setView('form');
-    } catch (e: any) {
-      Alert.alert('Parsing failed', e?.message ?? '');
-    }
-  };
-
-  const handleManual = () => {
-    setInitialDraft(undefined);
-    setCreatedTask(null);
-    setView('form');
-  };
-
-  // ---------------------------------------------------------------------------
-  // Camera handlers
-  // ---------------------------------------------------------------------------
-
-  const doCapture = async (): Promise<string | null> => {
-    setIsCapturing(true);
-    try {
-      return await cameraHook.capturePhoto({ quality: 0.8, maxWidth: 2048, maxHeight: 2048 });
-    } catch (e: any) {
-      Alert.alert('Camera error', e?.message ?? 'Could not capture photo');
-      return null;
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const handleUseCamera = async () => {
-    const uri = await doCapture();
-    if (!uri) return; // cancelled → stay on choose
-    setCapturedUri(uri);
-    setView('preview');
-  };
-
-  const handleRetake = async () => {
-    const uri = await doCapture();
-    if (!uri) return; // cancelled → stay on preview
-    setCapturedUri(uri);
-  };
-
-  const handleConfirm = async () => {
-    if (!capturedUri) return;
-    setIsCreatingTask(true);
-    try {
-      const task = await cameraHook.createFromPhoto(capturedUri, undefined);
-      setCreatedTask(task);
-      setView('form');
-    } catch (e: any) {
-      Alert.alert('Error', 'Could not create task from photo');
-    } finally {
-      setIsCreatingTask(false);
-    }
-  };
-
-  const handleCancelPreview = () => {
-    setCapturedUri(null);
-    setView('choose');
-  };
+export default function TaskScreen({ onClose, audioRecorder, voiceParsingService, cameraAdapter, cameraHook }: Props) {
+  const vm = useTaskScreen({ audioRecorder, voiceParsingService, cameraAdapter, cameraHook });
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -149,10 +32,10 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
           </Pressable>
         </View>
 
-        {view === 'choose' && (
+        {vm.view === 'choose' && (
           <View className="flex-1 justify-center gap-4">
             <Pressable
-              onPress={handleStartVoice}
+              onPress={vm.handleStartVoice}
               className="bg-card rounded-xl p-6 mb-3"
               testID="voice-start"
             >
@@ -161,7 +44,7 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
             </Pressable>
 
             <Pressable
-              onPress={handleManual}
+              onPress={vm.handleManual}
               className="bg-card rounded-xl p-6 mb-3"
               testID="manual-start"
             >
@@ -170,28 +53,28 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
             </Pressable>
 
             <Pressable
-              onPress={handleUseCamera}
+              onPress={vm.handleUseCamera}
               className="bg-card rounded-xl p-6"
               testID="camera-start"
-              disabled={isCapturing}
+              disabled={vm.isCapturing}
             >
               <Text className="text-lg font-semibold">📷 Use Camera</Text>
               <Text className="text-sm text-foreground/70 mt-2">Take a photo to create a task instantly.</Text>
             </Pressable>
 
-            {isCapturing && (
+            {vm.isCapturing && (
               <View className="mt-4 items-center">
                 <ActivityIndicator />
               </View>
             )}
 
-            {state.phase === 'recording' && (
-              <Pressable onPress={handleStopVoice} className="mt-6 bg-red-600 p-3 rounded-lg" testID="voice-stop">
+            {vm.voicePhase === 'recording' && (
+              <Pressable onPress={vm.handleStopVoice} className="mt-6 bg-red-600 p-3 rounded-lg" testID="voice-stop">
                 <Text className="text-white text-center">Stop recording</Text>
               </Pressable>
             )}
 
-            {state.phase === 'parsing' && (
+            {vm.voicePhase === 'parsing' && (
               <View className="mt-6 items-center">
                 <ActivityIndicator />
                 <Text className="text-sm mt-2">Parsing…</Text>
@@ -200,19 +83,19 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
           </View>
         )}
 
-        {view === 'preview' && capturedUri && (
+        {vm.view === 'preview' && vm.capturedUri && (
           <TaskPhotoPreview
-            photoUri={capturedUri}
-            isLoading={isCreatingTask}
-            onRetake={handleRetake}
-            onConfirm={handleConfirm}
-            onCancel={handleCancelPreview}
+            photoUri={vm.capturedUri}
+            isLoading={vm.isCreatingTask}
+            onRetake={vm.handleRetake}
+            onConfirm={vm.handleConfirm}
+            onCancel={vm.handleCancelPreview}
           />
         )}
 
-        {view === 'form' && (
+        {vm.view === 'form' && (
           <TaskForm
-            initialValues={(createdTask ?? initialDraft) as any}
+            initialValues={(vm.createdTask ?? vm.initialDraft) as any}
             onSuccess={onClose}
             onCancel={onClose}
           />
@@ -221,4 +104,3 @@ export default function TaskScreen({ onClose, audioRecorder, voiceParsingService
     </Modal>
   );
 }
-

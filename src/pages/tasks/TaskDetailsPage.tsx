@@ -1,22 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useQueryClient } from '@tanstack/react-query';
-import { useTasks, TaskDetail } from '../../hooks/useTasks';
-import { useDelayReasonTypes } from '../../hooks/useDelayReasonTypes';
-import { useConfirm } from '../../hooks/useConfirm';
-import { Task } from '../../domain/entities/Task';
-import { Invoice } from '../../domain/entities/Invoice';
-import { Document } from '../../domain/entities/Document';
-import { Contact } from '../../domain/entities/Contact';
-import { DocumentRepository } from '../../domain/repositories/DocumentRepository';
-import { TaskRepository } from '../../domain/repositories/TaskRepository';
-import useContacts from '../../hooks/useContacts';
-import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
-import { IFilePickerAdapter } from '../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../infrastructure/files/IFileSystemAdapter';
-import { AddTaskDocumentUseCase } from '../../application/usecases/document/AddTaskDocumentUseCase';
-import { container } from 'tsyringe';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TaskStatusBadge } from '../../components/tasks/TaskStatusBadge';
 import { StatusPriorityRow } from '../../components/tasks/StatusPriorityRow';
@@ -25,16 +9,13 @@ import { TaskDependencySection } from '../../components/tasks/TaskDependencySect
 import { TaskSubcontractorSection } from '../../components/tasks/TaskSubcontractorSection';
 import { TaskProgressSection } from '../../components/tasks/TaskProgressSection';
 import { TaskQuotationSection } from '../../components/tasks/TaskQuotationSection';
-import { useQuotations } from '../../hooks/useQuotations';
-import { AddDelayReasonModal, AddDelayReasonFormData } from '../../components/tasks/AddDelayReasonModal';
-import { AddProgressLogModal, AddProgressLogFormData } from '../../components/tasks/AddProgressLogModal';
-import { ProgressLog } from '../../domain/entities/ProgressLog';
+import { AddDelayReasonModal } from '../../components/tasks/AddDelayReasonModal';
+import { AddProgressLogModal } from '../../components/tasks/AddProgressLogModal';
 import { TaskPickerModal } from './TaskPickerModal';
-import { SubcontractorPickerModal, SubcontractorContact } from '../../components/tasks/SubcontractorPickerModal';
+import { SubcontractorPickerModal } from '../../components/tasks/SubcontractorPickerModal';
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { invalidations } from '../../hooks/queryKeys';
-import { TaskCompletionValidationError, PendingPaymentsForTaskError } from '../../application/errors/TaskCompletionErrors';
+import { useTaskDetails } from '../../hooks/useTaskDetails';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -52,420 +33,10 @@ export default function TaskDetailsPage() {
     openProgressLog?: boolean;
     openDocument?: boolean;
   };
-  const queryClient = useQueryClient();
-  const {
-    getTask,
-    deleteTask,
-    getTaskDetail,
-    updateTask,
-    addDependency,
-    removeDependency,
-    addDelayReason,
-    addProgressLog,
-    updateProgressLog,
-    deleteProgressLog,
-    completeTask,
-    completeTaskAndSettlePayments,
-  } = useTasks();
-  const { delayReasonTypes } = useDelayReasonTypes();
-  const { confirm } = useConfirm();
-  const { contacts: allContacts } = useContacts();
 
-  const [task, setTask] = useState<Task | null>(null);
-  const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
-  const [nextInLine, setNextInLine] = useState<Task[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [subcontractor, setSubcontractor] = useState<Contact | null>(null);
-  const [linkedInvoice, setLinkedInvoice] = useState<Invoice | null>(null);
-  const [hasQuotationRecord, setHasQuotationRecord] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [showDelayModal, setShowDelayModal] = useState(false);
-  const [completing, setCompleting] = useState(false);
-  const [showTaskPicker, setShowTaskPicker] = useState(false);
-  const [showSubcontractorPicker, setShowSubcontractorPicker] = useState(false);
-  const [uploadingDocument, setUploadingDocument] = useState(false);
-  const [showAddLogModal, setShowAddLogModal] = useState(false);
-  const [editingLog, setEditingLog] = useState<ProgressLog | null>(null);
+  const vm = useTaskDetails(taskId, { progressLog: openProgressLog, document: openDocument });
 
-  const documentRepository = useMemo(() => {
-    try {
-      return container.resolve<DocumentRepository>('DocumentRepository');
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const taskRepository = useMemo(() => {
-    try {
-      return container.resolve<TaskRepository>('TaskRepository');
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const filePickerAdapter = useMemo(() => {
-    try {
-      return container.resolve<IFilePickerAdapter>('IFilePickerAdapter');
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const fileSystemAdapter = useMemo(() => {
-    try {
-      return container.resolve<IFileSystemAdapter>('IFileSystemAdapter');
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const invoiceRepository = useMemo(() => {
-    try {
-      return container.resolve<InvoiceRepository>('InvoiceRepository');
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const { listQuotations } = useQuotations();
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [t, detail] = await Promise.all([
-        getTask(taskId),
-        getTaskDetail(taskId),
-      ]);
-      setTask(t);
-      setTaskDetail(detail);
-
-      // Load next-in-line: tasks that depend on this task (downstream)
-      if (taskRepository) {
-        try {
-          const dependents = await taskRepository.findDependents(taskId);
-          setNextInLine(dependents.slice(0, 3));
-        } catch {
-          setNextInLine([]);
-        }
-      }
-
-      // Load documents linked to this task
-      if (documentRepository) {
-        try {
-          const docs = await documentRepository.findByTaskId(taskId);
-          setDocuments(docs);
-        } catch {
-          setDocuments([]);
-        }
-      }
-
-      // Fetch the linked invoice when the quote has been accepted
-      if (t?.quoteInvoiceId && invoiceRepository) {
-        try {
-          const inv = await invoiceRepository.getInvoice(t.quoteInvoiceId);
-          setLinkedInvoice(inv);
-        } catch {
-          setLinkedInvoice(null);
-        }
-      } else {
-        setLinkedInvoice(null);
-      }
-
-      // Check for a matching quotation record if no invoice linked
-      if (!t?.quoteInvoiceId && t?.projectId && t?.quoteAmount != null) {
-        try {
-          const res = await listQuotations({ projectId: t.projectId, limit: 50 });
-          const match = res.items.find((q) => typeof q.total === 'number' && q.total === t.quoteAmount);
-          setHasQuotationRecord(Boolean(match));
-        } catch {
-          setHasQuotationRecord(false);
-        }
-      } else {
-        setHasQuotationRecord(false);
-      }
-
-      // Resolve subcontractor contact details from the contacts list
-      if (t?.subcontractorId) {
-        const found = allContacts.find((c: any) => c.id === t.subcontractorId);
-        setSubcontractor(
-          found
-            ? ({
-                id: found.id,
-                name: found.name,
-                trade: (found as any).trade ?? (found as any).title,
-                phone: (found as any).phone,
-                email: (found as any).email,
-              } as Contact)
-            : null,
-        );
-      } else {
-        setSubcontractor(null);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [taskId, getTask, getTaskDetail, documentRepository, taskRepository, invoiceRepository, allContacts, listQuotations]);
-
-  const autoTriggered = useRef(false);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadData();
-    });
-    // Load initial data
-    loadData();
-    return unsubscribe;
-  }, [navigation, loadData]);
-
-  // Auto-open modal / picker from navigation params (one-shot, fired after first load)
-  useEffect(() => {
-    if (loading) return;
-    if (autoTriggered.current) return;
-    autoTriggered.current = true;
-    if (openProgressLog) {
-      setShowAddLogModal(true);
-    } else if (openDocument) {
-      handleAddDocument();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  const handleComplete = useCallback(async () => {
-    if (!task) return;
-    setCompleting(true);
-    try {
-      await completeTask(task.id);
-      navigation.goBack();
-    } catch (err) {
-      if (err instanceof PendingPaymentsForTaskError) {
-        const paymentLines = err.pendingPayments
-          .map(p => {
-            const amount = p.amount != null ? `$${p.amount.toLocaleString()}` : 'Unknown amount';
-            const contractor = p.contractorName ?? 'Unknown contractor';
-            const due = p.dueDate ? `Due: ${p.dueDate}` : '';
-            return `\u2022 ${amount} \u2014 ${contractor}${due ? `\n  ${due}` : ''}`;
-          })
-          .join('\n');
-        const capturedTaskId = task.id;
-        Alert.alert(
-          'Unpaid Payment Detected',
-          `This task has an unpaid payment:\n\n${paymentLines}\n\nMark the payment as paid and complete this task?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Mark as Paid & Complete',
-              style: 'default',
-              onPress: async () => {
-                setCompleting(true);
-                try {
-                  await completeTaskAndSettlePayments(capturedTaskId);
-                  navigation.goBack();
-                } catch {
-                  Alert.alert('Error', 'Something went wrong. Please try again.');
-                } finally {
-                  setCompleting(false);
-                }
-              },
-            },
-          ],
-        );
-      } else if (err instanceof TaskCompletionValidationError) {
-        const refs = err.pendingQuotations.map(q => q.reference).join('\n\u2022 ');
-        Alert.alert(
-          'Cannot Mark as Complete',
-          `The following quotations are still unresolved:\n\n\u2022 ${refs}\n\nPlease accept or decline each quotation before completing this task.`,
-          [{ text: 'OK' }],
-        );
-      } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-      }
-    } finally {
-      setCompleting(false);
-    }
-  }, [task, completeTask, completeTaskAndSettlePayments, navigation]);
-
-  const handleDelete = async () => {
-    const confirmed = await confirm({
-      title: 'Delete Task',
-      message: 'Are you sure you want to delete this task?',
-      confirmLabel: 'Delete',
-      destructive: true,
-    });
-    if (!confirmed) return;
-    try {
-      await deleteTask(taskId);
-      navigation.goBack();
-    } catch (e) {
-      Alert.alert('Error', 'Failed to delete task');
-    }
-  };
-
-  // ── Status / Priority quick-edit handlers (issue #131) ────────────────────
-  // Optimistic updates: update local state immediately, persist in background.
-
-
-  const handleStatusChange = useCallback(
-    async (status: Task['status']) => {
-      if (!task) return;
-      const updated: Task = { ...task, status };
-      setTask(updated);
-      try {
-        await updateTask(updated);
-        await Promise.all(
-          invalidations
-            .taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
-        );
-      } catch {
-        setTask(task); // revert on failure
-      }
-    },
-    [task, updateTask, queryClient],
-  );
-
-  const handlePriorityChange = useCallback(
-    async (priority: NonNullable<Task['priority']>) => {
-      if (!task) return;
-      const updated: Task = { ...task, priority };
-      setTask(updated);
-      try {
-        await updateTask(updated);
-        await Promise.all(
-          invalidations
-            .taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
-        );
-      } catch {
-        setTask(task);
-      }
-    },
-    [task, updateTask, queryClient],
-  );
-
-  const handleAddDelayReason = async (data: AddDelayReasonFormData) => {
-    try {
-      await addDelayReason(taskId, data);
-      setShowDelayModal(false);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to add delay reason');
-    }
-  };
-
-  const handleRemoveDependency = async (dependsOnTaskId: string) => {
-    const confirmed = await confirm({
-      title: 'Remove Dependency',
-      message: 'Remove this dependency?',
-      confirmLabel: 'Remove',
-      destructive: true,
-    });
-    if (!confirmed) return;
-    try {
-      await removeDependency(taskId, dependsOnTaskId);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to remove dependency');
-    }
-  };
-
-  const handleAddDependency = async (selectedTaskId: string) => {
-    try {
-      await addDependency(taskId, selectedTaskId);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to add dependency');
-    }
-  };
-
-  const handleAddProgressLog = async (data: AddProgressLogFormData) => {
-    try {
-      await addProgressLog(taskId, data);
-      setShowAddLogModal(false);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to add progress log');
-    }
-  };
-
-  const handleUpdateProgressLog = async (data: AddProgressLogFormData) => {
-    if (!editingLog) return;
-    try {
-      await updateProgressLog(taskId, editingLog.id, data);
-      setEditingLog(null);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to update progress log');
-    }
-  };
-
-  const handleDeleteProgressLog = async (logId: string) => {
-    try {
-      await deleteProgressLog(taskId, logId);
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to delete progress log');
-    }
-  };
-
-  const handleAddDocument = async () => {
-    if (!filePickerAdapter || !fileSystemAdapter || !documentRepository) return;
-    try {
-      const result = await filePickerAdapter.pickDocument();
-      if (result.cancelled || !result.uri || !result.name) return;
-      setUploadingDocument(true);
-      const uc = new AddTaskDocumentUseCase(documentRepository, fileSystemAdapter);
-      await uc.execute({
-        taskId,
-        projectId: task?.projectId,
-        sourceUri: result.uri,
-        filename: result.name,
-        mimeType: result.type,
-        size: result.size,
-      });
-      await Promise.all(
-        invalidations.documentMutated({ taskId })
-          .map(key => queryClient.invalidateQueries({ queryKey: key }))
-      );
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to add document');
-    } finally {
-      setUploadingDocument(false);
-    }
-  };
-
-  const handleSubcontractorSelect = async (contact: SubcontractorContact | undefined) => {
-    if (!task) return;
-    try {
-      const updated = { ...task, subcontractorId: contact?.id };
-      await updateTask(updated);
-      setTask(updated);
-      if (task.projectId) {
-        await Promise.all(
-          invalidations.taskEdited({ projectId: task.projectId, taskId: task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key }))
-        );
-      }
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', 'Failed to update subcontractor');
-    }
-  };
-
-  // Map resolved Contact to SubcontractorInfo shape expected by the section component
-  const subcontractorInfo = subcontractor
-    ? {
-        id: subcontractor.id,
-        name: subcontractor.name,
-        trade: subcontractor.trade,
-        phone: subcontractor.phone,
-        email: subcontractor.email,
-      }
-    : null;
-
-  if (loading) {
+  if (vm.loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator />
@@ -473,15 +44,13 @@ export default function TaskDetailsPage() {
     );
   }
 
-  if (!task) {
+  if (!vm.task) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <Text className="text-muted-foreground">Task not found</Text>
       </View>
     );
   }
-
-  const isCompleted = task.status === 'completed';
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
@@ -492,43 +61,40 @@ export default function TaskDetailsPage() {
         </Pressable>
         <Text className="text-lg font-semibold text-foreground">Task Details</Text>
         <View className="flex-row items-center gap-1 -mr-2">
-            <Pressable onPress={handleDelete} className="p-2">
+            <Pressable onPress={vm.handleDelete} className="p-2">
               <Trash2 className="text-destructive" size={22} />
             </Pressable>
-            {!isCompleted && (
+            {!vm.isCompleted && (
               <Pressable onPress={() => navigation.navigate('EditTask', { taskId })} className="p-2">
                 <Edit className="text-primary" size={22} />
               </Pressable>
             )}
         </View>
       </View>
-      
-      <ScrollView contentContainerStyle={{ paddingBottom: isCompleted ? 24 : 120 }} className="flex-1">
+
+      <ScrollView contentContainerStyle={{ paddingBottom: vm.isCompleted ? 24 : 120 }} className="flex-1">
         {/* Task Header */}
         <View className="px-6 pt-6 pb-4">
           <View className="flex-row items-start gap-4 mb-4">
             <View className="w-16 h-16 rounded-xl bg-muted items-center justify-center overflow-hidden">
-               {/* Use placeholder since vendor image wasn't in original entity */}
                <CheckCircle size={32} className="text-muted-foreground opacity-50" />
             </View>
             <View className="flex-1">
               <Text className="text-xl font-bold text-foreground mb-1">
-                {task.title}
+                {vm.task.title}
               </Text>
               <Text className="text-sm text-muted-foreground mb-2">
-                {subcontractor?.name || 'No vendor assigned'}
+                {vm.subcontractorInfo?.name || 'No vendor assigned'}
               </Text>
               <View className="flex-row items-center gap-2">
-                <TaskStatusBadge status={task.status} />
+                <TaskStatusBadge status={vm.task.status} />
                 <Text className="text-sm text-muted-foreground">
-                  {task.projectId ? `Project: ${task.projectId}` : 'No project'}
+                  {vm.task.projectId ? `Project: ${vm.task.projectId}` : 'No project'}
                 </Text>
               </View>
             </View>
           </View>
         </View>
-
-        {/* Status / Priority and Next-in-line moved below Documents per issue #136 */}
 
         {/* Dates Section */}
         <View className="px-6 mb-6">
@@ -536,7 +102,6 @@ export default function TaskDetailsPage() {
             Schedule
           </Text>
           <View className="flex-row gap-4">
-            {/* Scheduled Start Date */}
             <View className="flex-1 bg-card border border-border rounded-2xl p-4">
               <View className="flex-row items-center gap-2 mb-2">
                 <Calendar className="text-primary" size={18} />
@@ -545,11 +110,10 @@ export default function TaskDetailsPage() {
                 </Text>
               </View>
               <Text className="text-base font-bold text-foreground">
-                {task.startDate ? new Date(task.startDate).toLocaleDateString() : 'Not set'}
+                {vm.task.startDate ? new Date(vm.task.startDate).toLocaleDateString() : 'Not set'}
               </Text>
             </View>
 
-            {/* Due Date */}
             <View className="flex-1 bg-card border border-border rounded-2xl p-4">
               <View className="flex-row items-center gap-2 mb-2">
                 <Clock className="text-red-500" size={18} />
@@ -558,14 +122,14 @@ export default function TaskDetailsPage() {
                 </Text>
               </View>
               <Text className="text-base font-bold text-foreground">
-                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set'}
+                {vm.task.dueDate ? new Date(vm.task.dueDate).toLocaleDateString() : 'Not set'}
               </Text>
             </View>
           </View>
         </View>
-        
+
         {/* Notes Section */}
-        {task.notes && (
+        {vm.task.notes && (
           <View className="px-6 mb-6">
             <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Notes
@@ -574,66 +138,66 @@ export default function TaskDetailsPage() {
               <View className="flex-row items-start gap-3">
                 <FileText className="text-muted-foreground mt-1" size={20} />
                 <Text className="text-foreground text-sm leading-relaxed flex-1">
-                  {task.notes}
+                  {vm.task.notes}
                 </Text>
               </View>
             </View>
           </View>
         )}
 
-        {/* Quotation / Invoice — shows only when linked invoice or quotation record exists */}
-        {(linkedInvoice || hasQuotationRecord) && (
-          <TaskQuotationSection task={task} invoice={linkedInvoice} />
+        {/* Quotation / Invoice */}
+        {(vm.linkedInvoice || vm.hasQuotationRecord) && (
+          <TaskQuotationSection task={vm.task} invoice={vm.linkedInvoice} />
         )}
 
-        {/* Progress Logs — directly under Notes per #136 */}
+        {/* Progress Logs */}
         <TaskProgressSection
-          progressLogs={taskDetail?.progressLogs ?? []}
-          onAddLog={isCompleted ? undefined : () => setShowAddLogModal(true)}
-          onEditLog={isCompleted ? undefined : (log) => setEditingLog(log)}
-          onDeleteLog={isCompleted ? undefined : handleDeleteProgressLog}
+          progressLogs={vm.taskDetail?.progressLogs ?? []}
+          onAddLog={vm.isCompleted ? undefined : vm.openAddLogModal}
+          onEditLog={vm.isCompleted ? undefined : (log) => vm.setEditingLog(log)}
+          onDeleteLog={vm.isCompleted ? undefined : vm.handleDeleteProgressLog}
         />
 
-        {/* === Task Detail Extension Sections === */}
+        {/* Task Detail Extension Sections */}
         <TaskSubcontractorSection
-          subcontractor={subcontractorInfo}
-          onEditSubcontractor={isCompleted ? undefined : () => setShowSubcontractorPicker(true)}
+          subcontractor={vm.subcontractorInfo}
+          onEditSubcontractor={vm.isCompleted ? undefined : vm.openSubcontractorPicker}
         />
 
         <TaskDependencySection
-          dependencyTasks={taskDetail?.dependencyTasks ?? []}
-          onAddDependency={isCompleted ? undefined : () => setShowTaskPicker(true)}
-          onRemoveDependency={isCompleted ? undefined : handleRemoveDependency}
+          dependencyTasks={vm.taskDetail?.dependencyTasks ?? []}
+          onAddDependency={vm.isCompleted ? undefined : vm.openTaskPicker}
+          onRemoveDependency={vm.isCompleted ? undefined : vm.handleRemoveDependency}
         />
 
         <TaskDocumentSection
-          documents={documents}
-          onAddDocument={isCompleted ? undefined : handleAddDocument}
-          uploading={uploadingDocument}
+          documents={vm.documents}
+          onAddDocument={vm.isCompleted ? undefined : vm.handleAddDocument}
+          uploading={vm.uploadingDocument}
         />
 
-        {/* Status & Priority quick-edit (moved below Images & Documents per #136) */}
+        {/* Status & Priority quick-edit */}
         <StatusPriorityRow
-          status={task.status}
-          priority={task.priority ?? 'medium'}
-          onStatusChange={handleStatusChange}
-          onPriorityChange={handlePriorityChange}
-          disablePriority={isCompleted}
+          status={vm.task.status}
+          priority={vm.task.priority ?? 'medium'}
+          onStatusChange={vm.handleStatusChange}
+          onPriorityChange={vm.handlePriorityChange}
+          disablePriority={vm.isCompleted}
         />
 
-        {/* Next-In-Line (moved below Images & Documents per #136) */}
-        {nextInLine.length > 0 && (
+        {/* Next-In-Line */}
+        {vm.nextInLine.length > 0 && (
           <View className="px-6 pt-4 pb-2">
             <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Next in Line
             </Text>
             <View className="bg-card border border-border rounded-2xl overflow-hidden">
-              {nextInLine.map((t, index) => (
+              {vm.nextInLine.map((t, index) => (
                 <View
                   key={t.id}
                   testID={`next-in-line-item-${t.id}`}
                   className={`flex-row items-center px-4 py-3 gap-3 ${
-                    index < nextInLine.length - 1 ? 'border-b border-border' : ''
+                    index < vm.nextInLine.length - 1 ? 'border-b border-border' : ''
                   }`}
                 >
                   <Text className="text-base">
@@ -650,18 +214,18 @@ export default function TaskDetailsPage() {
 
       </ScrollView>
 
-      {/* Bottom Action Button — hidden when task is already completed */}
-      {!isCompleted && (
+      {/* Bottom Action Button */}
+      {!vm.isCompleted && (
         <View className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border">
           <Pressable
             testID="mark-as-complete-button"
-            onPress={handleComplete}
-            disabled={completing}
+            onPress={vm.handleComplete}
+            disabled={vm.completing}
             className={`bg-primary py-4 rounded-2xl items-center flex-row justify-center gap-2${
-              completing ? ' opacity-50' : ''
+              vm.completing ? ' opacity-50' : ''
             }`}
           >
-            {completing ? (
+            {vm.completing ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
               <CheckCircle className="text-primary-foreground" size={20} />
@@ -674,53 +238,53 @@ export default function TaskDetailsPage() {
       )}
 
       <AddDelayReasonModal
-        visible={showDelayModal}
-        delayReasonTypes={delayReasonTypes}
-        onSubmit={handleAddDelayReason}
-        onClose={() => setShowDelayModal(false)}
+        visible={vm.showDelayModal}
+        delayReasonTypes={vm.delayReasonTypes}
+        onSubmit={vm.handleAddDelayReason}
+        onClose={vm.closeDelayModal}
       />
 
       {/* Progress Log — create */}
       <AddProgressLogModal
-        visible={showAddLogModal}
-        onClose={() => setShowAddLogModal(false)}
-        onSubmit={handleAddProgressLog}
+        visible={vm.showAddLogModal}
+        onClose={vm.closeAddLogModal}
+        onSubmit={vm.handleAddProgressLog}
       />
 
       {/* Progress Log — edit */}
       <AddProgressLogModal
-        visible={editingLog !== null}
+        visible={vm.editingLog !== null}
         initialValues={
-          editingLog
+          vm.editingLog
             ? {
-                id: editingLog.id,
-                logType: editingLog.logType,
-                notes: editingLog.notes,
-                photos: editingLog.photos,
-                actor: editingLog.actor,
+                id: vm.editingLog.id,
+                logType: vm.editingLog.logType,
+                notes: vm.editingLog.notes,
+                photos: vm.editingLog.photos,
+                actor: vm.editingLog.actor,
               }
             : undefined
         }
-        onClose={() => setEditingLog(null)}
-        onSubmit={handleUpdateProgressLog}
+        onClose={() => vm.setEditingLog(null)}
+        onSubmit={vm.handleUpdateProgressLog}
       />
 
-      {task?.projectId && (
+      {vm.task?.projectId && (
         <TaskPickerModal
-          visible={showTaskPicker}
-          projectId={task.projectId}
+          visible={vm.showTaskPicker}
+          projectId={vm.task.projectId}
           excludeTaskId={taskId}
-          existingDependencyIds={(taskDetail?.dependencyTasks ?? []).map((t) => t.id)}
-          onSelect={handleAddDependency}
-          onClose={() => setShowTaskPicker(false)}
+          existingDependencyIds={(vm.taskDetail?.dependencyTasks ?? []).map((t) => t.id)}
+          onSelect={vm.handleAddDependency}
+          onClose={vm.closeTaskPicker}
         />
       )}
 
       <SubcontractorPickerModal
-        visible={showSubcontractorPicker}
-        selectedId={task.subcontractorId}
-        onSelect={handleSubcontractorSelect}
-        onClose={() => setShowSubcontractorPicker(false)}
+        visible={vm.showSubcontractorPicker}
+        selectedId={vm.task.subcontractorId}
+        onSelect={vm.handleSubcontractorSelect}
+        onClose={vm.closeSubcontractorPicker}
       />
     </SafeAreaView>
   );

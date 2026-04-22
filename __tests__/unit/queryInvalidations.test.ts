@@ -280,7 +280,7 @@ describe('useTasks — updateTask invalidations', () => {
     const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
 
     await act(async () => {
-      await result.current.updateTask({ id: TASK_ID, projectId: PROJECT_ID, title: 'New title', status: 'in_progress' });
+      await result.current.updateTask(TASK_ID, { title: 'New title', status: 'in_progress' });
     });
 
     const calledKeys = invalidateSpy.mock.calls.map((c: any) => c[0].queryKey);

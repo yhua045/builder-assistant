@@ -6,12 +6,10 @@ import '../infrastructure/di/registerServices';
 import { Task } from '../domain/entities/Task';
 import { Document } from '../domain/entities/Document';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../domain/repositories/DocumentRepository';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { PaymentRepository } from '../domain/repositories/PaymentRepository';
 import { ContactRepository } from '../domain/repositories/ContactRepository';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
-import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
 import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
 import { invalidations } from './queryKeys';
 import { useCreateAuditLog } from './useCreateAuditLog';
@@ -198,15 +196,6 @@ export function useTaskForm({
     () => container.resolve<TaskRepository>('TaskRepository'),
     [],
   );
-  const documentRepository = useMemo(
-    () => container.resolve<DocumentRepository>('DocumentRepository'),
-    [],
-  );
-  const fileSystem = useMemo(
-    () => container.resolve<IFileSystemAdapter>('FileSystemAdapter'),
-    [],
-  );
-
   const createTaskUseCase = useMemo(
     () => new CreateTaskUseCase(taskRepository),
     [taskRepository],
@@ -216,12 +205,12 @@ export function useTaskForm({
     [taskRepository],
   );
   const addTaskDocumentUseCase = useMemo(
-    () => new AddTaskDocumentUseCase(documentRepository, fileSystem),
-    [documentRepository, fileSystem],
+    () => container.resolve<AddTaskDocumentUseCase>('AddTaskDocumentUseCase'),
+    [],
   );
   const removeTaskDocumentUseCase = useMemo(
-    () => new RemoveTaskDocumentUseCase(documentRepository, fileSystem),
-    [documentRepository, fileSystem],
+    () => container.resolve<RemoveTaskDocumentUseCase>('RemoveTaskDocumentUseCase'),
+    [],
   );
   const addDependencyUseCase = useMemo(
     () => new AddTaskDependencyUseCase(taskRepository),
@@ -311,26 +300,27 @@ export function useTaskForm({
           quoteAmount,
           existingTask?.quoteStatus,
         );
-        const updatedTask: Task = {
-          ...(initialTask as Task),
-          title: title.trim(),
-          notes: notes.trim() || undefined,
-          projectId: projectId || undefined,
-          dueDate: dueDate?.toISOString(),
-          startDate: startDate?.toISOString(),
-          status,
-          priority,
-          subcontractorId,
-          isScheduled: !!dueDate,
-          taskType,
-          workType,
-          quoteAmount: hasValidAmount ? quoteAmount : undefined,
-          quoteStatus: computedQuoteStatus,
-          // Clear invoice link when amount is removed
-          quoteInvoiceId: isVariation && !hasValidAmount ? undefined : existingInvoiceId,
-          updatedAt: new Date().toISOString(),
-        };
-        await updateTaskUseCase.execute(updatedTask);
+        const updatedTask = await updateTaskUseCase.execute({
+          taskId: selfId,
+          updates: {
+            title: title.trim(),
+            notes: notes.trim() || undefined,
+            projectId: projectId || undefined,
+            dueDate: dueDate?.toISOString(),
+            startDate: startDate?.toISOString(),
+            status,
+            priority,
+            subcontractorId,
+            isScheduled: !!dueDate,
+            taskType,
+            workType,
+            quoteAmount: hasValidAmount ? quoteAmount : undefined,
+            quoteStatus: computedQuoteStatus,
+            // Clear invoice link when amount is removed
+            quoteInvoiceId: isVariation && !hasValidAmount ? undefined : existingInvoiceId,
+            updatedAt: new Date().toISOString(),
+          },
+        });
 
         // Attach any newly-picked documents
         for (const pd of pendingDocuments) {

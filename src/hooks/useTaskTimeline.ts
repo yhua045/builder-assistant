@@ -127,8 +127,10 @@ export function useTaskTimeline(projectId: string): UseTaskTimelineReturn {
 
   const markComplete = useCallback(
     async (task: Task) => {
-      const updated: Task = { ...task, status: 'completed', completedAt: new Date().toISOString() };
-      await updateUseCase.execute(updated);
+      await updateUseCase.execute({
+        taskId: task.id,
+        updates: { status: 'completed', completedAt: new Date().toISOString() },
+      });
       await Promise.all(
         invalidations
           .taskEdited({ projectId, taskId: task.id })

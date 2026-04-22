@@ -7,7 +7,7 @@ import { DelayReasonTypeRepository } from '../domain/repositories/DelayReasonTyp
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
-import { UpdateTaskUseCase } from '../application/usecases/task/UpdateTaskUseCase';
+import { UpdateTaskUseCase, UpdateTaskDTO } from '../application/usecases/task/UpdateTaskUseCase';
 import { DeleteTaskUseCase } from '../application/usecases/task/DeleteTaskUseCase';
 import { GetTaskUseCase } from '../application/usecases/task/GetTaskUseCase';
 import { ListTasksUseCase } from '../application/usecases/task/ListTasksUseCase';
@@ -38,7 +38,7 @@ export interface UseTasksReturn {
   loading: boolean;
   refreshTasks: () => Promise<void>;
   createTask: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => Promise<void>;
-  updateTask: (task: Task) => Promise<void>;
+  updateTask: (taskId: string, updates: UpdateTaskDTO['updates']) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   getTask: (id: string) => Promise<Task | null>;
   // Task detail extensions
@@ -93,13 +93,13 @@ export function useTasks(projectId?: string): UseTasksReturn {
     await refetch();
   }, [refetch]);
 
-  const updateTask = useCallback(async (task: Task) => {
-    await updateUseCase.execute(task);
+  const updateTask = useCallback(async (taskId: string, updates: UpdateTaskDTO['updates']) => {
+    await updateUseCase.execute({ taskId, updates });
     await Promise.all(
-      invalidations.taskEdited({ projectId: task.projectId ?? '', taskId: task.id })
+      invalidations.taskEdited({ projectId: projectId ?? '', taskId })
         .map(key => queryClient.invalidateQueries({ queryKey: key }))
     );
-  }, [updateUseCase, queryClient]);
+  }, [updateUseCase, queryClient, projectId]);
 
   const deleteTask = useCallback(async (id: string) => {
     await deleteUseCase.execute(id);

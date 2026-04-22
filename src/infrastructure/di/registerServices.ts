@@ -33,6 +33,9 @@ import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordP
 import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
 import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
 import { AssignProjectToPaymentRecordUseCase } from '../../application/usecases/payment/AssignProjectToPaymentRecordUseCase';
+import { AddTaskDocumentUseCase } from '../../application/usecases/document/AddTaskDocumentUseCase';
+import { RemoveTaskDocumentUseCase } from '../../application/usecases/document/RemoveTaskDocumentUseCase';
+import { GetTaskDetailsUseCase } from '../../application/usecases/task/GetTaskDetailsUseCase';
 import { MobileAudioRecorder } from '../voice/MobileAudioRecorder';
 import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
@@ -93,6 +96,31 @@ if (typeof (container as any).registerSingleton === 'function') {
 		useFactory: (c) => new AssignProjectToPaymentRecordUseCase(
 			c.resolve('PaymentRepository' as any),
 			c.resolve('InvoiceRepository' as any),
+		),
+	});
+
+	// ── Document Use Cases ────────────────────────────────────────────────────
+	container.register('AddTaskDocumentUseCase', {
+		useFactory: (c) => new AddTaskDocumentUseCase(
+			c.resolve('DocumentRepository' as any),
+			c.resolve('FileSystemAdapter' as any),
+		),
+	});
+	container.register('RemoveTaskDocumentUseCase', {
+		useFactory: (c) => new RemoveTaskDocumentUseCase(
+			c.resolve('DocumentRepository' as any),
+			c.resolve('FileSystemAdapter' as any),
+		),
+	});
+
+	// ── Task Details Aggregation Use Case ─────────────────────────────────────
+	container.register('GetTaskDetailsUseCase', {
+		useFactory: (c) => new GetTaskDetailsUseCase(
+			c.resolve('TaskRepository' as any),
+			c.resolve('DocumentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+			c.resolve('QuotationRepository' as any),
+			c.resolve('ContactRepository' as any),
 		),
 	});
 
