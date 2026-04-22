@@ -11,24 +11,24 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { FileText, Clock, DollarSign } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Task } from '../../domain/entities/Task';
-import { Invoice } from '../../domain/entities/Invoice';
+import type { TaskViewDTO, InvoiceViewDTO } from '../../application/dtos/TaskViewDTOs';
+
 
 cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(DollarSign, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export interface TaskQuotationSectionProps {
-  task: Task;
+  task: TaskViewDTO;
   /** Pre-fetched invoice when task.quoteInvoiceId is set. Null/undefined = not yet loaded or not linked. */
-  invoice?: Invoice | null;
+  invoice?: InvoiceViewDTO | null;
 }
 
 // ── Style maps ────────────────────────────────────────────────────────────────
 
 type QuoteStatusConfig = { label: string; bgClass: string; textClass: string };
 
-const QUOTE_STATUS_CONFIG: Record<NonNullable<Task['quoteStatus']>, QuoteStatusConfig> = {
+const QUOTE_STATUS_CONFIG: Record<NonNullable<TaskViewDTO['quoteStatus']>, QuoteStatusConfig> = {
   pending:  { label: 'Pending',  bgClass: 'bg-muted',         textClass: 'text-muted-foreground' },
   issued:   { label: 'Issued',   bgClass: 'bg-blue-100',      textClass: 'text-blue-700' },
   accepted: { label: 'Accepted', bgClass: 'bg-green-100',     textClass: 'text-green-700' },
@@ -37,7 +37,7 @@ const QUOTE_STATUS_CONFIG: Record<NonNullable<Task['quoteStatus']>, QuoteStatusC
 
 type InvoiceStatusConfig = { label: string; bgClass: string; textClass: string };
 
-const INVOICE_STATUS_CONFIG: Record<Invoice['status'], InvoiceStatusConfig> = {
+const INVOICE_STATUS_CONFIG: Record<InvoiceViewDTO['status'], InvoiceStatusConfig> = {
   draft:     { label: 'Draft',     bgClass: 'bg-muted',       textClass: 'text-muted-foreground' },
   issued:    { label: 'Issued',    bgClass: 'bg-blue-100',    textClass: 'text-blue-700' },
   paid:      { label: 'Paid',      bgClass: 'bg-green-100',   textClass: 'text-green-700' },
@@ -90,7 +90,7 @@ export function TaskQuotationSection({ task, invoice }: TaskQuotationSectionProp
                 Quote Amount
               </Text>
               <Text className="text-base font-bold text-foreground">
-                {formatCurrency(task.quoteAmount)}
+                {formatCurrency(task.quoteAmount ?? undefined)}
               </Text>
             </View>
           </View>

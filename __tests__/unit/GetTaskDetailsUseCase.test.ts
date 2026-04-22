@@ -119,7 +119,7 @@ describe('GetTaskDetailsUseCase', () => {
 
     it('fetches documents from DocumentRepository', async () => {
       const result = await useCase.execute(TASK_ID);
-      expect(result!.documents).toEqual([DOCUMENT]);
+      expect(result!.documents[0].id).toEqual(DOCUMENT.id);
       expect(mockDocumentRepo.findByTaskId).toHaveBeenCalledWith(TASK_ID);
     });
 

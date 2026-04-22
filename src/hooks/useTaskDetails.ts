@@ -21,10 +21,16 @@ import '../infrastructure/di/registerServices';
 import { useTasks, TaskDetail } from './useTasks';
 import { useDelayReasonTypes } from './useDelayReasonTypes';
 import { useConfirm } from './useConfirm';
-import { Task } from '../domain/entities/Task';
-import { Document } from '../domain/entities/Document';
-import { Invoice } from '../domain/entities/Invoice';
-import { ProgressLog } from '../domain/entities/ProgressLog';
+import type {
+  TaskViewDTO,
+  TaskDetailViewDTO,
+  DocumentViewDTO,
+  InvoiceViewDTO,
+  NextInLineItemDTO,
+  ProgressLogViewDTO,
+  TaskStatus,
+  TaskPriority,
+} from '../application/dtos/TaskViewDTOs';
 import { IFilePickerAdapter } from '../infrastructure/files/IFilePickerAdapter';
 import { AddTaskDocumentUseCase } from '../application/usecases/document/AddTaskDocumentUseCase';
 import { GetTaskDetailsUseCase, SubcontractorInfo } from '../application/usecases/task/GetTaskDetailsUseCase';
@@ -40,12 +46,12 @@ export type { SubcontractorInfo };
 
 export interface TaskDetailsViewModel {
   // Data state
-  task: Task | null;
-  taskDetail: TaskDetail | null;
-  nextInLine: Task[];
-  documents: Document[];
+  task: TaskViewDTO | null;
+  taskDetail: TaskDetailViewDTO | null;
+  nextInLine: NextInLineItemDTO[];
+  documents: DocumentViewDTO[];
   subcontractorInfo: SubcontractorInfo | null;
-  linkedInvoice: Invoice | null;
+  linkedInvoice: InvoiceViewDTO | null;
   hasQuotationRecord: boolean;
   loading: boolean;
   completing: boolean;
@@ -56,7 +62,7 @@ export interface TaskDetailsViewModel {
   showTaskPicker: boolean;
   showSubcontractorPicker: boolean;
   showAddLogModal: boolean;
-  editingLog: ProgressLog | null;
+  editingLog: ProgressLogViewDTO | null;
 
   // Derived helpers
   isCompleted: boolean;
@@ -65,8 +71,8 @@ export interface TaskDetailsViewModel {
   // Actions
   handleComplete: () => Promise<void>;
   handleDelete: () => Promise<void>;
-  handleStatusChange: (status: Task['status']) => Promise<void>;
-  handlePriorityChange: (priority: NonNullable<Task['priority']>) => Promise<void>;
+  handleStatusChange: (status: TaskStatus) => Promise<void>;
+  handlePriorityChange: (priority: TaskPriority) => Promise<void>;
   handleAddDelayReason: (data: AddDelayReasonFormData) => Promise<void>;
   handleAddDependency: (selectedTaskId: string) => Promise<void>;
   handleRemoveDependency: (dependsOnTaskId: string) => Promise<void>;
@@ -85,7 +91,7 @@ export interface TaskDetailsViewModel {
   closeSubcontractorPicker: () => void;
   openAddLogModal: () => void;
   closeAddLogModal: () => void;
-  setEditingLog: (log: ProgressLog | null) => void;
+  setEditingLog: (log: ProgressLogViewDTO | null) => void;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -132,12 +138,12 @@ export function useTaskDetails(
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  const [task, setTask] = useState<Task | null>(null);
-  const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
-  const [nextInLine, setNextInLine] = useState<Task[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [task, setTask] = useState<TaskViewDTO | null>(null);
+  const [taskDetail, setTaskDetail] = useState<TaskDetailViewDTO | null>(null);
+  const [nextInLine, setNextInLine] = useState<NextInLineItemDTO[]>([]);
+  const [documents, setDocuments] = useState<DocumentViewDTO[]>([]);
   const [subcontractorInfo, setSubcontractorInfo] = useState<SubcontractorInfo | null>(null);
-  const [linkedInvoice, setLinkedInvoice] = useState<Invoice | null>(null);
+  const [linkedInvoice, setLinkedInvoice] = useState<InvoiceViewDTO | null>(null);
   const [hasQuotationRecord, setHasQuotationRecord] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -148,7 +154,7 @@ export function useTaskDetails(
   const [showTaskPicker, setShowTaskPicker] = useState(false);
   const [showSubcontractorPicker, setShowSubcontractorPicker] = useState(false);
   const [showAddLogModal, setShowAddLogModal] = useState(false);
-  const [editingLog, setEditingLog] = useState<ProgressLog | null>(null);
+  const [editingLog, setEditingLog] = useState<ProgressLogViewDTO | null>(null);
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
@@ -159,7 +165,7 @@ export function useTaskDetails(
       const dto = await getTaskDetailsUseCase.execute(taskId);
       if (!dto) return;
       setTask(dto.task);
-      setTaskDetail(dto.taskDetail);
+      setTaskDetail(dto.taskDetail as unknown as TaskDetail);
       setNextInLine(dto.nextInLine);
       setDocuments(dto.documents);
       setLinkedInvoice(dto.linkedInvoice);
@@ -268,7 +274,7 @@ export function useTaskDetails(
   }, [confirm, deleteTask, taskId, navigation]);
 
   const handleStatusChange = useCallback(
-    async (status: Task['status']) => {
+    async (status: TaskStatus) => {
       if (!task) return;
       setTask({ ...task, status });
       try {
@@ -286,7 +292,7 @@ export function useTaskDetails(
   );
 
   const handlePriorityChange = useCallback(
-    async (priority: NonNullable<Task['priority']>) => {
+    async (priority: TaskPriority) => {
       if (!task) return;
       setTask({ ...task, priority });
       try {

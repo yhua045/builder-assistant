@@ -30,6 +30,7 @@ import { GetNearbyProjectsUseCase } from '../../application/usecases/location/Ge
 import { GetPaymentDetailsUseCase } from '../../application/usecases/payment/GetPaymentDetailsUseCase';
 import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
+import { ProcessTaskFormUseCase } from '../../application/usecases/task/ProcessTaskFormUseCase';
 import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
 import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
 import { AssignProjectToPaymentRecordUseCase } from '../../application/usecases/payment/AssignProjectToPaymentRecordUseCase';
@@ -121,6 +122,18 @@ if (typeof (container as any).registerSingleton === 'function') {
 			c.resolve('InvoiceRepository' as any),
 			c.resolve('QuotationRepository' as any),
 			c.resolve('ContactRepository' as any),
+		),
+	});
+
+	// ── Task Form Submission Use Case ─────────────────────────────────────────
+	container.register('ProcessTaskFormUseCase', {
+		useFactory: (c) => new ProcessTaskFormUseCase(
+			c.resolve('TaskRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+			c.resolve('PaymentRepository' as any),
+			c.resolve('ContactRepository' as any),
+			c.resolve('QuotationRepository' as any),
+			c.resolve('AddTaskDocumentUseCase' as any),
 		),
 	});
 

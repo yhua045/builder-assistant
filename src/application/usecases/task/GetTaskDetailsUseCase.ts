@@ -9,15 +9,23 @@
  * Design: design/issue-210-task-screens-refactor.md §4
  */
 
-import { Task } from '../../../domain/entities/Task';
-import { Document } from '../../../domain/entities/Document';
-import { Invoice } from '../../../domain/entities/Invoice';
 import { TaskRepository } from '../../../domain/repositories/TaskRepository';
 import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
 import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
 import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
 import { ContactRepository } from '../../../domain/repositories/ContactRepository';
 import { TaskDetail } from './GetTaskDetailUseCase';
+import {
+  TaskViewDTO,
+  TaskDetailViewDTO,
+  NextInLineItemDTO,
+  DocumentViewDTO,
+  InvoiceViewDTO,
+  mapTaskToViewDTO,
+  mapTaskDetailToViewDTO,
+  mapDocumentToViewDTO,
+  mapInvoiceToViewDTO,
+} from '../../dtos/TaskViewDTOs';
 
 // ── Output types ──────────────────────────────────────────────────────────────
 
@@ -30,11 +38,11 @@ export interface SubcontractorInfo {
 }
 
 export interface TaskDetailsDTO {
-  task: Task;
-  taskDetail: TaskDetail;
-  nextInLine: Task[];
-  documents: Document[];
-  linkedInvoice: Invoice | null;
+  task: TaskViewDTO;
+  taskDetail: TaskDetailViewDTO;
+  nextInLine: NextInLineItemDTO[];
+  documents: DocumentViewDTO[];
+  linkedInvoice: InvoiceViewDTO | null;
   hasQuotationRecord: boolean;
   subcontractorInfo: SubcontractorInfo | null;
 }
@@ -80,12 +88,12 @@ export class GetTaskDetailsUseCase {
     };
 
     // ── Linked invoice (set when quote has been accepted) ────────────────────
-    let linkedInvoice: Invoice | null = null;
+    let linkedInvoiceRaw = null;
     if (task.quoteInvoiceId) {
       try {
-        linkedInvoice = await this.invoiceRepo.getInvoice(task.quoteInvoiceId);
+        linkedInvoiceRaw = await this.invoiceRepo.getInvoice(task.quoteInvoiceId);
       } catch {
-        linkedInvoice = null;
+        linkedInvoiceRaw = null;
       }
     }
 
@@ -125,11 +133,15 @@ export class GetTaskDetailsUseCase {
     }
 
     return {
-      task,
-      taskDetail,
-      nextInLine: dependents.slice(0, 3),
-      documents,
-      linkedInvoice,
+      task: mapTaskToViewDTO(task),
+      taskDetail: mapTaskDetailToViewDTO(taskDetail),
+      nextInLine: dependents.slice(0, 3).map((t) => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+      })),
+      documents: documents.map(mapDocumentToViewDTO),
+      linkedInvoice: linkedInvoiceRaw ? mapInvoiceToViewDTO(linkedInvoiceRaw) : null,
       hasQuotationRecord,
       subcontractorInfo,
     };
