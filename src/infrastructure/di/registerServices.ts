@@ -27,6 +27,16 @@ import { DeviceGpsService } from '../location/DeviceGpsService';
 import { LocalLocationAdapter } from '../location/LocalLocationAdapter';
 import { RemoteLocationAdapter } from '../location/RemoteLocationAdapter';
 import { GetNearbyProjectsUseCase } from '../../application/usecases/location/GetNearbyProjectsUseCase';
+import { GetPaymentDetailsUseCase } from '../../application/usecases/payment/GetPaymentDetailsUseCase';
+import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
+import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
+import { ProcessTaskFormUseCase } from '../../application/usecases/task/ProcessTaskFormUseCase';
+import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
+import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
+import { AssignProjectToPaymentRecordUseCase } from '../../application/usecases/payment/AssignProjectToPaymentRecordUseCase';
+import { AddTaskDocumentUseCase } from '../../application/usecases/document/AddTaskDocumentUseCase';
+import { RemoveTaskDocumentUseCase } from '../../application/usecases/document/RemoveTaskDocumentUseCase';
+import { GetTaskDetailsUseCase } from '../../application/usecases/task/GetTaskDetailsUseCase';
 import { MobileAudioRecorder } from '../voice/MobileAudioRecorder';
 import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
@@ -52,6 +62,80 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('IFilePickerAdapter', MobileFilePickerAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
+
+	// ── Payment Use Cases ─────────────────────────────────────────────────────
+	container.register(GetPaymentDetailsUseCase, {
+		useFactory: (c) => new GetPaymentDetailsUseCase(
+			c.resolve('PaymentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+			c.resolve('ProjectRepository' as any),
+		),
+	});
+	container.register(MarkPaymentAsPaidUseCase, {
+		useFactory: (c) => new MarkPaymentAsPaidUseCase(
+			c.resolve('PaymentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+		),
+	});
+	container.register(RecordPaymentUseCase, {
+		useFactory: (c) => new RecordPaymentUseCase(
+			c.resolve('PaymentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+		),
+	});
+	container.register(LinkPaymentToProjectUseCase, {
+		useFactory: (c) => new LinkPaymentToProjectUseCase(
+			c.resolve('PaymentRepository' as any),
+		),
+	});
+	container.register(LinkInvoiceToProjectUseCase, {
+		useFactory: (c) => new LinkInvoiceToProjectUseCase(
+			c.resolve('InvoiceRepository' as any),
+		),
+	});
+	container.register(AssignProjectToPaymentRecordUseCase, {
+		useFactory: (c) => new AssignProjectToPaymentRecordUseCase(
+			c.resolve('PaymentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+		),
+	});
+
+	// ── Document Use Cases ────────────────────────────────────────────────────
+	container.register('AddTaskDocumentUseCase', {
+		useFactory: (c) => new AddTaskDocumentUseCase(
+			c.resolve('DocumentRepository' as any),
+			c.resolve('FileSystemAdapter' as any),
+		),
+	});
+	container.register('RemoveTaskDocumentUseCase', {
+		useFactory: (c) => new RemoveTaskDocumentUseCase(
+			c.resolve('DocumentRepository' as any),
+			c.resolve('FileSystemAdapter' as any),
+		),
+	});
+
+	// ── Task Details Aggregation Use Case ─────────────────────────────────────
+	container.register('GetTaskDetailsUseCase', {
+		useFactory: (c) => new GetTaskDetailsUseCase(
+			c.resolve('TaskRepository' as any),
+			c.resolve('DocumentRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+			c.resolve('QuotationRepository' as any),
+			c.resolve('ContactRepository' as any),
+		),
+	});
+
+	// ── Task Form Submission Use Case ─────────────────────────────────────────
+	container.register('ProcessTaskFormUseCase', {
+		useFactory: (c) => new ProcessTaskFormUseCase(
+			c.resolve('TaskRepository' as any),
+			c.resolve('InvoiceRepository' as any),
+			c.resolve('PaymentRepository' as any),
+			c.resolve('ContactRepository' as any),
+			c.resolve('QuotationRepository' as any),
+			c.resolve('AddTaskDocumentUseCase' as any),
+		),
+	});
 
 	// ── Voice Services ────────────────────────────────────────────────────────────
 	//

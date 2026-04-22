@@ -208,7 +208,7 @@ describe('Task Form round-trip: subcontractor (Issue #114)', () => {
     const { taskRepo, createTask, updateTask } = setup();
 
     const task = await createTask.execute({ title: 'Plumbing', status: 'pending', subcontractorId: 'plumber-1' });
-    await updateTask.execute({ ...task, subcontractorId: 'plumber-2' });
+    await updateTask.execute({ taskId: task.id, updates: { subcontractorId: 'plumber-2' } });
 
     const updated = await taskRepo.findById(task.id);
     expect(updated?.subcontractorId).toBe('plumber-2');
@@ -218,7 +218,7 @@ describe('Task Form round-trip: subcontractor (Issue #114)', () => {
     const { taskRepo, createTask, updateTask } = setup();
 
     const task = await createTask.execute({ title: 'Tiling', status: 'pending', subcontractorId: 'tiler-1' });
-    await updateTask.execute({ ...task, subcontractorId: undefined });
+    await updateTask.execute({ taskId: task.id, updates: { subcontractorId: undefined } });
 
     const updated = await taskRepo.findById(task.id);
     expect(updated?.subcontractorId).toBeUndefined();

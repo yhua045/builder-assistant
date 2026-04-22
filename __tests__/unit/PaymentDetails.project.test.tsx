@@ -1,13 +1,22 @@
 /**
- * T-1 through T-10: PaymentDetails – Project field tests
+ * T-1 through T-10: PaymentDetails – Project field tests (migrated to MVVM pattern)
  *
- * Tests project display, picker interaction, and project assignment logic.
+ * Design: design/issue-210-payment-details-refactor.md §9
+ *
+ * Tests project display, picker interaction, and project assignment logic,
+ * now driven entirely by a mocked `usePaymentDetails()` hook (no DI container access).
+ *
+ * Migration notes:
+ * - OLD pattern: container.resolve mocked; four use cases mocked directly in component.
+ * - NEW pattern: `usePaymentDetails` hook mocked; component is pure presentation.
  */
 import React from 'react';
-import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { container } from 'tsyringe';
 import { wrapWithQuery } from '../utils/queryClientWrapper';
+import { usePaymentDetails } from '../../src/hooks/usePaymentDetails';
+import type { PaymentDetailsViewModel } from '../../src/hooks/usePaymentDetails';
 
 // ─── Navigation mocks ────────────────────────────────────────────────────────
 
@@ -59,6 +68,10 @@ jest.mock('@tanstack/react-query', () => ({
 
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
+// ─── Mock usePaymentDetails (MVVM — component is pure presentation) ───────────
+jest.mock('../../src/hooks/usePaymentDetails');
+const mockedUsePaymentDetails = usePaymentDetails as jest.MockedFunction<typeof usePaymentDetails>;
+
 // ─── Test data ────────────────────────────────────────────────────────────────
 
 const PAYMENT_WITH_PROJECT = {
@@ -93,41 +106,62 @@ const PROJECT_2 = {
   phases: [],
 };
 
-// ─── Mock repositories ────────────────────────────────────────────────────────
+// ─── VM factory ──────────────────────────────────────────────────────────────
 
-let mockPaymentRepo: any;
-let mockInvoiceRepo: any;
+function makeVm(overrides: Partial<PaymentDetailsViewModel> = {}): PaymentDetailsViewModel {
+  return {
+    payment: PAYMENT_WITH_PROJECT as any,
+    invoice: null,
+    linkedPayments: [],
+    project: PROJECT as any,
+    loading: false,
+    marking: false,
+    submitting: false,
+    isSyntheticRow: false,
+    resolvedProjectId: 'proj-1',
+    dueStatus: null,
+    totalSettled: 0,
+    remainingBalance: 0,
+    canRecordPayment: true,
+    showMarkAsPaidFallback: false,
+    isPending: true,
+    projectRowInteractive: true,
+    showEditIcon: false,
+    projectPickerVisible: false,
+    pendingFormVisible: false,
+    partialModalVisible: false,
+    partialAmount: '',
+    partialAmountError: '',
+    handleMarkAsPaid: jest.fn(),
+    handlePartialPaymentSubmit: jest.fn().mockResolvedValue(undefined),
+    handleSelectProject: jest.fn().mockResolvedValue(undefined),
+    handleNavigateToProject: jest.fn(),
+    openPartialModal: jest.fn(),
+    closePartialModal: jest.fn(),
+    setPartialAmount: jest.fn(),
+    setProjectPickerVisible: jest.fn(),
+    setPendingFormVisible: jest.fn(),
+    goBack: jest.fn(),
+    reload: jest.fn(),
+    ...overrides,
+  };
+}
+
+// ─── Mock repository (ProjectPickerModal uses container internally) ───────────
+
 let mockProjectRepo: any;
 
 beforeEach(() => {
   jest.clearAllMocks();
 
-  mockPaymentRepo = {
-    findById: jest.fn().mockResolvedValue(PAYMENT_WITH_PROJECT),
-    findByInvoice: jest.fn().mockResolvedValue([]),
-    update: jest.fn().mockResolvedValue(undefined),
-    list: jest.fn().mockResolvedValue({ items: [], meta: { total: 0 } }),
-    getMetrics: jest.fn(),
-    getGlobalAmountPayable: jest.fn().mockResolvedValue(0),
-    save: jest.fn(),
-  };
-
-  mockInvoiceRepo = {
-    getInvoice: jest.fn().mockResolvedValue(null),
-  };
-
   mockProjectRepo = {
     findById: jest.fn().mockResolvedValue(PROJECT),
-    list: jest
-      .fn()
-      .mockResolvedValue({ items: [PROJECT, PROJECT_2], meta: { total: 2 } }),
+    list: jest.fn().mockResolvedValue({ items: [PROJECT, PROJECT_2], meta: { total: 2 } }),
   };
 
+  // ProjectPickerModal resolves ProjectRepository from the DI container internally.
   jest.spyOn(container, 'resolve').mockImplementation((token: any) => {
-    const t = String(token);
-    if (t === 'PaymentRepository') return mockPaymentRepo;
-    if (t === 'InvoiceRepository') return mockInvoiceRepo;
-    if (t === 'ProjectRepository') return mockProjectRepo;
+    if (String(token) === 'ProjectRepository') return mockProjectRepo;
     return {};
   });
 });
@@ -144,14 +178,19 @@ import PaymentDetails from '../../src/pages/payments/PaymentDetails';
 
 describe('PaymentDetails — Project field (T-1 through T-10)', () => {
   it('T-1: renders project name when projectId is set and project found', async () => {
+    mockedUsePaymentDetails.mockReturnValue(makeVm());
     const { findByText } = render(wrapWithQuery(<PaymentDetails />));
     expect(await findByText('House Reno')).toBeTruthy();
   });
 
   it('T-2: Project row is tappable (pressing opens modal without error)', async () => {
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible });
+    });
+
     const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
-    // Pressing should open picker without throwing
     await act(async () => {
       fireEvent.press(row);
     });
@@ -160,40 +199,51 @@ describe('PaymentDetails — Project field (T-1 through T-10)', () => {
   });
 
   it('T-3: pressing project row opens ProjectPickerModal', async () => {
-    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible });
+    });
 
+    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
     });
-
     const modal = await findByTestId('project-picker-modal');
     expect(modal).toBeTruthy();
   });
 
-  it('T-4: selecting a project in the picker calls paymentRepo.update with correct projectId', async () => {
-    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
+  it('T-4: selecting a project in the picker calls handleSelectProject with correct project', async () => {
+    const handleSelectProject = jest.fn().mockResolvedValue(undefined);
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible, handleSelectProject });
+    });
 
-    // Open picker
+    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
     });
 
-    // Select proj-2
     const proj2Item = await findByTestId('project-item-proj-2');
     await act(async () => {
       fireEvent.press(proj2Item);
     });
 
-    expect(mockPaymentRepo.update).toHaveBeenCalledWith(
-      expect.objectContaining({ projectId: 'proj-2' }),
+    expect(handleSelectProject).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'proj-2' }),
     );
   });
 
-  it('T-5: clearing assignment calls paymentRepo.update with projectId undefined', async () => {
-    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
+  it('T-5: clearing assignment calls handleSelectProject with undefined', async () => {
+    const handleSelectProject = jest.fn().mockResolvedValue(undefined);
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible, handleSelectProject });
+    });
 
+    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
@@ -204,18 +254,23 @@ describe('PaymentDetails — Project field (T-1 through T-10)', () => {
       fireEvent.press(clearBtn);
     });
 
-    expect(mockPaymentRepo.update).toHaveBeenCalledWith(
-      expect.objectContaining({ projectId: undefined }),
-    );
+    expect(handleSelectProject).toHaveBeenCalledWith(undefined);
   });
 
   it('T-6: renders "Unassigned" when projectId is absent and row is still tappable', async () => {
-    mockPaymentRepo.findById.mockResolvedValue(PAYMENT_NO_PROJECT);
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({
+        payment: PAYMENT_NO_PROJECT as any,
+        project: null,
+        resolvedProjectId: undefined,
+        projectPickerVisible,
+        setProjectPickerVisible,
+      });
+    });
 
     const { findByText, findByTestId } = render(wrapWithQuery(<PaymentDetails />));
-
     expect(await findByText('Unassigned')).toBeTruthy();
-    // Row is present and pressable
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
@@ -224,16 +279,20 @@ describe('PaymentDetails — Project field (T-1 through T-10)', () => {
     expect(modal).toBeTruthy();
   });
 
-  it('T-7: renders "Unassigned" when projectRepo.findById returns null', async () => {
-    mockProjectRepo.findById.mockResolvedValue(null);
-
+  it('T-7: renders "Unassigned" when project is null', async () => {
+    mockedUsePaymentDetails.mockReturnValue(makeVm({ project: null }));
     const { findByText } = render(wrapWithQuery(<PaymentDetails />));
     expect(await findByText('Unassigned')).toBeTruthy();
   });
 
-  it('T-8: tapping "Go to Project" in picker dispatches CommonActions.navigate cross-tab', async () => {
-    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
+  it('T-8: tapping "Go to Project" in picker calls handleNavigateToProject', async () => {
+    const handleNavigateToProject = jest.fn();
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible, handleNavigateToProject });
+    });
 
+    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
@@ -244,45 +303,49 @@ describe('PaymentDetails — Project field (T-1 through T-10)', () => {
       fireEvent.press(goToBtn);
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Projects',
-      }),
-    );
+    expect(handleNavigateToProject).toHaveBeenCalled();
   });
 
-  it('T-9: after successful project assignment, loadData is re-called (projectRepo.findById called twice)', async () => {
-    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
-
-    // Initial load calls findById once
-    await waitFor(() => {
-      expect(mockProjectRepo.findById).toHaveBeenCalledTimes(1);
+  it('T-9: selecting a project triggers handleSelectProject once', async () => {
+    const handleSelectProject = jest.fn().mockResolvedValue(undefined);
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible, handleSelectProject });
     });
 
-    // Open picker and select proj-2
+    const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);
     });
 
-    // After update, pick new project AND allow re-load
-    mockProjectRepo.findById.mockResolvedValue(PROJECT_2);
     const proj2Item = await findByTestId('project-item-proj-2');
     await act(async () => {
       fireEvent.press(proj2Item);
     });
 
     await waitFor(() => {
-      expect(mockProjectRepo.findById).toHaveBeenCalledTimes(2);
+      expect(handleSelectProject).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('T-10: assignment failure shows Alert without crashing', async () => {
-    mockPaymentRepo.update.mockRejectedValue(new Error('DB error'));
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('T-10: assignment failure triggers Alert without crashing the component', async () => {
+    // The real hook catches errors internally and calls Alert.alert.
+    // We simulate that behaviour here: the mock catches the error and calls Alert.
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const handleSelectProject = jest.fn().mockImplementation(async () => {
+      try {
+        throw new Error('DB error');
+      } catch {
+        Alert.alert('Error', 'Failed to assign project');
+      }
+    });
+    mockedUsePaymentDetails.mockImplementation(() => {
+      const [projectPickerVisible, setProjectPickerVisible] = React.useState(false);
+      return makeVm({ projectPickerVisible, setProjectPickerVisible, handleSelectProject });
+    });
 
     const { findByTestId } = render(wrapWithQuery(<PaymentDetails />));
-
     const row = await findByTestId('project-row');
     await act(async () => {
       fireEvent.press(row);

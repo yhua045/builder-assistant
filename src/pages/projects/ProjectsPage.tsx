@@ -1,44 +1,14 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Pressable, StyleSheet as RNStyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useProjects } from '../../hooks/useProjects';
 import { ProjectCard } from '../../components/ProjectCard';
 import ManualProjectEntry from '../../components/ManualProjectEntry';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Layers, Plus } from 'lucide-react-native';
-import { ProjectCardDto } from '../../application/dtos/ProjectCardDto';
-import { ProjectDetails } from '../../domain/entities/ProjectDetails';
+import { useProjectsPage } from '../../hooks/useProjectsPage';
 
 const ProjectsPage: React.FC = () => {
-  const navigation = useNavigation<any>();
-  const { projects, loading, error } = useProjects();
-  const [createKey, setCreateKey] = useState(0);
-
-  const handleProjectPress = useCallback(
-    (project: ProjectCardDto) => {
-      navigation.navigate('ProjectDetail', { projectId: project.id });
-    },
-    [navigation],
-  );
-
-  const projectDtos = useMemo((): ProjectCardDto[] => {
-    if (!projects) return [];
-    
-    return projects.map((project: ProjectDetails): ProjectCardDto => ({
-      id: project.id,
-      owner: project.owner?.name || project.name,
-      address: project.property?.address || project.location || 'No Address',
-      status: project.status,
-      contact: project.owner?.phone || project.owner?.email || 'No contact',
-      lastCompletedTask: {
-        title: 'Initial Setup',
-        completedDate: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-' 
-      },
-      upcomingTasks: project.upcomingTasks,
-      // Ensure all fields from DTO are covered.
-    }));
-  }, [projects]);
+  const vm = useProjectsPage();
 
 
   return (
@@ -51,7 +21,7 @@ const ProjectsPage: React.FC = () => {
         </View>
         <View className="flex-row items-center gap-3">
           <Pressable
-            onPress={() => setCreateKey(k => k + 1)}
+            onPress={vm.openCreate}
             className="p-1.5 rounded-lg active:opacity-60"
             accessibilityLabel="Add new project"
             accessibilityRole="button"
@@ -62,35 +32,35 @@ const ProjectsPage: React.FC = () => {
         </View>
       </View>
 
-      {loading && (
+      {vm.loading && (
         <View className="px-6 gap-4">
           <ActivityIndicator testID="projects-loading" size="large" />
         </View>
       )}
 
-      {error && (
+      {vm.error && (
         <View className="px-6 gap-4">
-          <Text testID="projects-error" className="text-destructive">{error}</Text>
+          <Text testID="projects-error" className="text-destructive">{vm.error}</Text>
         </View>
       )}
 
-      {!loading && !error && projectDtos.length === 0 && (
+      {!vm.loading && !vm.error && !vm.hasProjects && (
           <View className="px-6 gap-4">
             <Text testID="projects-empty" style={emptyTextStyle}>No projects yet. Tap + to add one.</Text>
-              <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
+              <ManualProjectEntry key={vm.createKey} initialVisible={vm.createKey > 0} hideButton />
           </View>
       )}
   
-      {!loading && !error && projectDtos.length > 0 && (
+      {!vm.loading && !vm.error && vm.hasProjects && (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Projects List */}
           <View className="px-6 gap-4">
-            {projectDtos.map((project) => (
-              <ProjectCard key={project.id} project={project} onPress={handleProjectPress} />
+            {vm.projectDtos.map((project) => (
+              <ProjectCard key={project.id} project={project} onPress={(p) => vm.navigateToProject(p.id)} />
             ))}
           </View>
           {/* Modal-only ManualProjectEntry — no visible button, opened via header + */}
-          <ManualProjectEntry key={createKey} initialVisible={createKey > 0} hideButton />
+          <ManualProjectEntry key={vm.createKey} initialVisible={vm.createKey > 0} hideButton />
         </ScrollView>
       )}
     </SafeAreaView>

@@ -184,6 +184,7 @@ describe('useTaskTimeline', () => {
   it('markComplete calls update and invalidates tasks + taskDetail', async () => {
     const task = makeTask({ id: 'task-99', title: 'Test', projectId: 'proj-1' });
     taskRepo.findByProjectId.mockResolvedValue([task]);
+    taskRepo.findById.mockResolvedValue(task);
 
     const qc = createTestQueryClient();
     const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');

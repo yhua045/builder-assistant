@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import ProjectsPage from '../../src/pages/projects/ProjectsPage';
-import { useProjects } from '../../src/hooks/useProjects';
+import { useProjectsPage } from '../../src/hooks/useProjectsPage';
 import { ProjectStatus } from '../../src/domain/entities/Project';
 
 jest.mock('@react-navigation/native', () => ({
@@ -9,7 +9,7 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({ params: {} }),
 }));
 
-jest.mock('../../src/hooks/useProjects');
+jest.mock('../../src/hooks/useProjectsPage');
 
 jest.mock('../../src/components/ManualProjectEntry', () => {
   const React = require('react');
@@ -19,22 +19,28 @@ jest.mock('../../src/components/ManualProjectEntry', () => {
   };
 });
 
-const mockedUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
+const mockedUseProjectsPage = useProjectsPage as jest.MockedFunction<typeof useProjectsPage>;
+
+const BASE_VM = {
+  projectDtos: [],
+  loading: false,
+  error: null,
+  hasProjects: false,
+  createKey: 0,
+  openCreate: jest.fn(),
+  navigateToProject: jest.fn(),
+};
 
 describe('ProjectsPage', () => {
   beforeEach(() => {
-    mockedUseProjects.mockReset();
+    mockedUseProjectsPage.mockReset();
   });
 
   it('renders loading state', async () => {
-    mockedUseProjects.mockReturnValue({
-      projects: [],
+    mockedUseProjectsPage.mockReturnValue({
+      ...BASE_VM,
       loading: true,
-      error: null,
-      createProject: async () => ({ success: true }),
-      getProjectAnalysis: async () => ({} as any),
-      refreshProjects: async () => {},
-    } as any);
+    });
 
     let testRenderer: renderer.ReactTestRenderer | undefined;
 
@@ -50,24 +56,41 @@ describe('ProjectsPage', () => {
   });
 
   it('renders list of projects', async () => {
-    mockedUseProjects.mockReturnValue({
-      projects: [
+    mockedUseProjectsPage.mockReturnValue({
+      ...BASE_VM,
+      hasProjects: true,
+      projectDtos: [
         {
           id: 'proj1',
-          name: 'Test Project',
-          description: 'A test',
+          owner: 'Test Project',
+          address: 'No Address',
           status: ProjectStatus.IN_PROGRESS,
-          materials: [],
-          phases: [],
+          contact: 'No contact',
+          lastCompletedTask: { title: 'Initial Setup', completedDate: '-' },
           upcomingTasks: [],
         },
       ],
+    });
+
+    let testRenderer: renderer.ReactTestRenderer | undefined;
+
+    await act(async () => {
+      testRenderer = renderer.create(<ProjectsPage />);
+    });
+
+    const tree = testRenderer!.toJSON();
+    act(() => {
+      testRenderer!.unmount();
+    });
+    expect(tree).toMatchSnapshot();
+  });
+
+  it('renders empty state', async () => {
+    mockedUseProjectsPage.mockReturnValue({
+      ...BASE_VM,
+      hasProjects: false,
       loading: false,
-      error: null,
-      createProject: async () => ({ success: true }),
-      getProjectAnalysis: async () => ({} as any),
-      refreshProjects: async () => {},
-    } as any);
+    });
 
     let testRenderer: renderer.ReactTestRenderer | undefined;
 

@@ -415,4 +415,107 @@ describe('ProcessInvoiceUploadUseCase', () => {
       await expect(useCase.execute(pdfInput)).rejects.toThrow('Corrupt PDF file');
     });
   });
+
+  // ─── Validation (moved from View-Model layer) ──────────────────────────────
+
+  describe('validation', () => {
+    it('throws Validation failed for an unsupported MIME type', async () => {
+      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
+
+      await expect(
+        useCase.execute({
+          fileUri: 'file:///tmp/doc.docx',
+          filename: 'doc.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          fileSize: 50000,
+        }),
+      ).rejects.toThrow('Validation failed:');
+    });
+
+    it('throws Validation failed when file is over 20 MB', async () => {
+      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
+
+      await expect(
+        useCase.execute({ ...baseInput, fileSize: 25 * 1024 * 1024 }),
+      ).rejects.toThrow('Validation failed:');
+    });
+
+    it('does not throw for a valid image MIME type within size limit', async () => {
+      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
+      await expect(useCase.execute(baseInput)).resolves.toBeDefined();
+    });
+  });
+
+  // ─── File IO (moved from View-Model layer) ────────────────────────────────
+
+  describe('file IO — fileSystemAdapter', () => {
+    it('copies file to app storage when fileSystemAdapter is provided', async () => {
+      const fileSystem = {
+        copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/invoice_copy.jpg'),
+        exists: jest.fn().mockResolvedValue(true),
+        deleteFile: jest.fn().mockResolvedValue(undefined),
+        getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
+      };
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, undefined, fileSystem);
+
+      const result = await useCase.execute(baseInput);
+
+      expect(fileSystem.copyToAppStorage).toHaveBeenCalledWith(
+        baseInput.fileUri,
+        expect.stringMatching(/^invoice_\d+_[a-z0-9]+\.pdf$/),
+      );
+      expect(result.documentRef.localPath).toBe('file:///app/storage/invoice_copy.jpg');
+    });
+
+    it('uses the original URI as localPath when no fileSystemAdapter is provided', async () => {
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
+
+      const result = await useCase.execute(baseInput);
+
+      expect(result.documentRef.localPath).toBe(baseInput.fileUri);
+    });
+  });
+
+  // ─── No OCR adapters (graceful degradation) ───────────────────────────────
+
+  describe('no OCR adapters', () => {
+    it('validates and returns empty NormalizedInvoice when no ocrAdapter or normalizer', async () => {
+      const fileSystem = {
+        copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/invoice_copy.jpg'),
+        exists: jest.fn().mockResolvedValue(true),
+        deleteFile: jest.fn().mockResolvedValue(undefined),
+        getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
+      };
+      const useCase = new ProcessInvoiceUploadUseCase(
+        undefined,
+        undefined,
+        undefined,
+        fileSystem,
+      );
+
+      const result = await useCase.execute(baseInput);
+
+      expect(result.normalized.total).toBeNull();
+      expect(result.rawOcrText).toBe('');
+      expect(fileSystem.copyToAppStorage).toHaveBeenCalled();
+      expect(result.documentRef.localPath).toBe('file:///app/storage/invoice_copy.jpg');
+    });
+
+    it('still throws Validation failed for unsupported types even without OCR adapters', async () => {
+      const useCase = new ProcessInvoiceUploadUseCase();
+
+      await expect(
+        useCase.execute({
+          fileUri: 'file:///tmp/sheet.xlsx',
+          filename: 'sheet.xlsx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          fileSize: 10000,
+        }),
+      ).rejects.toThrow('Validation failed:');
+    });
+  });
 });

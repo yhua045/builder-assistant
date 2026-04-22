@@ -3,6 +3,7 @@ import { PaymentRepository } from '../../src/domain/repositories/PaymentReposito
 import { InvoiceRepository } from '../../src/domain/repositories/InvoiceRepository';
 import { RecordPaymentUseCase } from '../../src/application/usecases/payment/RecordPaymentUseCase';
 import { Invoice } from '../../src/domain/entities/Invoice';
+import { RecordPaymentDto } from '../../src/application/usecases/payment/RecordPaymentUseCase';
 
 const makeInvoice = (overrides: Partial<Invoice> = {}): Invoice => ({
   id: 'inv_1',
@@ -39,41 +40,45 @@ const baseRepos = () => ({
 
 describe('RecordPaymentUseCase', () => {
   it('saves payment via payment repository', async () => {
-    const payment: Payment = {
-      id: 'pay_1',
-      projectId: 'proj_1',
-      amount: 100,
-    } as Payment;
-
+    const dto: RecordPaymentDto = { invoiceId: 'inv_1', amount: 100 };
     const { paymentRepo, invoiceRepo } = baseRepos();
+    invoiceRepo.getInvoice.mockResolvedValue(makeInvoice());
+    paymentRepo.findByInvoice.mockResolvedValue([{ id: 'pay_1', invoiceId: 'inv_1', amount: 100, status: 'settled' } as Payment]);
 
     const uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
-    await uc.execute(payment);
+    await uc.execute(dto);
 
     expect((paymentRepo.save as jest.Mock).mock.calls.length).toBe(1);
-    expect((paymentRepo.save as jest.Mock).mock.calls[0][0]).toEqual(payment);
+    const savedPayment = (paymentRepo.save as jest.Mock).mock.calls[0][0];
+    expect(savedPayment).toMatchObject({
+      invoiceId: 'inv_1',
+      amount: 100,
+      status: 'settled',
+    });
+    expect(savedPayment.id).toMatch(/^pay_/);
+    expect(savedPayment.date).toBeTruthy();
   });
 
   it('sets invoice paymentStatus to partial when a payment is less than total', async () => {
     const { paymentRepo, invoiceRepo } = baseRepos();
-    const payment: Payment = { id: 'pay_1', invoiceId: 'inv_1', amount: 400 } as Payment;
+    const dto: RecordPaymentDto = { invoiceId: 'inv_1', amount: 400 };
     invoiceRepo.getInvoice.mockResolvedValue(makeInvoice());
-    paymentRepo.findByInvoice.mockResolvedValue([payment]);
+    paymentRepo.findByInvoice.mockResolvedValue([{ id: 'pay_1', invoiceId: 'inv_1', amount: 400, status: 'settled' } as Payment]);
 
     const uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
-    await uc.execute(payment);
+    await uc.execute(dto);
 
     expect(invoiceRepo.updateInvoice).toHaveBeenCalledWith('inv_1', expect.objectContaining({ paymentStatus: 'partial' }));
   });
 
   it('sets invoice paymentStatus to paid when payments cover total', async () => {
     const { paymentRepo, invoiceRepo } = baseRepos();
-    const payment: Payment = { id: 'pay_1', invoiceId: 'inv_1', amount: 1000 } as Payment;
+    const dto: RecordPaymentDto = { invoiceId: 'inv_1', amount: 1000 };
     invoiceRepo.getInvoice.mockResolvedValue(makeInvoice());
-    paymentRepo.findByInvoice.mockResolvedValue([payment]);
+    paymentRepo.findByInvoice.mockResolvedValue([{ id: 'pay_1', invoiceId: 'inv_1', amount: 1000, status: 'settled' } as Payment]);
 
     const uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
-    await uc.execute(payment);
+    await uc.execute(dto);
 
     expect(invoiceRepo.updateInvoice).toHaveBeenCalledWith(
       'inv_1',
@@ -83,14 +88,15 @@ describe('RecordPaymentUseCase', () => {
 
   it('does not count cancelled payments toward totalSettled', async () => {
     const { paymentRepo, invoiceRepo } = baseRepos();
-    const newPayment: Payment = { id: 'pay_2', invoiceId: 'inv_1', amount: 300 } as Payment;
+    const dto: RecordPaymentDto = { invoiceId: 'inv_1', amount: 300 };
     // A cancelled payment should NOT contribute to the total
     const cancelledPayment: Payment = { id: 'pay_1', invoiceId: 'inv_1', amount: 800, status: 'cancelled' } as Payment;
+    const newPayment: Payment = { id: 'pay_2', invoiceId: 'inv_1', amount: 300, status: 'settled' } as Payment;
     invoiceRepo.getInvoice.mockResolvedValue(makeInvoice());
     paymentRepo.findByInvoice.mockResolvedValue([cancelledPayment, newPayment]);
 
     const uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
-    await uc.execute(newPayment);
+    await uc.execute(dto);
 
     // Only the 300 payment counts; 800 cancelled is excluded → partial not paid
     expect(invoiceRepo.updateInvoice).toHaveBeenCalledWith(
@@ -105,13 +111,14 @@ describe('RecordPaymentUseCase', () => {
 
   it('does not count reverse_payment records toward totalSettled', async () => {
     const { paymentRepo, invoiceRepo } = baseRepos();
-    const newPayment: Payment = { id: 'pay_2', invoiceId: 'inv_1', amount: 500 } as Payment;
+    const dto: RecordPaymentDto = { invoiceId: 'inv_1', amount: 500 };
     const reversalPayment: Payment = { id: 'pay_r', invoiceId: 'inv_1', amount: 600, status: 'reverse_payment' } as Payment;
+    const newPayment: Payment = { id: 'pay_2', invoiceId: 'inv_1', amount: 500, status: 'settled' } as Payment;
     invoiceRepo.getInvoice.mockResolvedValue(makeInvoice());
     paymentRepo.findByInvoice.mockResolvedValue([reversalPayment, newPayment]);
 
     const uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
-    await uc.execute(newPayment);
+    await uc.execute(dto);
 
     // Only 500 counts; reversal excluded → partial
     expect(invoiceRepo.updateInvoice).toHaveBeenCalledWith(

@@ -167,7 +167,7 @@ describe('LlmQuotationParser', () => {
   });
 
   it('throws timeout error when fetch is aborted', async () => {
-    jest.spyOn(globalThis, 'fetch').mockImplementationOnce((_url: RequestInfo, _options?: RequestInit) => {
+    jest.spyOn(globalThis, 'fetch').mockImplementationOnce((_url: Parameters<typeof fetch>[0], _options?: RequestInit) => {
       return new Promise((_resolve, reject) => {
         // Simulate abort after a tick
         setTimeout(() => {

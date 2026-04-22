@@ -5,42 +5,13 @@ import '../infrastructure/di/registerServices';
 
 import { Task } from '../domain/entities/Task';
 import { Document } from '../domain/entities/Document';
-import { TaskRepository } from '../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../domain/repositories/DocumentRepository';
-import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../domain/repositories/PaymentRepository';
-import { ContactRepository } from '../domain/repositories/ContactRepository';
-import { QuotationRepository } from '../domain/repositories/QuotationRepository';
-import { IFileSystemAdapter } from '../infrastructure/files/IFileSystemAdapter';
-import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
+import { RemoveTaskDocumentUseCase } from '../application/usecases/document/RemoveTaskDocumentUseCase';
+import {
+  ProcessTaskFormUseCase,
+  ProcessTaskFormValidationError,
+} from '../application/usecases/task/ProcessTaskFormUseCase';
 import { invalidations } from './queryKeys';
 import { useCreateAuditLog } from './useCreateAuditLog';
-
-import { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
-
-/**
- * Auto-compute quoteStatus on save based on what data is present.
- * Preserves 'accepted' and 'rejected' finaled states.
- */
-function computeQuoteStatus(
-  taskType: NonNullable<Task['taskType']>,
-  quoteAmount: number | undefined,
-  existing: Task['quoteStatus'],
-): Task['quoteStatus'] {
-  if (taskType === 'standard') return undefined;
-  const hasValidAmount = quoteAmount != null && quoteAmount > 0;
-  if (!hasValidAmount) return 'pending';
-  // Variation tasks auto-accept when a positive amount is entered
-  if (taskType === 'variation') return 'accepted';
-  // Other types (e.g. contract_work): preserve finalised state
-  if (existing === 'accepted' || existing === 'rejected') return existing;
-  return 'issued';
-}
-import { UpdateTaskUseCase } from '../application/usecases/task/UpdateTaskUseCase';
-import { AddTaskDependencyUseCase } from '../application/usecases/task/AddTaskDependencyUseCase';
-import { RemoveTaskDependencyUseCase } from '../application/usecases/task/RemoveTaskDependencyUseCase';
-import { AddTaskDocumentUseCase } from '../application/usecases/document/AddTaskDocumentUseCase';
-import { RemoveTaskDocumentUseCase } from '../application/usecases/document/RemoveTaskDocumentUseCase';
 
 /** A document that has been picked but not yet persisted (pre-save state). */
 export interface PendingDocument {
@@ -194,72 +165,14 @@ export function useTaskForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // ── DI resolution ─────────────────────────────────────────────────────────
-  const taskRepository = useMemo(
-    () => container.resolve<TaskRepository>('TaskRepository'),
+  const processTaskFormUseCase = useMemo(
+    () => container.resolve<ProcessTaskFormUseCase>('ProcessTaskFormUseCase'),
     [],
-  );
-  const documentRepository = useMemo(
-    () => container.resolve<DocumentRepository>('DocumentRepository'),
-    [],
-  );
-  const fileSystem = useMemo(
-    () => container.resolve<IFileSystemAdapter>('FileSystemAdapter'),
-    [],
-  );
-
-  const createTaskUseCase = useMemo(
-    () => new CreateTaskUseCase(taskRepository),
-    [taskRepository],
-  );
-  const updateTaskUseCase = useMemo(
-    () => new UpdateTaskUseCase(taskRepository),
-    [taskRepository],
-  );
-  const addTaskDocumentUseCase = useMemo(
-    () => new AddTaskDocumentUseCase(documentRepository, fileSystem),
-    [documentRepository, fileSystem],
   );
   const removeTaskDocumentUseCase = useMemo(
-    () => new RemoveTaskDocumentUseCase(documentRepository, fileSystem),
-    [documentRepository, fileSystem],
+    () => container.resolve<RemoveTaskDocumentUseCase>('RemoveTaskDocumentUseCase'),
+    [],
   );
-  const addDependencyUseCase = useMemo(
-    () => new AddTaskDependencyUseCase(taskRepository),
-    [taskRepository],
-  );
-  const removeDependencyUseCase = useMemo(
-    () => new RemoveTaskDependencyUseCase(taskRepository),
-    [taskRepository],
-  );
-
-  const invoiceRepository = useMemo(() => {
-    try { return container.resolve<InvoiceRepository>('InvoiceRepository'); }
-    catch { return null; }
-  }, []);
-
-  const paymentRepository = useMemo(() => {
-    try { return container.resolve<PaymentRepository>('PaymentRepository'); }
-    catch { return null; }
-  }, []);
-
-  const contactRepository = useMemo(() => {
-    try { return container.resolve<ContactRepository>('ContactRepository'); }
-    catch { return null; }
-  }, []);
-
-  const quotationRepository = useMemo(() => {
-    try { return container.resolve<QuotationRepository>('QuotationRepository'); }
-    catch { return null; }
-  }, []);
-
-  const acceptQuotationUseCase = useMemo(() => {
-    if (!invoiceRepository) return null;
-    return new AcceptQuotationUseCase(
-      invoiceRepository,
-      taskRepository,
-      quotationRepository ?? undefined,
-    );
-  }, [invoiceRepository, taskRepository, quotationRepository]);
 
   // ── Remove saved document (eager, edit mode) ──────────────────────────────
   const removeSavedDocument = useCallback(
@@ -288,218 +201,77 @@ export function useTaskForm({
 
     setIsSubmitting(true);
     try {
-      if (isEditMode && selfId) {
-        // ── Update mode ───────────────────────────────────────────────────
-        const existingTask = initialTask as Task | undefined;
-        const existingInvoiceId = existingTask?.quoteInvoiceId;
-        const isVariation = taskType === 'variation';
-        const hasValidAmount = quoteAmount != null && quoteAmount > 0;
+      const result = await processTaskFormUseCase.execute({
+        mode: isEditMode ? 'update' : 'create',
+        taskId: selfId,
+        existingTask: isEditMode ? (initialTask as Task) : undefined,
+        existingDependencies: initialTask?.dependencies ?? [],
+        title: title.trim(),
+        notes: notes.trim() || undefined,
+        projectId: projectId || undefined,
+        dueDate: dueDate?.toISOString(),
+        startDate: startDate?.toISOString(),
+        status,
+        priority,
+        subcontractorId,
+        taskType,
+        workType,
+        quoteAmount,
+        pendingDocuments,
+        dependencyTaskIds,
+      });
 
-        // Guard: block clearing a variation amount when the linked invoice has payments
-        if (isVariation && !hasValidAmount && existingInvoiceId && paymentRepository) {
-          const payments = await paymentRepository.findByInvoice(existingInvoiceId);
-          if (payments.length > 0) {
-            setValidationError(
-              'Cannot remove the quote amount — this variation invoice already has recorded payments.',
-            );
-            return null;
-          }
-        }
-
-        const computedQuoteStatus = computeQuoteStatus(
-          taskType,
-          quoteAmount,
-          existingTask?.quoteStatus,
-        );
-        const updatedTask: Task = {
-          ...(initialTask as Task),
-          title: title.trim(),
-          notes: notes.trim() || undefined,
-          projectId: projectId || undefined,
-          dueDate: dueDate?.toISOString(),
-          startDate: startDate?.toISOString(),
-          status,
-          priority,
-          subcontractorId,
-          isScheduled: !!dueDate,
-          taskType,
-          workType,
-          quoteAmount: hasValidAmount ? quoteAmount : undefined,
-          quoteStatus: computedQuoteStatus,
-          // Clear invoice link when amount is removed
-          quoteInvoiceId: isVariation && !hasValidAmount ? undefined : existingInvoiceId,
-          updatedAt: new Date().toISOString(),
-        };
-        await updateTaskUseCase.execute(updatedTask);
-
-        // Attach any newly-picked documents
-        for (const pd of pendingDocuments) {
-          await addTaskDocumentUseCase.execute({
-            taskId: selfId,
-            projectId: projectId || undefined,
-            sourceUri: pd.uri,
-            filename: pd.filename,
-            mimeType: pd.mimeType,
-            size: pd.size,
-          });
-        }
-        if (pendingDocuments.length > 0) {
-          await Promise.all(
-            invalidations.documentMutated({ taskId: selfId })
-              .map(key => queryClient.invalidateQueries({ queryKey: key }))
-          );
-        }
-        setPendingDocuments([]);
-
-        // Sync dependency additions (removals were applied eagerly)
-        const existingDeps = initialTask?.dependencies ?? [];
-        for (const depId of dependencyTaskIds) {
-          if (!existingDeps.includes(depId)) {
-            await addDependencyUseCase.execute({ taskId: selfId, dependsOnTaskId: depId });
-          }
-        }
-        for (const depId of existingDeps) {
-          if (!dependencyTaskIds.includes(depId)) {
-            await removeDependencyUseCase.execute({ taskId: selfId, dependsOnTaskId: depId });
-          }
-        }
-
-        // ── Variation: auto-create invoice via AcceptQuotationUseCase ──────────
-        if (isVariation && hasValidAmount && !existingInvoiceId && acceptQuotationUseCase) {
-          const contact = subcontractorId && contactRepository
-            ? await contactRepository.findById(subcontractorId)
-            : null;
-          const result = await acceptQuotationUseCase.execute({
-            taskId: selfId,
-            task: {
-              title: title.trim(),
-              projectId: projectId || undefined,
-              quoteAmount: quoteAmount!,
-              taskType,
-              workType,
-              subcontractorId,
-            },
-            contact,
-          });
-          await Promise.all(
-            invalidations.acceptQuotation({ projectId: projectId || '', taskId: selfId })
-              .map(key => queryClient.invalidateQueries({ queryKey: key }))
-          );
-          const taskWithInvoice: Task = { ...updatedTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
-          onSuccess?.(taskWithInvoice);
-          return taskWithInvoice;
-        }
-
-        // ── Variation: cancel linked invoice when amount is removed (no payments) ──
-        if (isVariation && !hasValidAmount && existingInvoiceId && invoiceRepository) {
-          await invoiceRepository.updateInvoice(existingInvoiceId, {
-            status: 'cancelled',
-            updatedAt: new Date().toISOString(),
-          });
-          await Promise.all(
-            invalidations.invoiceMutated({ projectId: projectId || undefined })
-              .map(key => queryClient.invalidateQueries({ queryKey: key }))
-          );
-        }
-
+      // ── Query invalidation ───────────────────────────────────────────────
+      if (result.variationInvoiceCreated) {
         await Promise.all(
-          invalidations.taskEdited({ projectId: projectId || '', taskId: selfId })
-            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          invalidations.acceptQuotation({ projectId: result.task.projectId || '', taskId: result.task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
         );
-        if (projectId) {
-          await createAuditEntry({
-            projectId,
-            taskId: selfId,
-            source: 'Task Form',
-            action: `Updated task "${updatedTask.title}"`,
-          });
-        }
-        onSuccess?.(updatedTask);
-        return updatedTask;
+      } else if (result.variationInvoiceCancelled) {
+        await Promise.all([
+          ...invalidations.invoiceMutated({ projectId: result.task.projectId || undefined }),
+          ...invalidations.taskEdited({ projectId: result.task.projectId || '', taskId: result.task.id }),
+        ].map(key => queryClient.invalidateQueries({ queryKey: key })));
+      } else if (isEditMode) {
+        await Promise.all(
+          invalidations.taskEdited({ projectId: result.task.projectId || '', taskId: result.task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+        );
       } else {
-        // ── Create mode ───────────────────────────────────────────────────
-        const computedQuoteStatus = computeQuoteStatus(taskType, quoteAmount, undefined);
-        const newTask = await createTaskUseCase.execute({
-          title: title.trim(),
-          notes: notes.trim() || undefined,
-          projectId: projectId || undefined,
-          dueDate: dueDate?.toISOString(),
-          startDate: startDate?.toISOString(),
-          status,
-          priority,
-          subcontractorId,
-          isScheduled: !!dueDate,
-          taskType,
-          workType,
-          quoteAmount,
-          quoteStatus: computedQuoteStatus,
-        });
-
-        // Attach documents now that we have a taskId
-        for (const pd of pendingDocuments) {
-          await addTaskDocumentUseCase.execute({
-            taskId: newTask.id,
-            projectId: newTask.projectId,
-            sourceUri: pd.uri,
-            filename: pd.filename,
-            mimeType: pd.mimeType,
-            size: pd.size,
-          });
-        }
-        if (pendingDocuments.length > 0) {
-          await Promise.all(
-            invalidations.documentMutated({ taskId: newTask.id })
-              .map(key => queryClient.invalidateQueries({ queryKey: key }))
-          );
-        }
-        setPendingDocuments([]);
-
-        // Attach dependencies
-        for (const depId of dependencyTaskIds) {
-          await addDependencyUseCase.execute({ taskId: newTask.id, dependsOnTaskId: depId });
-        }
-
-        // ── Variation: auto-create invoice via AcceptQuotationUseCase ──────────
-        if (taskType === 'variation' && quoteAmount != null && quoteAmount > 0 && acceptQuotationUseCase) {
-          const contact = subcontractorId && contactRepository
-            ? await contactRepository.findById(subcontractorId)
-            : null;
-          const result = await acceptQuotationUseCase.execute({
-            taskId: newTask.id,
-            task: {
-              title: newTask.title,
-              projectId: newTask.projectId,
-              quoteAmount,
-              taskType,
-              workType,
-              subcontractorId,
-            },
-            contact,
-          });
-          await Promise.all(
-            invalidations.acceptQuotation({ projectId: newTask.projectId || '', taskId: newTask.id })
-              .map(key => queryClient.invalidateQueries({ queryKey: key }))
-          );
-          const taskWithInvoice: Task = { ...newTask, quoteInvoiceId: result.invoice.id, quoteStatus: 'accepted' };
-          onSuccess?.(taskWithInvoice);
-          return taskWithInvoice;
-        }
-
         await Promise.all(
-          invalidations.tasksCreated({ projectId: newTask.projectId ?? '' })
-            .map(key => queryClient.invalidateQueries({ queryKey: key }))
+          invalidations.tasksCreated({ projectId: result.task.projectId ?? '' })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
         );
-        if (newTask.projectId) {
-          await createAuditEntry({
-            projectId: newTask.projectId,
-            taskId: newTask.id,
-            source: 'Task Form',
-            action: `Created task "${newTask.title}"`,
-          });
-        }
-        onSuccess?.(newTask);
-        return newTask;
       }
+
+      if (result.documentsAdded > 0) {
+        await Promise.all(
+          invalidations.documentMutated({ taskId: result.task.id })
+            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+        );
+      }
+
+      // ── Audit log ────────────────────────────────────────────────────────
+      if (result.task.projectId) {
+        await createAuditEntry({
+          projectId: result.task.projectId,
+          taskId: result.task.id,
+          source: 'Task Form',
+          action: isEditMode
+            ? `Updated task "${result.task.title}"`
+            : `Created task "${result.task.title}"`,
+        });
+      }
+
+      setPendingDocuments([]);
+      onSuccess?.(result.task);
+      return result.task;
+    } catch (err) {
+      if (err instanceof ProcessTaskFormValidationError) {
+        setValidationError(err.message);
+        return null;
+      }
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -519,15 +291,7 @@ export function useTaskForm({
     dependencyTaskIds,
     initialTask,
     isEditMode,
-    createTaskUseCase,
-    updateTaskUseCase,
-    addTaskDocumentUseCase,
-    addDependencyUseCase,
-    removeDependencyUseCase,
-    invoiceRepository,
-    paymentRepository,
-    acceptQuotationUseCase,
-    contactRepository,
+    processTaskFormUseCase,
     queryClient,
     createAuditEntry,
     onSuccess,

@@ -2,10 +2,23 @@ import { Payment } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
 
+export interface RecordPaymentDto {
+  invoiceId: string;
+  amount: number;
+}
+
 export class RecordPaymentUseCase {
   constructor(private readonly paymentRepo: PaymentRepository, private readonly invoiceRepo: InvoiceRepository) {}
 
-  async execute(payment: Payment): Promise<void> {
+  async execute(dto: RecordPaymentDto): Promise<void> {
+    const payment: Payment = {
+      id: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      invoiceId: dto.invoiceId,
+      amount: dto.amount,
+      status: 'settled',
+      date: new Date().toISOString(),
+    } as Payment;
+
     // Save payment
     await this.paymentRepo.save(payment);
 

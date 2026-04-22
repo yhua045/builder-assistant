@@ -55,7 +55,7 @@ export const useQuotations = (options?: UseQuotationsOptions) => {
     setLoading(true);
     setError(null);
     try {
-      const created = await createQuotationUC.execute(quotation as Quotation);
+      const created = await createQuotationUC.execute(quotation);
       await queryClient.invalidateQueries({ queryKey: queryKeys.quotations() });
       return created;
     } catch (e: any) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import { Document } from '../../domain/entities/Document';
+import type { DocumentViewDTO } from '../../application/dtos/TaskViewDTOs';
 import { File, Plus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 
@@ -8,16 +8,16 @@ cssInterop(File, { className: { target: 'style', nativeStyleToProp: { color: tru
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 interface Props {
-  documents: Document[];
+  documents: DocumentViewDTO[];
   onAddDocument?: () => void;
-  onDocumentPress?: (doc: Document) => void;
+  onDocumentPress?: (doc: DocumentViewDTO) => void;
   /** Shows a spinner on the Add button while a document is being copied/saved */
   uploading?: boolean;
 }
 
 export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress, uploading }: Props) {
-  const renderAttachment = (item: Document) => {
-    const isImage = item.mimeType?.startsWith('image/');
+  const renderAttachment = (item: DocumentViewDTO) => {
+    const isImage = item.isImage;
     
     return (
       <TouchableOpacity 
@@ -26,9 +26,9 @@ export function TaskDocumentSection({ documents, onAddDocument, onDocumentPress,
         onPress={() => onDocumentPress?.(item)}
       >
         <View className="w-24 h-24 bg-card border border-border rounded-xl overflow-hidden">
-          {isImage && (item.uri || item.localPath || item.cloudUrl) ? (
+          {isImage && (item.displayUri) ? (
             <Image 
-              source={{ uri: item.uri || item.localPath || item.cloudUrl }} 
+              source={{ uri: item.displayUri }} 
               className="w-full h-full"
               resizeMode="cover"
             />

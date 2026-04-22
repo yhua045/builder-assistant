@@ -3,6 +3,7 @@ import { IReceiptParsingStrategy } from '../../../application/receipt/IReceiptPa
 import { NormalizedReceipt } from '../../../application/receipt/IReceiptNormalizer';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IOcrDocumentService, OcrDocumentService } from '../../services/IOcrDocumentService';
+import { validatePdfFile } from '../../../utils/fileValidation';
 
 export interface ProcessReceiptUploadInput {
   fileUri: string;
@@ -38,7 +39,13 @@ export class ProcessReceiptUploadUseCase {
   async execute(
     input: ProcessReceiptUploadInput,
   ): Promise<ProcessReceiptUploadOutput> {
-    const { fileUri, mimeType } = input;
+    const { fileUri, mimeType, fileSize } = input;
+
+    // 1. Cross-cutting file validation
+    const validation = validatePdfFile(mimeType, fileSize);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.error || 'Invalid file'}`);
+    }
 
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {

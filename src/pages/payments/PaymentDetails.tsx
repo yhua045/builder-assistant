@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { formatCurrency, formatDate } from "../../utils/displayFormatters";
+
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Modal,
   TextInput,
@@ -14,371 +14,19 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { ChevronLeft, ChevronRight, Pencil, X, DollarSign } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { container } from 'tsyringe';
-import { Payment } from '../../domain/entities/Payment';
-import { Invoice } from '../../domain/entities/Invoice';
-import { Project } from '../../domain/entities/Project';
-import { PaymentRepository } from '../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../domain/repositories/InvoiceRepository';
-import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
-import { MarkPaymentAsPaidUseCase } from '../../application/usecases/payment/MarkPaymentAsPaidUseCase';
-import { RecordPaymentUseCase } from '../../application/usecases/payment/RecordPaymentUseCase';
-import { LinkPaymentToProjectUseCase } from '../../application/usecases/payment/LinkPaymentToProjectUseCase';
-import { LinkInvoiceToProjectUseCase } from '../../application/usecases/invoice/LinkInvoiceToProjectUseCase';
-import { getDueStatus } from '../../utils/getDueStatus';
-import { invalidations } from '../../hooks/queryKeys';
+import { usePaymentDetails } from '../../hooks/usePaymentDetails';
 import { PendingPaymentForm } from '../../components/payments/PendingPaymentForm';
 import { ProjectPickerModal } from '../../components/shared/ProjectPickerModal';
-import '../../infrastructure/di/registerServices';
-
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-const formatDate = (iso?: string | null): string => {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-AU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-};
 
 export default function PaymentDetails() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
+  const vm = usePaymentDetails();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const iconColor = isDark ? '#e4e4e7' : '#18181b';
-  const queryClient = useQueryClient();
 
-  const { paymentId, syntheticRow, invoiceId: invoiceIdParam } = route.params as {
-    paymentId?: string;
-    syntheticRow?: Payment;
-    invoiceId?: string;
-  };
-
-  const [payment, setPayment] = useState<Payment | null>(syntheticRow ?? null);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [linkedPayments, setLinkedPayments] = useState<Payment[]>([]);
-  const [project, setProject] = useState<Project | null>(null);
-  const [projectPickerVisible, setProjectPickerVisible] = useState(false);
-  const [pendingFormVisible, setPendingFormVisible] = useState(false);
-  const [loading, setLoading] = useState(!syntheticRow || !!invoiceIdParam);
-  const [marking, setMarking] = useState(false);
-  const [partialModalVisible, setPartialModalVisible] = useState(false);
-  const [partialAmount, setPartialAmount] = useState('');
-  const [partialAmountError, setPartialAmountError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const previousProjectIdRef = useRef<string | undefined>(undefined);
-
-  const paymentRepo = React.useMemo(
-    () => container.resolve<PaymentRepository>('PaymentRepository' as any),
-    [],
-  );
-  const invoiceRepo = React.useMemo(
-    () => container.resolve<InvoiceRepository>('InvoiceRepository' as any),
-    [],
-  );
-  const projectRepo = React.useMemo(
-    () => container.resolve<ProjectRepository>('ProjectRepository' as any),
-    [],
-  );
-  const markPaidUc = React.useMemo(
-    () => new MarkPaymentAsPaidUseCase(paymentRepo, invoiceRepo),
-    [paymentRepo, invoiceRepo],
-  );
-  const recordPaymentUc = React.useMemo(
-    () => new RecordPaymentUseCase(paymentRepo, invoiceRepo),
-    [paymentRepo, invoiceRepo],
-  );
-  const linkPaymentUc = React.useMemo(
-    () => new LinkPaymentToProjectUseCase(paymentRepo),
-    [paymentRepo],
-  );
-  const linkInvoiceUc = React.useMemo(
-    () => new LinkInvoiceToProjectUseCase(invoiceRepo),
-    [invoiceRepo],
-  );
-
-  const loadData = useCallback(async () => {
-    try {
-      // Invoice-entry path: opened from a TimelineInvoiceCard with invoiceId param.
-      // Build a synthetic row (same shape as the Payments screen "pending payment") so
-      // the full PaymentDetails UI renders with all action buttons available.
-      if (invoiceIdParam && !paymentId && !syntheticRow) {
-        const [inv, payments] = await Promise.all([
-          invoiceRepo.getInvoice(invoiceIdParam),
-          paymentRepo.findByInvoice(invoiceIdParam),
-        ]);
-        setInvoice(inv);
-        setLinkedPayments(payments);
-
-        if (inv) {
-          const settled = payments
-            .filter((p) => p.status === 'settled')
-            .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-          const outstanding = inv.total - settled;
-          const syntheticPayment: Payment = {
-            id: `invoice-payable:${inv.id}`,
-            invoiceId: inv.id,
-            projectId: inv.projectId,
-            amount: outstanding,
-            currency: inv.currency,
-            date: inv.dateIssued ?? inv.issueDate,
-            dueDate: inv.dateDue ?? inv.dueDate ?? null,
-            status: 'pending',
-            contractorName: inv.issuerName ?? inv.vendor ?? 'Invoice Payable',
-            notes: inv.notes,
-            reference: inv.externalReference ?? inv.externalId ?? inv.id,
-            stageLabel: inv.externalReference ?? inv.invoiceNumber,
-          } as unknown as Payment;
-          setPayment(syntheticPayment);
-
-          if (inv.projectId) {
-            try {
-              const proj = await projectRepo.findById(inv.projectId);
-              setProject(proj);
-            } catch {
-              setProject(null);
-            }
-          }
-        } else {
-          setPayment(null);
-        }
-        return;
-      }
-
-      let resolved = syntheticRow ?? null;
-
-      // Synthetic rows (id starts with "invoice-payable:") don't exist in DB
-      const isSynthetic = resolved?.id?.startsWith('invoice-payable:');
-
-      if (!isSynthetic && paymentId) {
-        resolved = await paymentRepo.findById(paymentId);
-      }
-
-      setPayment(resolved);
-
-      // Load project — for synthetic rows resolve from invoice.projectId
-      const projectId = isSynthetic
-        ? undefined // will be loaded after invoice fetch below
-        : resolved?.projectId;
-
-      if (!isSynthetic && projectId) {
-        try {
-          const proj = await projectRepo.findById(projectId);
-          setProject(proj);
-        } catch {
-          setProject(null);
-        }
-      } else if (!isSynthetic) {
-        setProject(null);
-      }
-
-      // Load parent invoice for context
-      const invoiceId = resolved?.invoiceId;
-      if (invoiceId) {
-        const [inv, payments] = await Promise.all([
-          invoiceRepo.getInvoice(invoiceId),
-          paymentRepo.findByInvoice(invoiceId),
-        ]);
-        setInvoice(inv);
-        setLinkedPayments(payments.filter((p) => p.id !== resolved?.id));
-
-        // For synthetic rows load project from the invoice
-        if (isSynthetic && inv?.projectId) {
-          try {
-            const proj = await projectRepo.findById(inv.projectId);
-            setProject(proj);
-          } catch {
-            setProject(null);
-          }
-        } else if (isSynthetic) {
-          setProject(null);
-        }
-      }
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load payment details');
-    } finally {
-      setLoading(false);
-    }
-  }, [paymentId, syntheticRow, invoiceIdParam, paymentRepo, invoiceRepo, projectRepo]);
-
-  const handleSelectProject = useCallback(
-    async (selectedProject: Project | undefined) => {
-      if (!payment) return;
-      const isSynth = payment.id.startsWith('invoice-payable:');
-      const oldProjectId = previousProjectIdRef.current;
-      const newProjectId = selectedProject?.id;
-      try {
-        if (isSynth) {
-          // Synthetic row — update the parent invoice
-          const invoiceId = payment.invoiceId;
-          if (!invoiceId) return;
-          await linkInvoiceUc.execute({ invoiceId, projectId: newProjectId });
-        } else {
-          await linkPaymentUc.execute({ paymentId: payment.id, projectId: newProjectId });
-        }
-        await Promise.all(
-          invalidations.paymentProjectAssigned({
-            oldProjectId,
-            newProjectId,
-            isInvoice: isSynth,
-          }).map((key) => queryClient.invalidateQueries({ queryKey: key })),
-        );
-        await loadData();
-      } catch (e: any) {
-        Alert.alert('Error', e?.message ?? 'Failed to update project assignment');
-      }
-    },
-    [payment, linkPaymentUc, linkInvoiceUc, queryClient, loadData],
-  );
-
-  const resolvedProjectId = payment?.id?.startsWith('invoice-payable:')
-    ? invoice?.projectId
-    : payment?.projectId;
-
-  const handleNavigateToProject = useCallback(() => {
-    if (!resolvedProjectId) return;
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Projects',
-        params: {
-          screen: 'ProjectDetail',
-          params: { projectId: resolvedProjectId },
-          initial: false,
-        },
-      }),
-    );
-  }, [resolvedProjectId, navigation]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Track previousProjectId before each assignment (covers both real and synthetic paths)
-  useEffect(() => {
-    previousProjectIdRef.current = resolvedProjectId;
-  }, [resolvedProjectId]);
-
-  const handleMarkAsPaid = () => {
-    // Invoice-linked path: record a new settled payment against the invoice
-    if (invoice && invoice.status !== 'cancelled' &&
-        (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial')) {
-      const settled = linkedPayments
-        .filter(p => p.status === 'settled')
-        .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-      const balance = invoice.total - settled;
-      if (balance <= 0) return;
-
-      Alert.alert('Mark as Paid', `Confirm full payment of ${formatCurrency(balance)}?`, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setMarking(true);
-            try {
-              const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-              await recordPaymentUc.execute({
-                id,
-                invoiceId: invoice.id,
-                amount: balance,
-                status: 'settled',
-                date: new Date().toISOString(),
-              });
-              await Promise.all(
-                invalidations.paymentRecorded({ projectId: invoice.projectId })
-                  .map(key => queryClient.invalidateQueries({ queryKey: key }))
-              );
-              Alert.alert('Done', 'Payment recorded.', [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
-            } catch (e: any) {
-              Alert.alert('Error', e?.message ?? 'Failed to record payment');
-            } finally {
-              setMarking(false);
-            }
-          },
-        },
-      ]);
-      return;
-    }
-
-    // Fallback: standalone payment record (no linked invoice)
-    if (!payment || payment.id.startsWith('invoice-payable:')) return;
-    Alert.alert('Mark as Paid', `Confirm payment of ${formatCurrency(payment.amount ?? 0)}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        onPress: async () => {
-          setMarking(true);
-          try {
-            await markPaidUc.execute({ paymentId: payment.id });
-            await Promise.all(
-              invalidations.paymentRecorded({})
-                .map(key => queryClient.invalidateQueries({ queryKey: key }))
-            );
-            Alert.alert('Done', 'Payment marked as settled.', [
-              { text: 'OK', onPress: () => navigation.goBack() },
-            ]);
-          } catch (e: any) {
-            Alert.alert('Error', e?.message ?? 'Failed to mark payment as paid');
-          } finally {
-            setMarking(false);
-          }
-        },
-      },
-    ]);
-  };
-
-  const handlePartialPaymentSubmit = async () => {
-    const settled = linkedPayments
-      .filter(p => p.status === 'settled')
-      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-    const balance = invoice ? invoice.total - settled : 0;
-    const amountNum = parseFloat(partialAmount);
-    if (!amountNum || amountNum <= 0 || amountNum > balance) {
-      setPartialAmountError(`Enter a valid amount between $0.01 and ${formatCurrency(balance)}.`);
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      await recordPaymentUc.execute({
-        id,
-        invoiceId: invoice!.id,
-        amount: amountNum,
-        status: 'settled',
-        date: new Date().toISOString(),
-      });
-      await Promise.all(
-        invalidations.paymentRecorded({ projectId: invoice?.projectId })
-          .map(key => queryClient.invalidateQueries({ queryKey: key }))
-      );
-      setPartialModalVisible(false);
-      setPartialAmount('');
-      setPartialAmountError('');
-      await loadData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Payment failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  if (vm.loading) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" />
@@ -386,7 +34,7 @@ export default function PaymentDetails() {
     );
   }
 
-  if (!payment) {
+  if (!vm.payment) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center">
         <Text className="text-muted-foreground">Payment not found.</Text>
@@ -394,42 +42,24 @@ export default function PaymentDetails() {
     );
   }
 
-  const isSyntheticRow = payment.id.startsWith('invoice-payable:');
-  const resolvedProjectIdInRender = isSyntheticRow ? invoice?.projectId : payment.projectId;
-  const dueStatus = payment.dueDate ? getDueStatus(payment.dueDate) : null;
-  const totalSettled = linkedPayments
-    .filter((p) => p.status === 'settled')
-    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  const remainingBalance = invoice ? invoice.total - totalSettled : 0;
-  const canRecordPayment =
-    invoice !== null &&
-    invoice.status !== 'cancelled' &&
-    (invoice.paymentStatus === 'unpaid' || invoice.paymentStatus === 'partial') &&
-    remainingBalance > 0;
-  const showMarkAsPaidFallback =
-    !invoice && payment.status === 'pending' && !isSyntheticRow;
-  const isPending = payment.status === 'pending' || payment.status == null;
-  const projectRowInteractive = isPending;
-  const showEditIcon = isPending && !isSyntheticRow;
-
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="px-4 pt-4 pb-3 border-b border-border flex-row items-center">
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={vm.goBack}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className="mr-3"
         >
           <ChevronLeft size={24} color={iconColor} />
         </TouchableOpacity>
         <Text className="text-xl font-bold text-foreground flex-1" numberOfLines={1}>
-          {payment.contractorName ?? 'Payment Detail'}
+          {vm.payment.contractorName ?? 'Payment Detail'}
         </Text>
-        {showEditIcon && (
+        {vm.showEditIcon && (
           <TouchableOpacity
             testID="edit-payment-btn"
-            onPress={() => setPendingFormVisible(true)}
+            onPress={() => vm.setPendingFormVisible(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             className="ml-2"
           >
@@ -442,52 +72,52 @@ export default function PaymentDetails() {
         {/* Amount + Status */}
         <View className="bg-card border border-border rounded-xl p-4 mb-4">
           <Text className="text-3xl font-bold text-foreground mb-1">
-            {formatCurrency(payment.amount ?? 0)}
+            {formatCurrency(vm.payment.amount ?? 0)}
           </Text>
           <View className="flex-row items-center gap-2">
             <View
               className={`px-2 py-0.5 rounded ${
-                payment.status === 'settled' ? 'bg-green-100' :
-                payment.status === 'cancelled' ? 'bg-red-100' :
-                payment.status === 'reverse_payment' ? 'bg-purple-100' :
+                vm.payment.status === 'settled' ? 'bg-green-100' :
+                vm.payment.status === 'cancelled' ? 'bg-red-100' :
+                vm.payment.status === 'reverse_payment' ? 'bg-purple-100' :
                 'bg-amber-100'
               }`}
             >
               <Text
                 className={`text-xs font-semibold ${
-                  payment.status === 'settled' ? 'text-green-700' :
-                  payment.status === 'cancelled' ? 'text-red-700' :
-                  payment.status === 'reverse_payment' ? 'text-purple-700' :
+                  vm.payment.status === 'settled' ? 'text-green-700' :
+                  vm.payment.status === 'cancelled' ? 'text-red-700' :
+                  vm.payment.status === 'reverse_payment' ? 'text-purple-700' :
                   'text-amber-700'
                 }`}
               >
-                {payment.status === 'settled' ? 'Settled' :
-                 payment.status === 'cancelled' ? 'Cancelled' :
-                 payment.status === 'reverse_payment' ? 'Reversed' :
+                {vm.payment.status === 'settled' ? 'Settled' :
+                 vm.payment.status === 'cancelled' ? 'Cancelled' :
+                 vm.payment.status === 'reverse_payment' ? 'Reversed' :
                  'Pending'}
               </Text>
             </View>
-            {dueStatus && payment.status === 'pending' && (
-              <Text style={{ color: dueStatus.style === 'overdue' ? '#dc2626' : dueStatus.style === 'due-soon' ? '#d97706' : '#16a34a' }} className="text-xs font-semibold">
-                {dueStatus.text}
+            {vm.dueStatus && vm.payment.status === 'pending' && (
+              <Text style={{ color: vm.dueStatus.style === 'overdue' ? '#dc2626' : vm.dueStatus.style === 'due-soon' ? '#d97706' : '#16a34a' }} className="text-xs font-semibold">
+                {vm.dueStatus.text}
               </Text>
             )}
           </View>
         </View>
 
         {/* Invoice summary */}
-        {invoice && (
+        {vm.invoice && (
           <View className="bg-card border border-border rounded-xl p-4 mb-4">
             <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Invoice
             </Text>
-            <Row label="Reference" value={invoice.externalReference ?? invoice.invoiceNumber ?? invoice.id} />
-            <Row label="Issued by" value={invoice.issuerName ?? '—'} />
-            <Row label="Issue date" value={formatDate(invoice.dateIssued ?? invoice.issueDate)} />
-            <Row label="Due date" value={formatDate(invoice.dateDue ?? invoice.dueDate)} />
-            <Row label="Total" value={formatCurrency(invoice.total)} />
-            <Row label="Payment status" value={invoice.paymentStatus} />
-            {invoice.status === 'cancelled' && (
+            <Row label="Reference" value={vm.invoice.externalReference ?? vm.invoice.invoiceNumber ?? vm.invoice.id} />
+            <Row label="Issued by" value={vm.invoice.issuerName ?? '—'} />
+            <Row label="Issue date" value={formatDate(vm.invoice.dateIssued ?? vm.invoice.issueDate)} />
+            <Row label="Due date" value={formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)} />
+            <Row label="Total" value={formatCurrency(vm.invoice.total)} />
+            <Row label="Payment status" value={vm.invoice.paymentStatus} />
+            {vm.invoice.status === 'cancelled' && (
               <View className="mt-2 bg-red-50 rounded px-3 py-2">
                 <Text className="text-xs text-red-600 font-semibold">Invoice cancelled</Text>
               </View>
@@ -500,26 +130,26 @@ export default function PaymentDetails() {
           <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Details
           </Text>
-          <Row label="Category" value={payment.paymentCategory ?? '—'} />
-          <Row label="Stage" value={payment.stageLabel ?? '—'} />
-          <Row label="Due" value={formatDate(payment.dueDate)} />
-          <Row label="Method" value={payment.method ?? '—'} />
-          <Row label="Reference" value={payment.reference ?? '—'} />
-          {payment.notes ? <Row label="Notes" value={payment.notes} /> : null}
+          <Row label="Category" value={vm.payment.paymentCategory ?? '—'} />
+          <Row label="Stage" value={vm.payment.stageLabel ?? '—'} />
+          <Row label="Due" value={formatDate(vm.payment.dueDate)} />
+          <Row label="Method" value={vm.payment.method ?? '—'} />
+          <Row label="Reference" value={vm.payment.reference ?? '—'} />
+          {vm.payment.notes ? <Row label="Notes" value={vm.payment.notes} /> : null}
 
           {/* Project row — visible for both real and synthetic rows */}
-          {projectRowInteractive ? (
+          {vm.projectRowInteractive ? (
             <TouchableOpacity
               testID="project-row"
-              onPress={() => setProjectPickerVisible(true)}
+              onPress={() => vm.setProjectPickerVisible(true)}
               className="flex-row justify-between items-center py-1.5"
               activeOpacity={0.7}
             >
               <Text className="text-sm text-muted-foreground">Project</Text>
               <View className="flex-row items-center gap-1 flex-shrink ml-4">
-                {project ? (
+                {vm.project ? (
                   <Text className="text-sm text-primary font-medium text-right" numberOfLines={1}>
-                    {project.name}
+                    {vm.project.name}
                   </Text>
                 ) : (
                   <Text className="text-sm text-muted-foreground font-medium text-right">
@@ -536,9 +166,9 @@ export default function PaymentDetails() {
             >
               <Text className="text-sm text-muted-foreground">Project</Text>
               <View className="flex-row items-center gap-1 flex-shrink ml-4">
-                {project ? (
+                {vm.project ? (
                   <Text className="text-sm text-foreground font-medium text-right" numberOfLines={1}>
-                    {project.name}
+                    {vm.project.name}
                   </Text>
                 ) : (
                   <Text className="text-sm text-muted-foreground font-medium text-right">
@@ -551,12 +181,12 @@ export default function PaymentDetails() {
         </View>
 
         {/* Payment history for this invoice */}
-        {linkedPayments.length > 0 && (
+        {vm.linkedPayments.length > 0 && (
           <View className="bg-card border border-border rounded-xl p-4 mb-4">
             <Text className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Payment History
             </Text>
-            {linkedPayments.map((p) => (
+            {vm.linkedPayments.map((p) => (
               <View key={p.id} className="flex-row items-center justify-between py-2 border-b border-border last:border-0">
                 <View>
                   <Text className="text-sm text-foreground">{formatDate(p.date ?? p.updatedAt)}</Text>
@@ -565,38 +195,34 @@ export default function PaymentDetails() {
                 <Text className="text-sm font-semibold text-foreground">{formatCurrency(p.amount ?? 0)}</Text>
               </View>
             ))}
-            {totalSettled > 0 && (
+            {vm.totalSettled > 0 && (
               <View className="flex-row justify-between pt-2 mt-1">
                 <Text className="text-sm font-semibold text-foreground">Total settled</Text>
-                <Text className="text-sm font-semibold text-green-600">{formatCurrency(totalSettled)}</Text>
+                <Text className="text-sm font-semibold text-green-600">{formatCurrency(vm.totalSettled)}</Text>
               </View>
             )}
           </View>
         )}
 
         {/* CTAs */}
-        {(canRecordPayment || showMarkAsPaidFallback) && (
+        {(vm.canRecordPayment || vm.showMarkAsPaidFallback) && (
           <View className="gap-3 mb-6">
             <TouchableOpacity
-              onPress={handleMarkAsPaid}
-              disabled={marking}
+              onPress={vm.handleMarkAsPaid}
+              disabled={vm.marking}
               className="bg-primary rounded-xl py-4 items-center"
               activeOpacity={0.8}
             >
-              {marking ? (
+              {vm.marking ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-primary-foreground font-bold text-base">Mark as Paid</Text>
               )}
             </TouchableOpacity>
 
-            {canRecordPayment && (
+            {vm.canRecordPayment && (
               <TouchableOpacity
-                onPress={() => {
-                  setPartialAmount(remainingBalance.toString());
-                  setPartialAmountError('');
-                  setPartialModalVisible(true);
-                }}
+                onPress={vm.openPartialModal}
                 className="border border-primary rounded-xl py-4 items-center"
                 activeOpacity={0.8}
               >
@@ -609,32 +235,32 @@ export default function PaymentDetails() {
 
       {/* Project Picker Modal — #191 / #196 */}
       <ProjectPickerModal
-        visible={projectPickerVisible}
-        currentProjectId={resolvedProjectIdInRender}
-        onSelect={handleSelectProject}
-        onNavigate={handleNavigateToProject}
-        onClose={() => setProjectPickerVisible(false)}
+        visible={vm.projectPickerVisible}
+        currentProjectId={vm.resolvedProjectId}
+        onSelect={vm.handleSelectProject}
+        onNavigate={vm.handleNavigateToProject}
+        onClose={() => vm.setProjectPickerVisible(false)}
       />
 
       {/* Pending Payment Form — #196 */}
-      {showEditIcon && (
+      {vm.showEditIcon && (
         <PendingPaymentForm
-          visible={pendingFormVisible}
-          payment={payment}
-          onClose={() => setPendingFormVisible(false)}
+          visible={vm.pendingFormVisible}
+          payment={vm.payment}
+          onClose={() => vm.setPendingFormVisible(false)}
           onSaved={async () => {
-            setPendingFormVisible(false);
-            await loadData();
+            vm.setPendingFormVisible(false);
+            vm.reload();
           }}
         />
       )}
 
       {/* Partial Payment Modal */}
       <Modal
-        visible={partialModalVisible}
+        visible={vm.partialModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setPartialModalVisible(false)}
+        onRequestClose={vm.closePartialModal}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -643,7 +269,7 @@ export default function PaymentDetails() {
           <TouchableOpacity
             className="flex-1 bg-black/50"
             activeOpacity={1}
-            onPress={() => setPartialModalVisible(false)}
+            onPress={vm.closePartialModal}
           >
             <TouchableOpacity
               activeOpacity={1}
@@ -658,28 +284,28 @@ export default function PaymentDetails() {
                 {/* Header */}
                 <View className="flex-row items-center justify-between mb-6">
                   <Text className="text-xl font-bold text-gray-900 dark:text-white">Partial Payment</Text>
-                  <TouchableOpacity onPress={() => setPartialModalVisible(false)}>
+                  <TouchableOpacity onPress={vm.closePartialModal}>
                     <X size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Invoice info */}
-                {invoice && (
+                {vm.invoice && (
                   <View className="mb-6">
                     <View className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-4 border border-gray-200 dark:border-gray-700">
                       <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Invoice</Text>
                       <Text className="text-base font-bold text-gray-900 dark:text-white mb-3">
-                        {invoice.externalReference ?? invoice.invoiceNumber ?? invoice.id}
+                        {vm.invoice.externalReference ?? vm.invoice.invoiceNumber ?? vm.invoice.id}
                       </Text>
                       <View className="flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-3">
                         <View>
                           <Text className="text-xs text-gray-500 dark:text-gray-400">Issued by</Text>
-                          <Text className="text-sm font-medium text-gray-900 dark:text-white">{invoice.issuerName ?? '—'}</Text>
+                          <Text className="text-sm font-medium text-gray-900 dark:text-white">{vm.invoice.issuerName ?? '—'}</Text>
                         </View>
                         <View className="items-end">
                           <Text className="text-xs text-gray-500 dark:text-gray-400">Due date</Text>
                           <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                            {formatDate(invoice.dateDue ?? invoice.dueDate)}
+                            {formatDate(vm.invoice.dateDue ?? vm.invoice.dueDate)}
                           </Text>
                         </View>
                       </View>
@@ -689,12 +315,12 @@ export default function PaymentDetails() {
                       <View>
                         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Invoice</Text>
                         <Text className="text-base text-gray-400 dark:text-gray-500 line-through">
-                          {formatCurrency(invoice.total)}
+                          {formatCurrency(vm.invoice.total)}
                         </Text>
                       </View>
                       <View className="items-end">
                         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Remaining Balance</Text>
-                        <Text className="text-xl font-bold text-primary">{formatCurrency(remainingBalance)}</Text>
+                        <Text className="text-xl font-bold text-primary">{formatCurrency(vm.remainingBalance)}</Text>
                       </View>
                     </View>
                   </View>
@@ -708,31 +334,31 @@ export default function PaymentDetails() {
                     <TextInput
                       className="flex-1 text-2xl font-bold text-gray-900 dark:text-white"
                       placeholder="0.00"
-                      value={partialAmount}
-                      onChangeText={(t) => { setPartialAmount(t); setPartialAmountError(''); }}
+                      value={vm.partialAmount}
+                      onChangeText={vm.setPartialAmount}
                       keyboardType="decimal-pad"
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
-                  {!!partialAmountError && (
-                    <Text className="text-xs text-red-500 mt-1">{partialAmountError}</Text>
+                  {!!vm.partialAmountError && (
+                    <Text className="text-xs text-red-500 mt-1">{vm.partialAmountError}</Text>
                   )}
                 </View>
 
                 {/* Actions */}
                 <View className="flex-row gap-3">
                   <TouchableOpacity
-                    onPress={() => setPartialModalVisible(false)}
+                    onPress={vm.closePartialModal}
                     className="flex-1 py-3.5 rounded-xl border border-gray-300 dark:border-gray-600 items-center justify-center"
                   >
                     <Text className="font-semibold text-gray-700 dark:text-gray-300">Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={handlePartialPaymentSubmit}
-                    disabled={submitting}
+                    onPress={vm.handlePartialPaymentSubmit}
+                    disabled={vm.submitting}
                     className="flex-1 py-3.5 rounded-xl bg-primary items-center justify-center"
                   >
-                    {submitting ? (
+                    {vm.submitting ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
                       <Text className="font-semibold text-white">Mark as Paid</Text>
@@ -760,3 +386,4 @@ function Row({ label, value }: { label: string; value?: string | null }) {
 const styles = StyleSheet.create({
   content: { paddingBottom: 32 },
 });
+
