@@ -34,7 +34,8 @@ import {
 } from 'lucide-react-native';
 import { useProjectDetail } from '../../hooks/useProjectDetail';
 import { useTaskTimeline } from '../../hooks/useTaskTimeline';
-import { usePaymentsTimeline, PaymentDayGroup } from '../../hooks/usePaymentsTimeline';
+import { usePaymentsTimeline } from '../../features/payments';
+import type { PaymentDayGroup } from '../../features/payments';
 import { useQuotationsTimeline, QuotationDayGroup } from '../../hooks/useQuotationsTimeline';
 import { TimelineDayGroup } from '../../components/projects/TimelineDayGroup';
 import { TimelineSectionHeader } from '../../components/projects/TimelineSectionHeader';

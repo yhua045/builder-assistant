@@ -3,8 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, CreditCard, CheckSquare, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { cssInterop } from 'nativewind';
-import DashboardScreen from '../dashboard';
-import PaymentsNavigator from '../payments/PaymentsNavigator';
+import { DashboardScreen } from '../../features/dashboard';
+import { PaymentsNavigator } from '../../features/payments';
 import TasksNavigator from '../tasks/TasksNavigator';
 import ProjectsNavigator from '../projects/ProjectsNavigator';
 

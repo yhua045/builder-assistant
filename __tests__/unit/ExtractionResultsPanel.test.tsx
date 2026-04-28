@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { ExtractionResultsPanel } from '../../src/components/invoices/ExtractionResultsPanel';
-import { NormalizedInvoice } from '../../src/application/ai/IInvoiceNormalizer';
+import { ExtractionResultsPanel } from '../../src/features/invoices/components/ExtractionResultsPanel';
+import { NormalizedInvoice } from '../../src/features/invoices/application/IInvoiceNormalizer';
 
 describe('ExtractionResultsPanel', () => {
   const mockOnAccept = jest.fn();

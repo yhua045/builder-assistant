@@ -7,8 +7,8 @@ import QuotationDetailScreen from './QuotationDetail';
 import TaskDetailsPage from '../tasks/TaskDetailsPage';
 import CreateTaskPage from '../tasks/CreateTaskPage';
 import EditTaskPage from '../tasks/EditTaskPage';
-import InvoiceDetailPage from '../invoices/InvoiceDetailPage';
-import PaymentDetails from '../payments/PaymentDetails';
+import { InvoiceDetailPage } from '../../features/invoices';
+import PaymentDetails from '../../features/payments/screens/PaymentDetails';
 import { Payment } from '../../domain/entities/Payment';
 
 export type ProjectsStackParamList = {

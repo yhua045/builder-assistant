@@ -3,7 +3,7 @@ import type { PaymentRepository } from '../../../domain/repositories/PaymentRepo
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
 import type { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
 import { TaskNotFoundError } from '../../errors/TaskCompletionErrors';
-import { MarkPaymentAsPaidUseCase } from '../payment/MarkPaymentAsPaidUseCase';
+import { MarkPaymentAsPaidUseCase } from '../../../features/payments/application/MarkPaymentAsPaidUseCase';
 import { CompleteTaskUseCase } from './CompleteTaskUseCase';
 
 export class CompleteTaskAndSettlePaymentsUseCase {

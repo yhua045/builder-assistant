@@ -56,8 +56,8 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { CompleteTaskAndSettlePaymentsUseCase } from '../../src/application/usecases/task/CompleteTaskAndSettlePaymentsUseCase';
 import { DrizzleTaskRepository } from '../../src/infrastructure/repositories/DrizzleTaskRepository';
-import { DrizzlePaymentRepository } from '../../src/infrastructure/repositories/DrizzlePaymentRepository';
-import { DrizzleInvoiceRepository } from '../../src/infrastructure/repositories/DrizzleInvoiceRepository';
+import { DrizzlePaymentRepository } from '../../src/features/payments/infrastructure/DrizzlePaymentRepository';
+import { DrizzleInvoiceRepository } from '../../src/features/invoices/infrastructure/DrizzleInvoiceRepository';
 import { DrizzleQuotationRepository } from '../../src/infrastructure/repositories/DrizzleQuotationRepository';
 import { TaskEntity } from '../../src/domain/entities/Task';
 import { PaymentEntity } from '../../src/domain/entities/Payment';

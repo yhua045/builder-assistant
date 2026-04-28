@@ -63,7 +63,7 @@ jest.mock('../../src/hooks/useProjectDetail', () => ({
 jest.mock('../../src/hooks/useTaskTimeline', () => ({
   useTaskTimeline: () => mockTaskTimelineReturn,
 }));
-jest.mock('../../src/hooks/usePaymentsTimeline', () => ({
+jest.mock('../../src/features/payments', () => ({
   usePaymentsTimeline: () => mockPaymentsTimelineReturn,
 }));
 jest.mock('../../src/hooks/useQuotationsTimeline', () => ({

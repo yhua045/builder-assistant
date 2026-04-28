@@ -27,7 +27,7 @@
 import { act } from '@testing-library/react-native';
 import { invalidations, queryKeys } from '../../src/hooks/queryKeys';
 import { renderHookWithQuery, createTestQueryClient } from '../utils/queryClientWrapper';
-import { useInvoices } from '../../src/hooks/useInvoices';
+import { useInvoices } from '../../src/features/invoices';
 
 // ── DI container stub ─────────────────────────────────────────────────────────
 

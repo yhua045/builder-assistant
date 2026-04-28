@@ -5,7 +5,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
-import GlobalQuotationCard from '../../src/components/payments/GlobalQuotationCard';
+import GlobalQuotationCard from '../../src/features/payments/components/GlobalQuotationCard';
 import type { Quotation } from '../../src/domain/entities/Quotation';
 
 const makeQuotation = (overrides: Partial<Quotation> = {}): Quotation => ({

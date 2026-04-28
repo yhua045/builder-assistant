@@ -15,7 +15,7 @@ import { container } from 'tsyringe';
 import { renderHookWithQuery } from '../utils/queryClientWrapper';
 import { useAcceptQuote } from '../../src/hooks/useAcceptQuote';
 import { useTasks } from '../../src/hooks/useTasks';
-import { useInvoices } from '../../src/hooks/useInvoices';
+import { useInvoices } from '../../src/features/invoices';
 
 // ── Repo factory helpers ─────────────────────────────────────────────────────
 
