@@ -1,4 +1,4 @@
-import { selectTopBlockedTasks, BlockedTaskItem } from '../../src/utils/selectTopBlockedTasks';
+import { selectTopBlockedTasks, BlockedTaskItem } from '../../src/features/tasks/utils/selectTopBlockedTasks';
 
 describe('selectTopBlockedTasks', () => {
   it('Scenario 1: Empty input returns []', () => {

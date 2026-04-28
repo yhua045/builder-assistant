@@ -1,7 +1,7 @@
-import { PaymentFeedItem } from '../../src/domain/entities/PaymentFeedItem';
+import { PaymentFeedItem } from '../../src/features/payments/domain/PaymentFeedItem';
 import { Payment } from '../../src/domain/entities/Payment';
 import { Invoice } from '../../src/domain/entities/Invoice';
-import { groupFeedItemsByDay } from '../../src/hooks/usePaymentsTimeline';
+import { groupFeedItemsByDay } from '../../src/features/payments/hooks/usePaymentsTimeline';
 
 function makePaymentItem(overrides: Partial<Payment> = {}): PaymentFeedItem {
   return {

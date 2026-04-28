@@ -12,7 +12,7 @@ import {
   computeFocus3Score,
   computeBlockers,
   computeFocus3,
-} from '../../src/application/usecases/task/CockpitScorer';
+} from '../../src/features/tasks/application/CockpitScorer';
 import { Task } from '../../src/domain/entities/Task';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

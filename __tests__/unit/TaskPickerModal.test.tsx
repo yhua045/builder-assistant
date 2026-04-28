@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { TaskPickerModal } from '../../src/pages/tasks/TaskPickerModal';
+import { TaskPickerModal } from '../../src/features/tasks/screens/TaskPickerModal';
 import { Task } from '../../src/domain/entities/Task';
 
 // Mock useTasks hook
 const mockUseTasks = jest.fn();
-jest.mock('../../src/hooks/useTasks', () => ({
+jest.mock('../../src/features/tasks/hooks/useTasks', () => ({
   useTasks: (...args: any[]) => mockUseTasks(...args),
 }));
 

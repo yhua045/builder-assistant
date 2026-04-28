@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { FocusList } from '../../src/components/tasks/FocusList';
+import { FocusList } from '../../src/features/tasks/components/FocusList';
 import type { FocusItem } from '../../src/domain/entities/CockpitData';
 import type { Task } from '../../src/domain/entities/Task';
 

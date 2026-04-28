@@ -1,4 +1,4 @@
-import { GetDelayStatisticsUseCase } from '../../src/application/usecases/task/GetDelayStatisticsUseCase';
+import { GetDelayStatisticsUseCase } from '../../src/features/tasks/application/GetDelayStatisticsUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { DelayReasonTypeRepository } from '../../src/domain/repositories/DelayReasonTypeRepository';
 import { DelayReasonType } from '../../src/domain/entities/DelayReason';

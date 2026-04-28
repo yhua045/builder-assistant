@@ -9,7 +9,7 @@
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { BlockerCarousel } from '../../src/components/tasks/BlockerCarousel';
+import { BlockerCarousel } from '../../src/features/tasks/components/BlockerCarousel';
 import type { BlockerBarResult, BlockerItem } from '../../src/domain/entities/CockpitData';
 import type { Task } from '../../src/domain/entities/Task';
 

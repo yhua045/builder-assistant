@@ -8,7 +8,7 @@
  * Run: npx jest GetBlockerBarDataUseCase
  */
 
-import { GetBlockerBarDataUseCase } from '../../src/application/usecases/task/GetBlockerBarDataUseCase';
+import { GetBlockerBarDataUseCase } from '../../src/features/tasks/application/GetBlockerBarDataUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { Task } from '../../src/domain/entities/Task';
 

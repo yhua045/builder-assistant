@@ -1,0 +1,151 @@
+// Integration test: verify recording payments updates invoice status
+jest.mock('react-native-sqlite-storage', () => {
+  function createAdapter(db: any) {
+    return {
+      executeSql: async (sql: string, params: any[] = []) => {
+        const stmt = sql.trim();
+        const upper = stmt.toUpperCase();
+
+        if (upper.startsWith('SELECT')) {
+          const rows = db.prepare(stmt).all(...params);
+          return [ { rows: { length: rows.length, item: (i: number) => rows[i] } } ];
+        }
+
+        if (params && params.length > 0) {
+          try {
+            const prepared = db.prepare(stmt);
+            prepared.run(...params);
+            return [ { rows: { length: 0, item: (_: number) => undefined } } ];
+          } catch (e: any) {
+            if (e.code === 'SQLITE_CONSTRAINT_UNIQUE' || e.message?.includes('UNIQUE constraint failed')) {
+              throw e;
+            }
+          }
+        }
+
+        if (stmt) db.exec(stmt);
+        return [ { rows: { length: 0, item: (_: number) => undefined } } ];
+      },
+      transaction: async (fn: any) => {
+        db.exec('BEGIN');
+        try {
+          const tx = { executeSql: (sql: string, params?: any[]) => createAdapter(db).executeSql(sql, params) };
+          await fn(tx);
+          db.exec('COMMIT');
+        } catch (err) {
+          db.exec('ROLLBACK');
+          throw err;
+        }
+      },
+      close: async () => db.close(),
+    };
+  }
+
+  return {
+    enablePromise: (_: boolean) => {},
+    openDatabase: async (_: any) => {
+      const BetterSqlite3 = require('better-sqlite3');
+      const db = new BetterSqlite3(':memory:');
+      return createAdapter(db);
+    }
+  };
+});
+
+import { DrizzleInvoiceRepository } from '../../../../features/invoices/infrastructure/DrizzleInvoiceRepository';
+import { DrizzlePaymentRepository } from '../../infrastructure/DrizzlePaymentRepository';
+import { InvoiceEntity } from '../../../../domain/entities/Invoice';
+import { PaymentEntity } from '../../../../domain/entities/Payment';
+import { RecordPaymentUseCase } from '../../application/RecordPaymentUseCase';
+import { closeDatabase, initDatabase } from '../../../../infrastructure/database/connection';
+
+describe('RecordPaymentUseCase integration', () => {
+  let invoiceRepo: DrizzleInvoiceRepository;
+  let paymentRepo: DrizzlePaymentRepository;
+  let uc: RecordPaymentUseCase;
+
+  beforeEach(async () => {
+    await closeDatabase();
+    invoiceRepo = new DrizzleInvoiceRepository();
+    paymentRepo = new DrizzlePaymentRepository();
+    uc = new RecordPaymentUseCase(paymentRepo, invoiceRepo);
+    // Ensure payments table exists with due_date and status for this test
+    const { db } = await initDatabase();
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        project_id TEXT,
+        invoice_id TEXT,
+        amount REAL,
+        currency TEXT,
+        payment_date INTEGER,
+        due_date INTEGER,
+        status TEXT,
+        payment_method TEXT,
+        reference TEXT,
+        notes TEXT,
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    `);
+    try { await db.executeSql('ALTER TABLE payments ADD COLUMN due_date INTEGER'); } catch(_) {}
+    try { await db.executeSql('ALTER TABLE payments ADD COLUMN status TEXT'); } catch(_) {}
+  });
+
+  afterEach(async () => {
+    await closeDatabase();
+  });
+
+  it('marks invoice as paid when payments equal total', async () => {
+    const inv = InvoiceEntity.create({ total: 200, status: 'issued' }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
+
+    const updated = await invoiceRepo.getInvoice(inv.id);
+    expect(updated).toBeDefined();
+    expect(updated?.paymentStatus).toBe('paid');
+    expect(updated?.status).toBe('paid');
+  });
+
+  it('marks invoice as partial when payments are less than total', async () => {
+    const inv = InvoiceEntity.create({ total: 500 }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
+
+    const updated = await invoiceRepo.getInvoice(inv.id);
+    expect(updated).toBeDefined();
+    expect(updated?.paymentStatus).toBe('partial');
+    expect(updated?.status).not.toBe('paid');
+  });
+
+  it('does not count a cancelled payment toward invoice totalSettled', async () => {
+    const inv = InvoiceEntity.create({ total: 500, status: 'issued' }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    // Record a large payment then cancel it (simulate by saving directly with cancelled status)
+    const cancelled = PaymentEntity.create({ invoiceId: inv.id, amount: 500, status: 'cancelled' }).data();
+    await paymentRepo.save(cancelled);
+
+    // Now record a small partial payment via the use case
+    await uc.execute({ invoiceId: inv.id, amount: 100 });
+
+    const updated = await invoiceRepo.getInvoice(inv.id);
+    expect(updated?.paymentStatus).toBe('partial');
+    expect(updated?.status).not.toBe('paid');
+  });
+
+  it('accumulates multiple partial payments and transitions invoice to paid', async () => {
+    const inv = InvoiceEntity.create({ total: 300, status: 'issued' }).data();
+    await invoiceRepo.createInvoice(inv);
+
+    await uc.execute({ invoiceId: inv.id, amount: 100 });
+    const after1 = await invoiceRepo.getInvoice(inv.id);
+    expect(after1?.paymentStatus).toBe('partial');
+
+    await uc.execute({ invoiceId: inv.id, amount: 200 });
+    const after2 = await invoiceRepo.getInvoice(inv.id);
+    expect(after2?.paymentStatus).toBe('paid');
+    expect(after2?.status).toBe('paid');
+  });
+});

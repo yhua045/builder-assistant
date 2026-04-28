@@ -6,7 +6,7 @@ import { TaskRepository } from '../domain/repositories/TaskRepository';
 import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
 import { ContactRepository } from '../domain/repositories/ContactRepository';
 import { QuotationRepository } from '../domain/repositories/QuotationRepository';
-import { AcceptQuotationUseCase } from '../application/usecases/quotation/AcceptQuotationUseCase';
+import { AcceptQuotationUseCase } from '../features/quotations/application/AcceptQuotationUseCase';
 import { invalidations } from './queryKeys';
 
 export interface UseAcceptQuoteReturn {

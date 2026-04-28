@@ -5,7 +5,7 @@
  * Run: npx jest GetCockpitDataUseCase
  */
 
-import { GetCockpitDataUseCase } from '../../src/application/usecases/task/GetCockpitDataUseCase';
+import { GetCockpitDataUseCase } from '../../src/features/tasks/application/GetCockpitDataUseCase';
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 

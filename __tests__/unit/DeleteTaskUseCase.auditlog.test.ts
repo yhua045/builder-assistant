@@ -1,4 +1,4 @@
-import { DeleteTaskUseCase } from '../../src/application/usecases/task/DeleteTaskUseCase';
+import { DeleteTaskUseCase } from '../../src/features/tasks/application/DeleteTaskUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { AuditLogRepository } from '../../src/domain/repositories/AuditLogRepository';
 import { Task } from '../../src/domain/entities/Task';

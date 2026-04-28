@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
 import { TaskRepository } from '../domain/repositories/TaskRepository';
 import { CockpitData } from '../domain/entities/CockpitData';
-import { GetCockpitDataUseCase } from '../application/usecases/task/GetCockpitDataUseCase';
+import { GetCockpitDataUseCase } from '../features/tasks/application/GetCockpitDataUseCase';
 
 export interface UseCockpitDataReturn {
   cockpit: CockpitData | null;

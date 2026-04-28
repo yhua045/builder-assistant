@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { UserPlus } from 'lucide-react-native';
-import { SubcontractorPickerModal, SubcontractorContact } from '../tasks/SubcontractorPickerModal';
+import { SubcontractorPickerModal, SubcontractorContact } from '../../features/tasks/components/SubcontractorPickerModal';
 
 interface ContractorLookupFieldProps {
   label?: string;

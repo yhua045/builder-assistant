@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { CriticalTasksTimeline } from '../../src/components/tasks/CriticalTasksTimeline';
-import { BlockedTaskItem } from '../../src/utils/selectTopBlockedTasks';
+import { CriticalTasksTimeline } from '../../src/features/tasks/components/CriticalTasksTimeline';
+import { BlockedTaskItem } from '../../src/features/tasks/utils/selectTopBlockedTasks';
 
 describe('CriticalTasksTimeline', () => {
   it('renders "No critical blocked tasks." when items array is empty', () => {

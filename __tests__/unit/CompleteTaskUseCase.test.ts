@@ -1,7 +1,7 @@
-import { CompleteTaskUseCase } from '../../src/application/usecases/task/CompleteTaskUseCase';
+import { CompleteTaskUseCase } from '../../src/features/tasks/application/CompleteTaskUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
-import { TaskNotFoundError, TaskCompletionValidationError } from '../../src/application/errors/TaskCompletionErrors';
+import { TaskNotFoundError, TaskCompletionValidationError } from '../../src/features/tasks/application/TaskCompletionErrors';
 import { Task } from '../../src/domain/entities/Task';
 import { Quotation } from '../../src/domain/entities/Quotation';
 

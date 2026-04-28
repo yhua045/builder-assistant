@@ -20,7 +20,7 @@ jest.mock('../../src/config/featureFlags', () => ({
   FEATURE_AI_SUGGESTIONS: true,
 }));
 
-import { useTaskDetail } from '../../src/hooks/useTaskDetail';
+import { useTaskDetail } from '../../src/features/tasks/hooks/useTaskDetail';
 import type { Task } from '../../src/domain/entities/Task';
 import type { Project } from '../../src/domain/entities/Project';
 import type {

@@ -10,7 +10,7 @@
  *  - Retake: old temp file deleted before capturing again
  */
 
-import { CreateTaskFromPhotoUseCase } from '../../src/application/usecases/task/CreateTaskFromPhotoUseCase';
+import { CreateTaskFromPhotoUseCase } from '../../src/features/tasks/application/CreateTaskFromPhotoUseCase';
 import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import type { DocumentRepository } from '../../src/domain/repositories/DocumentRepository';
 import type { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';

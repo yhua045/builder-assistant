@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
-import { AddProgressLogModal } from '../../src/components/tasks/AddProgressLogModal';
+import { AddProgressLogModal } from '../../src/features/tasks/components/AddProgressLogModal';
 
 // ── Stubs ──────────────────────────────────────────────────────────────────────
 

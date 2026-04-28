@@ -1,4 +1,4 @@
-import { RemoveTaskDependencyUseCase } from '../../src/application/usecases/task/RemoveTaskDependencyUseCase';
+import { RemoveTaskDependencyUseCase } from '../../src/features/tasks/application/RemoveTaskDependencyUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 
 function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {

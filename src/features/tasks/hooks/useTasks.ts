@@ -1,0 +1,206 @@
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Task } from '../../../domain/entities/Task';
+import { DelayReason } from '../../../domain/entities/DelayReason';
+import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { DelayReasonTypeRepository } from '../../../domain/repositories/DelayReasonTypeRepository';
+import { container } from 'tsyringe';
+import '../../../infrastructure/di/registerServices';
+import { CreateTaskUseCase } from '../application/CreateTaskUseCase';
+import { UpdateTaskUseCase, UpdateTaskDTO } from '../application/UpdateTaskUseCase';
+import { DeleteTaskUseCase } from '../application/DeleteTaskUseCase';
+import { GetTaskUseCase } from '../application/GetTaskUseCase';
+import { ListTasksUseCase } from '../application/ListTasksUseCase';
+import { GetTaskDetailUseCase, TaskDetail } from '../application/GetTaskDetailUseCase';
+import { AddTaskDependencyUseCase } from '../application/AddTaskDependencyUseCase';
+import { RemoveTaskDependencyUseCase } from '../application/RemoveTaskDependencyUseCase';
+import { AddDelayReasonUseCase, AddDelayReasonInput } from '../application/AddDelayReasonUseCase';
+import { AddProgressLogUseCase, AddProgressLogInput } from '../application/AddProgressLogUseCase';
+import { UpdateProgressLogUseCase, UpdateProgressLogInput } from '../application/UpdateProgressLogUseCase';
+import { DeleteProgressLogUseCase } from '../application/DeleteProgressLogUseCase';
+import { ProgressLog } from '../../../domain/entities/ProgressLog';
+import { RemoveDelayReasonUseCase } from '../application/RemoveDelayReasonUseCase';
+import { ResolveDelayReasonUseCase } from '../application/ResolveDelayReasonUseCase';
+import { CompleteTaskUseCase } from '../application/CompleteTaskUseCase';
+import { CompleteTaskAndSettlePaymentsUseCase } from '../application/CompleteTaskAndSettlePaymentsUseCase';
+import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+
+import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+
+export type { TaskDetail } from '../application/GetTaskDetailUseCase';
+export type { AddDelayReasonInput } from '../application/AddDelayReasonUseCase';
+export type { UpdateProgressLogInput } from '../application/UpdateProgressLogUseCase';
+
+export interface UseTasksReturn {
+  tasks: Task[];
+  loading: boolean;
+  refreshTasks: () => Promise<void>;
+  createTask: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => Promise<void>;
+  updateTask: (taskId: string, updates: UpdateTaskDTO['updates']) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  getTask: (id: string) => Promise<Task | null>;
+  // Task detail extensions
+  getTaskDetail: (id: string) => Promise<TaskDetail | null>;
+  addDependency: (taskId: string, dependsOnTaskId: string) => Promise<void>;
+  removeDependency: (taskId: string, dependsOnTaskId: string) => Promise<void>;
+  addDelayReason: (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>) => Promise<DelayReason>;
+  removeDelayReason: (taskId: string, delayReasonId: string) => Promise<void>;
+  addProgressLog: (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => Promise<ProgressLog>;
+  updateProgressLog: (taskId: string, logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => Promise<ProgressLog>;
+  deleteProgressLog: (taskId: string, logId: string) => Promise<void>;
+  resolveDelayReason: (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => Promise<void>;
+  completeTask: (taskId: string) => Promise<void>;
+  completeTaskAndSettlePayments: (taskId: string) => Promise<void>;
+}
+
+export function useTasks(projectId?: string): UseTasksReturn {
+  const queryClient = useQueryClient();
+
+  const taskRepository = useMemo(() => container.resolve<TaskRepository>('TaskRepository'), []);
+  const delayReasonTypeRepository = useMemo(() => container.resolve<DelayReasonTypeRepository>('DelayReasonTypeRepository'), []);
+  const quotationRepository = useMemo(() => container.resolve<QuotationRepository>('QuotationRepository'), []);
+  
+  const createUseCase = useMemo(() => new CreateTaskUseCase(taskRepository), [taskRepository]);
+  const updateUseCase = useMemo(() => new UpdateTaskUseCase(taskRepository), [taskRepository]);
+  const deleteUseCase = useMemo(() => new DeleteTaskUseCase(taskRepository), [taskRepository]);
+  const getUseCase = useMemo(() => new GetTaskUseCase(taskRepository), [taskRepository]);
+  const listUseCase = useMemo(() => new ListTasksUseCase(taskRepository), [taskRepository]);
+  const getTaskDetailUseCase = useMemo(() => new GetTaskDetailUseCase(taskRepository, quotationRepository), [taskRepository, quotationRepository]);
+  const addDependencyUseCase = useMemo(() => new AddTaskDependencyUseCase(taskRepository), [taskRepository]);
+  const removeDependencyUseCase = useMemo(() => new RemoveTaskDependencyUseCase(taskRepository), [taskRepository]);
+  const addDelayReasonUseCase = useMemo(() => new AddDelayReasonUseCase(taskRepository, delayReasonTypeRepository), [taskRepository, delayReasonTypeRepository]);
+  const addProgressLogUseCase = useMemo(() => new AddProgressLogUseCase(taskRepository), [taskRepository]);
+  const updateProgressLogUseCase = useMemo(() => new UpdateProgressLogUseCase(taskRepository), [taskRepository]);
+  const deleteProgressLogUseCase = useMemo(() => new DeleteProgressLogUseCase(taskRepository), [taskRepository]);
+  const removeDelayReasonUseCase = useMemo(() => new RemoveDelayReasonUseCase(taskRepository), [taskRepository]);
+  const resolveDelayReasonUseCase = useMemo(() => new ResolveDelayReasonUseCase(taskRepository), [taskRepository]);
+  const paymentRepository = useMemo(() => container.resolve<PaymentRepository>('PaymentRepository'), []);
+  const invoiceRepository = useMemo(() => container.resolve<InvoiceRepository>('InvoiceRepository'), []);
+  const completeTaskUseCase = useMemo(() => new CompleteTaskUseCase(taskRepository, quotationRepository, paymentRepository), [taskRepository, quotationRepository, paymentRepository]);
+  const completeTaskAndSettlePaymentsUseCase = useMemo(() => new CompleteTaskAndSettlePaymentsUseCase(taskRepository, paymentRepository, invoiceRepository, quotationRepository), [taskRepository, paymentRepository, invoiceRepository, quotationRepository]);
+
+  const tasksQueryKey = queryKeys.tasks(projectId);
+
+  const { data: tasks = [], isLoading: loading, refetch } = useQuery<Task[]>({
+    queryKey: tasksQueryKey,
+    queryFn: () => projectId ? listUseCase.execute(projectId) : listUseCase.execute(),
+    staleTime: 30_000,
+  });
+
+  const loadTasks = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const updateTask = useCallback(async (taskId: string, updates: UpdateTaskDTO['updates']) => {
+    await updateUseCase.execute({ taskId, updates });
+    await Promise.all(
+      invalidations.taskEdited({ projectId: projectId ?? '', taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+  }, [updateUseCase, queryClient, projectId]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    await deleteUseCase.execute(id);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [deleteUseCase, queryClient, projectId]);
+
+  const createTask = useCallback(async (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'>) => {
+    await createUseCase.execute(data);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [createUseCase, queryClient, projectId]);
+
+  const getTask = useCallback(async (id: string) => {
+    return getUseCase.execute(id);
+  }, [getUseCase]);
+
+  const getTaskDetail = useCallback(async (id: string): Promise<TaskDetail | null> => {
+    return getTaskDetailUseCase.execute(id);
+  }, [getTaskDetailUseCase]);
+
+  const addDependency = useCallback(async (taskId: string, dependsOnTaskId: string) => {
+    await addDependencyUseCase.execute({ taskId, dependsOnTaskId });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [addDependencyUseCase, queryClient, projectId]);
+
+  const removeDependency = useCallback(async (taskId: string, dependsOnTaskId: string) => {
+    await removeDependencyUseCase.execute({ taskId, dependsOnTaskId });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [removeDependencyUseCase, queryClient, projectId]);
+
+  const addDelayReason = useCallback(async (taskId: string, input: Omit<AddDelayReasonInput, 'taskId'>): Promise<DelayReason> => {
+    const result = await addDelayReasonUseCase.execute({ taskId, ...input });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    return result;
+  }, [addDelayReasonUseCase, queryClient, projectId]);
+
+  const addProgressLog = useCallback(async (taskId: string, input: Omit<AddProgressLogInput, 'taskId'>) => {
+    const res = await addProgressLogUseCase.execute({ taskId, ...input });
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+    return res;
+  }, [addProgressLogUseCase, queryClient]);
+
+  const updateProgressLog = useCallback(async (taskId: string, logId: string, patch: Omit<UpdateProgressLogInput, 'logId'>) => {
+    const result = await updateProgressLogUseCase.execute({ logId, ...patch });
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+    return result;
+  }, [updateProgressLogUseCase, queryClient]);
+
+  const deleteProgressLog = useCallback(async (taskId: string, logId: string) => {
+    await deleteProgressLogUseCase.execute({ logId });
+    await Promise.all(
+      invalidations.progressLogMutated({ taskId })
+        .map(key => queryClient.invalidateQueries({ queryKey: key }))
+    );
+  }, [deleteProgressLogUseCase, queryClient]);
+
+  const removeDelayReason = useCallback(async (taskId: string, delayReasonId: string) => {
+    await removeDelayReasonUseCase.execute({ delayReasonId });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(taskId) });
+  }, [removeDelayReasonUseCase, queryClient, projectId]);
+
+  const resolveDelayReason = useCallback(async (taskId: string, delayReasonId: string, resolvedAt?: string, mitigationNotes?: string) => {
+    await resolveDelayReasonUseCase.execute({ delayReasonId, resolvedAt, mitigationNotes });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.taskDetail(taskId) });
+  }, [resolveDelayReasonUseCase, queryClient, projectId]);
+
+  const completeTask = useCallback(async (taskId: string) => {
+    await completeTaskUseCase.execute(taskId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [completeTaskUseCase, queryClient, projectId]);
+
+  const completeTaskAndSettlePayments = useCallback(async (taskId: string) => {
+    await completeTaskAndSettlePaymentsUseCase.execute(taskId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(projectId) });
+  }, [completeTaskAndSettlePaymentsUseCase, queryClient, projectId]);
+
+  return useMemo(() => ({
+    tasks,
+    loading,
+    refreshTasks: loadTasks,
+    createTask,
+    updateTask,
+    deleteTask,
+    getTask,
+    getTaskDetail,
+    addDependency,
+    removeDependency,
+    addDelayReason,
+    removeDelayReason,
+    resolveDelayReason,
+    addProgressLog,
+    updateProgressLog,
+    deleteProgressLog,
+    completeTask,
+    completeTaskAndSettlePayments,
+  }), [tasks, loading, loadTasks, createTask, updateTask, deleteTask, getTask, getTaskDetail, addDependency, removeDependency, addDelayReason, removeDelayReason, resolveDelayReason, addProgressLog, updateProgressLog, deleteProgressLog, completeTask, completeTaskAndSettlePayments]);
+}

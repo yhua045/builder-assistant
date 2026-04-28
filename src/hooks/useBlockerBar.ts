@@ -7,7 +7,7 @@ import { Project } from '../domain/entities/Project';
 import {
   GetBlockerBarDataUseCase,
   ProjectSummary,
-} from '../application/usecases/task/GetBlockerBarDataUseCase';
+} from '../features/tasks/application/GetBlockerBarDataUseCase';
 
 export interface UseBlockerBarReturn {
   result: BlockerBarResult | null;
