@@ -1,4 +1,4 @@
-import { AddTaskDocumentUseCase } from '../../src/application/usecases/document/AddTaskDocumentUseCase';
+import { AddTaskDocumentUseCase } from '../../src/features/tasks/application/AddTaskDocumentUseCase';
 import { DocumentRepository } from '../../src/domain/repositories/DocumentRepository';
 import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
 

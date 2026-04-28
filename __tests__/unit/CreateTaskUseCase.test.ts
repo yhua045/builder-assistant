@@ -4,7 +4,7 @@
  * the repository receives a task with that exact id.
  */
 
-import { CreateTaskUseCase } from '../../src/application/usecases/task/CreateTaskUseCase';
+import { CreateTaskUseCase } from '../../src/features/tasks/application/CreateTaskUseCase';
 import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));

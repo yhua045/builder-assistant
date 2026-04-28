@@ -8,14 +8,14 @@
  */
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import TasksScreen from '../../src/pages/tasks/index';
-import { useTasks } from '../../src/hooks/useTasks';
+import TasksScreen from '../../src/features/tasks/screens/index';
+import { useTasks } from '../../src/features/tasks/hooks/useTasks';
 import { wrapWithQuery } from '../utils/queryClientWrapper';
 import type { Task } from '../../src/domain/entities/Task';
 
 // --- Global mocks (nativewind, safe-area-context) already applied in jest.setup.js ---
 
-jest.mock('../../src/hooks/useTasks');
+jest.mock('../../src/features/tasks/hooks/useTasks');
 
 jest.mock('lucide-react-native', () => ({
   Calendar: 'Calendar',
@@ -32,7 +32,7 @@ jest.mock('../../src/components/ThemeToggle', () => ({
 
 // Lightweight mock for TasksList — renders each task as a touchable Text so we
 // can assert titles and tap events without pulling in TasksList's own sub-deps.
-jest.mock('../../src/components/tasks/TasksList', () => ({
+jest.mock('../../src/features/tasks/components/TasksList', () => ({
   TasksList: ({ tasks, onPress }: { tasks: Task[]; onPress: (id: string) => void }) => {
     const { Text, TouchableOpacity, View } = require('react-native');
     if (tasks.length === 0) {

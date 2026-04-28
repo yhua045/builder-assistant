@@ -7,13 +7,13 @@ import React from 'react';
 import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import { DashboardScreen } from '../../screens/DashboardScreen';
 import { useInvoices } from '../../../invoices';
-import { useProjects } from '../../../../hooks/useProjects';
+import { useProjects } from '../../../projects/hooks/useProjects';
 import { usePayments } from '../../../../features/payments/hooks/usePayments';
 import { wrapWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
 
 // Mock dependencies
 jest.mock('../../../invoices/hooks/useInvoices');
-jest.mock('../../../../hooks/useProjects');
+jest.mock('../../../projects/hooks/useProjects');
 jest.mock('../../../../features/payments/hooks/usePayments');
 
 jest.mock('lucide-react-native', () => ({
@@ -98,7 +98,7 @@ jest.mock('../../components/ActiveTasks', () => {
   };
 });
 
-jest.mock('../../../../pages/quotations/QuotationScreen', () => ({
+jest.mock('../../../quotations/screens/QuotationScreen', () => ({
   __esModule: true,
   default: () => null,
   QuotationScreen: () => null,

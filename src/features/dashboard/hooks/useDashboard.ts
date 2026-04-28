@@ -7,10 +7,10 @@ import type { ProjectOverview } from './useProjectsOverview';
 import { MobileOcrAdapter } from '../../../infrastructure/ocr/MobileOcrAdapter';
 import { InvoiceNormalizer } from '../../invoices';
 import { PdfThumbnailConverter } from '../../../infrastructure/files/PdfThumbnailConverter';
-import { LlmQuotationParser } from '../../../infrastructure/ai/LlmQuotationParser';
+import { LlmQuotationParser } from '../../quotations/infrastructure/ai/LlmQuotationParser';
 import { LlmReceiptParser } from '../../receipts/infrastructure/LlmReceiptParser';
 import { GROQ_API_KEY } from '@env';
-import type { IQuotationParsingStrategy } from '../../../application/ai/IQuotationParsingStrategy';
+import type { IQuotationParsingStrategy } from '../../quotations/application/ai/IQuotationParsingStrategy';
 import type { IReceiptParsingStrategy } from '../../receipts/application/IReceiptParsingStrategy';
 
 export interface QuickAction {

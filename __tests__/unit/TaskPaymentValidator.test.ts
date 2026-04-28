@@ -1,4 +1,4 @@
-import { TaskPaymentValidator } from '../../src/application/usecases/task/TaskPaymentValidator';
+import { TaskPaymentValidator } from '../../src/features/tasks/application/TaskPaymentValidator';
 import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
 import { Task } from '../../src/domain/entities/Task';
 import { Payment } from '../../src/domain/entities/Payment';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Upload, Lightbulb } from 'lucide-react-native';
-import { ManualProjectEntryButton } from '../../../components/ManualProjectEntryButton';
+import { ManualProjectEntryButton } from '../../../features/projects';
 
 interface HeroSectionProps {
   onManualEntry: () => void;

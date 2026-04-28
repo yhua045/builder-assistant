@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { TimelineSectionHeader } from '../../src/components/projects/TimelineSectionHeader';
+import { TimelineSectionHeader } from '../../src/features/projects/components/TimelineSectionHeader';
 
 describe('TimelineSectionHeader', () => {
   const defaults = {

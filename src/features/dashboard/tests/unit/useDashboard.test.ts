@@ -38,7 +38,7 @@ jest.mock('../../../../infrastructure/files/PdfThumbnailConverter', () => ({
   PdfThumbnailConverter: jest.fn().mockImplementation(() => ({ convertToImages: jest.fn() })),
 }));
 
-jest.mock('../../../../infrastructure/ai/LlmQuotationParser', () => ({
+jest.mock('../../../quotations/infrastructure/ai/LlmQuotationParser', () => ({
   LlmQuotationParser: jest.fn().mockImplementation(() => ({ parse: jest.fn(), strategyType: 'llm' })),
 }));
 

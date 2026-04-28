@@ -2,7 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PaymentsScreen from './PaymentsScreen';
 import PaymentDetails from './PaymentDetails';
-import QuotationDetailScreen from '../../../pages/projects/QuotationDetail';
+import { QuotationDetail as QuotationDetailScreen } from '../../../features/projects';
 import { Payment } from '../../../domain/entities/Payment';
 
 export type PaymentsStackParamList = {

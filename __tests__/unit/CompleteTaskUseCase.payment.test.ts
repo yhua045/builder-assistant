@@ -2,13 +2,13 @@
  * Tests for the payment-validation path added to CompleteTaskUseCase (AC-4).
  * The existing quotation-validation tests live in CompleteTaskUseCase.test.ts.
  */
-import { CompleteTaskUseCase } from '../../src/application/usecases/task/CompleteTaskUseCase';
+import { CompleteTaskUseCase } from '../../src/features/tasks/application/CompleteTaskUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
 import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
 import {
   PendingPaymentsForTaskError,
-} from '../../src/application/errors/TaskCompletionErrors';
+} from '../../src/features/tasks/application/TaskCompletionErrors';
 import { Task } from '../../src/domain/entities/Task';
 import { Payment } from '../../src/domain/entities/Payment';
 

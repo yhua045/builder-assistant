@@ -1,4 +1,4 @@
-import { AddDelayReasonUseCase } from '../../src/application/usecases/task/AddDelayReasonUseCase';
+import { AddDelayReasonUseCase } from '../../src/features/tasks/application/AddDelayReasonUseCase';
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { DelayReasonTypeRepository } from '../../src/domain/repositories/DelayReasonTypeRepository';

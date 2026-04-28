@@ -14,7 +14,7 @@ jest.mock('lucide-react-native', () => ({
 }));
 
 // Mock TaskScreen to detect when it's rendered
-jest.mock('../../../../pages/tasks/TaskScreen', () => ({
+jest.mock('../../../tasks/screens/TaskScreen', () => ({
   __esModule: true,
   default: () => {
     const ReactLocal = require('react');

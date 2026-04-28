@@ -6,7 +6,7 @@
  * Run: npx jest __tests__/unit/ParseVoiceTaskUseCase.test.ts
  */
 
-import { ParseVoiceTaskUseCase } from '../../src/application/usecases/task/ParseVoiceTaskUseCase';
+import { ParseVoiceTaskUseCase } from '../../src/features/tasks/application/ParseVoiceTaskUseCase';
 import { IAudioRecorder, AudioRecording } from '../../src/application/services/IAudioRecorder';
 import { IVoiceParsingService, TaskDraft } from '../../src/application/services/IVoiceParsingService';
 

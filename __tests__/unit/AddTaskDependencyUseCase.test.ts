@@ -1,4 +1,4 @@
-import { AddTaskDependencyUseCase } from '../../src/application/usecases/task/AddTaskDependencyUseCase';
+import { AddTaskDependencyUseCase } from '../../src/features/tasks/application/AddTaskDependencyUseCase';
 import { Task } from '../../src/domain/entities/Task';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 // DelayReason not used in this test

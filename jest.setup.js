@@ -42,3 +42,12 @@ jest.mock('@react-native-community/datetimepicker');
 
 // No global mock for @tanstack/react-query - tests that use hooks must wrap with QueryClientProvider
 // via renderHookWithQuery() or wrapWithQuery()
+// Global mock for native-stack introduced after vertical slices brought navigators into barrel exports
+jest.mock('@react-navigation/native-stack', () => {
+  return {
+    createNativeStackNavigator: jest.fn().mockReturnValue({
+      Navigator: ({ children }) => children,
+      Screen: () => null,
+    }),
+  };
+});

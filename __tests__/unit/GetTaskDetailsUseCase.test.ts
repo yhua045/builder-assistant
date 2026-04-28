@@ -18,7 +18,7 @@
  * - Slices nextInLine to max 3 dependents
  */
 
-import { GetTaskDetailsUseCase } from '../../src/application/usecases/task/GetTaskDetailsUseCase';
+import { GetTaskDetailsUseCase } from '../../src/features/tasks/application/GetTaskDetailsUseCase';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

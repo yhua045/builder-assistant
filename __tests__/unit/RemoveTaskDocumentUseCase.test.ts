@@ -1,4 +1,4 @@
-import { RemoveTaskDocumentUseCase } from '../../src/application/usecases/document/RemoveTaskDocumentUseCase';
+import { RemoveTaskDocumentUseCase } from '../../src/features/tasks/application/RemoveTaskDocumentUseCase';
 import { DocumentRepository } from '../../src/domain/repositories/DocumentRepository';
 import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
 import { Document } from '../../src/domain/entities/Document';

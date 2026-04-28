@@ -35,7 +35,7 @@ jest.mock('../../../components/HeroSection', () => ({
   default: () => null,
 }));
 
-jest.mock('../../../../../components/ManualProjectEntry', () => ({
+jest.mock('../../../../projects/components/ManualProjectEntry', () => ({
   __esModule: true,
   default: () => null,
 }));
@@ -48,11 +48,11 @@ jest.mock('../../../../invoices/screens/InvoiceScreen', () => ({
   InvoiceScreen: () => null,
 }));
 
-jest.mock('../../../../../pages/quotations/QuotationScreen', () => ({
+jest.mock('../../../../quotations/screens/QuotationScreen', () => ({
   QuotationScreen: () => null,
 }));
 
-jest.mock('../../../../../pages/tasks/TaskScreen', () => ({
+jest.mock('../../../../tasks/screens/TaskScreen', () => ({
   __esModule: true,
   default: () => null,
 }));

@@ -6,7 +6,7 @@ import renderer, { act } from 'react-test-renderer';
 
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
-import { CriticalPathPreview } from '../../src/components/CriticalPathPreview';
+import { CriticalPathPreview } from '../../src/features/projects/components/CriticalPathPreview/CriticalPathPreview';
 import type { CriticalPathSuggestion } from '../../src/data/critical-path/schema';
 import type { UseCriticalPathReturn } from '../../src/hooks/useCriticalPath';
 

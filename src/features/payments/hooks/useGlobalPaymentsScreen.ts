@@ -6,7 +6,7 @@ import { Payment } from '../../../domain/entities/Payment';
 import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
 import { ListGlobalPaymentsUseCase } from '../application/ListGlobalPaymentsUseCase';
 import { usePayments, PaymentWithProject } from './usePayments';
-import { useGlobalQuotations } from '../../../hooks/useGlobalQuotations';
+import { useGlobalQuotations } from '../../quotations/hooks/useGlobalQuotations';
 import { sortByPaymentPriority, sortByPaidDateDesc } from '../utils/sortByPaymentPriority';
 import { queryKeys } from '../../../hooks/queryKeys';
 import '../../../infrastructure/di/registerServices';

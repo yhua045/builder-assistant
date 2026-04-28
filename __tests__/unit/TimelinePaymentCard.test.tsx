@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Payment } from '../../src/domain/entities/Payment';
-import { TimelinePaymentCard } from '../../src/components/projects/TimelinePaymentCard';
+import { TimelinePaymentCard } from '../../src/features/projects/components/TimelinePaymentCard';
 
 jest.mock('nativewind', () => ({
   cssInterop: jest.fn(),

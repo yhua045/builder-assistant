@@ -1,4 +1,4 @@
-import { DrizzleProjectRepository } from '../repositories/DrizzleProjectRepository';
+import { DrizzleProjectRepository } from '../../features/projects/infrastructure/DrizzleProjectRepository';
 
 type Factory = () => any;
 

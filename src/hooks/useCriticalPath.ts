@@ -11,7 +11,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../data/critical-path/schema';
 import type { SuggestCriticalPathUseCase } from '../application/usecases/criticalpath/SuggestCriticalPathUseCase';
-import type { CreateTaskUseCase } from '../application/usecases/task/CreateTaskUseCase';
+import type { CreateTaskUseCase } from '../features/tasks/application/CreateTaskUseCase';
 import { stableId } from '../utils/stableId';
 import { invalidations } from './queryKeys';
 

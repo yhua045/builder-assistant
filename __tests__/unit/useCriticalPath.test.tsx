@@ -11,7 +11,7 @@ jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
 import { useCriticalPath, UseCriticalPathOptions } from '../../src/hooks/useCriticalPath';
 import { SuggestCriticalPathUseCase } from '../../src/application/usecases/criticalpath/SuggestCriticalPathUseCase';
-import { CreateTaskUseCase } from '../../src/application/usecases/task/CreateTaskUseCase';
+import { CreateTaskUseCase } from '../../src/features/tasks/application/CreateTaskUseCase';
 import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../../src/data/critical-path/schema';
 import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 

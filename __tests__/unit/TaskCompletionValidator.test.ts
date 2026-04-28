@@ -1,4 +1,4 @@
-import { TaskCompletionValidator } from '../../src/application/usecases/task/TaskCompletionValidator';
+import { TaskCompletionValidator } from '../../src/features/tasks/application/TaskCompletionValidator';
 import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
 import { Quotation } from '../../src/domain/entities/Quotation';
 

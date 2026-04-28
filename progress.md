@@ -1,5 +1,92 @@
 # Project Progress — Summary (updated 2026-04-28)
 
+## ✅ Issue #212 — Complete Vertical-Slice (Feature-Module) Architecture Migration
+**Status**: COMPLETED  
+**Branch**: `issue-212-vertical-slice-architecture`  
+**Date Completed**: 2026-04-28
+
+### Summary
+Successfully migrated all 7 core features from horizontal-layered architecture to vertical-slice (feature-module) structure. Each feature is now a self-contained module with internal Clean Architecture layers (domain, application, infrastructure, screens, components, hooks, utils, tests), while shared entities, infrastructure, and DI remain at root. Validated through type checking (`npx tsc --noEmit`), linting (`npm run lint`), and full test suite (1764 tests passing).
+
+### Features Migrated (7)
+All refactored with identical pattern—each module located in `src/features/{feature}/`:
+1. **Receipts** — `src/features/receipts/` (domain/port, 7 use cases/normalizers/parsers, 3 infrastructure adapters, screens, components, hooks, utils, 13 tests)
+2. **Dashboard** — `src/features/dashboard/` (refactored with MVVM `useDashboard` facade, 3 modals, infrastructure wiring removed from UI)
+3. **Invoices** — `src/features/invoices/` (domain/port, use cases, adapters, screens, components, hooks)
+4. **Payments** — `src/features/payments/` (domain/port, 4 use cases, repository adapters, `usePaymentDetails` MVVM facade, modal orchestration)
+5. **Projects** — `src/features/projects/` (domain/port, use cases, adapters, screens, components, `useProjectsPage` MVVM facade, 11+ tests)
+6. **Quotations** — `src/features/quotations/` (domain/port, use cases, parsers, repository adapters, screens, components)
+7. **Tasks** — `src/features/tasks/` (domain/port, use cases, adapters, screens, components, hooks)
+
+### Directory Structure (Per-Feature Pattern)
+```
+src/features/{feature}/
+├── domain/                 # Port/interface definitions (e.g., ReceiptRepository.ts)
+├── application/            # Use cases, normalizers, parsers, validators
+├── infrastructure/         # Drizzle adapters, external service integrations (AI, OCR, PDF)
+├── screens/               # Routable entry points
+├── components/            # Composable UI sub-components
+├── hooks/                 # MVVM-style View-Model facades (e.g., usePaymentDetails)
+├── utils/                 # Feature-specific helper functions
+├── tests/                 # Unit + integration tests (co-located)
+└── index.ts              # Barrel export (public API)
+```
+
+### Shared Boundaries Preserved
+- **Entities**: `Invoice`, `Payment`, `Task`, `Project`, `Quotation`, `Receipt` types remain in `src/domain/entities/`
+- **Infrastructure**: Database schema, migrations, connection config in `src/infrastructure/database/`
+- **DI Container**: Global registration in `src/infrastructure/di/registerServices.ts` (updated to import from feature paths)
+- **Shared Ports**: `IOcrAdapter`, `IPdfConverter` remain in `src/application/`
+
+### Import Path Pattern
+- **Within-module**: Relative paths (e.g., `../../hooks/usePaymentDetails`)
+- **Feature-to-feature**: Via barrel exports (e.g., `import { SnapReceiptScreen } from '../receipts'`)
+- **Root-to-feature**: Via barrel exports (e.g., `import { DashboardScreen } from './features/dashboard'`)
+
+### Barrel Exports Added (7)
+Each feature exposes public API via `index.ts`:
+- Screens (routable components)
+- Key hooks (MVVM facades like `usePaymentDetails`, `useDashboard`)
+- Domain types (DTOs, public interfaces)
+- Internal adapters NOT exported (accessed only via DI container)
+
+### Verification & Test Results
+- ✅ **TypeScript**: `npx tsc --noEmit` — **PASSES** (strict mode, 0 errors)
+- ✅ **Linting**: `npm run lint` — **PASSES** (0 errors, 79 pre-existing warnings unchanged)
+- ✅ **Test Suite**: `npm test` — **1764 tests PASSING** (0 failures, 9 suites skipped as expected)
+- ✅ **Runtime**: All navigation, DI wiring, and modals functional (no behaviour changes)
+
+### Files Reorganized
+- **Moved to features/**: ~150+ files (use cases, adapters, components, hooks, tests)
+- **Deleted**: 0 orphaned files (all moved, not copied)
+- **Created**: 7 barrel exports (`index.ts` per feature)
+- **Modified**: ~10 import statements (DI container, some navigation, test references)
+
+### Architectural Benefits
+| Aspect | Before | After |
+|--------|--------|-------|
+| **Feature Cohesion** | Files scattered across 5+ directories | All co-located in `src/features/{feature}/` |
+| **Dependency Clarity** | Cross-layer imports hard to track | Internal layers isolated; only barrel export public |
+| **Scalability** | Adding sub-features polluted root directories | Easy to add screens/components without root clutter |
+| **Test Organization** | Tests split between `__tests__/unit` and `__tests__/integration` | Tests co-located under `features/{feature}/tests/` |
+| **Onboarding** | New developers hunt files across 5+ directories | New developers navigate single module directory |
+| **Public API** | No clear boundary; any file importable | Barrel export defines explicit public contract |
+
+### Migration Pattern Documented
+- All features follow identical structure and conventions
+- Enables scaling to future features without design decisions
+- Pairs with MVVM-style View-Model Facade pattern for UI refactoring (Dashboard, ProjectsPage, PaymentDetails examples)
+
+### Next Steps (Post-Completion)
+- Add TypeScript path alias (`@/features/*`) to `tsconfig.json` and `babel.config.js` (optional optimization)
+- Update `CLAUDE.md` with feature-module conventions as the default pattern for all new features
+- Consider extract-to-package (monorepo) if any feature becomes independently deployable
+
+### Design Docs
+- `design/issue-212-vertical-slice-architecture.md` (master design + migration pattern)
+
+---
+
 ## ✅ Issue #212 — Vertical-Slice (Feature-Module) Architecture Pilot
 **Status**: COMPLETED  
 **Branch**: `issue-212-vertical-slice-architecture`  

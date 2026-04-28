@@ -5,11 +5,11 @@ import { ThemeToggle } from '../../../components/ThemeToggle';
 import { ProjectOverviewCard } from '../components/ProjectOverviewCard';
 import HeroSection from '../components/HeroSection';
 import { X, Plus } from 'lucide-react-native';
-import ManualProjectEntry from '../../../components/ManualProjectEntry';
+import { ManualProjectEntry } from '../../projects';
 import { SnapReceiptScreen } from '../../receipts';
 import { InvoiceScreen } from '../../invoices';
-import { QuotationScreen } from '../../../pages/quotations/QuotationScreen';
-import TaskScreen from '../../../pages/tasks/TaskScreen';
+import { QuotationScreen } from '../../quotations/screens/QuotationScreen';
+import TaskScreen from '../../tasks/screens/TaskScreen';
 import { useDashboard } from '../hooks/useDashboard';
 
 export function DashboardScreen() {

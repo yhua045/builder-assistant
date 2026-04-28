@@ -1,9 +1,9 @@
-import { CompleteTaskAndSettlePaymentsUseCase } from '../../src/application/usecases/task/CompleteTaskAndSettlePaymentsUseCase';
+import { CompleteTaskAndSettlePaymentsUseCase } from '../../src/features/tasks/application/CompleteTaskAndSettlePaymentsUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../src/domain/repositories/InvoiceRepository';
 import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
-import { TaskNotFoundError } from '../../src/application/errors/TaskCompletionErrors';
+import { TaskNotFoundError } from '../../src/features/tasks/application/TaskCompletionErrors';
 import { Task } from '../../src/domain/entities/Task';
 import { Payment } from '../../src/domain/entities/Payment';
 import { Invoice } from '../../src/domain/entities/Invoice';

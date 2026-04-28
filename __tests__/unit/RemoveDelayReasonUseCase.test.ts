@@ -1,4 +1,4 @@
-import { RemoveDelayReasonUseCase } from '../../src/application/usecases/task/RemoveDelayReasonUseCase';
+import { RemoveDelayReasonUseCase } from '../../src/features/tasks/application/RemoveDelayReasonUseCase';
 import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
 
 function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {

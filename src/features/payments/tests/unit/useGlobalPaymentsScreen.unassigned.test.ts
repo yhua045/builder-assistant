@@ -13,14 +13,14 @@ jest.mock('../../hooks/usePayments', () => ({
   usePayments: jest.fn(),
 }));
 
-jest.mock('../../../../hooks/useGlobalQuotations', () => ({
+jest.mock('../../../quotations/hooks/useGlobalQuotations', () => ({
   useGlobalQuotations: jest.fn(),
 }));
 
 jest.mock('../../application/ListGlobalPaymentsUseCase');
 
 import { usePayments } from '../../hooks/usePayments';
-import { useGlobalQuotations } from '../../../../hooks/useGlobalQuotations';
+import { useGlobalQuotations } from '../../../quotations/hooks/useGlobalQuotations';
 import { ListGlobalPaymentsUseCase } from '../../application/ListGlobalPaymentsUseCase';
 
 const mockRefresh = jest.fn();

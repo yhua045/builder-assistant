@@ -5,8 +5,8 @@ import { useColorScheme } from 'nativewind';
 import { cssInterop } from 'nativewind';
 import { DashboardScreen } from '../../features/dashboard';
 import { PaymentsNavigator } from '../../features/payments';
-import TasksNavigator from '../tasks/TasksNavigator';
-import ProjectsNavigator from '../projects/ProjectsNavigator';
+import TasksNavigator from '../../features/tasks/screens/TasksNavigator';
+import { ProjectsNavigator } from '../../features/projects';
 
 // Enable className styling for icons
 cssInterop(Home, { className: { target: 'style', nativeStyleToProp: { color: true } } });
