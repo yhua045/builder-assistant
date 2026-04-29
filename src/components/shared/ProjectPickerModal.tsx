@@ -98,14 +98,18 @@ export function ProjectPickerModal({
       <TouchableOpacity
         testID={`project-item-${item.id}`}
         onPress={() => handleSelect(item)}
-        style={[styles.row, isSelected && styles.rowSelected]}
+        className={`flex-row items-center px-4 py-3 border-b border-border ${
+          isSelected ? 'bg-blue-50' : ''
+        }`}
       >
-        <View style={styles.rowContent}>
-          <Text style={styles.rowName} numberOfLines={1}>
+        <View className="flex-1 flex-row items-center gap-2">
+          <Text className="text-[15px] font-medium text-zinc-900 shrink" numberOfLines={1}>
             {item.name}
           </Text>
           <View style={[styles.statusBadge, statusBadgeStyle(item.status)]}>
-            <Text style={styles.statusText}>{item.status?.replace('_', ' ') ?? 'unknown'}</Text>
+            <Text className="text-[11px] text-gray-700 capitalize">
+              {item.status?.replace('_', ' ') ?? 'unknown'}
+            </Text>
           </View>
         </View>
         {isSelected && <Check size={16} color="#2563eb" />}
@@ -121,24 +125,24 @@ export function ProjectPickerModal({
       onRequestClose={onClose}
       testID="project-picker-modal"
     >
-      <View style={styles.container}>
+      <View className="flex-1 bg-white">
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Assign Project</Text>
-          <View style={styles.headerActions}>
+        <View className="flex-row items-center justify-between px-4 py-4 border-b border-zinc-200">
+          <Text className="text-[17px] font-semibold text-zinc-900">Assign Project</Text>
+          <View className="flex-row items-center gap-3">
             {currentProjectId && onNavigate && (
               <TouchableOpacity
                 testID="project-picker-go-to-project"
                 onPress={handleGoToProject}
-                style={styles.headerBtn}
+                className="flex-row items-center gap-[2px]"
               >
-                <Text style={styles.goToText}>Go to Project</Text>
+                <Text className="text-sm font-medium text-blue-600">Go to Project</Text>
                 <ChevronRight size={16} color="#2563eb" />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               onPress={onClose}
-              style={styles.closeBtn}
+              className="p-1"
               testID="project-picker-close"
             >
               <X size={20} color="#71717a" />
@@ -147,9 +151,9 @@ export function ProjectPickerModal({
         </View>
 
         {/* Search */}
-        <View style={styles.searchContainer}>
+        <View className="px-4 py-3 border-b border-zinc-200">
           <TextInput
-            style={styles.searchInput}
+            className="h-10 rounded-lg border border-zinc-400 px-3 text-sm text-zinc-900 bg-zinc-50"
             placeholder="Search projects..."
             placeholderTextColor="#9ca3af"
             value={query}
@@ -163,24 +167,24 @@ export function ProjectPickerModal({
           <TouchableOpacity
             testID="project-picker-clear"
             onPress={handleClear}
-            style={styles.clearRow}
+            className="flex-row items-center gap-2 px-4 py-3 border-b border-zinc-200"
           >
             <X size={16} color="#dc2626" />
-            <Text style={styles.clearText}>Clear assignment</Text>
+            <Text className="text-sm text-red-600">Clear assignment</Text>
           </TouchableOpacity>
         )}
 
         {/* Project list */}
         {fetching ? (
-          <ActivityIndicator size="large" style={styles.loader} />
+          <ActivityIndicator size="large" className="mt-12" />
         ) : (
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No projects found</Text>
+              <View className="px-4 py-8 items-center">
+                <Text className="text-sm text-zinc-500">No projects found</Text>
               </View>
             }
           />
@@ -201,114 +205,9 @@ function statusBadgeStyle(status?: string): object {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e4e4e7',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#18181b',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  goToText: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e4e4e7',
-  },
-  searchInput: {
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d4d4d8',
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#18181b',
-    backgroundColor: '#fafafa',
-  },
-  clearRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e4e4e7',
-  },
-  clearText: {
-    fontSize: 14,
-    color: '#dc2626',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e4e4e7',
-  },
-  rowSelected: {
-    backgroundColor: '#eff6ff',
-  },
-  rowContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rowName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#18181b',
-    flexShrink: 1,
-  },
   statusBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 11,
-    color: '#374151',
-    textTransform: 'capitalize',
-  },
-  loader: {
-    marginTop: 48,
-  },
-  emptyContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#71717a',
   },
 });
