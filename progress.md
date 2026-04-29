@@ -1,5 +1,75 @@
-# Project Progress — Summary (updated 2026-04-28)
+# Project Progress — Summary (updated 2026-04-29)
 
+## ✅ Issue #215 — Image OCR Flow for Receipts, Invoices, and Quotations
+**Status**: COMPLETED  
+**Branch**: `issue-215-image-ocr`  
+**Date Completed**: 2026-04-29
+
+### Summary
+Successfully implemented unified image-based OCR flow routing captured/uploaded images through the existing ML Kit → LLM pipeline (established for PDFs). Added camera capture and LLM-powered form prefill for Receipts, Invoices, and Quotations, eliminating parsing logic duplication.
+
+### Completed Tasks
+- **Invoice Parsing Alignment**: Added `IInvoiceParsingStrategy` interface (`src/features/invoices/application/IInvoiceParsingStrategy.ts`) to unify parsing contract with Receipt and Quotation strategies
+- **LLM Invoice Parser**: Implemented `LlmInvoiceParser` (`src/features/invoices/infrastructure/LlmInvoiceParser.ts`) using Groq Chat Completions API, mirroring Receipt/Quotation parsers
+- **ProcessInvoiceUploadUseCase Updated**: Modified to accept optional `parsingStrategy` parameter; image path now prefers LLM strategy over deterministic normalizer fallback
+- **Receipt Camera Path Fixed**: Updated `useSnapReceiptScreen.handleSnapPhoto()` to route camera images through `ProcessReceiptUploadUseCase` when LLM parsing strategy provided
+- **Camera Capture for Invoice & Quotation**: 
+  - Added `handleSnapPhoto()` to `useInvoiceUpload` hook
+  - Added `handleSnapPhoto()` to `useQuotationUpload` hook
+  - Both handlers: capture photo → OCR extract → LLM parse → form prefill
+- **UI Additions**:
+  - `InvoiceScreen`: Added "Snap Photo" button with camera capture + loading state
+  - `QuotationScreen`: Added "Snap Photo" button with camera capture + loading state
+  - Styling follows existing card/chip pattern (consistent with `SnapReceiptScreen`)
+- **Form Prefill Integration**:
+  - Receipt, Invoice, Quotation forms now populate from normalized OCR results
+  - Preserved existing PDF OCR behavior unchanged
+  - Camera and gallery image paths both route through unified OCR/LLM pipeline
+
+### Acceptance Criteria (Design Doc §5)
+All criteria met:
+- ✅ AC1: Camera-captured images processed through OCR/LLM pipeline for Receipts, Invoices, Quotations
+- ✅ AC2: Gallery-picked images processed through OCR/LLM pipeline for all three features
+- ✅ AC3: Parsed image data populates Receipt form fields
+- ✅ AC4: Parsed image data populates Invoice form fields
+- ✅ AC5: Parsed image data populates Quotation form fields
+- ✅ AC6: Existing PDF OCR behavior unchanged
+- ✅ AC7: `npx tsc --noEmit` passes with no new errors
+
+### Key Implementation Details
+- **Parsing Strategy Contract**: Single-phase `parse(ocrResult: OcrResult): Promise<NormalizedXxx>`
+- **Backward Compatibility**: `ProcessInvoiceUploadUseCase` falls back to `IInvoiceNormalizer` if strategy not provided
+- **Camera Adapter Reuse**: No new adapters; `ICameraAdapter` / `MobileCameraAdapter` shared across Receipt/Invoice/Quotation
+- **File Validation**: `validatePdfFile()` already supports image MIME types (`image/jpeg`, `image/png`, `image/heic`, `image/webp`)
+- **Error Handling**: Consistent with existing PDF flow; graceful fallback to manual entry if OCR/LLM fails
+
+### Files Added (3)
+- `src/features/invoices/application/IInvoiceParsingStrategy.ts`
+- `src/features/invoices/infrastructure/LlmInvoiceParser.ts`
+- `design/#215-image-ocr.md` (design doc)
+
+### Files Modified (4)
+- `src/features/invoices/application/ProcessInvoiceUploadUseCase.ts`
+- `src/features/invoices/screens/InvoiceScreen.tsx`
+- `src/features/invoices/hooks/useInvoiceUpload.ts`
+- `src/features/quotations/screens/QuotationScreen.tsx`
+- `src/features/quotations/hooks/useQuotationUpload.ts`
+- `src/features/receipts/hooks/useSnapReceiptScreen.ts`
+
+### Verification & Test Results
+- ✅ **TypeScript**: `npx tsc --noEmit` — **PASSES** (strict mode, 0 errors)
+- ✅ **Linting**: `npm run lint -- --quiet` — **PASSES** (0 errors)
+- ✅ **Runtime**: All navigation, DI wiring, camera flow, and form prefill functional
+
+### Design Docs
+- `design/#215-image-ocr.md` (architecture decisions, acceptance criteria)
+
+### Next Steps
+- Optionally: Add form validation error handling for malformed OCR results
+- Optionally: Implement confidence scoring for parsed fields (UI hint to user)
+- Monitor Groq API costs for LLM parsing at scale
+
+---
 
 ## ✅ Issue #213 — Refactor Styling to NativeWind (Phase 2 Completed)
 **Status**: IN PROGRESS  
