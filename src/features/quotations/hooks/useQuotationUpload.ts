@@ -27,6 +27,9 @@ import { Quotation } from '../../../domain/entities/Quotation';
 import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
 import { LlmVisionQuotationParser } from '../infrastructure/ai/LlmVisionQuotationParser';
 import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { IQuotationDocumentProcessor } from '../application/IQuotationDocumentProcessor';
+import { TextBasedQuotationProcessor } from '../infrastructure/processors/TextBasedQuotationProcessor';
+import { VisionBasedQuotationProcessor } from '../infrastructure/processors/VisionBasedQuotationProcessor';
 import { GROQ_API_KEY } from '@env';
 
 export type QuotationProcessingStep = 'idle' | 'copying' | 'ocr' | 'error';
@@ -95,23 +98,18 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     [cameraAdapter],
   );
 
-  const buildUseCase = (): ProcessQuotationUploadUseCase => {
-    if (FeatureFlags.useVisionOcr && GROQ_API_KEY) {
-      return new ProcessQuotationUploadUseCase(
-        undefined,
-        pdfConverter,
-        fileSystem,
-        undefined,
+  const buildProcessor = (): IQuotationDocumentProcessor => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY && pdfConverter) {
+      return new VisionBasedQuotationProcessor(
         new LlmVisionQuotationParser(GROQ_API_KEY, new ReactNativeImageReader()),
+        pdfConverter,
       );
     }
-    return new ProcessQuotationUploadUseCase(
-      parsingStrategy,
-      pdfConverter,
-      fileSystem,
-      ocrAdapter
-    );
+    return new TextBasedQuotationProcessor(ocrAdapter!, pdfConverter!, parsingStrategy!);
   };
+
+  const buildUseCase = (): ProcessQuotationUploadUseCase =>
+    new ProcessQuotationUploadUseCase(fileSystem, buildProcessor());
 
   const runProcessingPipeline = async (
     originalUri: string,

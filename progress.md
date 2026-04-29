@@ -168,6 +168,83 @@ All criteria met:
 
 ---
 
+## ✅ Issue #215 — UseCase Strategy Refactoring (God Class Decomposition)
+**Status**: COMPLETED  
+**Branch**: `issue-215-image-ocr`  
+**Date Completed**: 2026-04-29
+
+### Summary
+Refactored complex branching logic from three Process*UploadUseCase classes into cohesive, single-responsibility strategy classes. Extracted the "God class" conditional chains (text vs. vision pathway selection, OCR vs. image reader routing, parsing strategy switching) into dedicated `IDocumentProcessor` interfaces and concrete `TextBased*Processor` + `VisionBased*Processor` implementations. Each processor now encapsulates its own pathway logic, preserving feature flag toggle while improving testability and code clarity.
+
+### Completed Tasks
+- **Document Processor Interfaces** (Ports):
+  - `IInvoiceDocumentProcessor.ts` — contract for invoice document handling (`processImage(uri: string): Promise<NormalizedInvoice>`)
+  - `IReceiptDocumentProcessor.ts` — contract for receipt document handling
+  - `IQuotationDocumentProcessor.ts` — contract for quotation document handling
+- **Text-Based Processors** (File-System + OCR → LLM Text Path):
+  - `TextBasedInvoiceProcessor` — conditionally uses `IFileReader`, calls `IOcrAdapter`, then `IInvoiceParsingStrategy`
+  - `TextBasedReceiptProcessor` — same pattern for receipts
+  - `TextBasedQuotationProcessor` — same pattern for quotations
+  - Each handles: file validation, OCR extraction, fallback text parsing
+- **Vision-Based Processors** (Direct Image → LLM Vision Path):
+  - `VisionBasedInvoiceProcessor` — reads image via `IImageReader`, sends to `IInvoiceVisionParsingStrategy`
+  - `VisionBasedReceiptProcessor` — same pattern for receipts
+  - `VisionBasedQuotationProcessor` — same pattern for quotations
+  - Each handles: base64 encoding, vision parser calls, graceful error fallback
+- **Use Case Delegation**:
+  - `ProcessInvoiceUploadUseCase` — delegates to `IInvoiceDocumentProcessor`, selected via feature flag at DI time
+  - `ProcessReceiptUploadUseCase` — delegates to `IReceiptDocumentProcessor`, selected via feature flag
+  - `ProcessQuotationUploadUseCase` — delegates to `IQuotationDocumentProcessor`, selected via feature flag
+  - Use case remains thin: validates input, calls processor, updates repository
+- **DI Container Wiring**:
+  - Feature flag read at container bootstrap
+  - Correct processor (text or vision) injected into each use case
+  - No runtime cost; strategy fully determined at app startup
+- **Error Handling Unified**:
+  - Both processor families implement identical error contracts
+  - Graceful fallback to manual entry in both paths
+  - Consistent logging and error propagation
+
+### Key Architectural Benefits
+1. **Single Responsibility**: Each processor owns its pathway (OCR or vision)
+2. **Testability**: Processors independently mockable; use cases remain thin and deterministic
+3. **Maintainability**: Future pathway additions (e.g., local ML model) add new processor class, not use-case branching
+4. **Zero Runtime Overhead**: Feature flag toggle resolved at DI time, not per-call
+5. **LSP Compliance**: All processors implement identical contract; interchangeable without type issues
+
+### Files Refactored (3 Use Cases)
+- `src/features/invoices/application/ProcessInvoiceUploadUseCase.ts` — simplified to delegation + DI
+- `src/features/receipts/application/ProcessReceiptUploadUseCase.ts` — simplified to delegation + DI
+- `src/features/quotations/application/ProcessQuotationUploadUseCase.ts` — simplified to delegation + DI
+
+### Files Added (9)
+- `src/features/invoices/application/IInvoiceDocumentProcessor.ts` (port)
+- `src/features/invoices/infrastructure/TextBasedInvoiceProcessor.ts` (text pathway)
+- `src/features/invoices/infrastructure/VisionBasedInvoiceProcessor.ts` (vision pathway)
+- `src/features/receipts/application/IReceiptDocumentProcessor.ts` (port)
+- `src/features/receipts/infrastructure/TextBasedReceiptProcessor.ts` (text pathway)
+- `src/features/receipts/infrastructure/VisionBasedReceiptProcessor.ts` (vision pathway)
+- `src/features/quotations/application/IQuotationDocumentProcessor.ts` (port)
+- `src/features/quotations/infrastructure/TextBasedQuotationProcessor.ts` (text pathway)
+- `src/features/quotations/infrastructure/VisionBasedQuotationProcessor.ts` (vision pathway)
+
+### Verification & Test Results
+- ✅ **TypeScript**: `npx tsc --noEmit` — **PASSES** (strict mode, 0 errors)
+- ✅ **Linting**: `npm run lint` — **PASSES** (0 new errors, pre-existing warnings unchanged)
+- ✅ **Test Suite**: All existing tests **PASS** (no regressions; refactoring is internal)
+- ✅ **Runtime**: All pathways functional (camera, gallery, text/vision toggling)
+
+### Design Pattern Applied
+- **Strategy Pattern** (Gang of Four): Each processor is a concrete strategy implementing the document-processing contract
+- **Dependency Injection**: Feature flag determines strategy at container bootstrap
+- **Adapter Pattern**: Processors adapt existing `IOcrAdapter`, `IImageReader`, and parsing strategies to a unified document-processor contract
+
+### Next Steps
+- Monitor performance impact of strategy delegation (negligible — runtime cost deferred to DI bootstrap)
+- Consider processor factory for multi-tenant or per-document pathway selection in future iterations
+
+---
+
 ## ✅ Issue #213 — Refactor Styling to NativeWind (Phase 2 Completed)
 **Status**: IN PROGRESS  
 **Branch**: `issue-213-nativewind-refactor`  

@@ -1,18 +1,7 @@
 import { ProcessInvoiceUploadUseCase } from '../../application/ProcessInvoiceUploadUseCase';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
-import {
-  IInvoiceNormalizer,
-  InvoiceCandidates,
-  NormalizedInvoice,
-} from '../../application/IInvoiceNormalizer';
-import { IInvoiceParsingStrategy } from '../../application/IInvoiceParsingStrategy';
-import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
-
-const makeOcrResult = (text = 'Acme Corp\nInvoice #INV-001\nTotal: $500.00'): OcrResult => ({
-  fullText: text,
-  tokens: [],
-  imageUri: 'file:///app/invoice.jpg',
-});
+import { IInvoiceDocumentProcessor } from '../../application/IInvoiceDocumentProcessor';
+import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { NormalizedInvoice } from '../../application/IInvoiceNormalizer';
 
 const makeNormalized = (): NormalizedInvoice => ({
   vendor: 'Acme Corp',
@@ -28,599 +17,127 @@ const makeNormalized = (): NormalizedInvoice => ({
   suggestedCorrections: [],
 });
 
-const makeEmptyCandidates = (): InvoiceCandidates => ({
-  vendors: [],
-  invoiceNumbers: [],
-  dates: [],
-  dueDates: [],
-  amounts: [],
-  subtotals: [],
-  taxAmounts: [],
-  lineItems: [],
-});
-
-function makeMockOcr(result?: OcrResult, error?: Error): jest.Mocked<IOcrAdapter> {
+function makeProcessor(normalized?: NormalizedInvoice, error?: Error): jest.Mocked<IInvoiceDocumentProcessor> {
   return {
-    extractText: error
+    process: error
       ? jest.fn().mockRejectedValue(error)
-      : jest.fn().mockResolvedValue(result ?? makeOcrResult()),
+      : jest.fn().mockResolvedValue({
+          normalized: normalized ?? makeNormalized(),
+          rawOcrText: 'some ocr text',
+        }),
   };
 }
 
-function makeMockNormalizer(
-  normalized?: NormalizedInvoice,
-  error?: Error,
-): jest.Mocked<IInvoiceNormalizer> {
+function makeFileSystem(localUri = 'file:///app/storage/invoice.pdf'): jest.Mocked<IFileSystemAdapter> {
   return {
-    extractCandidates: jest.fn().mockReturnValue(makeEmptyCandidates()),
-    normalize: error
-      ? jest.fn().mockRejectedValue(error)
-      : jest.fn().mockResolvedValue(normalized ?? makeNormalized()),
+    copyToAppStorage: jest.fn().mockResolvedValue(localUri),
+    exists: jest.fn().mockResolvedValue(true),
+    deleteFile: jest.fn().mockResolvedValue(undefined),
+    getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
   };
 }
+
+const baseInput = {
+  fileUri: 'file:///tmp/invoice.jpg',
+  filename: 'invoice.jpg',
+  mimeType: 'image/jpeg',
+  fileSize: 512000,
+};
 
 describe('ProcessInvoiceUploadUseCase', () => {
-  const baseInput = {
-    fileUri: 'file:///app/documents/invoice_001.jpg',
-    filename: 'invoice_001.jpg',
-    mimeType: 'image/jpeg',
-    fileSize: 512000,
-  };
-
-  describe('success path', () => {
-    it('returns normalized invoice and documentRef on success', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      const result = await useCase.execute(baseInput);
-
-      expect(result.normalized.vendor).toBe('Acme Corp');
-      expect(result.normalized.total).toBe(500);
-      expect(result.documentRef).toEqual({
-        localPath: baseInput.fileUri,
-        filename: baseInput.filename,
-        size: baseInput.fileSize,
-        mimeType: baseInput.mimeType,
-      });
-    });
-
-    it('calls ocrAdapter.extractText with the provided fileUri', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await useCase.execute(baseInput);
-
-      expect(ocrAdapter.extractText).toHaveBeenCalledWith(baseInput.fileUri);
-    });
-
-    it('calls normalizer.extractCandidates with OCR full text', async () => {
-      const ocrResult = makeOcrResult('Some OCR text');
-      const ocrAdapter = makeMockOcr(ocrResult);
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await useCase.execute(baseInput);
-
-      expect(normalizer.extractCandidates).toHaveBeenCalledWith('Some OCR text');
-    });
-
-    it('calls normalizer.normalize with candidates and ocrResult', async () => {
-      const ocrResult = makeOcrResult();
-      const candidates = makeEmptyCandidates();
-      const ocrAdapter = makeMockOcr(ocrResult);
-      const normalizer = makeMockNormalizer();
-      normalizer.extractCandidates.mockReturnValue(candidates);
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await useCase.execute(baseInput);
-
-      expect(normalizer.normalize).toHaveBeenCalledWith(candidates, ocrResult);
-    });
-
-    it('returns the raw OCR text in output', async () => {
-      const ocrResult = makeOcrResult('Invoice text here');
-      const ocrAdapter = makeMockOcr(ocrResult);
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      const result = await useCase.execute(baseInput);
-
-      expect(result.rawOcrText).toBe('Invoice text here');
-    });
-  });
-
-  describe('PDF files (OCR skip — no converter provided)', () => {
-    it('skips OCR for PDF files and returns empty normalized invoice', async () => {
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      const result = await useCase.execute({
-        ...baseInput,
-        mimeType: 'application/pdf',
-        filename: 'invoice.pdf',
-      });
-
-      expect(ocrAdapter.extractText).not.toHaveBeenCalled();
-      expect(normalizer.normalize).not.toHaveBeenCalled();
-      expect(result.normalized.total).toBeNull();
-      expect(result.normalized.vendor).toBeNull();
-      expect(result.rawOcrText).toBe('');
-    });
-
-    it('includes a suggestion about PDF not being supported', async () => {
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      const result = await useCase.execute({ ...baseInput, mimeType: 'application/pdf' });
-
-      expect(result.normalized.suggestedCorrections).toContainEqual(
-        expect.stringContaining('PDF'),
-      );
-    });
-  });
-
-  describe('OCR failure', () => {
-    it('throws an error when OCR adapter fails', async () => {
-      const ocrAdapter = makeMockOcr(undefined, new Error('Camera unavailable'));
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await expect(useCase.execute(baseInput)).rejects.toThrow(
-        'Invoice processing failed',
-      );
-    });
-
-    it('includes the original error message in the thrown error', async () => {
-      const ocrAdapter = makeMockOcr(undefined, new Error('Network timeout'));
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await expect(useCase.execute(baseInput)).rejects.toThrow('Network timeout');
-    });
-
-    it('does not call normalizer when OCR fails', async () => {
-      const ocrAdapter = makeMockOcr(undefined, new Error('OCR error'));
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await expect(useCase.execute(baseInput)).rejects.toThrow();
-
-      expect(normalizer.normalize).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('normalization failure', () => {
-    it('throws an error when normalizer fails', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(undefined, new Error('Model not loaded'));
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await expect(useCase.execute(baseInput)).rejects.toThrow(
-        'Invoice processing failed',
-      );
-    });
-
-    it('includes the normalizer error message', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(undefined, new Error('Model not loaded'));
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await expect(useCase.execute(baseInput)).rejects.toThrow('Model not loaded');
-    });
-  });
-
-  describe('empty OCR text', () => {
-    it('still calls normalizer even when OCR text is empty', async () => {
-      const emptyOcrResult = makeOcrResult('');
-      const ocrAdapter = makeMockOcr(emptyOcrResult);
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      await useCase.execute(baseInput);
-
-      expect(normalizer.extractCandidates).toHaveBeenCalledWith('');
-      expect(normalizer.normalize).toHaveBeenCalled();
-    });
-  });
-
-  describe('documentRef', () => {
-    it('documentRef always reflects the input file metadata', async () => {
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
-
-      const input = {
-        fileUri: 'file:///custom/path/inv.jpg',
-        filename: 'inv.jpg',
-        mimeType: 'image/jpeg',
-        fileSize: 999999,
-      };
-
-      const result = await useCase.execute(input);
-
-      expect(result.documentRef).toEqual({
-        localPath: input.fileUri,
-        filename: input.filename,
-        size: input.fileSize,
-        mimeType: input.mimeType,
-      });
-    });
-  });
-
-  // ─── PDF path WITH converter ───────────────────────────────────────────────
-
-  describe('PDF files (with IPdfConverter provided)', () => {
-    const pdfInput = {
-      fileUri: 'file:///app/documents/invoice.pdf',
-      filename: 'invoice.pdf',
-      mimeType: 'application/pdf',
-      fileSize: 102400,
-    };
-
-    function makePageOcrResult(text: string, pageIndex: number): OcrResult {
-      return {
-        fullText: text,
-        tokens: [],
-        imageUri: `file:///tmp/pdf_mock_p${pageIndex}.jpg`,
-      };
-    }
-
-    it('calls pdfConverter.convertToImages with the PDF URI', async () => {
-      const pdfConverter = new MockPdfConverter();
-      const ocrAdapter = makeMockOcr(makePageOcrResult('Acme Corp\nTotal: $100', 0));
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await useCase.execute(pdfInput);
-
-      // Verify OCR was called with the converted image URI (not the PDF URI)
-      expect(ocrAdapter.extractText).toHaveBeenCalledWith('file:///tmp/pdf_mock_p0.jpg');
-      expect(ocrAdapter.extractText).not.toHaveBeenCalledWith(pdfInput.fileUri);
-    });
-
-    it('calls ocrAdapter.extractText once per page for a single-page PDF', async () => {
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-      ]);
-      const ocrAdapter = makeMockOcr(makePageOcrResult('Invoice text p0', 0));
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await useCase.execute(pdfInput);
-
-      expect(ocrAdapter.extractText).toHaveBeenCalledTimes(1);
-    });
-
-    it('calls ocrAdapter.extractText once per page for a multi-page PDF', async () => {
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
-        { uri: 'file:///tmp/p2.jpg', width: 1240, height: 1754, pageIndex: 2 },
-      ]);
-      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
-        extractText: jest.fn()
-          .mockResolvedValueOnce(makePageOcrResult('Page 0 text', 0))
-          .mockResolvedValueOnce(makePageOcrResult('Page 1 text', 1))
-          .mockResolvedValueOnce(makePageOcrResult('Page 2 text', 2)),
-      };
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await useCase.execute(pdfInput);
-
-      expect(ocrAdapter.extractText).toHaveBeenCalledTimes(3);
-    });
-
-    it('concatenates OCR text from all pages before normalization', async () => {
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
-      ]);
-      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
-        extractText: jest.fn()
-          .mockResolvedValueOnce(makePageOcrResult('Page zero text', 0))
-          .mockResolvedValueOnce(makePageOcrResult('Page one text', 1)),
-      };
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await useCase.execute(pdfInput);
-
-      const combinedText: string = normalizer.extractCandidates.mock.calls[0][0];
-      expect(combinedText).toContain('Page zero text');
-      expect(combinedText).toContain('Page one text');
-    });
-
-    it('passes merged OCR result from all pages to normalizer.normalize', async () => {
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-        { uri: 'file:///tmp/p1.jpg', width: 1240, height: 1754, pageIndex: 1 },
-      ]);
-      const ocrAdapter: jest.Mocked<IOcrAdapter> = {
-        extractText: jest.fn()
-          .mockResolvedValueOnce({
-            fullText: 'Invoice header page 1',
-            tokens: [{ text: 'header', confidence: 1, bounds: { x: 1, y: 1, width: 10, height: 10 } }],
-            imageUri: 'file:///tmp/p0.jpg',
-          })
-          .mockResolvedValueOnce({
-            fullText: 'Total due page 2',
-            tokens: [{ text: 'total', confidence: 1, bounds: { x: 2, y: 2, width: 10, height: 10 } }],
-            imageUri: 'file:///tmp/p1.jpg',
-          }),
-      };
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await useCase.execute(pdfInput);
-
-      const normalizeArg = normalizer.normalize.mock.calls[0][1];
-      expect(normalizeArg.fullText).toContain('Invoice header page 1');
-      expect(normalizeArg.fullText).toContain('Total due page 2');
-      expect(normalizeArg.tokens).toHaveLength(2);
-    });
-
-    it('returns a NormalizedInvoice (not empty) for a PDF with converter', async () => {
-      const pdfConverter = new MockPdfConverter();
-      const ocrAdapter = makeMockOcr(makePageOcrResult('Acme Corp\nTotal: $500', 0));
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      const result = await useCase.execute(pdfInput);
-
-      expect(result.normalized.vendor).toBe('Acme Corp');
-      expect(result.normalized.total).toBe(500);
-    });
-
-    it('returns empty rawOcrText for a zero-page PDF', async () => {
-      const pdfConverter = new MockPdfConverter([]); // zero pages
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      const result = await useCase.execute(pdfInput);
-
-      expect(result.rawOcrText).toBe('');
-      expect(ocrAdapter.extractText).not.toHaveBeenCalled();
-    });
-
-    it('propagates PdfConversionError as Invoice processing failed', async () => {
-      const pdfConverter = new MockPdfConverter(
-        [{ uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 }],
-        true,
-        'INVALID_PDF',
-        'Corrupt PDF',
-      );
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await expect(useCase.execute(pdfInput)).rejects.toThrow('Invoice processing failed');
-    });
-
-    it('includes the original PDF error message in the thrown error', async () => {
-      const pdfConverter = new MockPdfConverter(
-        [{ uri: 'file:///tmp/p0.jpg', width: 1240, height: 1754, pageIndex: 0 }],
-        true,
-        'INVALID_PDF',
-        'Corrupt PDF file',
-      );
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
-
-      await expect(useCase.execute(pdfInput)).rejects.toThrow('Corrupt PDF file');
-    });
-  });
-
-  // ─── Validation (moved from View-Model layer) ──────────────────────────────
-
   describe('validation', () => {
-    it('throws Validation failed for an unsupported MIME type', async () => {
-      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
+    it('throws Validation failed for invalid mimeType', async () => {
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
       await expect(
-        useCase.execute({
-          fileUri: 'file:///tmp/doc.docx',
-          filename: 'doc.docx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          fileSize: 50000,
-        }),
-      ).rejects.toThrow('Validation failed:');
+        useCase.execute({ ...baseInput, mimeType: 'text/csv' }),
+      ).rejects.toThrow('Validation failed');
     });
 
-    it('throws Validation failed when file is over 20 MB', async () => {
-      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
+    it('throws Validation failed for oversized file', async () => {
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
       await expect(
-        useCase.execute({ ...baseInput, fileSize: 25 * 1024 * 1024 }),
-      ).rejects.toThrow('Validation failed:');
-    });
-
-    it('does not throw for a valid image MIME type within size limit', async () => {
-      const useCase = new ProcessInvoiceUploadUseCase(makeMockOcr(), makeMockNormalizer());
-      await expect(useCase.execute(baseInput)).resolves.toBeDefined();
+        useCase.execute({ ...baseInput, fileSize: 999_999_999 }),
+      ).rejects.toThrow('Validation failed');
     });
   });
 
-  // ─── File IO (moved from View-Model layer) ────────────────────────────────
+  describe('file copy', () => {
+    it('calls fileSystemAdapter.copyToAppStorage with the original URI', async () => {
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
-  describe('file IO — fileSystemAdapter', () => {
-    it('copies file to app storage when fileSystemAdapter is provided', async () => {
-      const fileSystem = {
-        copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/invoice_copy.jpg'),
-        exists: jest.fn().mockResolvedValue(true),
-        deleteFile: jest.fn().mockResolvedValue(undefined),
-        getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
-      };
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, undefined, fileSystem);
-
-      const result = await useCase.execute(baseInput);
+      await useCase.execute(baseInput);
 
       expect(fileSystem.copyToAppStorage).toHaveBeenCalledWith(
         baseInput.fileUri,
         expect.stringMatching(/^invoice_\d+_[a-z0-9]+\.pdf$/),
       );
-      expect(result.documentRef.localPath).toBe('file:///app/storage/invoice_copy.jpg');
     });
 
-    it('uses the original URI as localPath when no fileSystemAdapter is provided', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
+    it('returns documentRef with the localPath from copyToAppStorage', async () => {
+      const localUri = 'file:///app/storage/invoice_stored.pdf';
+      const fileSystem = makeFileSystem(localUri);
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
       const result = await useCase.execute(baseInput);
 
-      expect(result.documentRef.localPath).toBe(baseInput.fileUri);
+      expect(result.documentRef.localPath).toBe(localUri);
+      expect(result.documentRef.filename).toBe(baseInput.filename);
+      expect(result.documentRef.size).toBe(baseInput.fileSize);
+      expect(result.documentRef.mimeType).toBe(baseInput.mimeType);
     });
   });
 
-  // ─── No OCR adapters (graceful degradation) ───────────────────────────────
-
-  describe('no OCR adapters', () => {
-    it('validates and returns empty NormalizedInvoice when no ocrAdapter or normalizer', async () => {
-      const fileSystem = {
-        copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/invoice_copy.jpg'),
-        exists: jest.fn().mockResolvedValue(true),
-        deleteFile: jest.fn().mockResolvedValue(undefined),
-        getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
-      };
-      const useCase = new ProcessInvoiceUploadUseCase(
-        undefined,
-        undefined,
-        undefined,
-        fileSystem,
-      );
-
-      const result = await useCase.execute(baseInput);
-
-      expect(result.normalized.total).toBeNull();
-      expect(result.rawOcrText).toBe('');
-      expect(fileSystem.copyToAppStorage).toHaveBeenCalled();
-      expect(result.documentRef.localPath).toBe('file:///app/storage/invoice_copy.jpg');
-    });
-
-    it('still throws Validation failed for unsupported types even without OCR adapters', async () => {
-      const useCase = new ProcessInvoiceUploadUseCase();
-
-      await expect(
-        useCase.execute({
-          fileUri: 'file:///tmp/sheet.xlsx',
-          filename: 'sheet.xlsx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          fileSize: 10000,
-        }),
-      ).rejects.toThrow('Validation failed:');
-    });
-  });
-
-  // ─── Image path with IInvoiceParsingStrategy (AD2) ────────────────────────
-
-  describe('image path with IInvoiceParsingStrategy', () => {
-    function makeMockParsingStrategy(
-      normalized?: NormalizedInvoice,
-      error?: Error,
-    ): jest.Mocked<IInvoiceParsingStrategy> {
-      return {
-        strategyType: 'llm',
-        parse: error
-          ? jest.fn().mockRejectedValue(error)
-          : jest.fn().mockResolvedValue(normalized ?? makeNormalized()),
-      };
-    }
-
-    it('calls parsingStrategy.parse() instead of normalizer.extractCandidates() when strategy provided', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const strategy = makeMockParsingStrategy();
-      const useCase = new ProcessInvoiceUploadUseCase(
-        ocrAdapter,
-        normalizer,
-        undefined,
-        undefined,
-        strategy,
-      );
+  describe('processor delegation', () => {
+    it('calls processor.process with the copied localUri and mimeType', async () => {
+      const localUri = 'file:///app/storage/invoice_stored.pdf';
+      const fileSystem = makeFileSystem(localUri);
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
       await useCase.execute(baseInput);
 
-      expect(strategy.parse).toHaveBeenCalledWith(makeOcrResult());
-      expect(normalizer.extractCandidates).not.toHaveBeenCalled();
-      expect(normalizer.normalize).not.toHaveBeenCalled();
+      expect(processor.process).toHaveBeenCalledWith(localUri, baseInput.mimeType);
     });
 
-    it('returns the NormalizedInvoice from parsingStrategy.parse()', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer();
-      const expected = makeNormalized();
-      const strategy = makeMockParsingStrategy(expected);
-      const useCase = new ProcessInvoiceUploadUseCase(
-        ocrAdapter,
-        normalizer,
-        undefined,
-        undefined,
-        strategy,
-      );
+    it('returns normalized and rawOcrText from processor', async () => {
+      const normalized = makeNormalized();
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor(normalized);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
       const result = await useCase.execute(baseInput);
 
-      expect(result.normalized.vendor).toBe('Acme Corp');
-      expect(result.normalized.total).toBe(500);
+      expect(result.normalized).toEqual(normalized);
+      expect(result.rawOcrText).toBe('some ocr text');
     });
 
-    it('falls back to normalizer.extractCandidates() when no strategy provided (existing behaviour)', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer(makeNormalized());
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
+    it('does NOT branch on mimeType internally — delegates entirely to processor', async () => {
+      const pdfInput = { ...baseInput, mimeType: 'application/pdf', fileSize: 512000 };
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor();
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
-      await useCase.execute(baseInput);
+      await useCase.execute(pdfInput);
 
-      expect(normalizer.extractCandidates).toHaveBeenCalled();
-      expect(normalizer.normalize).toHaveBeenCalled();
+      // processor.process is called with 'application/pdf' — use case does not branch
+      expect(processor.process).toHaveBeenCalledWith(expect.any(String), 'application/pdf');
     });
 
-    it('propagates parsingStrategy.parse() error as Invoice processing failed', async () => {
-      const ocrAdapter = makeMockOcr(makeOcrResult());
-      const normalizer = makeMockNormalizer();
-      const strategy = makeMockParsingStrategy(undefined, new Error('Groq API timeout'));
-      const useCase = new ProcessInvoiceUploadUseCase(
-        ocrAdapter,
-        normalizer,
-        undefined,
-        undefined,
-        strategy,
-      );
+    it('propagates processor.process() errors', async () => {
+      const fileSystem = makeFileSystem();
+      const processor = makeProcessor(undefined, new Error('Processing failed'));
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
 
-      await expect(useCase.execute(baseInput)).rejects.toThrow('Invoice processing failed');
-      await expect(useCase.execute(baseInput)).rejects.toThrow('Groq API timeout');
-    });
-
-    it('does NOT call parsingStrategy.parse() for PDF MIME type (regression)', async () => {
-      const ocrAdapter = makeMockOcr();
-      const normalizer = makeMockNormalizer();
-      const strategy = makeMockParsingStrategy();
-      const useCase = new ProcessInvoiceUploadUseCase(
-        ocrAdapter,
-        normalizer,
-        undefined,
-        undefined,
-        strategy,
-      );
-
-      // PDF with no converter → returns empty (graceful degradation)
-      await useCase.execute({
-        fileUri: 'file:///app/documents/invoice.pdf',
-        filename: 'invoice.pdf',
-        mimeType: 'application/pdf',
-        fileSize: 102400,
-      });
-
-      expect(strategy.parse).not.toHaveBeenCalled();
+      await expect(useCase.execute(baseInput)).rejects.toThrow('Processing failed');
     });
   });
 });

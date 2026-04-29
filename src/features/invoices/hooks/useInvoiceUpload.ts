@@ -26,6 +26,9 @@ import { MobileCameraAdapter } from '../../../infrastructure/camera/MobileCamera
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 import { ProcessInvoiceUploadUseCase } from '../application/ProcessInvoiceUploadUseCase';
 import { IInvoiceParsingStrategy } from '../application/IInvoiceParsingStrategy';
+import { IInvoiceDocumentProcessor } from '../application/IInvoiceDocumentProcessor';
+import { TextBasedInvoiceProcessor } from '../infrastructure/processors/TextBasedInvoiceProcessor';
+import { VisionBasedInvoiceProcessor } from '../infrastructure/processors/VisionBasedInvoiceProcessor';
 import { normalizedInvoiceToFormValues } from '../utils/normalizedInvoiceToFormValues';
 import { Invoice } from '../../../domain/entities/Invoice';
 import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
@@ -124,22 +127,30 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   );
 
   /**
-   * Builds the ProcessInvoiceUploadUseCase with all available adapters.
-   * Validation and file IO are always delegated to the use case.
+   * Builds the document processor based on FeatureFlags.useVisionOcr.
+   * The processor encapsulates all mimeType branching and OCR/vision strategy selection.
    */
-  const buildUseCase = (): ProcessInvoiceUploadUseCase => {
-    if (FeatureFlags.useVisionOcr && GROQ_API_KEY) {
-      return new ProcessInvoiceUploadUseCase(
-        undefined,
-        undefined,
-        pdfConverter,
-        fileSystem,
-        undefined,
+  const buildProcessor = (): IInvoiceDocumentProcessor => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY && pdfConverter) {
+      return new VisionBasedInvoiceProcessor(
         new LlmVisionInvoiceParser(GROQ_API_KEY, new ReactNativeImageReader()),
+        pdfConverter,
       );
     }
-    return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter, fileSystem, parsingStrategy);
+    return new TextBasedInvoiceProcessor(
+      ocrAdapter!,
+      pdfConverter!,
+      parsingStrategy!,
+      invoiceNormalizer,
+    );
   };
+
+  /**
+   * Builds the ProcessInvoiceUploadUseCase with the appropriate processor.
+   * Validation and file IO are always delegated to the use case.
+   */
+  const buildUseCase = (): ProcessInvoiceUploadUseCase =>
+    new ProcessInvoiceUploadUseCase(fileSystem, buildProcessor());
 
   /**
    * Runs the full pipeline: validation → file copy → OCR → normalisation.

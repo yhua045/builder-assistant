@@ -1,169 +1,90 @@
-import { ProcessQuotationUploadUseCase } from '../../application/ProcessQuotationUploadUseCase';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+/**
+ * Vision routing for quotations is now tested via VisionBasedQuotationProcessor.test.ts.
+ * This file verifies the simplified use case delegates to any processor uniformly.
+ */
+import {
+  ProcessQuotationUploadUseCase,
+  ProcessQuotationUploadInput,
+} from '../../application/ProcessQuotationUploadUseCase';
+import { IQuotationDocumentProcessor } from '../../application/IQuotationDocumentProcessor';
+import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
 import { NormalizedQuotation } from '../../application/ai/IQuotationParsingStrategy';
-import { IQuotationParsingStrategy } from '../../application/ai/IQuotationParsingStrategy';
-import { IQuotationVisionParsingStrategy } from '../../application/ai/IQuotationVisionParsingStrategy';
-import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
 
-const makeOcrResult = (): OcrResult => ({
-  fullText: 'Some OCR text',
-  tokens: [],
-  imageUri: 'file:///app/quote.jpg',
-});
-
-const makeNormalized = (): NormalizedQuotation => ({
-  reference: 'QT-001',
-  vendor: 'Ace Roofing',
-  vendorEmail: null,
-  vendorPhone: null,
-  vendorAddress: null,
-  taxId: null,
-  date: new Date('2026-04-01'),
-  expiryDate: null,
-  currency: 'AUD',
-  subtotal: 5000,
-  tax: 500,
-  total: 5500,
-  lineItems: [],
-  paymentTerms: null,
-  scope: null,
-  exclusions: null,
-  notes: null,
-  confidence: { overall: 0.9, vendor: 0.9, reference: 0.9, date: 0.9, total: 0.9 },
-  suggestedCorrections: [],
-});
-
-function makeMockOcr(): jest.Mocked<IOcrAdapter> {
-  return { extractText: jest.fn().mockResolvedValue(makeOcrResult()) };
-}
-
-function makeMockParsingStrategy(): jest.Mocked<IQuotationParsingStrategy> {
+function makeNormalized(): NormalizedQuotation {
   return {
-    strategyType: 'llm' as const,
-    parse: jest.fn().mockResolvedValue(makeNormalized()),
+    reference: 'QT-001',
+    vendor: 'Ace Roofing',
+    vendorEmail: null,
+    vendorPhone: null,
+    vendorAddress: null,
+    taxId: null,
+    date: new Date('2026-04-01'),
+    expiryDate: null,
+    currency: 'AUD',
+    subtotal: 5000,
+    tax: 500,
+    total: 5500,
+    lineItems: [],
+    paymentTerms: null,
+    scope: null,
+    exclusions: null,
+    notes: null,
+    confidence: { overall: 0.9, vendor: 0.9, reference: 0.9, date: 0.9, total: 0.9 },
+    suggestedCorrections: [],
   };
 }
 
-function makeMockVisionStrategy(
-  normalized?: NormalizedQuotation,
-): jest.Mocked<IQuotationVisionParsingStrategy> {
+function makeFileSystem(localUri = 'file:///app/storage/quote.pdf'): jest.Mocked<IFileSystemAdapter> {
   return {
-    strategyType: 'llm-vision' as const,
-    parse: jest.fn().mockResolvedValue(normalized ?? makeNormalized()),
+    copyToAppStorage: jest.fn().mockResolvedValue(localUri),
+    exists: jest.fn().mockResolvedValue(true),
+    deleteFile: jest.fn().mockResolvedValue(undefined),
+    getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
   };
 }
 
-const baseImageInput = {
+const baseImageInput: ProcessQuotationUploadInput = {
   fileUri: 'file:///app/quote.jpg',
   filename: 'quote.jpg',
   mimeType: 'image/jpeg',
   fileSize: 256_000,
 };
 
-describe('ProcessQuotationUploadUseCase — vision routing', () => {
-  describe('vision strategy injected, image file', () => {
-    it('calls visionStrategy.parse with the image URI', async () => {
-      const visionStrategy = makeMockVisionStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
+describe('ProcessQuotationUploadUseCase — processor delegation (vision + text)', () => {
+  it('calls processor.process with localPath (not original fileUri)', async () => {
+    const localPath = 'file:///app/storage/quote_stored.jpg';
+    const fileSystem = makeFileSystem(localPath);
+    const processor: jest.Mocked<IQuotationDocumentProcessor> = {
+      process: jest.fn().mockResolvedValue({ normalized: makeNormalized(), rawOcrText: '' }),
+    };
+    const useCase = new ProcessQuotationUploadUseCase(fileSystem, processor);
 
-      await useCase.execute(baseImageInput);
+    await useCase.execute(baseImageInput);
 
-      expect(visionStrategy.parse).toHaveBeenCalledWith(baseImageInput.fileUri);
-    });
-
-    it('does NOT call ocrAdapter when vision strategy is present', async () => {
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const visionStrategy = makeMockVisionStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(
-        parsingStrategy,
-        undefined,
-        undefined,
-        ocrAdapter,
-        visionStrategy,
-      );
-
-      await useCase.execute(baseImageInput);
-
-      expect(ocrAdapter.extractText).not.toHaveBeenCalled();
-    });
-
-    it('returns normalized result from visionStrategy with empty rawOcrText', async () => {
-      const normalized = makeNormalized();
-      const visionStrategy = makeMockVisionStrategy(normalized);
-      const useCase = new ProcessQuotationUploadUseCase(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
-
-      const result = await useCase.execute(baseImageInput);
-
-      expect(result.normalized).toEqual(normalized);
-      expect(result.rawOcrText).toBe('');
-    });
+    expect(processor.process).toHaveBeenCalledWith(localPath, baseImageInput.mimeType);
   });
 
-  describe('vision strategy injected, PDF file', () => {
-    it('calls pdfConverter then visionStrategy.parse with page 1 URI', async () => {
-      const visionStrategy = makeMockVisionStrategy();
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/page_0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-      ]);
-      const useCase = new ProcessQuotationUploadUseCase(
-        undefined,
-        pdfConverter,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
+  it('returns rawOcrText from processor (empty string for vision path)', async () => {
+    const fileSystem = makeFileSystem();
+    const processor: jest.Mocked<IQuotationDocumentProcessor> = {
+      process: jest.fn().mockResolvedValue({ normalized: makeNormalized(), rawOcrText: '' }),
+    };
+    const useCase = new ProcessQuotationUploadUseCase(fileSystem, processor);
 
-      await useCase.execute({
-        fileUri: 'file:///app/quote.pdf',
-        filename: 'quote.pdf',
-        mimeType: 'application/pdf',
-        fileSize: 1_024_000,
-      });
+    const result = await useCase.execute(baseImageInput);
 
-      expect(visionStrategy.parse).toHaveBeenCalledWith('file:///tmp/page_0.jpg');
-      expect(visionStrategy.parse).toHaveBeenCalledTimes(1);
-    });
+    expect(result.rawOcrText).toBe('');
   });
 
-  describe('text OCR path (vision strategy absent)', () => {
-    it('calls ocrAdapter when vision strategy is not provided', async () => {
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(
-        parsingStrategy,
-        undefined,
-        undefined,
-        ocrAdapter,
-      );
+  it('returns rawOcrText from processor (non-empty for text-based path)', async () => {
+    const fileSystem = makeFileSystem();
+    const processor: jest.Mocked<IQuotationDocumentProcessor> = {
+      process: jest.fn().mockResolvedValue({ normalized: makeNormalized(), rawOcrText: 'Some OCR text' }),
+    };
+    const useCase = new ProcessQuotationUploadUseCase(fileSystem, processor);
 
-      await useCase.execute(baseImageInput);
+    const result = await useCase.execute(baseImageInput);
 
-      expect(ocrAdapter.extractText).toHaveBeenCalledWith(baseImageInput.fileUri);
-    });
-  });
-
-  describe('neither strategy present', () => {
-    it('returns empty NormalizedQuotation with no adapter calls', async () => {
-      const useCase = new ProcessQuotationUploadUseCase();
-
-      const result = await useCase.execute(baseImageInput);
-
-      expect(result.normalized.vendor).toBeNull();
-      expect(result.normalized.total).toBeNull();
-      expect(result.rawOcrText).toBe('');
-    });
+    expect(result.rawOcrText).toBe('Some OCR text');
   });
 });

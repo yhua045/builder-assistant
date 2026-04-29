@@ -1,151 +1,59 @@
-import { ProcessReceiptUploadUseCase } from '../../application/ProcessReceiptUploadUseCase';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+/**
+ * Vision routing for receipts is now tested via VisionBasedReceiptProcessor.test.ts.
+ * This file verifies the simplified use case delegates to any processor uniformly.
+ */
+import {
+  ProcessReceiptUploadUseCase,
+  ProcessReceiptUploadInput,
+} from '../../application/ProcessReceiptUploadUseCase';
+import { IReceiptDocumentProcessor } from '../../application/IReceiptDocumentProcessor';
 import { NormalizedReceipt } from '../../application/IReceiptNormalizer';
-import { IReceiptParsingStrategy } from '../../application/IReceiptParsingStrategy';
-import { IReceiptVisionParsingStrategy } from '../../application/IReceiptVisionParsingStrategy';
-import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
 
-const makeOcrResult = (): OcrResult => ({
-  fullText: 'Some OCR text',
-  tokens: [],
-  imageUri: 'file:///app/receipt.jpg',
-});
-
-const makeNormalized = (): NormalizedReceipt => ({
-  vendor: 'Bunnings',
-  date: new Date('2026-01-15'),
-  total: 200,
-  subtotal: 180,
-  tax: 20,
-  currency: 'AUD',
-  paymentMethod: 'card',
-  receiptNumber: 'REC-001',
-  lineItems: [],
-  notes: null,
-  confidence: { overall: 0.9, vendor: 0.9, date: 0.9, total: 0.9 },
-  suggestedCorrections: [],
-});
-
-function makeMockOcr(): jest.Mocked<IOcrAdapter> {
-  return { extractText: jest.fn().mockResolvedValue(makeOcrResult()) };
-}
-
-function makeMockParsingStrategy(): jest.Mocked<IReceiptParsingStrategy> {
+function makeNormalizedReceipt(): NormalizedReceipt {
   return {
-    strategyType: 'llm' as const,
-    parse: jest.fn().mockResolvedValue(makeNormalized()),
+    vendor: 'Bunnings',
+    date: new Date('2026-04-10'),
+    total: 150.0,
+    subtotal: 136.36,
+    tax: 13.64,
+    currency: 'AUD',
+    paymentMethod: 'card',
+    receiptNumber: null,
+    lineItems: [],
+    notes: null,
+    confidence: { overall: 0.9, vendor: 0.9, date: 0.9, total: 0.9 },
+    suggestedCorrections: [],
   };
 }
 
-function makeMockVisionStrategy(
-  normalized?: NormalizedReceipt,
-): jest.Mocked<IReceiptVisionParsingStrategy> {
-  return {
-    strategyType: 'llm-vision' as const,
-    parse: jest.fn().mockResolvedValue(normalized ?? makeNormalized()),
-  };
-}
-
-const baseImageInput = {
+const imageInput: ProcessReceiptUploadInput = {
   fileUri: 'file:///app/receipt.jpg',
   filename: 'receipt.jpg',
   mimeType: 'image/jpeg',
-  fileSize: 256_000,
+  fileSize: 512_000,
 };
 
-describe('ProcessReceiptUploadUseCase — vision routing', () => {
-  describe('vision strategy injected, image file', () => {
-    it('calls visionStrategy.parse with the image URI', async () => {
-      const visionStrategy = makeMockVisionStrategy();
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(
-        ocrAdapter,
-        parsingStrategy,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
+describe('ProcessReceiptUploadUseCase — processor delegation', () => {
+  it('calls processor.process and returns empty rawOcrText (vision path)', async () => {
+    const processor: jest.Mocked<IReceiptDocumentProcessor> = {
+      process: jest.fn().mockResolvedValue({ normalized: makeNormalizedReceipt(), rawOcrText: '' }),
+    };
+    const useCase = new ProcessReceiptUploadUseCase(processor);
 
-      await useCase.execute(baseImageInput);
+    const result = await useCase.execute(imageInput);
 
-      expect(visionStrategy.parse).toHaveBeenCalledWith(baseImageInput.fileUri);
-    });
-
-    it('does NOT call ocrAdapter when vision strategy is present', async () => {
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const visionStrategy = makeMockVisionStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(
-        ocrAdapter,
-        parsingStrategy,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
-
-      await useCase.execute(baseImageInput);
-
-      expect(ocrAdapter.extractText).not.toHaveBeenCalled();
-    });
-
-    it('returns normalized result from visionStrategy with empty rawOcrText', async () => {
-      const normalized = makeNormalized();
-      const visionStrategy = makeMockVisionStrategy(normalized);
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(
-        ocrAdapter,
-        parsingStrategy,
-        undefined,
-        undefined,
-        visionStrategy,
-      );
-
-      const result = await useCase.execute(baseImageInput);
-
-      expect(result.normalized).toEqual(normalized);
-      expect(result.rawOcrText).toBe('');
-    });
+    expect(processor.process).toHaveBeenCalledWith(imageInput.fileUri, imageInput.mimeType);
+    expect(result.rawOcrText).toBe('');
   });
 
-  describe('vision strategy injected, PDF file', () => {
-    it('calls pdfConverter then visionStrategy.parse with page 1 URI', async () => {
-      const visionStrategy = makeMockVisionStrategy();
-      const pdfConverter = new MockPdfConverter([
-        { uri: 'file:///tmp/page_0.jpg', width: 1240, height: 1754, pageIndex: 0 },
-      ]);
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(
-        ocrAdapter,
-        parsingStrategy,
-        pdfConverter,
-        undefined,
-        visionStrategy,
-      );
+  it('calls processor.process and returns non-empty rawOcrText (text path)', async () => {
+    const processor: jest.Mocked<IReceiptDocumentProcessor> = {
+      process: jest.fn().mockResolvedValue({ normalized: makeNormalizedReceipt(), rawOcrText: 'some ocr' }),
+    };
+    const useCase = new ProcessReceiptUploadUseCase(processor);
 
-      await useCase.execute({
-        fileUri: 'file:///app/receipt.pdf',
-        filename: 'receipt.pdf',
-        mimeType: 'application/pdf',
-        fileSize: 1_024_000,
-      });
+    const result = await useCase.execute(imageInput);
 
-      expect(visionStrategy.parse).toHaveBeenCalledWith('file:///tmp/page_0.jpg');
-      expect(visionStrategy.parse).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('text OCR path (vision strategy absent)', () => {
-    it('calls ocrAdapter when vision strategy is not provided', async () => {
-      const ocrAdapter = makeMockOcr();
-      const parsingStrategy = makeMockParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, parsingStrategy);
-
-      await useCase.execute(baseImageInput);
-
-      expect(ocrAdapter.extractText).toHaveBeenCalledWith(baseImageInput.fileUri);
-    });
+    expect(result.rawOcrText).toBe('some ocr');
   });
 });

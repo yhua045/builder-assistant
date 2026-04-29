@@ -15,6 +15,8 @@ import { PdfThumbnailConverter } from '../../../infrastructure/files/PdfThumbnai
 import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
 import { LlmVisionReceiptParser } from '../infrastructure/LlmVisionReceiptParser';
 import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { TextBasedReceiptProcessor } from '../infrastructure/processors/TextBasedReceiptProcessor';
+import { VisionBasedReceiptProcessor } from '../infrastructure/processors/VisionBasedReceiptProcessor';
 import { GROQ_API_KEY } from '@env';
 import '../../../infrastructure/di/registerServices';
 
@@ -43,22 +45,22 @@ export const useSnapReceipt = (
     }, [receiptRepo, enableOcr]);
 
     // PDF upload use case — instantiated only when a parsing strategy is supplied.
-    // When useVisionOcr is true, also injects a vision strategy so the use case
-    // skips ML Kit OCR and sends the image directly to the Groq Vision model.
+    // Processor selection is based on FeatureFlags.useVisionOcr.
     const pdfUploadUseCase = useMemo(() => {
         if (!receiptParsingStrategy) return null;
-        const ocrAdapter = new MobileOcrAdapter();
-        const visionStrategy =
+        const pdfConverter = new PdfThumbnailConverter();
+        const processor =
             FeatureFlags.useVisionOcr && GROQ_API_KEY
-                ? new LlmVisionReceiptParser(GROQ_API_KEY, new ReactNativeImageReader())
-                : undefined;
-        return new ProcessReceiptUploadUseCase(
-            ocrAdapter,
-            receiptParsingStrategy,
-            new PdfThumbnailConverter(),
-            undefined,
-            visionStrategy,
-        );
+                ? new VisionBasedReceiptProcessor(
+                      new LlmVisionReceiptParser(GROQ_API_KEY, new ReactNativeImageReader()),
+                      pdfConverter,
+                  )
+                : new TextBasedReceiptProcessor(
+                      new MobileOcrAdapter(),
+                      pdfConverter,
+                      receiptParsingStrategy,
+                  );
+        return new ProcessReceiptUploadUseCase(processor);
     }, [receiptParsingStrategy]);
 
     const processReceipt = async (imageUri: string): Promise<NormalizedReceipt | null> => {
