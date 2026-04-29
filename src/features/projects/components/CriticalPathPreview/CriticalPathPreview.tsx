@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import type { UseCriticalPathReturn } from '../../../../hooks/useCriticalPath';
 import { CriticalPathTaskRow } from './CriticalPathTaskRow';
@@ -38,9 +37,9 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <View testID="loading-skeleton" style={styles.centeredContainer}>
+      <View testID="loading-skeleton" className="flex-1 items-center justify-center p-6">
         <ActivityIndicator testID="loading-indicator" size="large" color="#2563EB" />
-        <Text style={styles.loadingText}>Loading suggestions…</Text>
+        <Text className="mt-3 text-[15px] color-slate-500">Loading suggestions…</Text>
       </View>
     );
   }
@@ -48,42 +47,42 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
   // ── Error state ────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <View style={styles.centeredContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View className="flex-1 items-center justify-center p-6">
+        <Text className="text-[15px] color-red-600 text-center mb-4">{error}</Text>
         <TouchableOpacity
           testID="error-retry-btn"
-          style={styles.retryButton}
+          className="bg-blue-600 rounded-lg px-5 py-2.5"
           onPress={() => suggest({ project_type: 'complete_rebuild' })}
         >
-          <Text style={styles.retryButtonText}>Try again</Text>
+          <Text className="color-white font-semibold text-[15px]">Try again</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       {/* Creation error banner */}
       {creationError ? (
-        <View testID="creation-error-banner" style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{creationError}</Text>
+        <View testID="creation-error-banner" className="flex-row items-center justify-between bg-red-100 px-4 py-2.5 rounded-lg m-3">
+          <Text className="color-red-600 text-sm flex-1">{creationError}</Text>
           <TouchableOpacity
             testID="creation-error-retry-btn"
             onPress={() => confirmSelected(projectId)}
           >
-            <Text style={styles.retryInlinText}>Retry</Text>
+            <Text className="color-red-600 font-bold text-sm ml-2">Retry</Text>
           </TouchableOpacity>
         </View>
       ) : null}
 
       {/* Select all / deselect all control */}
       {suggestions.length > 0 && !isCreating ? (
-        <View style={styles.selectAllRow}>
+        <View className="flex-row justify-end px-4 py-2 border-b border-gray-100">
           <TouchableOpacity
             testID="select-all-btn"
             onPress={allSelected ? clearAll : selectAll}
           >
-            <Text style={styles.selectAllText}>
+            <Text className="color-blue-600 text-sm font-medium">
               {allSelected ? 'Deselect all' : 'Select all'}
             </Text>
           </TouchableOpacity>
@@ -92,7 +91,7 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
 
       {/* Task list */}
       <ScrollView
-        style={styles.listContainer}
+        className="flex-1"
         pointerEvents={isCreating ? 'none' : 'auto'}
       >
         {suggestions.map(suggestion => (
@@ -108,9 +107,9 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
 
       {/* CTA / progress area */}
       {isCreating ? (
-        <View testID="creation-progress" style={styles.progressContainer}>
+        <View testID="creation-progress" className="flex-row items-center justify-center py-[18px] px-4 border-t border-gray-200">
           <ActivityIndicator size="small" color="#2563EB" />
-          <Text style={styles.progressText}>
+          <Text className="ml-3 text-[15px] color-gray-700 font-medium">
             {creationProgress
               ? `Creating tasks… ${creationProgress.completed} / ${creationProgress.total}`
               : 'Creating tasks…'}
@@ -119,14 +118,14 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
       ) : (
         <TouchableOpacity
           testID="cta-add-tasks"
-          style={[styles.ctaButton, selectedCount === 0 && styles.ctaButtonDisabled]}
+          className={`bg-blue-600 m-4 rounded-[10px] py-3.5 items-center ${selectedCount === 0 ? 'bg-blue-300' : ''}`}
           disabled={selectedCount === 0}
           onPress={async () => {
             const success = await confirmSelected(projectId);
             if (success) onDone?.();
           }}
         >
-          <Text style={styles.ctaButtonText}>
+          <Text className="color-white font-bold text-base">
             {selectedCount === 0
               ? 'Add Tasks to Plan'
               : `Add ${selectedCount} Task${selectedCount === 1 ? '' : 's'} to Plan`}
@@ -136,104 +135,3 @@ export function CriticalPathPreview({ projectId, hookResult, onDone }: CriticalP
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centeredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: '#6B7280',
-  },
-  errorText: {
-    fontSize: 15,
-    color: '#DC2626',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    margin: 12,
-  },
-  errorBannerText: {
-    color: '#DC2626',
-    fontSize: 14,
-    flex: 1,
-  },
-  retryInlinText: {
-    color: '#DC2626',
-    fontWeight: '700',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  selectAllRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  selectAllText: {
-    color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  listContainer: {
-    flex: 1,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  progressText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  ctaButton: {
-    backgroundColor: '#2563EB',
-    margin: 16,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  ctaButtonDisabled: {
-    backgroundColor: '#93C5FD',
-  },
-  ctaButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-});

@@ -9,10 +9,7 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   ActivityIndicator,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { Project } from '../../../domain/entities/Project';
 import { ProjectCardDto } from '../application/ProjectCardDto';
@@ -35,17 +32,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 }) => {
   if (loading && projects.length === 0) {
     return (
-      <View style={styles.centerContainer}>
+      <View className="flex-1 justify-center items-center p-8 bg-[#F5F5F5]">
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading projects...</Text>
+        <Text className="mt-4 text-base text-[#666666] text-center">Loading projects...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>
+      <View className="flex-1 justify-center items-center p-8 bg-[#F5F5F5]">
+        <Text className="text-base text-[#F44336] text-center leading-6">
           Error loading projects: {error}
         </Text>
       </View>
@@ -54,9 +51,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   if (projects.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyTitle}>No Projects Yet</Text>
-        <Text style={styles.emptyText}>
+      <View className="flex-1 justify-center items-center p-8 bg-[#F5F5F5]">
+        <Text className="text-2xl font-bold text-[#333333] mb-4 text-center">No Projects Yet</Text>
+        <Text className="text-base text-[#666666] text-center leading-6 max-w-[300px]">
           Create your first building project to get started with managing your construction timeline and materials.
         </Text>
       </View>
@@ -90,60 +87,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       data={projects}
       renderItem={renderProject}
       keyExtractor={(item) => item.id}
-      style={styles.list}
-      contentContainerStyle={styles.listContent}
+      className="flex-1 bg-[#F5F5F5]"
+      contentContainerClassName="py-2"
       showsVerticalScrollIndicator={false}
       refreshing={loading}
       onRefresh={onRefresh}
     />
   );
 };
-
-const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  } as ViewStyle,
-
-  listContent: {
-    paddingVertical: 8,
-  } as ViewStyle,
-
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#F5F5F5',
-  } as ViewStyle,
-
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-  } as TextStyle,
-
-  errorText: {
-    fontSize: 16,
-    color: '#F44336',
-    textAlign: 'center',
-    lineHeight: 24,
-  } as TextStyle,
-
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 16,
-    textAlign: 'center',
-  } as TextStyle,
-
-  emptyText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 300,
-  } as TextStyle,
-});
