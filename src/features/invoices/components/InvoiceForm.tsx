@@ -176,28 +176,27 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   return (
     <ScrollView 
       contentContainerStyle={{ gap: 16 }}
-      style={styles.container}
       testID="invoice-form"
     >
       {/* PDF File Indicator */}
       {pdfFile && (
-        <View style={styles.pdfIndicator}>
-          <Text style={styles.pdfIndicatorTitle}>📄 PDF Attached</Text>
-          <Text style={styles.pdfIndicatorText}>{pdfFile.name}</Text>
-          <Text style={styles.pdfIndicatorSize}>
+        <View className="bg-blue-50 border border-blue-200 p-3 rounded-lg flex-col gap-1">
+          <Text className="text-sm font-bold text-blue-900">📄 PDF Attached</Text>
+          <Text className="text-xs text-blue-800" numberOfLines={1} ellipsizeMode="middle">{pdfFile.name}</Text>
+          <Text className="text-[10px] text-blue-600">
             {(pdfFile.size / 1024).toFixed(1)} KB
           </Text>
         </View>
       )}
 
-      <View style={styles.formSection}>
-        <Text style={styles.sectionTitle}>Invoice Details</Text>
+      <View className="bg-white p-4 rounded-xl border border-zinc-200 gap-4 mb-4 shadow-sm">
+        <Text className="text-lg font-bold text-zinc-900 mb-2">Invoice Details</Text>
 
         {/* Invoice Number */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Invoice Number</Text>
+        <View className="gap-2 mb-4">
+          <Text className="text-sm font-semibold text-zinc-700">Invoice Number</Text>
           <TextInput
-            style={styles.input}
+            className="border border-zinc-300 rounded-lg p-3 text-base text-zinc-900 bg-white"
             value={invoiceNumber}
             onChangeText={setInvoiceNumber}
             placeholder="Auto-generated if left blank"
@@ -206,7 +205,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </View>
 
         {/* Vendor */}
-        <View style={styles.fieldGroup}>
+        <View className="gap-2 mb-4">
           <ContractorLookupField
             label="Vendor/Issuer *"
             value={vendor}
@@ -220,10 +219,12 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </View>
 
         {/* Total */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Total *</Text>
+        <View className="gap-2 mb-4">
+          <Text className="text-sm font-semibold text-zinc-700">Total *</Text>
           <TextInput
-            style={[styles.input, errors.total && styles.inputError]}
+            className={`border rounded-lg p-3 text-base bg-white ${
+              errors.total ? 'border-red-500' : 'border-zinc-300'
+            }`}
             value={total}
             onChangeText={setTotal}
             placeholder="Total amount"
@@ -231,14 +232,14 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             testID="invoice-form-total-input"
           />
           {errors.total && (
-            <Text style={styles.errorText} testID="invoice-form-total-error">
+            <Text className="text-red-500 text-xs mt-1" testID="invoice-form-total-error">
               {errors.total}
             </Text>
           )}
         </View>
 
         {/* Date Issued */}
-        <View style={styles.fieldGroup}>
+        <View className="gap-2 mb-4">
           <DatePickerInput
             label="Invoice Date"
             value={dateIssued}
@@ -247,57 +248,56 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </View>
 
         {/* Date Due */}
-        <View style={styles.fieldGroup}>
+        <View className="gap-2 mb-4">
           <DatePickerInput
             label="Due Date"
             value={dateDue}
             onChange={setDateDue}
           />
           {errors.dates && (
-            <Text style={styles.errorText} testID="invoice-form-dates-error">
+            <Text className="text-red-500 text-xs mt-1" testID="invoice-form-dates-error">
               {errors.dates}
             </Text>
           )}
         </View>
 
         {/* Notes */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Notes</Text>
+        <View className="gap-2 mb-4">
+          <Text className="text-sm font-semibold text-zinc-700">Notes</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            className="border border-zinc-300 rounded-lg p-3 text-base bg-white min-h-[100px]"
             value={notes}
             onChangeText={setNotes}
             placeholder="Additional notes"
             multiline
             numberOfLines={4}
+            textAlignVertical="top"
             testID="invoice-form-notes-input"
           />
         </View>
 
         {/* Line Items Error */}
         {errors.lineItems && (
-          <Text style={styles.errorText} testID="invoice-form-lineitems-error">
+          <Text className="text-red-500 text-xs mt-1" testID="invoice-form-lineitems-error">
             {errors.lineItems}
           </Text>
         )}
       </View>
 
       {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
+      <View className="flex-row justify-between gap-4 mb-8">
         <Pressable
-          style={[styles.button, styles.cancelButton]}
+          className="flex-1 p-4 rounded-lg items-center bg-zinc-100"
           onPress={onCancel}
           testID="invoice-form-cancel-button"
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text className="text-zinc-600 text-base font-semibold">Cancel</Text>
         </Pressable>
 
         <Pressable
-          style={[
-            styles.button,
-            styles.saveButton,
-            isLoading && styles.disabledButton,
-          ]}
+          className={`flex-1 p-4 rounded-lg items-center ${
+            isLoading ? 'bg-zinc-400' : 'bg-blue-600'
+          }`}
           onPress={handleSubmit}
           disabled={isLoading}
           testID="invoice-form-save-button"
@@ -305,7 +305,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>
+            <Text className="text-white text-base font-semibold">
               {mode === 'create' ? 'Create Invoice' : 'Update Invoice'}
             </Text>
           )}
@@ -314,97 +314,3 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 0,
-  },
-  pdfIndicator: {
-    backgroundColor: '#e0f2fe',
-    borderWidth: 1,
-    borderColor: '#0ea5e9',
-    borderRadius: 8,
-    padding: 12,
-  },
-  pdfIndicatorTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0369a1',
-    marginBottom: 4,
-  },
-  pdfIndicatorText: {
-    fontSize: 14,
-    color: '#075985',
-    marginBottom: 2,
-  },
-  pdfIndicatorSize: {
-    fontSize: 12,
-    color: '#0c4a6e',
-  },
-  formSection: {
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  fieldGroup: {
-    // Margin removed to let top-level gap handle spacing
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-    color: '#374151',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  inputError: {
-    borderColor: '#ef4444',
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  button: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f3f4f6',
-  },
-  cancelButtonText: {
-    color: '#374151',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: '#3b82f6',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabledButton: {
-    backgroundColor: '#9ca3af',
-  },
-});
