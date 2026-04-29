@@ -445,7 +445,6 @@ describe('QuotationForm', () => {
         <QuotationForm
           onSubmit={mockOnSubmit}
           onCancel={mockOnCancel}
-          embedded={true}
         />
       );
     });

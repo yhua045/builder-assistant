@@ -66,15 +66,16 @@ export const InvoiceScreen = ({
           </Pressable>
           <Text className="text-2xl font-bold text-foreground ml-4">New Invoice</Text>
         </View>
-        <InvoiceForm
-          mode="create"
-          initialValues={vm.formInitialValues}
-          onCreate={vm.handleFormSave}
-          onCancel={vm.handleFormCancel}
-          isLoading={vm.invoicesLoading}
-          pdfFile={vm.formPdfFile}
-          embedded
-        />
+        <View className="flex-1 px-4 text-foreground">
+          <InvoiceForm
+            mode="create"
+            initialValues={vm.formInitialValues}
+            onCreate={vm.handleFormSave}
+            onCancel={vm.handleFormCancel}
+            isLoading={vm.invoicesLoading}
+            pdfFile={vm.formPdfFile}
+          />
+        </View>
       </View>
     );
   }
@@ -139,15 +140,16 @@ export const InvoiceScreen = ({
       </View>
 
       {/* Invoice form — always visible below the upload button */}
-      <InvoiceForm
-        mode="create"
-        initialValues={vm.formInitialValues}
-        onCreate={vm.handleFormSave}
-        onCancel={onClose}
-        isLoading={vm.invoicesLoading}
-        pdfFile={vm.formPdfFile}
-        embedded
-      />
+      <View className="flex-1 px-4 pt-4 text-foreground">
+        <InvoiceForm
+          mode="create"
+          initialValues={vm.formInitialValues}
+          onCreate={vm.handleFormSave}
+          onCancel={onClose}
+          isLoading={vm.invoicesLoading}
+          pdfFile={vm.formPdfFile}
+        />
+      </View>
     </View>
   );
 };

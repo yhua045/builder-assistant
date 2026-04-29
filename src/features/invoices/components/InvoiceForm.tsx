@@ -22,7 +22,6 @@ export interface InvoiceFormProps {
   isLoading?: boolean;
   pdfFile?: PdfFileMetadata; // Optional PDF file metadata (for upload flow)
   /** When true the form is rendered embedded inside another screen and should use compact padding */
-  embedded?: boolean;
 }
 
 interface FormErrors {
@@ -43,7 +42,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   onCancel,
   isLoading = false,
   pdfFile,
-  embedded = false,
 }) => {
   // Core fields
   const [invoiceNumber, setInvoiceNumber] = useState(initialValues?.externalReference || '');
@@ -175,10 +173,12 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     }
   };
 
-  const containerStyle = embedded ? styles.containerEmbedded : styles.container;
-
   return (
-    <ScrollView style={containerStyle} testID="invoice-form">
+    <ScrollView 
+      contentContainerStyle={{ gap: 16 }}
+      style={styles.container}
+      testID="invoice-form"
+    >
       {/* PDF File Indicator */}
       {pdfFile && (
         <View style={styles.pdfIndicator}>
@@ -317,13 +317,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 16,
-  },
-  containerEmbedded: {
-    flex: 1,
-    paddingTop: 8,
-    paddingHorizontal: 12,
+    padding: 0,
   },
   pdfIndicator: {
     backgroundColor: '#e0f2fe',
@@ -331,7 +325,6 @@ const styles = StyleSheet.create({
     borderColor: '#0ea5e9',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
   },
   pdfIndicatorTitle: {
     fontSize: 14,
@@ -349,15 +342,14 @@ const styles = StyleSheet.create({
     color: '#0c4a6e',
   },
   formSection: {
-    marginBottom: 24,
+    gap: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 16,
   },
   fieldGroup: {
-    marginBottom: 16,
+    // Margin removed to let top-level gap handle spacing
   },
   label: {
     fontSize: 14,
@@ -388,15 +380,13 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 32,
+    gap: 16,
   },
   button: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 8,
   },
   cancelButton: {
     backgroundColor: '#f3f4f6',

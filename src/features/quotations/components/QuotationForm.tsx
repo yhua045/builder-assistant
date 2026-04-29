@@ -15,8 +15,6 @@ interface QuotationFormProps {
   onSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  /** When true, renders with compact padding (embedded inside another screen) */
-  embedded?: boolean;
   /** When set, shows a PDF attached indicator with the filename */
   pdfFile?: PdfFileMetadata;
   /** Pre-selected projectId (e.g. when opened from ProjectDetail) */
@@ -30,7 +28,6 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
   onSubmit,
   onCancel,
   isLoading,
-  embedded = false,
   pdfFile,
   projectId: propProjectId,
   vendorId: propVendorId,
@@ -184,16 +181,10 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
     }
   };
 
-  const px = embedded ? 'px-0' : 'px-6';
-
   return (
-    <ScrollView className="flex-1 bg-background">
-      {!embedded && (
-        <Text className="text-2xl font-bold mb-6 px-6 text-foreground">New Quotation</Text>
-      )}
-
+    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-4">
       {errors.form && (
-        <View className={`bg-destructive/10 border border-destructive rounded-xl p-3 mb-4 ${px}`}>
+        <View className="bg-destructive/10 border border-destructive rounded-xl">
           <Text className="text-destructive text-sm">{errors.form}</Text>
         </View>
       )}
@@ -202,7 +193,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       {pdfFile && (
         <View
           testID="quotation-pdf-indicator"
-          className={`bg-card border border-border rounded-xl p-3 mb-4 flex-row items-center ${px}`}
+          className={`bg-card border border-border rounded-xl flex-row items-center`}
         >
           <Paperclip size={16} color="#6b7280" />
           <Text className="text-foreground font-medium ml-2 flex-1" numberOfLines={1}>
@@ -215,7 +206,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       )}
 
       {/* Reference (optional) */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Reference (optional)</Text>
         <TextInput
           testID="quotation-reference-input"
@@ -228,7 +219,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Project Picker */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">
           Project <Text className="text-destructive">*</Text>
         </Text>
@@ -250,7 +241,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Vendor Picker */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Client / Vendor</Text>
         <TouchableOpacity
           testID="quotation-vendor-picker-row"
@@ -287,7 +278,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Vendor Email */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Vendor Email</Text>
         <TextInput
           testID="quotation-vendor-email-input"
@@ -302,7 +293,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Vendor Address */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Vendor Address</Text>
         <TextInput
           testID="quotation-vendor-address-input"
@@ -318,7 +309,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Date */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Issue Date*</Text>
         <DatePickerInput
           label=""
@@ -329,7 +320,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Expiry Date */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Expiry Date</Text>
         <DatePickerInput
           label=""
@@ -340,7 +331,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Line Items */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="font-medium text-foreground">Line Items</Text>
           <Pressable
@@ -411,7 +402,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Total */}
-      <View className={`mb-4 ${px}`}>
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Total*</Text>
         <TextInput
           testID="quotation-total-input"
@@ -428,7 +419,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Notes */}
-      <View className={`mb-8 ${px}`}>
+      <View className="">
         <Text className="mb-2 font-medium text-foreground">Notes</Text>
         <TextInput
           testID="quotation-notes-input"
@@ -444,7 +435,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({
       </View>
 
       {/* Action Buttons */}
-      <View className={`flex-row gap-4 mb-8 mt-6 ${px}`}>
+      <View className={`flex-row gap-4  mt-6`}>
         <Pressable
           testID="quotation-cancel-button"
           onPress={onCancel}

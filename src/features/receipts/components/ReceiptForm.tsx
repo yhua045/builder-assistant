@@ -172,8 +172,8 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
   }
 
   return (
-    <ScrollView className="flex-1 bg-background p-4">
-      <View className="flex-row items-center justify-between mb-6">
+    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-4">
+      <View className="flex-row items-center justify-between">
         <Text className="text-2xl font-bold text-foreground">Snap Receipt</Text>
         <Pressable
           accessibilityLabel="Close receipt form"
@@ -196,7 +196,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       )}
 
       {/* Project Picker */}
-      <View className="mb-4">
+      <View className="">
         <Text className="font-medium text-foreground mb-2">Project (optional)</Text>
         <TouchableOpacity
           testID="receipt-project-picker-row"
@@ -210,7 +210,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         </TouchableOpacity>
       </View>
 
-      <View className="mb-4">
+      <View className="">
         <View className="flex-row items-center mb-2">
           {/* Label is handled by ContractorLookupField if we want, but we have OCR confidence icons here */}
         </View>
@@ -232,7 +232,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         )}
       </View>
 
-      <View className="mb-4">
+      <View className="">
         <View className="flex-row items-center mb-2">
           <Text className="font-medium text-foreground">Total Amount*</Text>
           {normalizedData && (
@@ -258,7 +258,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         {errors.amount && <Text className="text-destructive text-sm mt-1">{errors.amount}</Text>}
       </View>
 
-      <View className="mb-4">
+      <View className="">
         <View className="flex-row items-center mb-2">
           <Text className="font-medium text-foreground">Date*</Text>
           {normalizedData && (
@@ -275,7 +275,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         />
       </View>
 
-      <View className="mb-6">
+      <View className="">
         <OptionList
           label="Payment Method"
           value={paymentMethod}
@@ -286,7 +286,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
       </View>
 
       {/* ── Line Items (optional) ── */}
-      <View className="mb-6" testID="receipt-line-items-section">
+      <View className="" testID="receipt-line-items-section">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="font-medium text-foreground">Line Items (optional)</Text>
           <Pressable
@@ -375,7 +375,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         )}
       </View>
 
-      <View className="mb-8">
+      <View className="">
         <Text className="mb-2 font-medium text-foreground">Notes</Text>
         <TextInput
           className="border border-input rounded-xl p-4 text-base bg-card text-foreground min-h-[100px]"
@@ -389,7 +389,7 @@ export const ReceiptForm: React.FC<ReceiptFormProps> = ({
         />
       </View>
 
-      <View className="flex-row gap-4 mb-8">
+      <View className="flex-row gap-4">
         <Pressable 
           onPress={onCancel} 
           disabled={isLoading}

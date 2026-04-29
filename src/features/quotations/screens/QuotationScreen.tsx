@@ -101,15 +101,16 @@ export const QuotationScreen: React.FC<QuotationScreenProps> = ({
         </View>
 
         {/* QuotationForm — always visible below upload section */}
-        <QuotationForm
-          key={vm.formInitialValues ? 'loaded' : 'empty'}
-          initialValues={vm.formInitialValues}
-          onSubmit={vm.handleSubmit}
-          onCancel={onClose}
-          isLoading={vm.loading}
-          pdfFile={vm.formPdfFile}
-          embedded
-        />
+        <View className="flex-1 px-6 pt-4 pb-2 text-foreground">
+          <QuotationForm
+            key={vm.formInitialValues ? 'loaded' : 'empty'}
+            initialValues={vm.formInitialValues}
+            onSubmit={vm.handleSubmit}
+            onCancel={onClose}
+            isLoading={vm.loading}
+            pdfFile={vm.formPdfFile}
+          />
+        </View>
       </SafeAreaView>
     </Modal>
   );

@@ -41,7 +41,7 @@ export const SnapReceiptScreen = ({
 
     if (vm.view === "form") {
         return (
-            <View className="flex-1 bg-background pt-8">
+            <View className="flex-1 bg-background pt-8 px-4">
                 <ReceiptForm
                     onSubmit={vm.handleSave}
                     onCancel={onClose}
