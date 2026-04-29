@@ -5,7 +5,7 @@
  * Data comes from useCockpitData → CockpitData.focus3.
  */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { FocusItem } from '../../../domain/entities/CockpitData';
 import { Task } from '../../../domain/entities/Task';
 
@@ -22,38 +22,40 @@ export function FocusList({ focusItems, onItemPress }: FocusListProps) {
   if (focusItems.length === 0) return null;
 
   return (
-    <View style={styles.container} testID="focus-list">
-      <Text style={styles.sectionHeader}>🎯 Focus</Text>
-      <View style={styles.listCard}>
+    <View className="mb-2" testID="focus-list">
+      <Text className="text-[13px] font-bold text-slate-500 uppercase tracking-wider px-6 pb-2 pt-1">🎯 Focus</Text>
+      <View className="mx-6 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         {focusItems.map((item, index) => (
           <TouchableOpacity
             key={item.task.id}
             testID={`focus-item-${item.task.id}`}
             onPress={() => onItemPress(item.task)}
-            style={[styles.row, index < focusItems.length - 1 && styles.rowBorder]}
+            className={`flex-row items-center px-3.5 py-3 ${
+              index < focusItems.length - 1 ? 'border-b border-slate-200' : ''
+            }`}
             accessible
             accessibilityRole="button"
             accessibilityLabel={`Focus task ${RANK_LABELS[index]}: ${item.task.title}. ${item.urgencyLabel}. Tap to open details.`}
           >
             {/* Rank badge */}
-            <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>{RANK_LABELS[index] ?? `#${index + 1}`}</Text>
+            <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3 shrink-0">
+              <Text className="text-[11px] font-bold text-slate-600">{RANK_LABELS[index] ?? `#${index + 1}`}</Text>
             </View>
 
             {/* Row content */}
-            <View style={styles.rowContent}>
+            <View className="flex-1">
               {/* Top row: title + urgency label */}
-              <View style={styles.rowTop}>
-                <Text style={styles.taskTitle} numberOfLines={1}>
+              <View className="flex-row items-center justify-between gap-2">
+                <Text className="text-sm font-semibold text-slate-900 flex-1" numberOfLines={1}>
                   {item.task.title}
                 </Text>
                 {item.urgencyLabel ? (
-                  <Text style={styles.urgencyLabel}>{item.urgencyLabel}</Text>
+                  <Text className="text-xs text-slate-500 shrink-0">{item.urgencyLabel}</Text>
                 ) : null}
               </View>
 
               {/* Sub-row: score + next-in-line */}
-              <Text style={styles.subText}>
+              <Text className="text-[11px] text-slate-400 mt-0.5">
                 {`Score: ${item.score}${
                   item.nextInLine.length > 0
                     ? ` · ${item.nextInLine.length} tasks waiting`
@@ -67,82 +69,3 @@ export function FocusList({ focusItems, onItemPress }: FocusListProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 8,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: 24,
-    paddingBottom: 8,
-    paddingTop: 4,
-  },
-  listCard: {
-    marginHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e2e8f0',
-  },
-  rankBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    flexShrink: 0,
-  },
-  rankText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  rowContent: {
-    flex: 1,
-  },
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  taskTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
-    flex: 1,
-  },
-  urgencyLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    flexShrink: 0,
-  },
-  subText: {
-    fontSize: 11,
-    color: '#94a3b8',
-    marginTop: 2,
-  },
-});

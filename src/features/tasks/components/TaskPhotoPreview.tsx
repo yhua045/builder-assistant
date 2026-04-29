@@ -5,7 +5,6 @@ import {
   Image,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 
 interface Props {
@@ -33,7 +32,7 @@ export function TaskPhotoPreview({
       <View className="flex-1 items-center justify-center bg-black">
         <Image
           source={{ uri: photoUri }}
-          style={styles.image}
+          className="w-full h-full"
           resizeMode="contain"
           testID="preview-image"
         />
@@ -83,10 +82,3 @@ export function TaskPhotoPreview({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-});
