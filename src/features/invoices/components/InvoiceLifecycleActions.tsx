@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Invoice } from '../../../domain/entities/Invoice';
 
 interface InvoiceLifecycleActionsProps {
@@ -79,92 +79,54 @@ export const InvoiceLifecycleActions: React.FC<InvoiceLifecycleActionsProps> = (
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-row flex-wrap gap-2 p-4">
       {showIssue && (
         <TouchableOpacity
-          style={[styles.button, styles.primaryButton, loading && styles.disabledButton]}
+          className={`py-2.5 px-4 rounded-lg min-w-[100px] items-center justify-center bg-blue-500 ${
+            loading ? 'opacity-50' : ''
+          }`}
           onPress={handleIssue}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.primaryButtonText}>Issue</Text>
+            <Text className="text-white font-semibold text-sm">Issue</Text>
           )}
         </TouchableOpacity>
       )}
 
       {showMarkPaid && (
         <TouchableOpacity
-          style={[styles.button, styles.successButton, loading && styles.disabledButton]}
+          className={`py-2.5 px-4 rounded-lg min-w-[100px] items-center justify-center bg-green-500 ${
+            loading ? 'opacity-50' : ''
+          }`}
           onPress={handleMarkPaid}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.successButtonText}>Mark Paid</Text>
+            <Text className="text-white font-semibold text-sm">Mark Paid</Text>
           )}
         </TouchableOpacity>
       )}
 
       {showCancel && (
         <TouchableOpacity
-          style={[styles.button, styles.dangerButton, loading && styles.disabledButton]}
+          className={`py-2.5 px-4 rounded-lg min-w-[100px] items-center justify-center bg-red-500 ${
+            loading ? 'opacity-50' : ''
+          }`}
           onPress={handleCancel}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.dangerButtonText}>Cancel</Text>
+            <Text className="text-white font-semibold text-sm">Cancel</Text>
           )}
         </TouchableOpacity>
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    padding: 16,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#3b82f6', // blue-500
-  },
-  successButton: {
-    backgroundColor: '#22c55e', // green-500
-  },
-  dangerButton: {
-    backgroundColor: '#ef4444', // red-500
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  successButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  dangerButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-});

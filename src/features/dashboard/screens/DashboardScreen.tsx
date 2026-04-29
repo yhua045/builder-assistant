@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { ProjectOverviewCard } from '../components/ProjectOverviewCard';
@@ -29,7 +29,7 @@ export function DashboardScreen() {
       </View>
 
       {/* eslint-disable-next-line react-native/no-inline-styles */}
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerClassName="pb-32">
         {vm.isLoading && (
           <View className="px-6 mt-4">
             <Text className="text-muted-foreground">Loading projects...</Text>
@@ -84,13 +84,11 @@ export function DashboardScreen() {
         onRequestClose={vm.closeQuickActions}
       >
         <Pressable 
-          className="flex-1 justify-end"
-          style={styles.modalBackdrop}
+          className="flex-1 justify-end bg-black/50"
           onPress={vm.closeQuickActions}
         >
           <Pressable 
-            style={styles.modalContainer}
-            className="rounded-t-3xl p-6 dark:bg-[#1e1e1e]"
+            className="rounded-t-3xl p-6 bg-white dark:bg-[#1e1e1e]"
             onPress={(e) => e.stopPropagation()}
           >
             <View className="flex-row items-center justify-between mb-6">
@@ -170,8 +168,3 @@ export function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  modalBackdrop: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  modalContainer: { backgroundColor: '#ffffff' },
-});

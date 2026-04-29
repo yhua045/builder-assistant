@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Pressable, Text, StyleSheet } from 'react-native';
+import { ScrollView, Pressable, Text } from 'react-native';
 import type { PaymentsFilterOption } from '../hooks/useGlobalPaymentsScreen';
 
 export interface PaymentTypeFilterChipsProps {
@@ -16,19 +16,12 @@ const CHIPS: { option: PaymentsFilterOption; label: string }[] = [
   { option: 'all',        label: 'All' },
 ];
 
-const ACTIVE_BG_LIGHT  = '#2563eb'; // blue-600
-const ACTIVE_BG_DARK   = '#3b82f6'; // blue-500
-const BORDER_LIGHT     = '#d4d4d8'; // zinc-300
-const BORDER_DARK      = '#3f3f46'; // zinc-700
-const MUTED_TEXT_LIGHT = '#71717a'; // zinc-500
-const MUTED_TEXT_DARK  = '#a1a1aa'; // zinc-400
-
 export function PaymentTypeFilterChips({ value, onChange, isDark }: PaymentTypeFilterChipsProps) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
+      contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
     >
       {CHIPS.map((chip) => {
         const isActive = value === chip.option;
@@ -37,25 +30,24 @@ export function PaymentTypeFilterChips({ value, onChange, isDark }: PaymentTypeF
             key={chip.option}
             testID={`filter-chip-${chip.option}`}
             onPress={() => onChange(chip.option)}
-            style={[
-              styles.chip,
-              isActive ? styles.chipActive : styles.chipInactive,
-              isDark
-                ? isActive
-                  ? { backgroundColor: ACTIVE_BG_DARK, borderColor: ACTIVE_BG_DARK }
-                  : { borderColor: BORDER_DARK }
-                : null,
-            ]}
+            className={`px-4 py-2 rounded-full border items-center justify-center ${
+              isActive
+                ? isDark
+                  ? 'bg-blue-500 border-blue-500'
+                  : 'bg-blue-600 border-blue-600'
+                : isDark
+                ? 'bg-transparent border-zinc-700'
+                : 'bg-transparent border-zinc-300'
+            }`}
           >
             <Text
-              style={[
-                styles.label,
+              className={`text-[13px] font-semibold tracking-wide leading-snug ${
                 isActive
-                  ? styles.labelActive
+                  ? 'text-white'
                   : isDark
-                  ? { color: MUTED_TEXT_DARK }
-                  : styles.labelInactive,
-              ]}
+                  ? 'text-zinc-400'
+                  : 'text-zinc-500'
+              }`}
             >
               {chip.label}
             </Text>
@@ -65,39 +57,3 @@ export function PaymentTypeFilterChips({ value, onChange, isDark }: PaymentTypeF
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: ACTIVE_BG_LIGHT,
-    borderColor: ACTIVE_BG_LIGHT,
-  },
-  chipInactive: {
-    backgroundColor: 'transparent',
-    borderColor: BORDER_LIGHT,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-    lineHeight: 18,
-  },
-  labelActive: {
-    color: '#ffffff',
-  },
-  labelInactive: {
-    color: MUTED_TEXT_LIGHT,
-  },
-});

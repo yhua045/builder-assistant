@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StyleSheet,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search } from 'lucide-react-native';
@@ -90,8 +90,7 @@ export default function PaymentsScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-background"
-      style={isDark ? styles.darkBg : styles.lightBg}
+      className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
     >
       <View className="px-6 pt-4 pb-3 border-b border-border">
         <View className="flex-row items-center justify-between mb-4">
@@ -103,10 +102,9 @@ export default function PaymentsScreen() {
         <PaymentTypeFilterChips value={filter} onChange={setFilter} isDark={isDark} />
 
         <View
-          className="flex-row items-center bg-card border border-border rounded-xl px-3 mt-3"
-          style={styles.searchBar}
+          className="flex-row items-center bg-card border border-border rounded-xl px-3 mt-3 h-11"
         >
-          <Search color={iconMuted} size={16} style={{ marginRight: 8 }} />
+          <Search color={iconMuted} size={16} className="mr-2" />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -128,7 +126,7 @@ export default function PaymentsScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="px-5 pb-32 pt-4"
         refreshControl={
           <RefreshControl
             refreshing={loading}
@@ -141,13 +139,14 @@ export default function PaymentsScreen() {
         {showBanner && <AmountPayableBanner total={amountPayable} />}
 
         {loading && listEmpty ? (
-          <ActivityIndicator
-            size="large"
-            color={isDark ? '#fff' : '#000'}
-            style={styles.loader}
-          />
+          <View className="mt-12 h-12 justify-center items-center">
+            <ActivityIndicator
+              size="large"
+              color={isDark ? '#fff' : '#000'}
+            />
+          </View>
         ) : listEmpty ? (
-          <View style={styles.emptyState}>
+          <View className="items-center px-4 pt-12">
             <Text className="text-lg font-semibold text-foreground mb-1">{empty.title}</Text>
             <Text className="text-muted-foreground text-sm text-center">
               {empty.subtitle(search.length > 0)}
@@ -170,12 +169,3 @@ export default function PaymentsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  darkBg: { backgroundColor: '#0f172a' },
-  lightBg: { backgroundColor: '#fafbfc' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 128, paddingTop: 16 },
-  searchBar: { height: 44 },
-  loader: { marginTop: 48 },
-  emptyState: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 16 },
-});

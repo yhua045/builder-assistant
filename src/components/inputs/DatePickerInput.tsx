@@ -4,7 +4,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -83,9 +82,9 @@ const DatePickerInput: React.FC<Props> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="gap-2 w-full mb-4">
       {label ? (
-        <Text style={styles.label}>
+        <Text className="mb-1 text-zinc-900 text-sm font-semibold">
           {label}
           {required ? ' *' : ''}
         </Text>
@@ -95,14 +94,16 @@ const DatePickerInput: React.FC<Props> = ({
         accessibilityRole="button"
         onPress={handleOpen}
         testID="date-picker-input-button"
-        style={[styles.inputButton, error ? styles.inputButtonError : null]}
+        className={`border rounded-xl min-h-[48px] justify-center px-3.5 py-3 bg-white ${
+          error ? 'border-red-600' : 'border-zinc-300'
+        }`}
       >
-        <Text style={[styles.inputText, !value ? styles.placeholderText : null]}>
+        <Text className={`text-base ${!value ? 'text-zinc-400' : 'text-zinc-900'}`}>
           {displayValue}
         </Text>
       </Pressable>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="text-red-500 text-xs">{error}</Text> : null}
 
       {Platform.OS === 'ios' ? (
         <Modal
@@ -112,19 +113,19 @@ const DatePickerInput: React.FC<Props> = ({
           transparent
           visible={isOpen}
         >
-          <Pressable onPress={handleClose} style={styles.backdrop} />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHeader}>
-              <Pressable onPress={handleClear} style={styles.actionButton}>
-                <Text style={styles.clearText}>Clear</Text>
+          <Pressable onPress={handleClose} className="flex-1 bg-slate-900/40" />
+          <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] pb-8 px-4 pt-2">
+            <View className="flex-row items-center justify-between py-2">
+              <Pressable onPress={handleClear} className="rounded-lg px-3 py-2.5">
+                <Text className="text-red-600 text-sm font-semibold">Clear</Text>
               </Pressable>
-              <Text style={styles.sheetTitle}>{label || 'Select date'}</Text>
-              <View style={styles.trailingActions}>
-                <Pressable onPress={handleClose} style={styles.actionButton}>
-                  <Text style={styles.secondaryText}>Cancel</Text>
+              <Text className="text-zinc-900 text-[15px] font-semibold">{label || 'Select date'}</Text>
+              <View className="flex-row gap-2">
+                <Pressable onPress={handleClose} className="rounded-lg px-3 py-2.5">
+                  <Text className="text-zinc-700 text-sm font-semibold">Cancel</Text>
                 </Pressable>
-                <Pressable onPress={handleConfirm} style={styles.primaryActionButton}>
-                  <Text style={styles.primaryText}>Done</Text>
+                <Pressable onPress={handleConfirm} className="bg-zinc-900 rounded-lg px-3.5 py-2.5">
+                  <Text className="text-white text-sm font-bold">Done</Text>
                 </Pressable>
               </View>
             </View>
@@ -136,7 +137,7 @@ const DatePickerInput: React.FC<Props> = ({
               onChange={handleNativeChange}
               testID="date-picker-native"
               value={draftDate}
-              style={styles.spinner}
+              className="h-[216px] w-full"
             />
           </View>
         </Modal>
@@ -158,104 +159,3 @@ const DatePickerInput: React.FC<Props> = ({
 };
 
 export default DatePickerInput;
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  label: {
-    marginBottom: 4,
-    color: '#111827',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  inputButton: {
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    borderWidth: 1,
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  inputButtonError: {
-    borderColor: '#dc2626',
-  },
-  inputText: {
-    color: '#111827',
-    fontSize: 16,
-  },
-  placeholderText: {
-    color: '#9ca3af',
-  },
-  error: {
-    color: 'red',
-    fontSize: 12,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-  },
-  sheet: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 32,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  sheetHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  sheetTitle: {
-    color: '#111827',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  spinner: {
-    height: 216,
-    width: '100%',
-  },
-  actionsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  trailingActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  primaryActionButton: {
-    backgroundColor: '#111827',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  clearText: {
-    color: '#dc2626',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  secondaryText: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});

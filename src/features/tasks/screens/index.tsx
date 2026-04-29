@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus } from 'lucide-react-native';
 import { ThemeToggle } from '../../../components/ThemeToggle';
-import { cssInterop, useColorScheme } from 'nativewind';
+import { cssInterop } from 'nativewind';
 import { useNavigation } from '@react-navigation/native';
 import { useTasks } from '../hooks/useTasks';
 import { useProjects } from '../../projects';
@@ -53,15 +53,10 @@ export default function TasksScreen() {
     await Promise.all([refreshTasks(), refreshCockpit(), refreshBlockerBar()]);
   }, [refreshTasks, refreshCockpit, refreshBlockerBar]);
 
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   const filteredTasks = useMemo(() => {
     if (selectedFilters.has('all') || selectedFilters.size === 0) return tasks;
     return tasks.filter((t) => selectedFilters.has(t.status as FilterValue));
   }, [tasks, selectedFilters]);
-
-  const containerBg = isDark ? styles.darkBg : styles.lightBg;
 
   // Derive timeline items from tasks
   const timelineItems = useMemo(() => {
@@ -85,8 +80,7 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-background"
-      style={containerBg}
+      className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
       edges={['top']}
     >
       {/* Header */}
@@ -146,7 +140,7 @@ export default function TasksScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={filterContentStyle}
+          contentContainerClassName="gap-2"
         >
           {FILTER_PILLS.map(({ label, value }) => {
             const selected = selectedFilters.has(value);
@@ -194,7 +188,7 @@ export default function TasksScreen() {
       {/* Task List */}
       <ScrollView
         className="flex-1"
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="pb-32"
         refreshControl={
           <RefreshControl
             testID="tasks-refresh-control"
@@ -213,11 +207,3 @@ export default function TasksScreen() {
     </SafeAreaView>
   );
 }
-
-const filterContentStyle = { gap: 8 } as const;
-
-const styles = StyleSheet.create({
-  darkBg: { backgroundColor: '#0f172a' },
-  lightBg: { backgroundColor: '#fafbfc' },
-  scrollContent: { paddingBottom: 128 },
-});

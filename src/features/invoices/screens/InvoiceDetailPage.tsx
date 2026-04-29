@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
@@ -110,13 +110,10 @@ export default function InvoiceDetailPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const containerBg = isDark ? styles.darkBg : styles.lightBg;
-
   if (loading) {
     return (
       <SafeAreaView
-        className="flex-1 bg-background"
-        style={containerBg}
+        className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
       >
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator testID="invoice-loading" size="large" />
@@ -128,8 +125,7 @@ export default function InvoiceDetailPage() {
   if (!invoice) {
     return (
       <SafeAreaView
-        className="flex-1 bg-background"
-        style={containerBg}
+        className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
       >
         <View className="flex-1 items-center justify-center px-6">
           <Text testID="invoice-not-found" className="text-lg text-muted-foreground">
@@ -143,8 +139,7 @@ export default function InvoiceDetailPage() {
   if (isEditing) {
     return (
       <SafeAreaView
-        className="flex-1 bg-background"
-        style={containerBg}
+        className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
       >
         <InvoiceForm
           mode="edit"
@@ -161,8 +156,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-background"
-      style={isDark ? styles.darkBg : styles.lightBg}
+      className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
     >
       {/* Header */}
       <View className="px-6 py-4 border-b border-border flex-row items-center justify-between">
@@ -189,7 +183,7 @@ export default function InvoiceDetailPage() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerClassName="pb-32">
         <View className="px-6 py-4 gap-4">
           {/* Amount Section */}
           <View className="bg-card rounded-xl p-4 border border-border">
@@ -329,9 +323,3 @@ export default function InvoiceDetailPage() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  darkBg: { backgroundColor: '#0f172a' },
-  lightBg: { backgroundColor: '#fafbfc' },
-  scrollContent: { paddingBottom: 128 },
-});

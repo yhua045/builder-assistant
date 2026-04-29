@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Upload, Lightbulb } from 'lucide-react-native';
 import { ManualProjectEntryButton } from '../../../features/projects';
 
@@ -8,16 +8,6 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ onManualEntry }: HeroSectionProps) {
-  const styles = StyleSheet.create({
-    cardShadow: {
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-    },
-  });
-
   return (
     <View className="px-6 mb-8">
       <View className="bg-gradient-to-br from-primary/10 to-chart-1/10 border-2 border-primary/20 rounded-2xl p-6">
@@ -27,8 +17,7 @@ export default function HeroSection({ onManualEntry }: HeroSectionProps) {
         </View>
 
         <Pressable
-          className="bg-primary rounded-xl p-5 mb-3 active:opacity-80"
-            style={styles.cardShadow}
+          className="bg-primary rounded-xl p-5 mb-3 active:opacity-80 shadow-md shadow-black/10 elevation-4"
         >
           <View className="flex-row items-center mb-3">
             <View className="bg-white/20 p-2 rounded-lg mr-3">

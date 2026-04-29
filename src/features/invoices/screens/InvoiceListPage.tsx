@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StyleSheet as RNStyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { FileText, DollarSign, Eye, Edit, Trash2 } from 'lucide-react-native';
@@ -105,8 +105,7 @@ export default function InvoiceListPage() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-background"
-      style={isDark ? styles.darkBg : styles.lightBg}
+      className="flex-1 bg-[#fafbfc] dark:bg-[#0f172a]"
     >
       {/* Header */}
       <View className="px-6 py-4 border-b border-border">
@@ -142,7 +141,7 @@ export default function InvoiceListPage() {
 
       {/* Filter Tabs */}
       <View className="px-6 py-4 border-b border-border">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-6">
           {(['all', 'draft', 'issued', 'paid', 'overdue', 'cancelled'] as const).map((filter) => (
             <TouchableOpacity
               key={filter}
@@ -194,7 +193,7 @@ export default function InvoiceListPage() {
       {/* Invoice List */}
       {!loading && !error && filteredInvoices.length > 0 && (
         <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerClassName="pb-32"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -286,10 +285,3 @@ export default function InvoiceListPage() {
     </SafeAreaView>
   );
 }
-
-const styles = RNStyleSheet.create({
-  darkBg: { backgroundColor: '#0f172a' },
-  lightBg: { backgroundColor: '#fafbfc' },
-  scrollContent: { paddingBottom: 128 },
-  tabsContent: { gap: 8 },
-});

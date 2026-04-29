@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ChevronRight } from 'lucide-react-native';
 import DatePickerInput from '../../../components/inputs/DatePickerInput';
@@ -162,8 +162,8 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
             </Pressable>
           </View>
           {/* Step progress bar */}
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, formStep === 'tasks' && styles.progressFillFull]} />
+          <View className="h-1 bg-secondary rounded-full mt-4 flex-row overflow-hidden">
+            <View className={`h-full bg-primary flex-1 transition-all duration-300 ${formStep === 'tasks' ? '' : 'w-1/2 flex-none'}`} />
           </View>
         </View>
 
@@ -312,18 +312,18 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
       </View>
 
       {/* Actions */}
-      <View className="flex-row justify-end mt-6 mb-4">
+      <View className="flex-row justify-end items-center mt-6 mb-4">
         <Button title="Cancel" onPress={onCancel} color="#8E8E93" />
-        <View style={styles.spacer} />
+        <View className="w-4" />
         {isSaving ? (
-          <ActivityIndicator size="small" style={styles.savingIndicator} />
+          <ActivityIndicator size="small" className="ml-4 mr-2" />
         ) : (
           <Pressable
             onPress={handleSave}
             disabled={!name.trim() || !address.trim()}
-            style={[styles.saveButton, (!name.trim() || !address.trim()) && styles.saveButtonDisabled]}
+            className={`flex-row items-center bg-primary px-4 py-2.5 rounded-lg ${(!name.trim() || !address.trim()) ? 'opacity-50' : ''}`}
           >
-            <Text style={styles.saveButtonText}>Save Project</Text>
+            <Text className="color-primary-foreground font-semibold mr-1">Save Project</Text>
             <ChevronRight size={16} color="#fff" />
           </Pressable>
         )}
@@ -346,44 +346,4 @@ const ManualProjectEntryForm: React.FC<Props> = ({ visible = true, onSave, onCan
 
 export default ManualProjectEntryForm;
 
-const styles = StyleSheet.create({
-  spacer: {
-    width: 12,
-  },
-  progressBar: {
-    height: 3,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    marginTop: 10,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    width: '50%',
-    backgroundColor: '#2563EB',
-    borderRadius: 2,
-  },
-  progressFillFull: {
-    width: '100%',
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    gap: 4,
-  },
-  saveButtonDisabled: {
-    opacity: 0.4,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  savingIndicator: {
-    marginHorizontal: 12,
-  },
-});
+

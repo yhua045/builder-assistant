@@ -119,87 +119,91 @@ export function QuickAddContractorModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
+        className="flex-1"
       >
-        <View style={styles.container}>
+        <View className="flex-1 bg-white p-4">
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Add Contractor</Text>
-            <TouchableOpacity testID="quick-add-cancel-btn" onPress={onCancel} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>Cancel</Text>
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-xl font-bold text-zinc-900">Add Contractor</Text>
+            <TouchableOpacity testID="quick-add-cancel-btn" onPress={onCancel} className="p-2">
+              <Text className="text-base text-blue-600">Cancel</Text>
             </TouchableOpacity>
           </View>
 
           {/* Name field */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Name *</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-zinc-700 mb-2">Name *</Text>
             <TextInput
               testID="quick-add-name-input"
               value={name}
               onChangeText={setName}
               placeholder="Contractor name"
-              style={[styles.input, nameError ? styles.inputError : null]}
+              className={`h-11 border rounded-lg px-3 text-base ${
+                nameError ? 'border-red-500' : 'border-zinc-300'
+              }`}
               autoFocus
             />
-            {nameError ? <Text testID="quick-add-name-error" style={styles.error}>{nameError}</Text> : null}
+            {nameError ? <Text testID="quick-add-name-error" className="text-sm text-red-500 mt-1">{nameError}</Text> : null}
           </View>
 
           {/* Trade field */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Trade</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-zinc-700 mb-2">Trade</Text>
             <TextInput
               testID="quick-add-trade-input"
               value={trade}
               onChangeText={setTrade}
               placeholder="e.g. Electrical, Plumbing"
-              style={styles.input}
+              className="h-11 border border-zinc-300 rounded-lg px-3 text-base"
             />
           </View>
 
           {/* License Number field */}
-          <View style={styles.field}>
-            <Text style={styles.label}>License Number</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-zinc-700 mb-2">License Number</Text>
             <TextInput
               testID="quick-add-license-input"
               value={licenseNumber}
               onChangeText={setLicenseNumber}
               placeholder="e.g. VBA-12345"
-              style={[styles.input, licenseError ? styles.inputError : null]}
+              className={`h-11 border rounded-lg px-3 text-base ${
+                licenseError ? 'border-red-500' : 'border-zinc-300'
+              }`}
               autoCapitalize="characters"
             />
-            {licenseError ? <Text testID="quick-add-license-error" style={styles.error}>{licenseError}</Text> : null}
+            {licenseError ? <Text testID="quick-add-license-error" className="text-sm text-red-500 mt-1">{licenseError}</Text> : null}
           </View>
 
           {/* Phone field */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Phone</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-zinc-700 mb-2">Phone</Text>
             <TextInput
               testID="quick-add-phone-input"
               value={phone}
               onChangeText={setPhone}
               placeholder="0400 000 000"
               keyboardType="phone-pad"
-              style={styles.input}
+              className="h-11 border border-zinc-300 rounded-lg px-3 text-base"
             />
           </View>
 
           {/* Lookup by license button — feature flagged */}
           {FeatureFlags.externalLookup && onLookupByLicense && (
-            <View style={styles.field}>
+            <View className="mb-4">
               <TouchableOpacity
                 testID="quick-add-lookup-btn"
                 onPress={handleLookup}
                 disabled={lookupLoading}
-                style={styles.lookupBtn}
+                className="bg-blue-600 rounded-lg h-11 justify-center items-center"
               >
                 {lookupLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.lookupBtnText}>Lookup by license</Text>
+                  <Text className="text-white font-semibold text-base">Lookup by license</Text>
                 )}
               </TouchableOpacity>
               {lookupError ? (
-                <Text testID="quick-add-lookup-error" style={styles.error}>{lookupError}</Text>
+                <Text testID="quick-add-lookup-error" className="text-sm text-red-500 mt-1">{lookupError}</Text>
               ) : null}
             </View>
           )}
@@ -209,12 +213,12 @@ export function QuickAddContractorModal({
             testID="quick-add-save-btn"
             onPress={handleSave}
             disabled={saving}
-            style={styles.saveBtn}
+            className="bg-blue-600 rounded-lg py-[14px] items-center mt-2"
           >
             {saving ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.saveBtnText}>Save</Text>
+              <Text className="text-white text-base font-semibold">Save</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -222,21 +226,3 @@ export function QuickAddContractorModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  title: { fontSize: 18, fontWeight: '600' },
-  cancelBtn: { padding: 4 },
-  cancelText: { color: '#007AFF', fontSize: 16 },
-  field: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 4, color: '#374151' },
-  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  inputError: { borderColor: '#EF4444' },
-  error: { color: '#EF4444', fontSize: 12, marginTop: 4 },
-  lookupBtn: { backgroundColor: '#6B7280', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center' },
-  lookupBtnText: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  saveBtn: { backgroundColor: '#3B82F6', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-});
