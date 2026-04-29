@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
 import useContacts from '../../hooks/useContacts';
 
 interface Props {
@@ -54,19 +54,19 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error, onQui
   }, [value]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View className="relative z-10 w-full mb-4">
+      <Text className="mb-1.5 font-medium text-sm text-zinc-700">{label}</Text>
       <TextInput
         value={query}
         onChangeText={(text) => setQuery(text)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         placeholder="Search contacts"
-        className="border border-border rounded p-2 bg-card text-foreground"
+        className="h-11 border border-zinc-300 rounded-lg px-3 text-base bg-white text-zinc-900"
       />
       {isFocused && (results.length > 0 || (query.length > 0 && onQuickAdd)) && (
-        <View style={styles.dropdown}>
-          <ScrollView style={styles.list} nestedScrollEnabled>
+        <View className="absolute top-[100%] left-0 right-0 bg-white border border-[#ccc] rounded-lg max-h-[200px] z-[1000] shadow-md elevation-5 mt-1">
+          <ScrollView className="flex-grow-0" nestedScrollEnabled>
             {results.map((item) => (
               <Pressable 
                 key={item.id}
@@ -76,9 +76,9 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error, onQui
                   setResults([]); 
                   setIsFocused(false); 
                 }}
-                className="p-3 border-b border-border"
+                className="p-3 border-b border-zinc-100 last:border-b-0"
               >
-                <Text className="text-foreground">{item.name} — {item.title}</Text>
+                <Text className="text-zinc-900 text-sm font-medium">{item.name} — <Text className="text-zinc-500 font-normal">{item.title}</Text></Text>
               </Pressable>
             ))}
             {query.length > 0 && onQuickAdd && (
@@ -88,54 +88,17 @@ const ContactSelector: React.FC<Props> = ({ label, value, onChange, error, onQui
                   setIsFocused(false);
                   onQuickAdd(query);
                 }}
-                className="p-3 border-t border-border"
+                className="p-3 border-t border-zinc-200"
               >
-                <Text style={styles.quickAddText}>+ Add "{query}"</Text>
+                <Text className="text-blue-500 font-medium text-sm">+ Add "{query}"</Text>
               </Pressable>
             )}
           </ScrollView>
         </View>
       )}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="text-red-500 text-sm mt-1">{error}</Text> : null}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-    zIndex: 1,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    maxHeight: 200,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  list: {
-    flexGrow: 0,
-  },
-  label: {
-    marginBottom: 6,
-  },
-  error: {
-    color: 'red',
-  },
-  quickAddText: {
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-});
 
 export default ContactSelector;
