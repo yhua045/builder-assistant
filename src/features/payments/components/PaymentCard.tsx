@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Payment } from '../../../domain/entities/Payment';
 import { getDueStatus } from '../../../utils/getDueStatus';
 
@@ -33,17 +33,17 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
 
   const footerBg =
     dueStatus?.style === 'overdue'
-      ? styles.footerOverdue
+      ? 'bg-red-50'
       : dueStatus?.style === 'due-soon'
-      ? styles.footerDueSoon
-      : styles.footerOnTime;
+      ? 'bg-amber-50'
+      : 'bg-green-50';
 
   const footerText =
     dueStatus?.style === 'overdue'
-      ? styles.footerTextOverdue
+      ? 'text-red-600'
       : dueStatus?.style === 'due-soon'
-      ? styles.footerTextDueSoon
-      : styles.footerTextOnTime;
+      ? 'text-amber-600'
+      : 'text-green-600';
 
   return (
     <TouchableOpacity
@@ -77,8 +77,8 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
 
       {/* Footer — settled, dead-invoice banner, or due status */}
       {payment.status === 'settled' ? (
-        <View style={[styles.footer, styles.footerOnTime]} className="px-4 py-2 flex-row items-center">
-          <Text style={styles.footerTextOnTime} className="text-xs font-semibold">
+        <View className="px-4 py-2 min-h-[36px] bg-green-50 flex-row items-center">
+          <Text className="text-xs font-semibold text-green-600">
             {payment.paidDate
               ? `Paid on ${new Date(payment.paidDate).toLocaleDateString('en-AU', {
                   day: 'numeric',
@@ -89,16 +89,16 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
           </Text>
         </View>
       ) : isDeadInvoice ? (
-        <View style={styles.footerDeadInvoice} className="px-4 py-2 flex-row items-center">
-          <Text style={styles.footerTextDeadInvoice} className="text-xs font-semibold">
+        <View className="px-4 py-2 min-h-[36px] bg-red-50 flex-row items-center">
+          <Text className="text-xs font-semibold text-gray-500">
             {payment.invoiceStatus === 'cancelled'
               ? 'Invoice cancelled'
               : 'Invoice draft — not yet issued'}
           </Text>
         </View>
       ) : dueStatus ? (
-        <View style={[styles.footer, footerBg]} className="px-4 py-2 flex-row items-center justify-between">
-          <Text style={footerText} className="text-xs font-semibold">
+        <View className={`px-4 py-2 min-h-[36px] flex-row items-center justify-between ${footerBg}`}>
+          <Text className={`text-xs font-semibold ${footerText}`}>
             {dueStatus.text}
           </Text>
           {payment.status === 'pending' && onPayNow ? (
@@ -108,7 +108,7 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
               className="bg-white/20 rounded px-3 py-1"
               activeOpacity={0.8}
             >
-              <Text style={footerText} className="text-xs font-bold">
+              <Text className={`text-xs font-bold ${footerText}`}>
                 Pay Now
               </Text>
             </TouchableOpacity>
@@ -118,15 +118,3 @@ export default function PaymentCard({ payment, onPress, onPayNow }: PaymentCardP
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: { minHeight: 36 },
-  footerOverdue: { backgroundColor: '#fef2f2' },
-  footerDueSoon: { backgroundColor: '#fffbeb' },
-  footerOnTime: { backgroundColor: '#f0fdf4' },
-  footerDeadInvoice: { backgroundColor: '#fef2f2', minHeight: 36 },
-  footerTextOverdue: { color: '#dc2626' },
-  footerTextDueSoon: { color: '#d97706' },
-  footerTextOnTime: { color: '#16a34a' },
-  footerTextDeadInvoice: { color: '#6b7280' },
-});
