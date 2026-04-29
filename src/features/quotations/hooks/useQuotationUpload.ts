@@ -18,6 +18,8 @@ import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAda
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../../../infrastructure/files/MobileFilePickerAdapter';
 import { MobileFileSystemAdapter } from '../../../infrastructure/files/MobileFileSystemAdapter';
+import { ICameraAdapter } from '../../../infrastructure/camera/ICameraAdapter';
+import { MobileCameraAdapter } from '../../../infrastructure/camera/MobileCameraAdapter';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 import { ProcessQuotationUploadUseCase } from '../application/ProcessQuotationUploadUseCase';
 import { normalizedQuotationToFormValues } from './normalizedQuotationToFormValues';
@@ -32,6 +34,8 @@ export interface QuotationUploadOptions {
   ocrAdapter?: IOcrAdapter;
   pdfConverter?: IPdfConverter;
   parsingStrategy?: IQuotationParsingStrategy;
+  /** Camera adapter — for camera capture support */
+  cameraAdapter?: ICameraAdapter;
   /** File adapter overrides — for unit testing only */
   filePickerAdapter?: IFilePickerAdapter;
   fileSystemAdapter?: IFileSystemAdapter;
@@ -48,6 +52,7 @@ export interface QuotationUploadViewModel {
   // Flags from useQuotations
   loading: boolean;
   // Handlers
+  handleSnapPhoto: () => Promise<void>;
   handleUploadPdf: () => Promise<void>;
   handleSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
@@ -59,6 +64,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     ocrAdapter,
     pdfConverter,
     parsingStrategy,
+    cameraAdapter,
     filePickerAdapter,
     fileSystemAdapter,
   } = options;
@@ -79,6 +85,10 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
   const fileSystem = useMemo(
     () => fileSystemAdapter ?? new MobileFileSystemAdapter(),
     [fileSystemAdapter],
+  );
+  const camera = useMemo(
+    () => cameraAdapter ?? new MobileCameraAdapter(),
+    [cameraAdapter],
   );
 
   const buildUseCase = (): ProcessQuotationUploadUseCase => {
@@ -148,6 +158,24 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     }
   };
 
+  const handleSnapPhoto = async () => {
+    try {
+      const captured = await camera.capturePhoto({ quality: 0.85 });
+      if (captured.cancelled) return;
+
+      await runProcessingPipeline(
+        captured.uri,
+        'quotation_photo.jpg',
+        'image/jpeg',
+        captured.fileSize,
+      );
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Camera error occurred';
+      setProcessingError(errorMessage);
+      setProcessingStep('error');
+    }
+  };
+
   const handleUploadPdf = async () => {
     try {
       setProcessingStep('copying');
@@ -194,6 +222,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     formInitialValues,
     formPdfFile,
     loading,
+    handleSnapPhoto,
     handleUploadPdf,
     handleSubmit,
   };

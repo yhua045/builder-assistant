@@ -5,6 +5,7 @@ import {
   InvoiceCandidates,
   NormalizedInvoice,
 } from '../../application/IInvoiceNormalizer';
+import { IInvoiceParsingStrategy } from '../../application/IInvoiceParsingStrategy';
 import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
 
 const makeOcrResult = (text = 'Acme Corp\nInvoice #INV-001\nTotal: $500.00'): OcrResult => ({
@@ -516,6 +517,110 @@ describe('ProcessInvoiceUploadUseCase', () => {
           fileSize: 10000,
         }),
       ).rejects.toThrow('Validation failed:');
+    });
+  });
+
+  // ─── Image path with IInvoiceParsingStrategy (AD2) ────────────────────────
+
+  describe('image path with IInvoiceParsingStrategy', () => {
+    function makeMockParsingStrategy(
+      normalized?: NormalizedInvoice,
+      error?: Error,
+    ): jest.Mocked<IInvoiceParsingStrategy> {
+      return {
+        strategyType: 'llm',
+        parse: error
+          ? jest.fn().mockRejectedValue(error)
+          : jest.fn().mockResolvedValue(normalized ?? makeNormalized()),
+      };
+    }
+
+    it('calls parsingStrategy.parse() instead of normalizer.extractCandidates() when strategy provided', async () => {
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const strategy = makeMockParsingStrategy();
+      const useCase = new ProcessInvoiceUploadUseCase(
+        ocrAdapter,
+        normalizer,
+        undefined,
+        undefined,
+        strategy,
+      );
+
+      await useCase.execute(baseInput);
+
+      expect(strategy.parse).toHaveBeenCalledWith(makeOcrResult());
+      expect(normalizer.extractCandidates).not.toHaveBeenCalled();
+      expect(normalizer.normalize).not.toHaveBeenCalled();
+    });
+
+    it('returns the NormalizedInvoice from parsingStrategy.parse()', async () => {
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer();
+      const expected = makeNormalized();
+      const strategy = makeMockParsingStrategy(expected);
+      const useCase = new ProcessInvoiceUploadUseCase(
+        ocrAdapter,
+        normalizer,
+        undefined,
+        undefined,
+        strategy,
+      );
+
+      const result = await useCase.execute(baseInput);
+
+      expect(result.normalized.vendor).toBe('Acme Corp');
+      expect(result.normalized.total).toBe(500);
+    });
+
+    it('falls back to normalizer.extractCandidates() when no strategy provided (existing behaviour)', async () => {
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer(makeNormalized());
+      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
+
+      await useCase.execute(baseInput);
+
+      expect(normalizer.extractCandidates).toHaveBeenCalled();
+      expect(normalizer.normalize).toHaveBeenCalled();
+    });
+
+    it('propagates parsingStrategy.parse() error as Invoice processing failed', async () => {
+      const ocrAdapter = makeMockOcr(makeOcrResult());
+      const normalizer = makeMockNormalizer();
+      const strategy = makeMockParsingStrategy(undefined, new Error('Groq API timeout'));
+      const useCase = new ProcessInvoiceUploadUseCase(
+        ocrAdapter,
+        normalizer,
+        undefined,
+        undefined,
+        strategy,
+      );
+
+      await expect(useCase.execute(baseInput)).rejects.toThrow('Invoice processing failed');
+      await expect(useCase.execute(baseInput)).rejects.toThrow('Groq API timeout');
+    });
+
+    it('does NOT call parsingStrategy.parse() for PDF MIME type (regression)', async () => {
+      const ocrAdapter = makeMockOcr();
+      const normalizer = makeMockNormalizer();
+      const strategy = makeMockParsingStrategy();
+      const useCase = new ProcessInvoiceUploadUseCase(
+        ocrAdapter,
+        normalizer,
+        undefined,
+        undefined,
+        strategy,
+      );
+
+      // PDF with no converter → returns empty (graceful degradation)
+      await useCase.execute({
+        fileUri: 'file:///app/documents/invoice.pdf',
+        filename: 'invoice.pdf',
+        mimeType: 'application/pdf',
+        fileSize: 102400,
+      });
+
+      expect(strategy.parse).not.toHaveBeenCalled();
     });
   });
 });

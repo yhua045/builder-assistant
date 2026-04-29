@@ -4,6 +4,7 @@ import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { IOcrDocumentService, OcrDocumentService } from '../../../application/services/IOcrDocumentService';
 import { validatePdfFile } from '../../../utils/fileValidation';
+import { IInvoiceParsingStrategy } from './IInvoiceParsingStrategy';
 
 export interface ProcessInvoiceUploadInput {
   /** Original URI of the selected file — copying is handled internally by this use case. */
@@ -51,6 +52,7 @@ export class ProcessInvoiceUploadUseCase {
     private readonly normalizer?: IInvoiceNormalizer,
     private readonly pdfConverter?: IPdfConverter,
     private readonly fileSystemAdapter?: IFileSystemAdapter,
+    private readonly parsingStrategy?: IInvoiceParsingStrategy,
   ) {
     if (ocrAdapter) {
       this.ocrDocumentService = new OcrDocumentService(ocrAdapter);
@@ -122,6 +124,12 @@ export class ProcessInvoiceUploadUseCase {
         tokenCount: ocrResult.tokens.length,
         ocrResult,
       });
+
+      // Prefer LLM strategy (new); fall back to deterministic normalizer (legacy)
+      if (this.parsingStrategy) {
+        const normalized = await this.parsingStrategy.parse(ocrResult);
+        return { normalized, documentRef, rawOcrText };
+      }
 
       const candidates = this.normalizer.extractCandidates(rawOcrText);
       console.log('[InvoiceOCR] Candidate extraction (single file)', {

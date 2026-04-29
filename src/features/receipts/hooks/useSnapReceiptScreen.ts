@@ -113,7 +113,22 @@ export function useSnapReceiptScreen(
         return;
       }
       setView('processing');
-      const normalizedResult = await processReceipt(result.uri);
+
+      let normalizedResult: NormalizedReceipt | null = null;
+
+      if (receiptParsingStrategy) {
+        // AD3: Route through ProcessReceiptUploadUseCase → LLM path
+        normalizedResult = await processPdfReceipt({
+          fileUri: result.uri,
+          filename: 'receipt.jpg',
+          mimeType: 'image/jpeg',
+          fileSize: result.fileSize,
+        });
+      } else {
+        // Existing deterministic path
+        normalizedResult = await processReceipt(result.uri);
+      }
+
       if (normalizedResult) {
         setNormalizedData(normalizedResult);
         setFormInitialValues(normalizedReceiptToFormValues(normalizedResult));
