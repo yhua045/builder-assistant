@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
 } from 'react-native';
 import type { CriticalPathSuggestion } from '../../../../data/critical-path/schema';
 
@@ -23,7 +22,7 @@ export function CriticalPathTaskRow({
   return (
     <TouchableOpacity
       testID={`task-row-${suggestion.id}`}
-      style={[styles.row, disabled && styles.rowDisabled]}
+      className={`flex-row items-center py-3 px-4 border-b border-gray-200 ${disabled ? 'opacity-40' : ''}`}
       onPress={() => onPress(suggestion.id)}
       disabled={disabled}
       accessibilityRole="checkbox"
@@ -31,80 +30,23 @@ export function CriticalPathTaskRow({
     >
       <View
         testID={`task-checkbox-${suggestion.id}`}
-        style={[styles.checkbox, isSelected && styles.checkboxSelected]}
+        className={`w-[22px] h-[22px] rounded border-2 mr-3 items-center justify-center ${
+          isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-400'
+        }`}
       >
-        {isSelected && <View style={styles.checkMark} />}
+        {isSelected && <View className="w-3 h-3 bg-white rounded-sm" />}
       </View>
-      <View style={styles.taskInfo}>
-        <Text style={styles.taskTitle}>{suggestion.title}</Text>
+      <View className="flex-1">
+        <Text className="text-[15px] font-medium color-gray-900">{suggestion.title}</Text>
         {suggestion.notes ? (
-          <Text style={styles.taskNotes}>{suggestion.notes}</Text>
+          <Text className="text-xs color-gray-500 mt-0.5">{suggestion.notes}</Text>
         ) : null}
       </View>
       {suggestion.critical_flag && (
-        <View style={styles.criticalBadge}>
-          <Text style={styles.criticalBadgeText}>Critical</Text>
+        <View className="bg-red-100 rounded px-1.5 py-0.5 ml-2">
+          <Text className="text-[11px] color-red-600 font-semibold">Critical</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  rowDisabled: {
-    opacity: 0.4,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#9CA3AF',
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#2563EB',
-  },
-  checkMark: {
-    width: 12,
-    height: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 2,
-  },
-  taskInfo: {
-    flex: 1,
-  },
-  taskTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  taskNotes: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  criticalBadge: {
-    backgroundColor: '#FEE2E2',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 8,
-  },
-  criticalBadgeText: {
-    fontSize: 11,
-    color: '#DC2626',
-    fontWeight: '600',
-  },
-});
