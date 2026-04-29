@@ -371,4 +371,96 @@ describe('useSnapReceiptScreen', () => {
       }).not.toThrow();
     });
   });
+
+  // AC: handleSnapPhoto — LLM routing when receiptParsingStrategy is provided (AD3)
+  describe('handleSnapPhoto — LLM routing with receiptParsingStrategy', () => {
+    it('calls processPdfReceipt() instead of processReceipt() when receiptParsingStrategy is provided', async () => {
+      const mockProcessPdfReceipt = jest.fn().mockResolvedValue(NORMALIZED_RECEIPT);
+      const mockProcessReceipt = jest.fn();
+      mockUseSnapReceipt.mockReturnValue({
+        ...DEFAULT_SNAP_RECEIPT,
+        processPdfReceipt: mockProcessPdfReceipt,
+        processReceipt: mockProcessReceipt,
+      });
+
+      const camera = makeCameraAdapter();
+      const strategy = { strategyType: 'llm' as const, parse: jest.fn() };
+
+      const { result } = renderHook(() =>
+        useSnapReceiptScreen({
+          onClose: jest.fn(),
+          enableOcr: true,
+          cameraAdapter: camera,
+          receiptParsingStrategy: strategy,
+        }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(mockProcessPdfReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileUri: 'file:///mock/photo.jpg',
+          mimeType: 'image/jpeg',
+        }),
+      );
+      expect(mockProcessReceipt).not.toHaveBeenCalled();
+    });
+
+    it('sets view="form" and populates normalizedData after LLM-routed camera capture', async () => {
+      const mockProcessPdfReceipt = jest.fn().mockResolvedValue(NORMALIZED_RECEIPT);
+      mockUseSnapReceipt.mockReturnValue({
+        ...DEFAULT_SNAP_RECEIPT,
+        processPdfReceipt: mockProcessPdfReceipt,
+      });
+
+      const camera = makeCameraAdapter();
+      const strategy = { strategyType: 'llm' as const, parse: jest.fn() };
+
+      const { result } = renderHook(() =>
+        useSnapReceiptScreen({
+          onClose: jest.fn(),
+          enableOcr: true,
+          cameraAdapter: camera,
+          receiptParsingStrategy: strategy,
+        }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(result.current.view).toBe('form');
+      expect(result.current.normalizedData).toEqual(NORMALIZED_RECEIPT);
+    });
+
+    it('calls processReceipt() (deterministic path) when no receiptParsingStrategy is provided', async () => {
+      const mockProcessReceipt = jest.fn().mockResolvedValue(NORMALIZED_RECEIPT);
+      const mockProcessPdfReceipt = jest.fn();
+      mockUseSnapReceipt.mockReturnValue({
+        ...DEFAULT_SNAP_RECEIPT,
+        processReceipt: mockProcessReceipt,
+        processPdfReceipt: mockProcessPdfReceipt,
+      });
+
+      const camera = makeCameraAdapter();
+
+      const { result } = renderHook(() =>
+        useSnapReceiptScreen({
+          onClose: jest.fn(),
+          enableOcr: true,
+          cameraAdapter: camera,
+          // No receiptParsingStrategy
+        }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(mockProcessReceipt).toHaveBeenCalledWith('file:///mock/photo.jpg');
+      expect(mockProcessPdfReceipt).not.toHaveBeenCalled();
+    });
+  });
 });

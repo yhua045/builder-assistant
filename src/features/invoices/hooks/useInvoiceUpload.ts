@@ -21,10 +21,20 @@ import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAda
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../../../infrastructure/files/MobileFilePickerAdapter';
 import { MobileFileSystemAdapter } from '../../../infrastructure/files/MobileFileSystemAdapter';
+import { ICameraAdapter } from '../../../infrastructure/camera/ICameraAdapter';
+import { MobileCameraAdapter } from '../../../infrastructure/camera/MobileCameraAdapter';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 import { ProcessInvoiceUploadUseCase } from '../application/ProcessInvoiceUploadUseCase';
+import { IInvoiceParsingStrategy } from '../application/IInvoiceParsingStrategy';
+import { IInvoiceDocumentProcessor } from '../application/IInvoiceDocumentProcessor';
+import { TextBasedInvoiceProcessor } from '../infrastructure/processors/TextBasedInvoiceProcessor';
+import { VisionBasedInvoiceProcessor } from '../infrastructure/processors/VisionBasedInvoiceProcessor';
 import { normalizedInvoiceToFormValues } from '../utils/normalizedInvoiceToFormValues';
 import { Invoice } from '../../../domain/entities/Invoice';
+import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { LlmVisionInvoiceParser } from '../infrastructure/LlmVisionInvoiceParser';
+import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { GROQ_API_KEY } from '@env';
 
 export type InvoiceUploadView = 'upload' | 'form' | 'review' | 'error';
 export type InvoiceProcessingStep =
@@ -41,6 +51,10 @@ export interface InvoiceUploadOptions {
   ocrAdapter?: IOcrAdapter;
   invoiceNormalizer?: IInvoiceNormalizer;
   pdfConverter?: IPdfConverter;
+  /** LLM parsing strategy — when provided, image OCR is routed through LLM */
+  parsingStrategy?: IInvoiceParsingStrategy;
+  /** Camera adapter — for camera capture support */
+  cameraAdapter?: ICameraAdapter;
   /** File adapter overrides — for unit testing only */
   filePickerAdapter?: IFilePickerAdapter;
   fileSystemAdapter?: IFileSystemAdapter;
@@ -60,6 +74,7 @@ export interface InvoiceUploadViewModel {
   // Flags from useInvoices
   invoicesLoading: boolean;
   // Handlers
+  handleSnapPhoto: () => Promise<void>;
   handleUploadPdf: () => Promise<void>;
   handleAcceptExtraction: (result: NormalizedInvoice) => void;
   handleRetryExtraction: () => Promise<void>;
@@ -74,6 +89,8 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
     ocrAdapter,
     invoiceNormalizer,
     pdfConverter,
+    parsingStrategy,
+    cameraAdapter,
     filePickerAdapter,
     fileSystemAdapter,
   } = options;
@@ -104,13 +121,36 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
     () => fileSystemAdapter ?? new MobileFileSystemAdapter(),
     [fileSystemAdapter],
   );
+  const camera = useMemo(
+    () => cameraAdapter ?? new MobileCameraAdapter(),
+    [cameraAdapter],
+  );
 
   /**
-   * Builds the ProcessInvoiceUploadUseCase with all available adapters.
+   * Builds the document processor based on FeatureFlags.useVisionOcr.
+   * The processor encapsulates all mimeType branching and OCR/vision strategy selection.
+   */
+  const buildProcessor = (): IInvoiceDocumentProcessor => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY && pdfConverter) {
+      return new VisionBasedInvoiceProcessor(
+        new LlmVisionInvoiceParser(GROQ_API_KEY, new ReactNativeImageReader()),
+        pdfConverter,
+      );
+    }
+    return new TextBasedInvoiceProcessor(
+      ocrAdapter!,
+      pdfConverter!,
+      parsingStrategy!,
+      invoiceNormalizer,
+    );
+  };
+
+  /**
+   * Builds the ProcessInvoiceUploadUseCase with the appropriate processor.
    * Validation and file IO are always delegated to the use case.
    */
   const buildUseCase = (): ProcessInvoiceUploadUseCase =>
-    new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter, fileSystem);
+    new ProcessInvoiceUploadUseCase(fileSystem, buildProcessor());
 
   /**
    * Runs the full pipeline: validation → file copy → OCR → normalisation.
@@ -161,6 +201,24 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
       setProcessingStep('error');
       // Provide minimal formPdfFile so the error screen can show the filename
       setFormPdfFile({ uri: originalUri, originalUri, name: filename, size, mimeType });
+    }
+  };
+
+  const handleSnapPhoto = async () => {
+    try {
+      const captured = await camera.capturePhoto({ quality: 0.85 });
+      if (captured.cancelled) return;
+
+      await runProcessingPipeline(
+        captured.uri,
+        'invoice_photo.jpg',
+        'image/jpeg',
+        captured.fileSize,
+      );
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Camera error occurred';
+      setProcessingError(errorMessage);
+      setProcessingStep('error');
     }
   };
 
@@ -249,6 +307,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
     formPdfFile,
     invoicesLoading,
     handleUploadPdf,
+    handleSnapPhoto,
     handleAcceptExtraction,
     handleRetryExtraction,
     handleFallbackToManual,
