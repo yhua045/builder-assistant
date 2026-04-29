@@ -1,5 +1,29 @@
 # Project Progress — Summary (updated 2026-04-28)
 
+
+## ✅ Issue #213 — Refactor Styling to NativeWind (Phase 2 Completed)
+**Status**: IN PROGRESS  
+**Branch**: `issue-213-nativewind-refactor`  
+**Date Updated**: 2026-04-28
+
+### Summary
+Executing the app-wide styling refactor to unify around NativeWind utility classes (instead of `StyleSheet.create`). Following the 3-phase plan outlined in `design/nativewind-styling-refactor.md`.
+
+### Completed Tasks
+- **Phase 1 (Shared Components)**: Fully migrated `ProjectPickerModal.tsx`, `QuickAddContractorModal.tsx`, `TeamSelector.tsx`, `DatePickerInput.tsx`, `ContactSelector.tsx`.
+- **Phase 2 (Feature Components)**: Fully migrated feature-specific components:
+  - **Invoices**: `InvoiceForm`, `InvoiceLifecycleActions`
+  - **Payments**: `PaymentCard`, `GlobalQuotationCard`, `PaymentTypeFilterChips`
+  - **Tasks**: `StatusPriorityRow`, `BlockerCarousel`, `TaskPhotoPreview`, `FocusList`
+  - **Projects**: `ProjectList`, `CriticalPathPreview`, `CriticalPathTaskRow`, `ManualProjectEntryForm`
+  - **Dashboard**: `ActiveTasks`, `HeroSection`
+
+### Verification
+- ✅ **TypeScript**: `npx tsc --noEmit` passes cleanly with 0 errors after each phase.
+
+### Next Steps
+- Begin **Phase 3 (Screens & Pages)**: Refactor full screen components (InvoiceListPage, PaymentDetails, DashboardScreen, etc.) to NativeWind.
+
 ## ✅ Issue #212 — Complete Vertical-Slice (Feature-Module) Architecture Migration
 **Status**: COMPLETED  
 **Branch**: `issue-212-vertical-slice-architecture`  
