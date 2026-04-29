@@ -5,7 +5,7 @@
  * Purely presentational: callers own the state and optimistic update logic.
  */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import type { Task } from '../../../domain/entities/Task';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,10 +45,10 @@ export function StatusPriorityRow({
   disablePriority = false,
 }: StatusPriorityRowProps) {
   return (
-    <View style={styles.container}>
+    <View className="px-5 pt-3 pb-2 border-b border-slate-200">
       {/* Status pills */}
-      <Text style={styles.sectionLabel}>Status</Text>
-      <View style={styles.pillRow}>
+      <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status</Text>
+      <View className="flex-row flex-wrap gap-2">
         {STATUS_PILLS.map(({ value, label }) => {
           const isActive = status === value;
           return (
@@ -56,15 +56,16 @@ export function StatusPriorityRow({
               key={value}
               testID={`status-pill-${value}`}
               onPress={() => onStatusChange(value)}
-              style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
+              className={`px-3.5 py-1.5 rounded-full border ${
+                isActive ? 'bg-blue-500 border-blue-500' : 'bg-slate-50 border-slate-200'
+              }`}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
             >
               <Text
-                style={[
-                  styles.pillText,
-                  isActive ? styles.pillTextActive : styles.pillTextInactive,
-                ]}
+                className={`text-[13px] font-semibold ${
+                  isActive ? 'text-white' : 'text-slate-600'
+                }`}
               >
                 {label}
               </Text>
@@ -74,8 +75,8 @@ export function StatusPriorityRow({
       </View>
 
       {/* Priority pills */}
-      <Text style={[styles.sectionLabel, styles.priorityLabel]}>Priority</Text>
-      <View style={styles.pillRow}>
+      <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-3">Priority</Text>
+      <View className="flex-row flex-wrap gap-2">
         {PRIORITY_PILLS.map(({ value, label }) => {
           const isActive = priority === value;
           return (
@@ -84,19 +85,16 @@ export function StatusPriorityRow({
               testID={`priority-pill-${value}`}
               onPress={disablePriority ? undefined : () => onPriorityChange(value)}
               disabled={disablePriority}
-              style={[
-                styles.pill,
-                isActive ? styles.pillActive : styles.pillInactive,
-                disablePriority && styles.pillDisabled,
-              ]}
+              className={`px-3.5 py-1.5 rounded-full border ${
+                isActive ? 'bg-blue-500 border-blue-500' : 'bg-slate-50 border-slate-200'
+              } ${disablePriority ? 'opacity-40' : ''}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive, disabled: disablePriority }}
             >
               <Text
-                style={[
-                  styles.pillText,
-                  isActive ? styles.pillTextActive : styles.pillTextInactive,
-                ]}
+                className={`text-[13px] font-semibold ${
+                  isActive ? 'text-white' : 'text-slate-600'
+                }`}
               >
                 {label}
               </Text>
@@ -107,58 +105,3 @@ export function StatusPriorityRow({
     </View>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e2e8f0',
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  priorityLabel: {
-    marginTop: 12,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  pillActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  pillInactive: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#e2e8f0',
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  pillTextActive: {
-    color: '#fff',
-  },
-  pillTextInactive: {
-    color: '#475569',
-  },
-  pillDisabled: {
-    opacity: 0.4,
-  },
-});
