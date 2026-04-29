@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Quotation } from '../../../domain/entities/Quotation';
 
 interface GlobalQuotationCardProps {
@@ -72,11 +72,12 @@ export default function GlobalQuotationCard({
       </View>
 
       {/* Footer – status badge + expiry */}
-      <View style={styles.footer} className="px-4 py-2 flex-row items-center justify-between">
+      <View className="px-4 py-2 min-h-[36px] border-t border-zinc-200 flex-row items-center justify-between">
         <View
-          style={[styles.badge, { backgroundColor: statusCfg.bg }]}
+          style={{ backgroundColor: statusCfg.bg }}
+          className="rounded px-2 py-0.5"
         >
-          <Text style={[styles.badgeText, { color: statusCfg.text }]}>
+          <Text style={{ color: statusCfg.text }} className="text-xs font-semibold">
             {statusCfg.label}
           </Text>
         </View>
@@ -89,9 +90,3 @@ export default function GlobalQuotationCard({
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: { minHeight: 36, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e4e4e7' },
-  badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-});
