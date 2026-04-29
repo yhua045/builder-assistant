@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
   Modal,
   TextInput,
   KeyboardAvoidingView,
@@ -68,7 +67,7 @@ export default function PaymentDetails() {
         )}
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={styles.content}>
+      <ScrollView className="flex-1 px-4 pt-4" contentContainerClassName="pb-8">
         {/* Amount + Status */}
         <View className="bg-card border border-border rounded-xl p-4 mb-4">
           <Text className="text-3xl font-bold text-foreground mb-1">
@@ -382,8 +381,4 @@ function Row({ label, value }: { label: string; value?: string | null }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { paddingBottom: 32 },
-});
 

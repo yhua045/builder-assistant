@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable, StyleSheet as RNStyleSheet } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { ProjectCard } from '../components/ProjectCard';
 import ManualProjectEntry from '../components/ManualProjectEntry';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,13 +46,13 @@ const ProjectsPage: React.FC = () => {
 
       {!vm.loading && !vm.error && !vm.hasProjects && (
           <View className="px-6 gap-4">
-            <Text testID="projects-empty" style={emptyTextStyle}>No projects yet. Tap + to add one.</Text>
+            <Text testID="projects-empty" className="mb-5 text-foreground">No projects yet. Tap + to add one.</Text>
               <ManualProjectEntry key={vm.createKey} initialVisible={vm.createKey > 0} hideButton />
           </View>
       )}
   
       {!vm.loading && !vm.error && vm.hasProjects && (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerClassName="pb-32">
           {/* Projects List */}
           <View className="px-6 gap-4">
             {vm.projectDtos.map((project) => (
@@ -69,11 +69,4 @@ const ProjectsPage: React.FC = () => {
 
 
 export default ProjectsPage;
-
-
-const emptyTextStyle = { marginBottom: 20 } as const;
-
-const styles = RNStyleSheet.create({
-  scrollContent: { paddingBottom: 128 },
-});
 

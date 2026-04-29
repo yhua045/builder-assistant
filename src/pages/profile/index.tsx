@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { cssInterop } from 'nativewind';
@@ -79,7 +79,7 @@ export default function ProfileScreen() {
         <ThemeToggle />
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView contentContainerClassName="px-6 pb-32">
         {/* Profile Card */}
         <View className="bg-card rounded-2xl p-6 mb-6">
           <View className="items-center">
@@ -154,10 +154,3 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  contentContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 128,
-  },
-});
