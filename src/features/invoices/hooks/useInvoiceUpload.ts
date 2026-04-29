@@ -28,6 +28,10 @@ import { ProcessInvoiceUploadUseCase } from '../application/ProcessInvoiceUpload
 import { IInvoiceParsingStrategy } from '../application/IInvoiceParsingStrategy';
 import { normalizedInvoiceToFormValues } from '../utils/normalizedInvoiceToFormValues';
 import { Invoice } from '../../../domain/entities/Invoice';
+import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { LlmVisionInvoiceParser } from '../infrastructure/LlmVisionInvoiceParser';
+import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { GROQ_API_KEY } from '@env';
 
 export type InvoiceUploadView = 'upload' | 'form' | 'review' | 'error';
 export type InvoiceProcessingStep =
@@ -123,8 +127,19 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
    * Builds the ProcessInvoiceUploadUseCase with all available adapters.
    * Validation and file IO are always delegated to the use case.
    */
-  const buildUseCase = (): ProcessInvoiceUploadUseCase =>
-    new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter, fileSystem, parsingStrategy);
+  const buildUseCase = (): ProcessInvoiceUploadUseCase => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY) {
+      return new ProcessInvoiceUploadUseCase(
+        undefined,
+        undefined,
+        pdfConverter,
+        fileSystem,
+        undefined,
+        new LlmVisionInvoiceParser(GROQ_API_KEY, new ReactNativeImageReader()),
+      );
+    }
+    return new ProcessInvoiceUploadUseCase(ocrAdapter, invoiceNormalizer, pdfConverter, fileSystem, parsingStrategy);
+  };
 
   /**
    * Runs the full pipeline: validation → file copy → OCR → normalisation.

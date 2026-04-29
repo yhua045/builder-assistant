@@ -5,6 +5,7 @@ import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAda
 import { IOcrDocumentService, OcrDocumentService } from '../../../application/services/IOcrDocumentService';
 import { validatePdfFile } from '../../../utils/fileValidation';
 import { IInvoiceParsingStrategy } from './IInvoiceParsingStrategy';
+import { IInvoiceVisionParsingStrategy } from './IInvoiceVisionParsingStrategy';
 
 export interface ProcessInvoiceUploadInput {
   /** Original URI of the selected file — copying is handled internally by this use case. */
@@ -53,6 +54,7 @@ export class ProcessInvoiceUploadUseCase {
     private readonly pdfConverter?: IPdfConverter,
     private readonly fileSystemAdapter?: IFileSystemAdapter,
     private readonly parsingStrategy?: IInvoiceParsingStrategy,
+    private readonly visionStrategy?: IInvoiceVisionParsingStrategy,
   ) {
     if (ocrAdapter) {
       this.ocrDocumentService = new OcrDocumentService(ocrAdapter);
@@ -84,19 +86,21 @@ export class ProcessInvoiceUploadUseCase {
       mimeType,
     };
 
-    // 3. If OCR adapters are absent, return empty result (graceful degradation)
-    if (!this.ocrAdapter || !this.normalizer) {
-      return {
-        normalized: this.emptyNormalizedInvoice(),
-        documentRef,
-        rawOcrText: '',
-      };
-    }
-
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
-      // If no converter is wired up, fall back to empty result (graceful degradation)
-      if (!this.pdfConverter) {
+      // Vision PDF path: convert → take page 1 → send to vision model
+      if (this.visionStrategy && this.pdfConverter) {
+        try {
+          return await this.processPdfVision(localUri, documentRef);
+        } catch (err: any) {
+          throw new Error(
+            `Invoice processing failed: ${err?.message ?? 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Text OCR path guards
+      if (!this.ocrAdapter || !this.normalizer || !this.pdfConverter) {
         return {
           normalized: this.emptyNormalizedInvoice(),
           documentRef,
@@ -114,6 +118,28 @@ export class ProcessInvoiceUploadUseCase {
     }
 
     // ── Image path ───────────────────────────────────────────────────────────
+
+    // Vision path (skip OCR)
+    if (this.visionStrategy) {
+      try {
+        const normalized = await this.visionStrategy.parse(localUri);
+        return { normalized, documentRef, rawOcrText: '' };
+      } catch (err: any) {
+        throw new Error(
+          `Invoice processing failed: ${err?.message ?? 'Unknown error'}`,
+        );
+      }
+    }
+
+    // Text OCR path guards
+    if (!this.ocrAdapter || !this.normalizer) {
+      return {
+        normalized: this.emptyNormalizedInvoice(),
+        documentRef,
+        rawOcrText: '',
+      };
+    }
+
     try {
       const ocrResult = await this.ocrAdapter.extractText(localUri);
       const rawOcrText = ocrResult.fullText;
@@ -152,6 +178,26 @@ export class ProcessInvoiceUploadUseCase {
   }
 
   // ─── private helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Vision PDF path: convert PDF to images, send only page 1 to the vision model.
+   */
+  private async processPdfVision(
+    pdfUri: string,
+    documentRef: DocumentRef,
+  ): Promise<ProcessInvoiceUploadOutput> {
+    const pages = await this.pdfConverter!.convertToImages(pdfUri);
+    if (pages.length === 0) {
+      return {
+        normalized: this.emptyNormalizedInvoice(),
+        documentRef,
+        rawOcrText: '',
+      };
+    }
+    const firstPageUri = pages[0].uri;
+    const normalized = await this.visionStrategy!.parse(firstPageUri);
+    return { normalized, documentRef, rawOcrText: '' };
+  }
 
   /**
    * Convert a PDF to images, run OCR on every page, merge the text, and

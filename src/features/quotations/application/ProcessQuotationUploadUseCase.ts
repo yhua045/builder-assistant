@@ -4,6 +4,7 @@ import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IOcrDocumentService, OcrDocumentService } from '../../../application/services/IOcrDocumentService';
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { validatePdfFile } from '../../../utils/fileValidation';
+import { IQuotationVisionParsingStrategy } from './ai/IQuotationVisionParsingStrategy';
 
 export interface ProcessQuotationUploadInput {
   /** The original URI from the file picker */
@@ -46,6 +47,7 @@ export class ProcessQuotationUploadUseCase {
     private readonly pdfConverter?: IPdfConverter,
     private readonly fileSystemAdapter?: IFileSystemAdapter,
     private readonly ocrAdapter?: IOcrAdapter,
+    private readonly visionStrategy?: IQuotationVisionParsingStrategy,
   ) {
     if (ocrAdapter) {
       this.ocrDocumentService = new OcrDocumentService(ocrAdapter);
@@ -81,6 +83,17 @@ export class ProcessQuotationUploadUseCase {
 
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
+      // Vision PDF path: convert → take page 1 → send to vision model
+      if (this.visionStrategy && this.pdfConverter) {
+        try {
+          return await this.processPdfVision(localPath, documentRef);
+        } catch (err: any) {
+          throw new Error(
+            `Quotation processing failed: ${err?.message ?? 'Unknown error'}`,
+          );
+        }
+      }
+
       if (!this.pdfConverter || !this.parsingStrategy || !this.ocrDocumentService) {
         return {
           normalized: emptyNormalizedQuotation(),
@@ -99,6 +112,19 @@ export class ProcessQuotationUploadUseCase {
     }
 
     // ── Image path ───────────────────────────────────────────────────────────
+
+    // Vision path (skip OCR)
+    if (this.visionStrategy) {
+      try {
+        const normalized = await this.visionStrategy.parse(localPath);
+        return { normalized, documentRef, rawOcrText: '' };
+      } catch (err: any) {
+        throw new Error(
+          `Quotation processing failed: ${err?.message ?? 'Unknown error'}`,
+        );
+      }
+    }
+
     if (!this.ocrAdapter || !this.parsingStrategy) {
       return {
         normalized: emptyNormalizedQuotation(),
@@ -119,6 +145,23 @@ export class ProcessQuotationUploadUseCase {
         `Quotation processing failed: ${err?.message ?? 'Unknown error'}`,
       );
     }
+  }
+
+  private async processPdfVision(
+    pdfUri: string,
+    documentRef: QuotationDocumentRef,
+  ): Promise<ProcessQuotationUploadOutput> {
+    const pages = await this.pdfConverter!.convertToImages(pdfUri);
+    if (pages.length === 0) {
+      return {
+        normalized: emptyNormalizedQuotation(),
+        documentRef,
+        rawOcrText: '',
+      };
+    }
+    const firstPageUri = pages[0].uri;
+    const normalized = await this.visionStrategy!.parse(firstPageUri);
+    return { normalized, documentRef, rawOcrText: '' };
   }
 
   private async processPdf(

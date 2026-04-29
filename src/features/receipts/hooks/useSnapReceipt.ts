@@ -12,6 +12,10 @@ import {
     ProcessReceiptUploadInput,
 } from '../application/ProcessReceiptUploadUseCase';
 import { PdfThumbnailConverter } from '../../../infrastructure/files/PdfThumbnailConverter';
+import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { LlmVisionReceiptParser } from '../infrastructure/LlmVisionReceiptParser';
+import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { GROQ_API_KEY } from '@env';
 import '../../../infrastructure/di/registerServices';
 
 export const useSnapReceipt = (
@@ -38,14 +42,22 @@ export const useSnapReceipt = (
         return new SnapReceiptUseCase(receiptRepo);
     }, [receiptRepo, enableOcr]);
 
-    // PDF upload use case — instantiated only when a parsing strategy is supplied
+    // PDF upload use case — instantiated only when a parsing strategy is supplied.
+    // When useVisionOcr is true, also injects a vision strategy so the use case
+    // skips ML Kit OCR and sends the image directly to the Groq Vision model.
     const pdfUploadUseCase = useMemo(() => {
         if (!receiptParsingStrategy) return null;
         const ocrAdapter = new MobileOcrAdapter();
+        const visionStrategy =
+            FeatureFlags.useVisionOcr && GROQ_API_KEY
+                ? new LlmVisionReceiptParser(GROQ_API_KEY, new ReactNativeImageReader())
+                : undefined;
         return new ProcessReceiptUploadUseCase(
             ocrAdapter,
             receiptParsingStrategy,
             new PdfThumbnailConverter(),
+            undefined,
+            visionStrategy,
         );
     }, [receiptParsingStrategy]);
 

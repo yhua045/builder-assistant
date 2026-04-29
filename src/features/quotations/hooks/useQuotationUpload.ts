@@ -24,6 +24,10 @@ import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 import { ProcessQuotationUploadUseCase } from '../application/ProcessQuotationUploadUseCase';
 import { normalizedQuotationToFormValues } from './normalizedQuotationToFormValues';
 import { Quotation } from '../../../domain/entities/Quotation';
+import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { LlmVisionQuotationParser } from '../infrastructure/ai/LlmVisionQuotationParser';
+import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { GROQ_API_KEY } from '@env';
 
 export type QuotationProcessingStep = 'idle' | 'copying' | 'ocr' | 'error';
 
@@ -92,6 +96,15 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
   );
 
   const buildUseCase = (): ProcessQuotationUploadUseCase => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY) {
+      return new ProcessQuotationUploadUseCase(
+        undefined,
+        pdfConverter,
+        fileSystem,
+        undefined,
+        new LlmVisionQuotationParser(GROQ_API_KEY, new ReactNativeImageReader()),
+      );
+    }
     return new ProcessQuotationUploadUseCase(
       parsingStrategy,
       pdfConverter,

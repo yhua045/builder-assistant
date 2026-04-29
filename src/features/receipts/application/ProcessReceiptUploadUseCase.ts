@@ -4,6 +4,7 @@ import { NormalizedReceipt } from './IReceiptNormalizer';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IOcrDocumentService, OcrDocumentService } from '../../../application/services/IOcrDocumentService';
 import { validatePdfFile } from '../../../utils/fileValidation';
+import { IReceiptVisionParsingStrategy } from './IReceiptVisionParsingStrategy';
 
 export interface ProcessReceiptUploadInput {
   fileUri: string;
@@ -34,6 +35,7 @@ export class ProcessReceiptUploadUseCase {
     private readonly parsingStrategy: IReceiptParsingStrategy,
     private readonly pdfConverter?: IPdfConverter,
     private readonly ocrDocumentService: IOcrDocumentService = new OcrDocumentService(ocrAdapter),
+    private readonly visionStrategy?: IReceiptVisionParsingStrategy,
   ) {}
 
   async execute(
@@ -49,6 +51,17 @@ export class ProcessReceiptUploadUseCase {
 
     // ── PDF path ─────────────────────────────────────────────────────────────
     if (mimeType === 'application/pdf') {
+      // Vision PDF path: convert → take page 1 → send to vision model
+      if (this.visionStrategy && this.pdfConverter) {
+        try {
+          return await this.processPdfVision(fileUri);
+        } catch (err: any) {
+          throw new Error(
+            `Receipt processing failed: ${err?.message ?? 'Unknown error'}`,
+          );
+        }
+      }
+
       if (!this.pdfConverter) {
         return {
           normalized: emptyNormalizedReceipt(),
@@ -66,6 +79,20 @@ export class ProcessReceiptUploadUseCase {
     }
 
     // ── Image path ───────────────────────────────────────────────────────────
+
+    // Vision path (skip OCR)
+    if (this.visionStrategy) {
+      try {
+        const normalized = await this.visionStrategy.parse(fileUri);
+        return { normalized, rawOcrText: '' };
+      } catch (err: any) {
+        throw new Error(
+          `Receipt processing failed: ${err?.message ?? 'Unknown error'}`,
+        );
+      }
+    }
+
+    // Text OCR path
     try {
       const ocrResult = await this.ocrAdapter.extractText(fileUri);
       const rawOcrText = ocrResult.fullText;
@@ -76,6 +103,16 @@ export class ProcessReceiptUploadUseCase {
         `Receipt processing failed: ${err?.message ?? 'Unknown error'}`,
       );
     }
+  }
+
+  private async processPdfVision(pdfUri: string): Promise<ProcessReceiptUploadOutput> {
+    const pages = await this.pdfConverter!.convertToImages(pdfUri);
+    if (pages.length === 0) {
+      return { normalized: emptyNormalizedReceipt(), rawOcrText: '' };
+    }
+    const firstPageUri = pages[0].uri;
+    const normalized = await this.visionStrategy!.parse(firstPageUri);
+    return { normalized, rawOcrText: '' };
   }
 
   private async processPdf(pdfUri: string): Promise<ProcessReceiptUploadOutput> {
