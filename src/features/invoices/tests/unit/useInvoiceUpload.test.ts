@@ -440,4 +440,122 @@ describe('useInvoiceUpload', () => {
       }).not.toThrow();
     });
   });
+
+  // AC: handleSnapPhoto — camera capture support (AD4)
+  describe('handleSnapPhoto — camera capture', () => {
+    function makeCameraAdapter(overrides: Record<string, any> = {}) {
+      return {
+        capturePhoto: jest.fn().mockResolvedValue({
+          uri: 'file:///mock/invoice_photo.jpg',
+          width: 1920,
+          height: 1080,
+          fileSize: 800000,
+          cancelled: false,
+        }),
+        hasPermissions: jest.fn().mockResolvedValue(true),
+        requestPermissions: jest.fn().mockResolvedValue(true),
+        ...overrides,
+      };
+    }
+
+    it('calls cameraAdapter.capturePhoto()', async () => {
+      const camera = makeCameraAdapter();
+      const { result } = renderHook(() =>
+        useInvoiceUpload({ onClose: jest.fn(), cameraAdapter: camera }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(camera.capturePhoto).toHaveBeenCalled();
+    });
+
+    it('calls ProcessInvoiceUploadUseCase.execute() with mimeType="image/jpeg" on successful capture', async () => {
+      const camera = makeCameraAdapter();
+      const mockExecute = jest.fn().mockResolvedValue({
+        normalized: { ...NORMALIZED_INVOICE, confidence: { overall: 0.9, vendor: 0.9, invoiceNumber: 0.8, invoiceDate: 0.9, total: 0.95 } },
+        documentRef: { localPath: 'file:///mock/invoice_photo.jpg', filename: 'invoice_photo.jpg', size: 800000, mimeType: 'image/jpeg' },
+        rawOcrText: 'ACME Supplies invoice',
+      });
+      MockProcessInvoiceUploadUseCase.mockImplementation(() => ({ execute: mockExecute }) as any);
+
+      const { result } = renderHook(() =>
+        useInvoiceUpload({ onClose: jest.fn(), cameraAdapter: camera }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileUri: 'file:///mock/invoice_photo.jpg',
+          mimeType: 'image/jpeg',
+        }),
+      );
+    });
+
+    it('sets view="form" and populates formInitialValues after successful camera capture', async () => {
+      const camera = makeCameraAdapter();
+      MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
+        execute: jest.fn().mockResolvedValue({
+          normalized: NORMALIZED_INVOICE,
+          documentRef: { localPath: 'file:///mock/invoice_photo.jpg', filename: 'invoice_photo.jpg', size: 800000, mimeType: 'image/jpeg' },
+          rawOcrText: 'ACME Supplies invoice',
+        }),
+      }) as any);
+
+      const { result } = renderHook(() =>
+        useInvoiceUpload({ onClose: jest.fn(), cameraAdapter: camera }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(result.current.view).toBe('form');
+      expect(result.current.formInitialValues).toBeDefined();
+    });
+
+    it('does nothing when camera returns cancelled=true', async () => {
+      const camera = makeCameraAdapter({
+        capturePhoto: jest.fn().mockResolvedValue({
+          uri: '',
+          width: 0,
+          height: 0,
+          fileSize: 0,
+          cancelled: true,
+        }),
+      });
+
+      const { result } = renderHook(() =>
+        useInvoiceUpload({ onClose: jest.fn(), cameraAdapter: camera }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(result.current.view).toBe('upload');
+      expect(result.current.processingStep).toBe('idle');
+    });
+
+    it('sets processingError when OCR/LLM fails during camera capture', async () => {
+      const camera = makeCameraAdapter();
+      MockProcessInvoiceUploadUseCase.mockImplementation(() => ({
+        execute: jest.fn().mockRejectedValue(new Error('Invoice processing failed: Groq timeout')),
+      }) as any);
+
+      const { result } = renderHook(() =>
+        useInvoiceUpload({ onClose: jest.fn(), cameraAdapter: camera }),
+      );
+
+      await act(async () => {
+        await result.current.handleSnapPhoto();
+      });
+
+      expect(result.current.processingError).toBeTruthy();
+    });
+  });
 });
