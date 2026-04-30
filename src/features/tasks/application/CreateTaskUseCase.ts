@@ -5,6 +5,9 @@ export class CreateTaskUseCase {
   constructor(private readonly taskRepository: TaskRepository) {}
 
   async execute(params: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'localId'> & { id?: string }): Promise<Task> {
+    if (!params.title || params.title.trim() === '') {
+      throw new Error('Task title is required');
+    }
     const taskEntity = TaskEntity.create(params);
     const task = taskEntity.data();
     await this.taskRepository.save(task);
