@@ -5,4 +5,7 @@ declare module '@env' {
   export const LOCATION_REMOTE_ENABLED: string | undefined;
   export const SEED_DEMO_DATA: string | undefined;
   export const RESET_DEMO_DATA: string | undefined;
+  export const MIXPANEL_TOKEN: string | undefined;
+  export const SENTRY_DSN: string | undefined;
+  export const ANALYTICS_ENABLED: string | undefined;
 }

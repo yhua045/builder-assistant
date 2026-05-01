@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { cssInterop } from 'nativewind';
-import { User, Mail, Phone, Briefcase, Building2, MapPin, 
-  Settings, Bell, Lock, CreditCard, HelpCircle, 
-  LogOut, ChevronRight, Edit 
-} from 'lucide-react-native';
+import { User, Mail, Phone, Briefcase, Building2, MapPin, Settings, Bell, Lock, CreditCard, HelpCircle, LogOut, ChevronRight, Edit } from 'lucide-react-native';
+import { useScreenTracking } from '../../hooks/useScreenTracking';
+import { useAnalyticsOptOut } from '../../hooks/useAnalyticsOptOut';
 
 cssInterop(User, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Mail, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -56,6 +55,8 @@ function MenuItem({ icon: Icon, label, value, onPress, showChevron = true }: Men
 }
 
 export default function ProfileScreen() {
+  const { isOptedOut, setOptOut } = useAnalyticsOptOut();
+  useScreenTracking('Profile');
   const user = {
     name: 'Sarah Mitchell',
     email: 'sarah.mitchell@constructco.com',
@@ -150,7 +151,25 @@ export default function ProfileScreen() {
         <Text className="text-center text-muted-foreground text-sm mt-6">
           ExpenseTracker Pro v1.0.0
         </Text>
-      </ScrollView>
+      
+        <View className="bg-card rounded-2xl p-6 mb-6 mt-6">
+          <Text className="text-foreground font-semibold text-base mb-4">Privacy</Text>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 mr-4">
+              <Text className="text-foreground font-medium">Analytics & Crash Reports</Text>
+              <Text className="text-muted-foreground text-sm mt-0.5">
+                Help improve the app by sharing usage data
+              </Text>
+            </View>
+            <Switch
+              value={!isOptedOut}
+              onValueChange={(v) => setOptOut(!v)}
+              trackColor={{ false: '#767577', true: '#f97316' }}
+              thumbColor="#ffffff"
+            />
+          </View>
+        </View>
+</ScrollView>
     </SafeAreaView>
   );
 }
