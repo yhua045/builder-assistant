@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback, useMemo, useEffect, useRef, useReducer } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../../../infrastructure/di/registerServices';
 
@@ -32,56 +32,84 @@ export interface UseTaskFormOptions {
   onSuccess?: (task: Task) => void;
 }
 
-export interface UseTaskFormReturn {
-  // ── Basic fields ──────────────────────────────────────────────────────────
+export interface TaskFormState {
   title: string;
-  setTitle(v: string): void;
   notes: string;
-  setNotes(v: string): void;
   projectId: string;
-  setProjectId(v: string): void;
-  startDate: Date | null;
-  setStartDate(v: Date | null): void;
   dueDate: Date | null;
-  setDueDate(v: Date | null): void;
+  startDate: Date | null;
   status: Task['status'];
-  setStatus(v: Task['status']): void;
   priority: Task['priority'];
-  setPriority(v: Task['priority']): void;
-
-  // ── Subcontractor ─────────────────────────────────────────────────────────
   subcontractorId: string | undefined;
-  setSubcontractorId(id: string | undefined): void;
-
-  // ── Task Classification (issue #141) ──────────────────────────────────────
   taskType: NonNullable<Task['taskType']>;
-  setTaskType(v: NonNullable<Task['taskType']>): void;
   workType: string | undefined;
-  setWorkType(v: string | undefined): void;
   quoteAmount: number | undefined;
+  pendingDocuments: PendingDocument[];
+  savedDocuments: Document[];
+  dependencyTaskIds: string[];
+}
+
+export type TaskFormAction =
+  | { type: 'SET_FIELD'; field: keyof TaskFormState; value: any }
+  | { type: 'ADD_PENDING_DOCUMENT'; document: PendingDocument }
+  | { type: 'REMOVE_PENDING_DOCUMENT'; uri: string }
+  | { type: 'SET_SAVED_DOCUMENTS'; documents: Document[] }
+  | { type: 'REMOVE_SAVED_DOCUMENT'; docId: string }
+  | { type: 'ADD_DEPENDENCY'; id: string }
+  | { type: 'REMOVE_DEPENDENCY'; id: string }
+  | { type: 'RESET_PENDING_DOCUMENTS' };
+
+function taskFormReducer(state: TaskFormState, action: TaskFormAction): TaskFormState {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.value };
+    case 'ADD_PENDING_DOCUMENT':
+      return { ...state, pendingDocuments: [...state.pendingDocuments, action.document] };
+    case 'REMOVE_PENDING_DOCUMENT':
+      return { ...state, pendingDocuments: state.pendingDocuments.filter((d) => d.uri !== action.uri) };
+    case 'SET_SAVED_DOCUMENTS':
+      return { ...state, savedDocuments: action.documents };
+    case 'REMOVE_SAVED_DOCUMENT':
+      return { ...state, savedDocuments: state.savedDocuments.filter((d) => d.id !== action.docId) };
+    case 'ADD_DEPENDENCY':
+      if (state.dependencyTaskIds.includes(action.id)) return state;
+      return { ...state, dependencyTaskIds: [...state.dependencyTaskIds, action.id] };
+    case 'REMOVE_DEPENDENCY':
+      return { ...state, dependencyTaskIds: state.dependencyTaskIds.filter((id) => id !== action.id) };
+    case 'RESET_PENDING_DOCUMENTS':
+      return { ...state, pendingDocuments: [] };
+    default:
+      return state;
+  }
+}
+
+export interface UseTaskFormReturn extends TaskFormState {
+  // ── Setters ──────────────────────────────────────────────────────────────
+  setTitle(v: string): void;
+  setNotes(v: string): void;
+  setProjectId(v: string): void;
+  setStartDate(v: Date | null): void;
+  setDueDate(v: Date | null): void;
+  setStatus(v: Task['status']): void;
+  setPriority(v: Task['priority']): void;
+  setSubcontractorId(id: string | undefined): void;
+  setTaskType(v: NonNullable<Task['taskType']>): void;
+  setWorkType(v: string | undefined): void;
   setQuoteAmount(v: number | undefined): void;
 
   // ── Documents ─────────────────────────────────────────────────────────────
-  /** Documents picked this session — not yet written to DB */
-  pendingDocuments: PendingDocument[];
   addPendingDocument(doc: PendingDocument): void;
   removePendingDocument(uri: string): void;
-  /** Documents already persisted (edit mode only) */
-  savedDocuments: Document[];
   removeSavedDocument(docId: string): Promise<void>;
 
   // ── Dependencies ──────────────────────────────────────────────────────────
-  dependencyTaskIds: string[];
   addDependencyTaskId(id: string): void;
   removeDependencyTaskId(id: string): void;
 
   // ── Submit ────────────────────────────────────────────────────────────────
   isSubmitting: boolean;
   validationError: string | null;
-  /** Returns the saved Task on success, or null on validation failure. Throws on unexpected errors. */
   submit(): Promise<Task | null>;
-
-  /** Whether the form is in edit mode (editing an existing task) */
   isEditMode: boolean;
 }
 
@@ -94,75 +122,39 @@ export function useTaskForm({
   const queryClient = useQueryClient();
   const { createEntry: createAuditEntry } = useCreateAuditLog();
 
-  // ── Basic fields ──────────────────────────────────────────────────────────
-  const [title, setTitle] = useState(initialTask?.title ?? '');
-  const [notes, setNotes] = useState(initialTask?.notes ?? '');
-  const [projectId, setProjectId] = useState(
-    initialTask?.projectId ?? defaultProjectId ?? '',
-  );
-  const [dueDate, setDueDate] = useState<Date | null>(
-    initialTask?.dueDate ? new Date(initialTask.dueDate as string) : null,
-  );
-  const [startDate, setStartDate] = useState<Date | null>(
-    initialTask?.startDate ? new Date(initialTask.startDate as string) : null,
-  );
-  const [status, setStatus] = useState<Task['status']>(
-    initialTask?.status ?? 'pending',
-  );
-  const [priority, setPriority] = useState<Task['priority']>(
-    initialTask?.priority ?? 'medium',
-  );
+  const [state, dispatch] = useReducer(taskFormReducer, {
+    title: initialTask?.title ?? '',
+    notes: initialTask?.notes ?? '',
+    projectId: initialTask?.projectId ?? defaultProjectId ?? '',
+    dueDate: initialTask?.dueDate ? new Date(initialTask.dueDate as string) : null,
+    startDate: initialTask?.startDate ? new Date(initialTask.startDate as string) : null,
+    status: initialTask?.status ?? 'pending',
+    priority: initialTask?.priority ?? 'medium',
+    subcontractorId: initialTask?.subcontractorId,
+    taskType: initialTask?.taskType ?? 'variation',
+    workType: initialTask?.workType,
+    quoteAmount: initialTask?.quoteAmount,
+    pendingDocuments: [],
+    savedDocuments: [],
+    dependencyTaskIds: initialTask?.dependencies ?? [],
+  });
 
-  // ── Subcontractor ─────────────────────────────────────────────────────────
-  const [subcontractorId, setSubcontractorId] = useState<string | undefined>(
-    initialTask?.subcontractorId,
-  );
+  const setTitle = useCallback((v: string) => dispatch({ type: 'SET_FIELD', field: 'title', value: v }), []);
+  const setNotes = useCallback((v: string) => dispatch({ type: 'SET_FIELD', field: 'notes', value: v }), []);
+  const setProjectId = useCallback((v: string) => dispatch({ type: 'SET_FIELD', field: 'projectId', value: v }), []);
+  const setDueDate = useCallback((v: Date | null) => dispatch({ type: 'SET_FIELD', field: 'dueDate', value: v }), []);
+  const setStartDate = useCallback((v: Date | null) => dispatch({ type: 'SET_FIELD', field: 'startDate', value: v }), []);
+  const setStatus = useCallback((v: Task['status']) => dispatch({ type: 'SET_FIELD', field: 'status', value: v }), []);
+  const setPriority = useCallback((v: Task['priority']) => dispatch({ type: 'SET_FIELD', field: 'priority', value: v }), []);
+  const setSubcontractorId = useCallback((v: string | undefined) => dispatch({ type: 'SET_FIELD', field: 'subcontractorId', value: v }), []);
+  const setTaskType = useCallback((v: NonNullable<Task['taskType']>) => dispatch({ type: 'SET_FIELD', field: 'taskType', value: v }), []);
+  const setWorkType = useCallback((v: string | undefined) => dispatch({ type: 'SET_FIELD', field: 'workType', value: v }), []);
+  const setQuoteAmount = useCallback((v: number | undefined) => dispatch({ type: 'SET_FIELD', field: 'quoteAmount', value: v }), []);
+  const addPendingDocument = useCallback((doc: PendingDocument) => dispatch({ type: 'ADD_PENDING_DOCUMENT', document: doc }), []);
+  const removePendingDocument = useCallback((uri: string) => dispatch({ type: 'REMOVE_PENDING_DOCUMENT', uri }), []);
+  const addDependencyTaskId = useCallback((id: string) => dispatch({ type: 'ADD_DEPENDENCY', id }), []);
+  const removeDependencyTaskId = useCallback((id: string) => dispatch({ type: 'REMOVE_DEPENDENCY', id }), []);
 
-  // ── Task Classification (issue #141) ──────────────────────────────────────
-  const [taskType, setTaskType] = useState<NonNullable<Task['taskType']>>(
-    initialTask?.taskType ?? 'variation',
-  );
-  const [workType, setWorkType] = useState<string | undefined>(
-    initialTask?.workType,
-  );
-  const [quoteAmount, setQuoteAmount] = useState<number | undefined>(
-    initialTask?.quoteAmount,
-  );
-
-  // ── Documents ─────────────────────────────────────────────────────────────
-  const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([]);
-  const [savedDocuments, setSavedDocuments] = useState<Document[]>(
-    // Populated externally (e.g. from TaskDetail query) for edit mode.
-    // Callers may pass pre-fetched docs via initialTask's extended fields if desired.
-    [],
-  );
-
-  const addPendingDocument = useCallback((doc: PendingDocument) => {
-    setPendingDocuments((prev) => [...prev, doc]);
-  }, []);
-
-  const removePendingDocument = useCallback((uri: string) => {
-    setPendingDocuments((prev) => prev.filter((d) => d.uri !== uri));
-  }, []);
-
-  // ── Dependencies ──────────────────────────────────────────────────────────
-  const [dependencyTaskIds, setDependencyTaskIds] = useState<string[]>(
-    initialTask?.dependencies ?? [],
-  );
-
-  const addDependencyTaskId = useCallback((id: string) => {
-    setDependencyTaskIds((prev) => {
-      if (prev.includes(id)) return prev;
-      return [...prev, id];
-    });
-  }, []);
-
-  const removeDependencyTaskId = useCallback((id: string) => {
-    setDependencyTaskIds((prev) => prev.filter((d) => d !== id));
-  }, []);
-
-  // ── Submit state ──────────────────────────────────────────────────────────
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // ── DI resolution ─────────────────────────────────────────────────────────
@@ -200,54 +192,20 @@ export function useTaskForm({
   const removeSavedDocument = useCallback(
     async (docId: string) => {
       await removeTaskDocumentUseCase.execute(docId);
-      setSavedDocuments((prev) => prev.filter((d) => d.id !== docId));
+      dispatch({ type: 'REMOVE_SAVED_DOCUMENT', docId });
     },
     [removeTaskDocumentUseCase],
   );
 
-  // ── Submit ────────────────────────────────────────────────────────────────
-  const submit = useCallback(async () => {
-    setValidationError(null);
-
-    // Validation
-    if (!title.trim()) {
-      setValidationError('Title is required');
-      return null;
-    }
-
-    const selfId = initialTask?.id;
-    if (selfId && dependencyTaskIds.includes(selfId)) {
-      setValidationError('A task cannot depend on itself');
-      return null;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = await processTaskFormUseCase.execute({
-        mode: isEditMode ? 'update' : 'create',
-        taskId: selfId,
-        existingTask: isEditMode ? (initialTask as Task) : undefined,
-        existingDependencies: initialTask?.dependencies ?? [],
-        title: title.trim(),
-        notes: notes.trim() || undefined,
-        projectId: projectId || undefined,
-        dueDate: dueDate?.toISOString(),
-        startDate: startDate?.toISOString(),
-        status,
-        priority,
-        subcontractorId,
-        taskType,
-        workType,
-        quoteAmount,
-        pendingDocuments,
-        dependencyTaskIds,
-      });
-
+  const taskMutation = useMutation({
+    mutationFn: (variables: Parameters<ProcessTaskFormUseCase['execute']>[0]) =>
+      processTaskFormUseCase.execute(variables),
+    onSuccess: async (result) => {
       // ── Query invalidation ───────────────────────────────────────────────
       if (result.variationInvoiceCreated) {
         await Promise.all(
           invalidations.acceptQuotation({ projectId: result.task.projectId || '', taskId: result.task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+            .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
         );
       } else if (result.variationInvoiceCancelled) {
         await Promise.all([
@@ -257,19 +215,19 @@ export function useTaskForm({
       } else if (isEditMode) {
         await Promise.all(
           invalidations.taskEdited({ projectId: result.task.projectId || '', taskId: result.task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+            .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
         );
       } else {
         await Promise.all(
           invalidations.tasksCreated({ projectId: result.task.projectId ?? '' })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+            .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
         );
       }
 
       if (result.documentsAdded > 0) {
         await Promise.all(
           invalidations.documentMutated({ taskId: result.task.id })
-            .map(key => queryClient.invalidateQueries({ queryKey: key })),
+            .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
         );
       }
 
@@ -296,8 +254,48 @@ export function useTaskForm({
         });
       }
 
-      setPendingDocuments([]);
+      dispatch({ type: 'RESET_PENDING_DOCUMENTS' });
       onSuccess?.(result.task);
+    },
+  });
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  const submit = useCallback(async () => {
+    setValidationError(null);
+
+    // Validation
+    if (!state.title.trim()) {
+      setValidationError('Title is required');
+      return null;
+    }
+
+    const selfId = initialTask?.id;
+    if (selfId && state.dependencyTaskIds.includes(selfId)) {
+      setValidationError('A task cannot depend on itself');
+      return null;
+    }
+
+    try {
+      const result = await taskMutation.mutateAsync({
+        mode: isEditMode ? 'update' : 'create',
+        taskId: selfId,
+        existingTask: isEditMode ? (initialTask as Task) : undefined,
+        existingDependencies: initialTask?.dependencies ?? [],
+        title: state.title.trim(),
+        notes: state.notes.trim() || undefined,
+        projectId: state.projectId || undefined,
+        dueDate: state.dueDate?.toISOString(),
+        startDate: state.startDate?.toISOString(),
+        status: state.status,
+        priority: state.priority,
+        subcontractorId: state.subcontractorId,
+        taskType: state.taskType,
+        workType: state.workType,
+        quoteAmount: state.quoteAmount,
+        pendingDocuments: state.pendingDocuments,
+        dependencyTaskIds: state.dependencyTaskIds,
+      });
+
       return result.task;
     } catch (err) {
       if (err instanceof ProcessTaskFormValidationError) {
@@ -305,64 +303,33 @@ export function useTaskForm({
         return null;
       }
       throw err;
-    } finally {
-      setIsSubmitting(false);
     }
   }, [
-    title,
-    notes,
-    projectId,
-    startDate,
-    dueDate,
-    status,
-    priority,
-    subcontractorId,
-    taskType,
-    workType,
-    quoteAmount,
-    pendingDocuments,
-    dependencyTaskIds,
+    state,
     initialTask,
     isEditMode,
-    processTaskFormUseCase,
-    queryClient,
-    createAuditEntry,
-    onSuccess,
-    analyticsAdapter,
+    taskMutation,
   ]);
 
   return {
-    title,
+    ...state,
     setTitle,
-    notes,
     setNotes,
-    projectId,
     setProjectId,
-    startDate,
     setStartDate,
-    dueDate,
     setDueDate,
-    status,
     setStatus,
-    priority,
     setPriority,
-    subcontractorId,
     setSubcontractorId,
-    taskType,
     setTaskType,
-    workType,
     setWorkType,
-    quoteAmount,
     setQuoteAmount,
-    pendingDocuments,
     addPendingDocument,
     removePendingDocument,
-    savedDocuments,
     removeSavedDocument,
-    dependencyTaskIds,
     addDependencyTaskId,
     removeDependencyTaskId,
-    isSubmitting,
+    isSubmitting: taskMutation.isPending,
     validationError,
     submit,
     isEditMode,
