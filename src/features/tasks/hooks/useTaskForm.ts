@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../../../infrastructure/di/registerServices';
@@ -12,6 +12,7 @@ import {
 } from '../application/ProcessTaskFormUseCase';
 import { invalidations } from '../../../hooks/queryKeys';
 import { useCreateAuditLog } from '../../../hooks/useCreateAuditLog';
+import type { AnalyticsAdapter } from '../../../infrastructure/analytics/AnalyticsAdapter';
 
 /** A document that has been picked but not yet persisted (pre-save state). */
 export interface PendingDocument {
@@ -173,6 +174,27 @@ export function useTaskForm({
     () => container.resolve<RemoveTaskDocumentUseCase>('RemoveTaskDocumentUseCase'),
     [],
   );
+  const analyticsAdapter = useMemo<AnalyticsAdapter | null>(() => {
+    try {
+      return container.resolve<AnalyticsAdapter>('AnalyticsAdapter');
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // ── Funnel tracking (create mode only) ───────────────────────────────────
+  const isCreate = !initialTask?.id;
+  const funnelCompletedRef = useRef(false);
+  useEffect(() => {
+    if (!isCreate) return;
+    analyticsAdapter?.track('task_creation_started');
+    return () => {
+      if (!funnelCompletedRef.current) {
+        analyticsAdapter?.track('task_creation_abandoned');
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Remove saved document (eager, edit mode) ──────────────────────────────
   const removeSavedDocument = useCallback(
@@ -263,6 +285,17 @@ export function useTaskForm({
         });
       }
 
+      // ── Feature event & funnel tracking ─────────────────────────────────
+      if (!isEditMode) {
+        funnelCompletedRef.current = true;
+        analyticsAdapter?.track('task_created', {
+          projectId: result.task.projectId,
+        });
+        analyticsAdapter?.track('task_creation_completed', {
+          projectId: result.task.projectId,
+        });
+      }
+
       setPendingDocuments([]);
       onSuccess?.(result.task);
       return result.task;
@@ -295,6 +328,7 @@ export function useTaskForm({
     queryClient,
     createAuditEntry,
     onSuccess,
+    analyticsAdapter,
   ]);
 
   return {

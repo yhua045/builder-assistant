@@ -9,6 +9,7 @@ import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { useInvoiceUpload } from '../hooks/useInvoiceUpload';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 interface InvoiceScreenProps {
   onClose: () => void;
@@ -31,6 +32,7 @@ export const InvoiceScreen = ({
   filePickerAdapter,
   fileSystemAdapter,
 }: InvoiceScreenProps) => {
+  useScreenTracking('Invoices');
   const vm = useInvoiceUpload({ onClose, ocrAdapter, invoiceNormalizer, pdfConverter, filePickerAdapter, fileSystemAdapter });
 
   // ── Render: ExtractionResultsPanel (review state) ───────────────────────

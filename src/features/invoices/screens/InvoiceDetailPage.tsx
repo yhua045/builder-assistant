@@ -7,12 +7,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useInvoices } from '../hooks/useInvoices';
 import { InvoiceForm } from '../components/InvoiceForm';
 import type { Invoice } from '../../../domain/entities/Invoice';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export default function InvoiceDetailPage() {
+  useScreenTracking('InvoiceDetail');
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);

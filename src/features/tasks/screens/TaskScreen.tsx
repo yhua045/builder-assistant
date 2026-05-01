@@ -8,6 +8,7 @@ import { IVoiceParsingService } from '../../../application/services/IVoiceParsin
 import { ICameraService } from '../../../application/services/ICameraService';
 import { type UseCameraTaskReturn } from '../hooks/useCameraTask';
 import { useTaskScreen } from '../hooks/useTaskScreen';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 interface Props {
   onClose: () => void;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function TaskScreen({ onClose, audioRecorder, voiceParsingService, cameraAdapter, cameraHook }: Props) {
+  useScreenTracking('Tasks');
   const vm = useTaskScreen({ audioRecorder, voiceParsingService, cameraAdapter, cameraHook });
 
   return (

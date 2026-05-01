@@ -16,6 +16,7 @@ import { SubcontractorPickerModal } from '../components/SubcontractorPickerModal
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { useTaskDetails } from '../hooks/useTaskDetails';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });
@@ -26,6 +27,7 @@ cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color:
 cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
 export default function TaskDetailsPage() {
+  useScreenTracking('TaskDetail');
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { taskId, openProgressLog, openDocument } = route.params as {

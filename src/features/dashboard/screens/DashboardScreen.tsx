@@ -11,8 +11,10 @@ import { InvoiceScreen } from '../../invoices';
 import { QuotationScreen } from '../../quotations/screens/QuotationScreen';
 import TaskScreen from '../../tasks/screens/TaskScreen';
 import { useDashboard } from '../hooks/useDashboard';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 export function DashboardScreen() {
+  useScreenTracking('Dashboard');
   const vm = useDashboard();
 
   return (

@@ -18,8 +18,10 @@ import { useColorScheme } from 'nativewind';
 import { usePaymentDetails } from '../hooks/usePaymentDetails';
 import { PendingPaymentForm } from '../components/PendingPaymentForm';
 import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 export default function PaymentDetails() {
+  useScreenTracking('PaymentDetail');
   const vm = usePaymentDetails();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';

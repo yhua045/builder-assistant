@@ -5,6 +5,7 @@ import { Camera, FileText, Pencil } from 'lucide-react-native';
 import { IReceiptParsingStrategy } from '../application/IReceiptParsingStrategy';
 import { ICameraAdapter } from '../../../infrastructure/camera/ICameraAdapter';
 import { useSnapReceiptScreen } from '../hooks/useSnapReceiptScreen';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 interface Props {
     onClose: () => void;
@@ -23,6 +24,7 @@ export const SnapReceiptScreen = ({
     receiptParsingStrategy,
     cameraAdapter,
 }: Props) => {
+  useScreenTracking('SnapReceipt');
     const vm = useSnapReceiptScreen({ onClose, enableOcr, imageUri, receiptParsingStrategy, cameraAdapter });
 
     if (vm.view === "processing") {

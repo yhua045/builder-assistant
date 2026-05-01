@@ -42,6 +42,12 @@ import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
 import { GroqTranscriptParser } from '../voice/GroqTranscriptParser';
 import { StubSuggestionService } from '../ai/suggestionService';
+import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter';
+import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter';
+import { MixpanelAnalyticsAdapter } from '../analytics/MixpanelAnalyticsAdapter';
+import { SentryErrorReportingAdapter } from '../analytics/SentryErrorReportingAdapter';
+import { getOptOutState } from '../analytics/analyticsOptOutState';
+import { MIXPANEL_TOKEN as ENV_MIXPANEL_TOKEN } from '@env';
 
 // Repository registrations
 if (typeof (container as any).registerSingleton === 'function') {
@@ -62,6 +68,23 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('IFilePickerAdapter', MobileFilePickerAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
+
+	// ── Analytics Adapters ───────────────────────────────────────────────────────
+	const mixpanelToken = (ENV_MIXPANEL_TOKEN as string | undefined) ?? process.env.MIXPANEL_TOKEN ?? '';
+	container.register('AnalyticsAdapter', {
+		useFactory: () => new CompositeAnalyticsAdapter(
+			[
+				new FirebaseAnalyticsAdapter(),
+				new MixpanelAnalyticsAdapter(mixpanelToken),
+			],
+			getOptOutState,
+		),
+	});
+
+	// ── Error Reporting Adapter ─────────────────────────────────────────────────
+	container.register('ErrorReportingAdapter', {
+		useFactory: () => new SentryErrorReportingAdapter(),
+	});
 
 	// ── Payment Use Cases ─────────────────────────────────────────────────────
 	container.register(GetPaymentDetailsUseCase, {
