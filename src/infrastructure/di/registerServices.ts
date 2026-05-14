@@ -42,6 +42,7 @@ import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
 import { GroqTranscriptParser } from '../voice/GroqTranscriptParser';
 import { StubSuggestionService } from '../ai/suggestionService';
+import { AsyncStorageAnalyticsService } from '../analytics/AsyncStorageAnalyticsService';
 
 // Repository registrations
 if (typeof (container as any).registerSingleton === 'function') {
@@ -62,6 +63,9 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('IFilePickerAdapter', MobileFilePickerAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
+
+	// ── Analytics (UX instrumentation) ───────────────────────────────────────
+	container.registerSingleton('AnalyticsService', AsyncStorageAnalyticsService);
 
 	// ── Payment Use Cases ─────────────────────────────────────────────────────
 	container.register(GetPaymentDetailsUseCase, {

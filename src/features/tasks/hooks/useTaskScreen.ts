@@ -22,6 +22,7 @@ import { useVoiceTask } from './useVoiceTask';
 import { useCameraTask, type UseCameraTaskReturn } from './useCameraTask';
 import MockVoiceParsingService from '../../../infrastructure/voice/MockVoiceParsingService';
 import MockAudioRecorder from '../../../infrastructure/voice/MockAudioRecorder';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 import type { Task } from '../../../domain/entities/Task';
 
 // ── View types ─────────────────────────────────────────────────────────────────
@@ -105,6 +106,10 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   const internalCameraHook = useCameraTask(cameraAdapter);
   const cameraHook = cameraHookProp ?? internalCameraHook;
 
+  // ── Analytics ─────────────────────────────────────────────────────────────
+
+  const { track } = useAnalytics();
+
   // ── View-mode state ────────────────────────────────────────────────────────
 
   const [view, setView] = useState<TaskScreenViewMode>('choose');
@@ -117,28 +122,31 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   // ── Voice handlers ─────────────────────────────────────────────────────────
 
   const handleStartVoice = useCallback(async () => {
+    track({ name: 'task.creation_method_selected', properties: { method: 'voice' } });
     try {
       await startRecording();
     } catch (e: any) {
       Alert.alert('Recording failed', e?.message ?? '');
     }
-  }, [startRecording]);
+  }, [startRecording, track]);
 
   const handleStopVoice = useCallback(async () => {
     try {
       const draft = await stopAndParse();
       setInitialDraft(draft);
       setView('form');
+      track({ name: 'task.created', properties: { method: 'voice' } });
     } catch (e: any) {
       Alert.alert('Parsing failed', e?.message ?? '');
     }
-  }, [stopAndParse]);
+  }, [stopAndParse, track]);
 
   const handleManual = useCallback(() => {
+    track({ name: 'task.creation_method_selected', properties: { method: 'manual' } });
     setInitialDraft(undefined);
     setCreatedTask(null);
     setView('form');
-  }, []);
+  }, [track]);
 
   // ── Camera helpers ─────────────────────────────────────────────────────────
 
@@ -155,11 +163,12 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   }, [cameraHook]);
 
   const handleUseCamera = useCallback(async () => {
+    track({ name: 'task.creation_method_selected', properties: { method: 'camera' } });
     const uri = await doCapture();
     if (!uri) return; // cancelled → stay on choose
     setCapturedUri(uri);
     setView('preview');
-  }, [doCapture]);
+  }, [doCapture, track]);
 
   const handleRetake = useCallback(async () => {
     const uri = await doCapture();
@@ -174,17 +183,19 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
       const task = await cameraHook.createFromPhoto(capturedUri, undefined);
       setCreatedTask(task);
       setView('form');
+      track({ name: 'task.created', properties: { method: 'camera' } });
     } catch {
       Alert.alert('Error', 'Could not create task from photo');
     } finally {
       setIsCreatingTask(false);
     }
-  }, [capturedUri, cameraHook]);
+  }, [capturedUri, cameraHook, track]);
 
   const handleCancelPreview = useCallback(() => {
+    track({ name: 'task.creation_cancelled' });
     setCapturedUri(null);
     setView('choose');
-  }, []);
+  }, [track]);
 
   // ── Return View-Model ──────────────────────────────────────────────────────
 

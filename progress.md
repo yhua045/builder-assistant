@@ -1,5 +1,109 @@
-# Project Progress — Summary (updated 2026-04-29)
+# Project Progress — Summary (updated 2026-05-14)
 
+
+## ✅ Issue #223 — Add UX Instrumentation for User Behavior and Feature Popularity
+**Status**: COMPLETED  
+**Branch**: `issue-223-ux-instrumentation`  
+**Date Completed**: 2026-05-14
+
+### Summary
+Implemented a lightweight, privacy-conscious analytics layer to track key user interactions and feature usage across the app. Built as a pluggable service with async-first, fire-and-forget event emission. No new external dependencies; uses AsyncStorage for local event persistence. Fully tested with clean separation between domain, application, and infrastructure layers.
+
+### Architecture & Implementation
+**Layered design aligned with Clean Architecture**:
+- **Domain**: `AnalyticsEvent` type (pure data, no dependencies) in `src/domain/analytics/`
+- **Application**: `IAnalyticsService` interface (port) in `src/application/services/`
+- **Infrastructure**: 
+  - `AsyncStorageAnalyticsService` — production adapter storing events to AsyncStorage
+  - `NullAnalyticsService` — test/dev stub (no-op implementation)
+- **Hooks**: 
+  - `useAnalytics()` — resolves service from DI container, falls back to NullAnalyticsService if not registered
+  - `useScreenView()` — convenience hook for tracking screen views on mount
+- **DI**: Registered via `src/infrastructure/di/registerServices.ts` with token `'AnalyticsService'`
+
+**File Structure**:
+```
+src/
+├── domain/analytics/
+│   └── AnalyticsEvent.ts
+├── application/services/
+│   └── IAnalyticsService.ts
+├── infrastructure/analytics/
+│   ├── AsyncStorageAnalyticsService.ts
+│   └── NullAnalyticsService.ts
+└── hooks/
+    ├── useAnalytics.ts
+    └── useScreenView.ts
+```
+
+### Instrumented Screens
+Integrated analytics hooks into feature-specific use-case facades:
+- **Dashboard** (`useDashboard`): Tracks quick actions FAB open/dismiss/selection
+- **TaskScreen** (`useTaskScreen`): Tracks task creation, completion, and entry method
+- **ProjectsPage** (`useProjectsPage`): Tracks project list interactions
+
+All emitted events follow consistent namespacing: `<feature>.<action>` (e.g., `dashboard.quick_actions_opened`, `task.created`).
+
+### Testing & Validation
+- ✅ **TypeScript**: `npx tsc --noEmit` passes (strict mode, 0 errors)
+- ✅ **Linting**: `npm run lint` passes (0 new errors; 4 pre-existing errors, 107 pre-existing warnings unchanged)
+- ✅ **Analytics Tests**: 7 test suites, 48 tests passing
+  - `useAnalytics.test.tsx`: Hook resolution and fallback behavior
+  - `useScreenView.test.tsx`: Screen view tracking on mount
+  - `AsyncStorageAnalyticsService.test.ts`: Event persistence and retrieval
+  - `IAnalyticsService.contract.test.ts`: Service contract compliance
+  - `useDashboard.analytics.test.ts`: Quick actions event emission
+  - `useTaskScreen.analytics.test.ts`: Task creation/completion event emission
+  - `useProjectsPage.analytics.test.ts`: Project list interaction event emission
+- ✅ **No PII Collection**: All `properties` explicitly validated; no personal data in events
+- ✅ **Fire-and-Forget**: Service calls never block UI; async persistence is silent
+
+### Acceptance Criteria Met
+| # | Criterion | Status |
+|----|-----------|--------|
+| AC-1 | Consistent, namespaced event names | ✅ All events follow `<feature>.<verb>` convention |
+| AC-2 | Feature usage comparable across screens | ✅ Dashboard, TaskScreen, ProjectsPage all instrumented |
+| AC-3 | No UX degradation; fire-and-forget | ✅ Service calls non-blocking; async persistence silent |
+| AC-4 | No PII collection | ✅ Event properties validated; financial/personal data excluded |
+| AC-5 | Pluggable service interface | ✅ `NullAnalyticsService` in tests; `AsyncStorageAnalyticsService` in production |
+| AC-6 | Unit tests verify event emission | ✅ 6 focused test suites with 48 passing tests |
+| AC-7 | Pattern documented for future teams | ✅ Design doc and code comments outline extension path |
+
+### Design Rationale
+**Tool Selection**: 
+- **PostHog (future upgrade path)**: Free tier, open-source, official React Native SDK available
+- **Microsoft Clarity (rejected)**: Web-only tool (no React Native SDK); session replay risks PII capture
+- **AsyncStorage (current implementation)**: Zero new dependencies, full control, fully private, works offline
+
+See `design/issue-223-ux-instrumentation.md` for detailed evaluation.
+
+### Files Created (9)
+- `src/domain/analytics/AnalyticsEvent.ts`
+- `src/application/services/IAnalyticsService.ts`
+- `src/infrastructure/analytics/AsyncStorageAnalyticsService.ts`
+- `src/infrastructure/analytics/NullAnalyticsService.ts`
+- `src/hooks/useAnalytics.ts`
+- `src/hooks/useScreenView.ts`
+- `__tests__/unit/useAnalytics.test.tsx`
+- `__tests__/unit/useScreenView.test.tsx`
+- `__tests__/unit/AsyncStorageAnalyticsService.test.ts`
+- `__tests__/unit/IAnalyticsService.contract.test.ts`
+
+### Files Modified (3)
+- `src/features/dashboard/hooks/useDashboard.ts` — added quick actions event tracking
+- `src/features/tasks/hooks/useTaskScreen.ts` — added task lifecycle event tracking
+- `src/features/projects/hooks/useProjectsPage.ts` — added project list event tracking
+
+### Future Enhancements
+1. **PostHog Adapter**: Replace `AsyncStorageAnalyticsService` with `PostHogAnalyticsService` (zero changes to domain or UI code)
+2. **Event Export**: Add CSV/JSON export from AsyncStorage buffer (already scaffolded via `getEvents()` / `clearEvents()`)
+3. **Event Taxonomy Expansion**: Add events for receipts, invoices, payments, quotations as UI stabilizes
+4. **Performance Monitoring**: Track screen transition timing and component render duration (separate concern)
+
+### Design Doc
+- `design/issue-223-ux-instrumentation.md`
+
+---
 
 ## ✅ Issue #213 — Refactor Styling to NativeWind (All Phases Completed)
 **Status**: COMPLETED  

@@ -13,6 +13,7 @@
 
 import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 import { useInvoices } from './useInvoices';
 import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../application/IInvoiceNormalizer';
@@ -95,6 +96,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   const [formPdfFile, setFormPdfFile] = useState<PdfFileMetadata | undefined>(undefined);
 
   const { createInvoice, loading: invoicesLoading } = useInvoices();
+  const { track } = useAnalytics();
 
   const filePicker = useMemo(
     () => filePickerAdapter ?? new MobileFilePickerAdapter(),
@@ -165,6 +167,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   };
 
   const handleUploadPdf = async () => {
+    track({ name: 'invoice.capture_started' });
     try {
       setProcessingStep('copying');
       setProcessingError(null);
@@ -224,6 +227,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   const handleFormSave = async (data: any) => {
     const result = await createInvoice(data);
     if (result.success) {
+      track({ name: 'invoice.created', properties: { via_ocr: normalizedResult !== null } });
       onClose();
     } else {
       Alert.alert('Error', result.error || 'Failed to save invoice');
