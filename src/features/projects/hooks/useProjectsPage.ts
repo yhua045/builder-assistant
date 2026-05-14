@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useProjects } from './useProjects';
 import { ProjectCardDto } from '../application/ProjectCardDto';
 import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 
 // ── Private mapping function ─────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export function useProjectsPage(): ProjectsPageViewModel {
   const { projects, loading, error } = useProjects();
   const navigation = useNavigation<any>();
   const [createKey, setCreateKey] = useState(0);
+  const { track } = useAnalytics();
 
   const projectDtos = useMemo(
     () => (projects ?? []).map(toProjectCardDto),
@@ -54,11 +56,17 @@ export function useProjectsPage(): ProjectsPageViewModel {
 
   const hasProjects = projectDtos.length > 0;
 
-  const openCreate = useCallback(() => setCreateKey(k => k + 1), []);
+  const openCreate = useCallback(() => {
+    track({ name: 'project.creation_started' });
+    setCreateKey(k => k + 1);
+  }, [track]);
 
   const navigateToProject = useCallback(
-    (projectId: string) => navigation.navigate('ProjectDetail', { projectId }),
-    [navigation],
+    (projectId: string) => {
+      track({ name: 'project.card_tapped' });
+      navigation.navigate('ProjectDetail', { projectId });
+    },
+    [navigation, track],
   );
 
   return {

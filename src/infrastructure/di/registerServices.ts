@@ -42,6 +42,7 @@ import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
 import { GroqTranscriptParser } from '../voice/GroqTranscriptParser';
 import { StubSuggestionService } from '../ai/suggestionService';
+import { AsyncStorageAnalyticsService } from '../analytics/AsyncStorageAnalyticsService';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter';
 import { MixpanelAnalyticsAdapter } from '../analytics/MixpanelAnalyticsAdapter';
@@ -69,6 +70,8 @@ if (typeof (container as any).registerSingleton === 'function') {
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
 
+	// ── Analytics (UX instrumentation) ───────────────────────────────────────
+	container.registerSingleton('AnalyticsService', AsyncStorageAnalyticsService);
 	// ── Analytics Adapters ───────────────────────────────────────────────────────
 	const mixpanelToken = (ENV_MIXPANEL_TOKEN as string | undefined) ?? process.env.MIXPANEL_TOKEN ?? '';
 	container.register('AnalyticsAdapter', {

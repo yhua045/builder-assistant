@@ -10,6 +10,7 @@
 
 import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 import { useQuotations } from './useQuotations';
 import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
 import { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
@@ -77,6 +78,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
   } = options;
 
   const { createQuotation, loading } = useQuotations();
+  const { track } = useAnalytics();
 
   const [processingStep, setProcessingStep] = useState<QuotationProcessingStep>('idle');
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -188,6 +190,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
   };
 
   const handleUploadPdf = async () => {
+    track({ name: 'quotation.creation_started' });
     try {
       setProcessingStep('copying');
       setProcessingError(null);
@@ -214,6 +217,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     try {
       // createQuotation delegates to CreateQuotationUseCase which handles QuotationEntity instantiation
       const created = await createQuotation(data);
+      track({ name: 'quotation.created' });
       onSuccess?.(created);
       onClose();
     } catch (error) {

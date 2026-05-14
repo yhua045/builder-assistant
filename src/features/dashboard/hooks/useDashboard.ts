@@ -12,6 +12,7 @@ import { LlmReceiptParser } from '../../receipts/infrastructure/LlmReceiptParser
 import { GROQ_API_KEY } from '@env';
 import type { IQuotationParsingStrategy } from '../../quotations/application/ai/IQuotationParsingStrategy';
 import type { IReceiptParsingStrategy } from '../../receipts/application/IReceiptParsingStrategy';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 
 export interface QuickAction {
   id: string;
@@ -68,6 +69,7 @@ export interface DashboardViewModel {
 export function useDashboard(): DashboardViewModel {
   const { data: overviews, isLoading, error } = useProjectsOverview();
   const navigation = useNavigation<any>();
+  const { track } = useAnalytics();
 
   const [createKey, setCreateKey] = useState(0);
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -91,6 +93,8 @@ export function useDashboard(): DashboardViewModel {
   const hasProjects = (overviews?.length ?? 0) > 0;
 
   const handleQuickAction = useCallback((actionId: string) => {
+    const action = QUICK_ACTIONS.find(a => a.id === actionId);
+    track({ name: 'dashboard.quick_action_selected', properties: { action_id: actionId, action_title: action?.title ?? '' } });
     setShowQuickActions(false);
     if (actionId === '1') {
       setShowSnapReceipt(true);
@@ -102,7 +106,7 @@ export function useDashboard(): DashboardViewModel {
       setShowAdHocTask(true);
     }
     // actionId '3' (Log Payment) — TODO: not yet implemented
-  }, []);
+  }, [track]);
 
   const navigateToProject = useCallback((projectId: string) => {
     navigation.dispatch(
@@ -117,8 +121,14 @@ export function useDashboard(): DashboardViewModel {
     );
   }, [navigation]);
 
-  const openQuickActions = useCallback(() => setShowQuickActions(true), []);
-  const closeQuickActions = useCallback(() => setShowQuickActions(false), []);
+  const openQuickActions = useCallback(() => {
+    track({ name: 'dashboard.quick_actions_opened' });
+    setShowQuickActions(true);
+  }, [track]);
+  const closeQuickActions = useCallback(() => {
+    track({ name: 'dashboard.quick_actions_dismissed' });
+    setShowQuickActions(false);
+  }, [track]);
   const closeSnapReceipt = useCallback(() => setShowSnapReceipt(false), []);
   const closeAddInvoice = useCallback(() => setShowAddInvoice(false), []);
   const closeAdHocTask = useCallback(() => setShowAdHocTask(false), []);
