@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
 } from 'react-native';
 import { Contact } from '../../domain/entities/Contact';
 import { FeatureFlags } from '../../infrastructure/config/featureFlags';

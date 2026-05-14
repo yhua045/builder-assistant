@@ -1,16 +1,18 @@
 /**
  * Integration tests for the PDF → Convert → OCR → Extract pipeline.
  *
- * These tests exercise the full flow through ProcessInvoiceUploadUseCase
+ * These tests exercise the full flow via TextBasedInvoiceProcessor + ProcessInvoiceUploadUseCase
  * using MockPdfConverter and a mock IOcrAdapter — no native dependencies.
  */
 import { ProcessInvoiceUploadUseCase } from '../../application/ProcessInvoiceUploadUseCase';
+import { TextBasedInvoiceProcessor } from '../../infrastructure/processors/TextBasedInvoiceProcessor';
 import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
 import {
   IInvoiceNormalizer,
   InvoiceCandidates,
   NormalizedInvoice,
 } from '../../application/IInvoiceNormalizer';
+import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
 import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
 import { PdfPageImage } from '../../../../infrastructure/files/IPdfConverter';
 
@@ -58,6 +60,17 @@ function makeStubNormalizer(normalized: NormalizedInvoice): jest.Mocked<IInvoice
   };
 }
 
+function makeFileSystem(localUri?: string): jest.Mocked<IFileSystemAdapter> {
+  return {
+    copyToAppStorage: jest.fn().mockImplementation((uri: string) =>
+      Promise.resolve(localUri ?? uri),
+    ),
+    exists: jest.fn().mockResolvedValue(true),
+    deleteFile: jest.fn().mockResolvedValue(undefined),
+    getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,8 +101,10 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
 
       const normalized = makeNormalized('ACME Supplies', 1250);
       const normalizer = makeStubNormalizer(normalized);
+      const fileSystem = makeFileSystem();
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(pdfInput);
 
       expect(result.normalized.vendor).toBe('ACME Supplies');
@@ -113,8 +128,10 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
       };
       const normalized = makeNormalized('Vendor Corp', 300);
       const normalizer = makeStubNormalizer(normalized);
+      const fileSystem = makeFileSystem();
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       await useCase.execute(pdfInput);
 
       expect(normalizer.extractCandidates).toHaveBeenCalledWith(
@@ -122,7 +139,7 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
       );
     });
 
-    it('documentRef reflects the original PDF input, not the converted image', async () => {
+    it('documentRef reflects the copied PDF path', async () => {
       const page: PdfPageImage = {
         uri: 'file:///tmp/pdf_p0.jpg',
         width: 1240,
@@ -134,11 +151,14 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
         extractText: jest.fn().mockResolvedValueOnce(makeOcrResult('text', page.uri)),
       };
       const normalizer = makeStubNormalizer(makeNormalized('X', 100));
+      const copiedUri = 'file:///app/storage/invoice_stored.pdf';
+      const fileSystem = makeFileSystem(copiedUri);
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(pdfInput);
 
-      expect(result.documentRef.localPath).toBe(pdfInput.fileUri);
+      expect(result.documentRef.localPath).toBe(copiedUri);
       expect(result.documentRef.mimeType).toBe('application/pdf');
     });
   });
@@ -157,15 +177,16 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
           .mockResolvedValueOnce(makeOcrResult('Footer text page 1', pages[1].uri)),
       };
       const normalizer = makeStubNormalizer(makeNormalized('Multi Corp', 2000));
+      const fileSystem = makeFileSystem();
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(pdfInput);
 
       expect(ocrAdapter.extractText).toHaveBeenCalledTimes(2);
       expect(ocrAdapter.extractText).toHaveBeenNthCalledWith(1, pages[0].uri);
       expect(ocrAdapter.extractText).toHaveBeenNthCalledWith(2, pages[1].uri);
 
-      // Combined text must be passed to the normalizer
       const combinedText: string = normalizer.extractCandidates.mock.calls[0][0];
       expect(combinedText).toContain('Header text page 0');
       expect(combinedText).toContain('Footer text page 1');
@@ -186,8 +207,10 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
           .mockResolvedValueOnce(makeOcrResult('Page 1 content', pages[1].uri)),
       };
       const normalizer = makeStubNormalizer(makeNormalized('X', 50));
+      const fileSystem = makeFileSystem();
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(pdfInput);
 
       expect(result.rawOcrText).toContain('Page 0 content');
@@ -195,8 +218,8 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
     });
   });
 
-  describe('image file upload — unchanged behaviour', () => {
-    it('processes image uploads without a pdfConverter (existing flow)', async () => {
+  describe('image file upload', () => {
+    it('processes image uploads via TextBasedInvoiceProcessor', async () => {
       const imageInput = {
         fileUri: 'file:///app/documents/receipt.jpg',
         filename: 'receipt.jpg',
@@ -210,11 +233,13 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
       };
       const normalized = makeNormalized('BuildMax Store', 89.5);
       const normalizer = makeStubNormalizer(normalized);
+      const fileSystem = makeFileSystem();
 
-      // No pdfConverter supplied — standard image path
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, new MockPdfConverter(), undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(imageInput);
 
+      // ocrAdapter.extractText is called with the copied URI (fileSystem passthrough in this case)
       expect(ocrAdapter.extractText).toHaveBeenCalledWith(imageInput.fileUri);
       expect(result.normalized.vendor).toBe('BuildMax Store');
       expect(result.normalized.total).toBe(89.5);
@@ -226,8 +251,10 @@ describe('ProcessInvoiceUpload — PDF conversion integration', () => {
       const pdfConverter = new MockPdfConverter([]); // empty
       const ocrAdapter: jest.Mocked<IOcrAdapter> = { extractText: jest.fn() };
       const normalizer = makeStubNormalizer(makeNormalized('X', 0));
+      const fileSystem = makeFileSystem();
 
-      const useCase = new ProcessInvoiceUploadUseCase(ocrAdapter, normalizer, pdfConverter);
+      const processor = new TextBasedInvoiceProcessor(ocrAdapter, pdfConverter, undefined as any, normalizer);
+      const useCase = new ProcessInvoiceUploadUseCase(fileSystem, processor);
       const result = await useCase.execute(pdfInput);
 
       expect(ocrAdapter.extractText).not.toHaveBeenCalled();

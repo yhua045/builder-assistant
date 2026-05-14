@@ -19,10 +19,19 @@ import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAda
 import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
 import { MobileFilePickerAdapter } from '../../../infrastructure/files/MobileFilePickerAdapter';
 import { MobileFileSystemAdapter } from '../../../infrastructure/files/MobileFileSystemAdapter';
+import { ICameraAdapter } from '../../../infrastructure/camera/ICameraAdapter';
+import { MobileCameraAdapter } from '../../../infrastructure/camera/MobileCameraAdapter';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 import { ProcessQuotationUploadUseCase } from '../application/ProcessQuotationUploadUseCase';
 import { normalizedQuotationToFormValues } from './normalizedQuotationToFormValues';
 import { Quotation } from '../../../domain/entities/Quotation';
+import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { LlmVisionQuotationParser } from '../infrastructure/ai/LlmVisionQuotationParser';
+import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { IQuotationDocumentProcessor } from '../application/IQuotationDocumentProcessor';
+import { TextBasedQuotationProcessor } from '../infrastructure/processors/TextBasedQuotationProcessor';
+import { VisionBasedQuotationProcessor } from '../infrastructure/processors/VisionBasedQuotationProcessor';
+import { GROQ_API_KEY } from '@env';
 
 export type QuotationProcessingStep = 'idle' | 'copying' | 'ocr' | 'error';
 
@@ -33,6 +42,8 @@ export interface QuotationUploadOptions {
   ocrAdapter?: IOcrAdapter;
   pdfConverter?: IPdfConverter;
   parsingStrategy?: IQuotationParsingStrategy;
+  /** Camera adapter — for camera capture support */
+  cameraAdapter?: ICameraAdapter;
   /** File adapter overrides — for unit testing only */
   filePickerAdapter?: IFilePickerAdapter;
   fileSystemAdapter?: IFileSystemAdapter;
@@ -49,6 +60,7 @@ export interface QuotationUploadViewModel {
   // Flags from useQuotations
   loading: boolean;
   // Handlers
+  handleSnapPhoto: () => Promise<void>;
   handleUploadPdf: () => Promise<void>;
   handleSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
@@ -60,6 +72,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     ocrAdapter,
     pdfConverter,
     parsingStrategy,
+    cameraAdapter,
     filePickerAdapter,
     fileSystemAdapter,
   } = options;
@@ -82,15 +95,23 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     () => fileSystemAdapter ?? new MobileFileSystemAdapter(),
     [fileSystemAdapter],
   );
+  const camera = useMemo(
+    () => cameraAdapter ?? new MobileCameraAdapter(),
+    [cameraAdapter],
+  );
 
-  const buildUseCase = (): ProcessQuotationUploadUseCase => {
-    return new ProcessQuotationUploadUseCase(
-      parsingStrategy,
-      pdfConverter,
-      fileSystem,
-      ocrAdapter
-    );
+  const buildProcessor = (): IQuotationDocumentProcessor => {
+    if (FeatureFlags.useVisionOcr && GROQ_API_KEY && pdfConverter) {
+      return new VisionBasedQuotationProcessor(
+        new LlmVisionQuotationParser(GROQ_API_KEY, new ReactNativeImageReader()),
+        pdfConverter,
+      );
+    }
+    return new TextBasedQuotationProcessor(ocrAdapter!, pdfConverter!, parsingStrategy!);
   };
+
+  const buildUseCase = (): ProcessQuotationUploadUseCase =>
+    new ProcessQuotationUploadUseCase(fileSystem, buildProcessor());
 
   const runProcessingPipeline = async (
     originalUri: string,
@@ -150,6 +171,24 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     }
   };
 
+  const handleSnapPhoto = async () => {
+    try {
+      const captured = await camera.capturePhoto({ quality: 0.85 });
+      if (captured.cancelled) return;
+
+      await runProcessingPipeline(
+        captured.uri,
+        'quotation_photo.jpg',
+        'image/jpeg',
+        captured.fileSize,
+      );
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Camera error occurred';
+      setProcessingError(errorMessage);
+      setProcessingStep('error');
+    }
+  };
+
   const handleUploadPdf = async () => {
     track({ name: 'quotation.creation_started' });
     try {
@@ -198,6 +237,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     formInitialValues,
     formPdfFile,
     loading,
+    handleSnapPhoto,
     handleUploadPdf,
     handleSubmit,
   };

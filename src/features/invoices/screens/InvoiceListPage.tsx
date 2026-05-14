@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshCon
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { FileText, DollarSign, Eye, Edit, Trash2 } from 'lucide-react-native';
-import { cssInterop, useColorScheme } from 'nativewind';
+import { cssInterop } from 'nativewind';
 import { useInvoices } from '../hooks/useInvoices';
 import type { Invoice } from '../../../domain/entities/Invoice';
 
@@ -19,9 +19,6 @@ export default function InvoiceListPage() {
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  
   const { invoices, loading, error, deleteInvoice, refreshInvoices } = useInvoices();
 
   // Filter invoices by active filter

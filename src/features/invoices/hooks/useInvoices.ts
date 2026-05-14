@@ -14,6 +14,7 @@ import { DeleteInvoiceUseCase } from '../application/DeleteInvoiceUseCase';
 import { GetInvoiceByIdUseCase } from '../application/GetInvoiceByIdUseCase';
 import { ListInvoicesUseCase } from '../application/ListInvoicesUseCase';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import type { AnalyticsAdapter } from '../../../infrastructure/analytics/AnalyticsAdapter';
 
 export interface UseInvoicesOptions {
   status?: Invoice['status'];
@@ -63,6 +64,14 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
     [repository]
   );
 
+  const analyticsAdapter = useMemo<AnalyticsAdapter | null>(() => {
+    try {
+      return container.resolve<AnalyticsAdapter>('AnalyticsAdapter');
+    } catch {
+      return null;
+    }
+  }, []);
+
   const queryKey = queryKeys.invoices(options?.projectId);
 
   const {
@@ -94,13 +103,15 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
           invalidations.invoiceMutated({ projectId: options?.projectId })
             .map(key => queryClient.invalidateQueries({ queryKey: key }))
         );
+        analyticsAdapter?.track('invoice_created', { projectId: options?.projectId });
+        analyticsAdapter?.track('invoice_creation_completed', { projectId: options?.projectId });
         return { success: true };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to create invoice';
         return { success: false, error: errorMsg };
       }
     },
-    [createInvoiceUseCase, queryClient, options?.projectId]
+    [createInvoiceUseCase, queryClient, options?.projectId, analyticsAdapter]
   );
 
   const updateInvoice = useCallback(
@@ -128,13 +139,14 @@ export const useInvoices = (options?: UseInvoicesOptions): UseInvoicesReturn => 
           invalidations.invoiceMutated({ projectId: options?.projectId })
             .map(key => queryClient.invalidateQueries({ queryKey: key }))
         );
+        analyticsAdapter?.track('invoice_cancelled');
         return { success: true };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to delete invoice';
         return { success: false, error: errorMsg };
       }
     },
-    [deleteInvoiceUseCase, queryClient, options?.projectId]
+    [deleteInvoiceUseCase, queryClient, options?.projectId, analyticsAdapter]
   );
 
   const getInvoiceById = useCallback(

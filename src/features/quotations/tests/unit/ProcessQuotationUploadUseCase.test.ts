@@ -2,28 +2,18 @@ import {
   ProcessQuotationUploadUseCase,
   ProcessQuotationUploadInput,
 } from '../../application/ProcessQuotationUploadUseCase';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
-import {
-  IQuotationParsingStrategy,
-  NormalizedQuotation,
-} from '../../application/ai/IQuotationParsingStrategy';
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
+import { IQuotationDocumentProcessor } from '../../application/IQuotationDocumentProcessor';
 import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { NormalizedQuotation } from '../../application/ai/IQuotationParsingStrategy';
 
-function makeOcrResult(text = 'OCR text'): OcrResult {
-  return { fullText: text, tokens: [], imageUri: 'file:///tmp/img.jpg' };
-}
-
-const mockFileSystem: IFileSystemAdapter = {
-  copyToAppStorage: jest.fn().mockImplementation((uri) => Promise.resolve(uri)),
+const mockFileSystem: jest.Mocked<IFileSystemAdapter> = {
+  copyToAppStorage: jest.fn().mockImplementation((_uri: string) => Promise.resolve(_uri)),
   exists: jest.fn().mockResolvedValue(true),
   deleteFile: jest.fn().mockResolvedValue(undefined),
   getDocumentsDirectory: jest.fn().mockResolvedValue('/app/docs'),
 };
 
-function makeNormalizedQuotation(
-  overrides: Partial<NormalizedQuotation> = {},
-): NormalizedQuotation {
+function makeNormalizedQuotation(overrides: Partial<NormalizedQuotation> = {}): NormalizedQuotation {
   return {
     reference: 'QUO-001',
     vendor: 'Builder Co',
@@ -48,16 +38,17 @@ function makeNormalizedQuotation(
   };
 }
 
-function makeOcrAdapter(ocrResult?: OcrResult): IOcrAdapter {
+function makeProcessor(
+  normalized?: NormalizedQuotation,
+  error?: Error,
+): jest.Mocked<IQuotationDocumentProcessor> {
   return {
-    extractText: jest.fn().mockResolvedValue(ocrResult ?? makeOcrResult()),
-  };
-}
-
-function makeParsingStrategy(normalized?: NormalizedQuotation): IQuotationParsingStrategy {
-  return {
-    strategyType: 'llm',
-    parse: jest.fn().mockResolvedValue(normalized ?? makeNormalizedQuotation()),
+    process: error
+      ? jest.fn().mockRejectedValue(error)
+      : jest.fn().mockResolvedValue({
+          normalized: normalized ?? makeNormalizedQuotation(),
+          rawOcrText: 'OCR text',
+        }),
   };
 }
 
@@ -76,135 +67,100 @@ const pdfInput: ProcessQuotationUploadInput = {
 };
 
 describe('ProcessQuotationUploadUseCase', () => {
-  describe('image path', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFileSystem.copyToAppStorage.mockImplementation((_uri: string) => Promise.resolve(_uri));
+  });
+
+  describe('validation', () => {
+    it('throws Validation failed for invalid mimeType', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
+
+      await expect(
+        useCase.execute({ ...imageInput, mimeType: 'text/csv' }),
+      ).rejects.toThrow('Validation failed');
+    });
+
+    it('throws Validation failed for oversized file', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
+
+      await expect(
+        useCase.execute({ ...imageInput, fileSize: 999_999_999 }),
+      ).rejects.toThrow('Validation failed');
+    });
+  });
+
+  describe('file copy', () => {
+    it('calls fileSystemAdapter.copyToAppStorage for image input', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
+
+      await useCase.execute(imageInput);
+
+      expect(mockFileSystem.copyToAppStorage).toHaveBeenCalledWith(
+        imageInput.fileUri,
+        expect.stringMatching(/^quote_\d+_[a-z0-9]+\.pdf$/),
+      );
+    });
+
+    it('returns documentRef with localPath from copyToAppStorage', async () => {
+      const localPath = 'file:///app/storage/quote_stored.pdf';
+      mockFileSystem.copyToAppStorage.mockResolvedValueOnce(localPath);
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
+
+      const output = await useCase.execute(imageInput);
+
+      expect(output.documentRef.localPath).toBe(localPath);
+      expect(output.documentRef.filename).toBe(imageInput.filename);
+      expect(output.documentRef.size).toBe(imageInput.fileSize);
+      expect(output.documentRef.mimeType).toBe(imageInput.mimeType);
+    });
+  });
+
+  describe('processor delegation', () => {
     it('returns normalized quotation and documentRef for image file', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
+      const normalized = makeNormalizedQuotation();
+      const processor = makeProcessor(normalized);
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
 
       const output = await useCase.execute(imageInput);
 
       expect(output.normalized.vendor).toBe('Builder Co');
       expect(output.documentRef).toMatchObject({
-        localPath: imageInput.fileUri,
         filename: imageInput.filename,
         size: imageInput.fileSize,
         mimeType: imageInput.mimeType,
       });
     });
 
-    it('passes OcrResult to strategy.parse()', async () => {
-      const ocrResult = makeOcrResult('Custom OCR text');
-      const ocrAdapter = makeOcrAdapter(ocrResult);
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
+    it('calls processor.process with the copied localPath and mimeType', async () => {
+      const localPath = 'file:///app/storage/quote_stored.jpg';
+      mockFileSystem.copyToAppStorage.mockResolvedValueOnce(localPath);
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
 
       await useCase.execute(imageInput);
 
-      expect(strategy.parse).toHaveBeenCalledWith(ocrResult);
+      expect(processor.process).toHaveBeenCalledWith(localPath, imageInput.mimeType);
     });
 
-    it('rawOcrText is the fullText from OCR', async () => {
-      const ocrAdapter = makeOcrAdapter(makeOcrResult('Some OCR text'));
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
+    it('calls processor.process with PDF mimeType for PDF input', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
 
-      const output = await useCase.execute(imageInput);
+      await useCase.execute(pdfInput);
 
-      expect(output.rawOcrText).toBe('Some OCR text');
+      expect(processor.process).toHaveBeenCalledWith(expect.any(String), 'application/pdf');
     });
 
-    it('throws wrapped error when OCR fails', async () => {
-      const ocrAdapter: IOcrAdapter = {
-        extractText: jest.fn().mockRejectedValue(new Error('OCR service down')),
-      };
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
+    it('propagates processor errors', async () => {
+      const processor = makeProcessor(undefined, new Error('Processing failed'));
+      const useCase = new ProcessQuotationUploadUseCase(mockFileSystem, processor);
 
-      await expect(useCase.execute(imageInput)).rejects.toThrow(
-        'Quotation processing failed: OCR service down',
-      );
-    });
-
-    it('throws wrapped error when strategy.parse() fails', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy: IQuotationParsingStrategy = {
-        strategyType: 'llm',
-        parse: jest.fn().mockRejectedValue(new Error('LLM error')),
-      };
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
-
-      await expect(useCase.execute(imageInput)).rejects.toThrow(
-        'Quotation processing failed: LLM error',
-      );
-    });
-  });
-
-  describe('PDF path — no pdfConverter', () => {
-    it('returns empty NormalizedQuotation gracefully', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, undefined, mockFileSystem, ocrAdapter);
-
-      const output = await useCase.execute(pdfInput);
-
-      expect(output.normalized.vendor).toBeNull();
-      expect(output.normalized.currency).toBe('AUD');
-      expect(output.normalized.lineItems).toHaveLength(0);
-      expect(output.rawOcrText).toBe('');
-      expect(strategy.parse).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('PDF path — with pdfConverter', () => {
-    it('converts PDF to images, runs OCR, passes merged result to strategy', async () => {
-      const pdfConverter: IPdfConverter = {
-        convertToImages: jest.fn().mockResolvedValue([
-          { uri: 'file:///tmp/page1.jpg', pageIndex: 0 },
-          { uri: 'file:///tmp/page2.jpg', pageIndex: 1 },
-        ]),
-        getPageCount: jest.fn().mockResolvedValue(2),
-      };
-      const ocrAdapter = makeOcrAdapter(makeOcrResult('Page OCR'));
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
-
-      const output = await useCase.execute(pdfInput);
-
-      expect(pdfConverter.convertToImages).toHaveBeenCalledWith(pdfInput.fileUri);
-      expect(ocrAdapter.extractText).toHaveBeenCalledTimes(2);
-      expect(strategy.parse).toHaveBeenCalledTimes(1);
-      expect(output.normalized.vendor).toBe('Builder Co');
-    });
-
-    it('returns empty NormalizedQuotation when PDF has no pages', async () => {
-      const pdfConverter: IPdfConverter = {
-        convertToImages: jest.fn().mockResolvedValue([]),
-        getPageCount: jest.fn().mockResolvedValue(0),
-      };
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
-
-      const output = await useCase.execute(pdfInput);
-
-      expect(output.normalized.vendor).toBeNull();
-      expect(output.rawOcrText).toBe('');
-      expect(strategy.parse).not.toHaveBeenCalled();
-    });
-
-    it('throws wrapped error when PDF conversion fails', async () => {
-      const pdfConverter: IPdfConverter = {
-        convertToImages: jest.fn().mockRejectedValue(new Error('PDF conversion failed')),
-        getPageCount: jest.fn().mockResolvedValue(0),
-      };
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessQuotationUploadUseCase(strategy, pdfConverter, mockFileSystem, ocrAdapter);
-
-      await expect(useCase.execute(pdfInput)).rejects.toThrow(
-        'Quotation processing failed: PDF conversion failed',
-      );
+      await expect(useCase.execute(imageInput)).rejects.toThrow('Processing failed');
     });
   });
 });

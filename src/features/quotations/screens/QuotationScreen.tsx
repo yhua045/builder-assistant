@@ -11,6 +11,7 @@ import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
 import { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
 import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
 import { useQuotationUpload } from '../hooks/useQuotationUpload';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 
@@ -36,6 +37,7 @@ export const QuotationScreen: React.FC<QuotationScreenProps> = ({
   pdfConverter,
   parsingStrategy,
 }) => {
+  useScreenTracking('Quotations');
   const vm = useQuotationUpload({
     onClose,
     onSuccess,

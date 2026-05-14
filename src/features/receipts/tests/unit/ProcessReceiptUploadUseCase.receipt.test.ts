@@ -2,18 +2,10 @@ import {
   ProcessReceiptUploadUseCase,
   ProcessReceiptUploadInput,
 } from '../../application/ProcessReceiptUploadUseCase';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
-import { IReceiptParsingStrategy } from '../../application/IReceiptParsingStrategy';
+import { IReceiptDocumentProcessor } from '../../application/IReceiptDocumentProcessor';
 import { NormalizedReceipt } from '../../application/IReceiptNormalizer';
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
 
-function makeOcrResult(text = 'OCR receipt text'): OcrResult {
-  return { fullText: text, tokens: [], imageUri: 'file:///tmp/img.jpg' };
-}
-
-function makeNormalizedReceipt(
-  overrides: Partial<NormalizedReceipt> = {},
-): NormalizedReceipt {
+function makeNormalizedReceipt(overrides: Partial<NormalizedReceipt> = {}): NormalizedReceipt {
   return {
     vendor: 'Bunnings',
     date: new Date('2026-04-10'),
@@ -31,23 +23,17 @@ function makeNormalizedReceipt(
   };
 }
 
-function makeOcrAdapter(ocrResult?: OcrResult): IOcrAdapter {
+function makeProcessor(
+  normalized?: NormalizedReceipt,
+  error?: Error,
+): jest.Mocked<IReceiptDocumentProcessor> {
   return {
-    extractText: jest.fn().mockResolvedValue(ocrResult ?? makeOcrResult()),
-  };
-}
-
-function makeParsingStrategy(normalized?: NormalizedReceipt): IReceiptParsingStrategy {
-  return {
-    strategyType: 'llm',
-    parse: jest.fn().mockResolvedValue(normalized ?? makeNormalizedReceipt()),
-  };
-}
-
-function makePdfConverter(pages: { uri: string }[] = [{ uri: 'file:///tmp/page1.jpg' }]): IPdfConverter {
-  return {
-    convertToImages: jest.fn().mockResolvedValue(pages),
-    getPageCount: jest.fn().mockResolvedValue(pages.length),
+    process: error
+      ? jest.fn().mockRejectedValue(error)
+      : jest.fn().mockResolvedValue({
+          normalized: normalized ?? makeNormalizedReceipt(),
+          rawOcrText: 'OCR receipt text',
+        }),
   };
 }
 
@@ -66,11 +52,40 @@ const pdfInput: ProcessReceiptUploadInput = {
 };
 
 describe('ProcessReceiptUploadUseCase', () => {
-  describe('image path', () => {
-    it('returns normalized receipt and rawOcrText for image file', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy);
+  describe('validation', () => {
+    it('throws Validation failed for invalid mimeType', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessReceiptUploadUseCase(processor);
+
+      await expect(
+        useCase.execute({ ...imageInput, mimeType: 'text/csv' }),
+      ).rejects.toThrow('Validation failed');
+    });
+
+    it('throws Validation failed for oversized file', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessReceiptUploadUseCase(processor);
+
+      await expect(
+        useCase.execute({ ...imageInput, fileSize: 999_999_999 }),
+      ).rejects.toThrow('Validation failed');
+    });
+  });
+
+  describe('processor delegation — image path', () => {
+    it('calls processor.process with fileUri and mimeType', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessReceiptUploadUseCase(processor);
+
+      await useCase.execute(imageInput);
+
+      expect(processor.process).toHaveBeenCalledWith(imageInput.fileUri, imageInput.mimeType);
+    });
+
+    it('returns normalized receipt and rawOcrText from processor', async () => {
+      const normalized = makeNormalizedReceipt();
+      const processor = makeProcessor(normalized);
+      const useCase = new ProcessReceiptUploadUseCase(processor);
 
       const output = await useCase.execute(imageInput);
 
@@ -78,111 +93,22 @@ describe('ProcessReceiptUploadUseCase', () => {
       expect(output.rawOcrText).toBe('OCR receipt text');
     });
 
-    it('passes OcrResult to strategy.parse()', async () => {
-      const ocrResult = makeOcrResult('Custom OCR text');
-      const ocrAdapter = makeOcrAdapter(ocrResult);
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy);
+    it('propagates processor errors', async () => {
+      const processor = makeProcessor(undefined, new Error('Processing failed'));
+      const useCase = new ProcessReceiptUploadUseCase(processor);
 
-      await useCase.execute(imageInput);
-
-      expect(strategy.parse).toHaveBeenCalledWith(ocrResult);
-    });
-
-    it('throws wrapped error when OCR fails', async () => {
-      const ocrAdapter: IOcrAdapter = {
-        extractText: jest.fn().mockRejectedValue(new Error('OCR service down')),
-      };
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy);
-
-      await expect(useCase.execute(imageInput)).rejects.toThrow(
-        'Receipt processing failed: OCR service down',
-      );
+      await expect(useCase.execute(imageInput)).rejects.toThrow('Processing failed');
     });
   });
 
-  describe('PDF path', () => {
-    it('returns empty result when no pdfConverter provided', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy);
+  describe('processor delegation — PDF path', () => {
+    it('calls processor.process with PDF fileUri and mimeType', async () => {
+      const processor = makeProcessor();
+      const useCase = new ProcessReceiptUploadUseCase(processor);
 
-      const output = await useCase.execute(pdfInput);
+      await useCase.execute(pdfInput);
 
-      expect(output.normalized.vendor).toBeNull();
-      expect(output.rawOcrText).toBe('');
-    });
-
-    it('converts PDF pages and passes merged OCR to strategy', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const pdfConverter = makePdfConverter([
-        { uri: 'file:///tmp/page1.jpg' },
-        { uri: 'file:///tmp/page2.jpg' },
-      ]);
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy, pdfConverter);
-
-      const output = await useCase.execute(pdfInput);
-
-      expect(pdfConverter.convertToImages).toHaveBeenCalledWith(pdfInput.fileUri);
-      expect(output.normalized.vendor).toBe('Bunnings');
-    });
-
-    it('returns empty result when PDF has no pages', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const pdfConverter = makePdfConverter([]); // zero pages
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy, pdfConverter);
-
-      const output = await useCase.execute(pdfInput);
-
-      expect(output.normalized.vendor).toBeNull();
-      expect(output.rawOcrText).toBe('');
-    });
-
-    it('throws wrapped error when PDF conversion fails', async () => {
-      const ocrAdapter = makeOcrAdapter();
-      const strategy = makeParsingStrategy();
-      const pdfConverter: IPdfConverter = {
-        convertToImages: jest.fn().mockRejectedValue(new Error('PDF conversion failed')),
-        getPageCount: jest.fn().mockResolvedValue(0),
-      };
-      const useCase = new ProcessReceiptUploadUseCase(ocrAdapter, strategy, pdfConverter);
-
-      await expect(useCase.execute(pdfInput)).rejects.toThrow(
-        'Receipt processing failed: PDF conversion failed',
-      );
-    });
-  });
-
-  // ─── Validation (moved from View-Model layer) ─────────────────────────────
-
-  describe('validation', () => {
-    it('throws Validation failed for an unsupported MIME type', async () => {
-      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
-
-      await expect(
-        useCase.execute({
-          fileUri: 'file:///tmp/doc.docx',
-          filename: 'doc.docx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          fileSize: 50000,
-        }),
-      ).rejects.toThrow('Validation failed:');
-    });
-
-    it('throws Validation failed when file is over 20 MB', async () => {
-      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
-
-      await expect(
-        useCase.execute({ ...imageInput, fileSize: 25 * 1024 * 1024 }),
-      ).rejects.toThrow('Validation failed:');
-    });
-
-    it('does not throw for a valid image within size limit', async () => {
-      const useCase = new ProcessReceiptUploadUseCase(makeOcrAdapter(), makeParsingStrategy());
-      await expect(useCase.execute(imageInput)).resolves.toBeDefined();
+      expect(processor.process).toHaveBeenCalledWith(pdfInput.fileUri, pdfInput.mimeType);
     });
   });
 });

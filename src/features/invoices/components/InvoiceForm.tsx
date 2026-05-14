@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import { Invoice, InvoiceLineItem } from '../../../domain/entities/Invoice';
 import DatePickerInput from '../../../components/inputs/DatePickerInput';

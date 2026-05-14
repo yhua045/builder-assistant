@@ -14,6 +14,7 @@ import { PaymentTypeFilterChips } from '../components/PaymentTypeFilterChips';
 import GlobalQuotationCard from '../components/GlobalQuotationCard';
 import { useGlobalPaymentsScreen } from '../hooks/useGlobalPaymentsScreen';
 import type { Quotation } from '../../../domain/entities/Quotation';
+import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 const EMPTY_MESSAGES: Record<string, { title: string; subtitle: (hasSearch: boolean) => string }> = {
   quotations: {
@@ -39,6 +40,7 @@ const EMPTY_MESSAGES: Record<string, { title: string; subtitle: (hasSearch: bool
 };
 
 export default function PaymentsScreen() {
+  useScreenTracking('Payments');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const iconMuted = isDark ? '#a1a1aa' : '#71717a';

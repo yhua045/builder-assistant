@@ -5,7 +5,7 @@
  * The app separates domain logic, application use cases, and UI components.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   StatusBar,
   useColorScheme as rnUseColorScheme,
@@ -26,6 +26,12 @@ import { verifyInstallation } from 'nativewind';
 
 // TanStack Query
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Analytics & error monitoring
+import { container } from 'tsyringe';
+import { ErrorBoundary } from './src/components/shared/ErrorBoundary';
+import type { ErrorReportingAdapter } from './src/infrastructure/analytics/ErrorReportingAdapter';
+import './src/infrastructure/di/registerServices';
 
 // Demo data imports (dev only)
 import { initDatabase } from './src/infrastructure/database/connection';
@@ -51,6 +57,32 @@ const queryClient = new QueryClient({
 
 function App() {
   const isDarkMode = rnUseColorScheme() === 'dark';
+
+  // Resolve error reporting adapter once (stable singleton)
+  const errorReporter = useMemo<ErrorReportingAdapter | undefined>(() => {
+    try {
+      return container.resolve<ErrorReportingAdapter>('ErrorReportingAdapter');
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  // Capture unhandled promise rejections globally
+  useEffect(() => {
+    if (!errorReporter) return;
+    const handleRejection = (event: { reason?: unknown }) => {
+      const err =
+        event?.reason instanceof Error
+          ? event.reason
+          : new Error(String(event?.reason ?? 'Unhandled promise rejection'));
+      errorReporter.captureException(err, { source: 'unhandled_rejection' });
+    };
+    if (typeof (global as any).addEventListener === 'function') {
+      (global as any).addEventListener('unhandledrejection', handleRejection);
+      return () =>
+        (global as any).removeEventListener('unhandledrejection', handleRejection);
+    }
+  }, [errorReporter]);
 
   // Initialize database and seed demo data on app startup
   useEffect(() => {
@@ -88,9 +120,11 @@ function App() {
       <SafeAreaProvider>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
         <View style={containerStyle}>
-          <NavigationContainer>
-            <TabsLayout />
-          </NavigationContainer>
+          <ErrorBoundary errorReportingAdapter={errorReporter}>
+            <NavigationContainer>
+              <TabsLayout />
+            </NavigationContainer>
+          </ErrorBoundary>
         </View>
       </SafeAreaProvider>
     </QueryClientProvider>
