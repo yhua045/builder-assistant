@@ -1,3 +1,10 @@
+/**
+ * @deprecated Use `AsyncStorageAnalyticsAdapter` instead.
+ * Superseded by `AsyncStorageAnalyticsAdapter` which extends `AnalyticsAdapter`
+ * (Issue #223 × #219 reconciliation). No new code should import this class.
+ * Kept here for transition only — will be removed in a follow-up cleanup.
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AnalyticsEvent } from '../../domain/analytics/AnalyticsEvent';
 import type { IAnalyticsService } from '../../application/services/IAnalyticsService';

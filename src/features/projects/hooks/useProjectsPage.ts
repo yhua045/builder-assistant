@@ -57,13 +57,13 @@ export function useProjectsPage(): ProjectsPageViewModel {
   const hasProjects = projectDtos.length > 0;
 
   const openCreate = useCallback(() => {
-    track({ name: 'project.creation_started' });
+    track('project.creation_started');
     setCreateKey(k => k + 1);
   }, [track]);
 
   const navigateToProject = useCallback(
     (projectId: string) => {
-      track({ name: 'project.card_tapped' });
+      track('project.card_tapped');
       navigation.navigate('ProjectDetail', { projectId });
     },
     [navigation, track],

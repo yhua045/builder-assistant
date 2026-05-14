@@ -17,10 +17,10 @@ export function useScreenView(
   screenName: string,
   properties?: Record<string, string | number | boolean>,
 ): void {
-  const { trackScreen } = useAnalytics();
+  const { screen } = useAnalytics();
 
   useEffect(() => {
-    trackScreen(screenName, properties);
+    screen(screenName, properties);
     // Intentionally empty deps — one event per mount, not per render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

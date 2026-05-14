@@ -1,5 +1,113 @@
 # Project Progress — Summary (updated 2026-05-14)
 
+## ✅ Issue #223x219 — Reconciliation: Unified Analytics Adapter Architecture
+**Status**: COMPLETED  
+**Branch**: `issue-223x219-reconciliation` (PR branch)  
+**Date Completed**: 2026-05-14
+
+### Summary
+Completed reconciliation of two overlapping analytics implementations (#219 and #223), unifying them under a single `AnalyticsAdapter` abstraction:
+
+**Problem Solved**: The codebase had two separate analytics ports:
+- **#219**: `AnalyticsAdapter` abstract class + `CompositeAnalyticsAdapter` for cloud providers (Firebase, Mixpanel)
+- **#223**: `IAnalyticsService` interface + `AsyncStorageAnalyticsService` for local, privacy-safe on-device buffering
+
+**Result**: Conflicting DI tokens, duplicate call signatures, and incomplete opt-out coverage.
+
+### Reconciliation Approach
+1. **Single Abstract Base**: All adapters (Firebase, Mixpanel, AsyncStorage) now extend `AnalyticsAdapter`
+2. **Composite Includes Local Storage**: `AsyncStorageAnalyticsAdapter` (refactored from service) added as third adapter in `CompositeAnalyticsAdapter`
+3. **Unified DI**: Single `'AnalyticsAdapter'` token consumed by hooks; removed `'AnalyticsService'` token
+4. **Unified Call Signature**: Updated all call sites from `track({name, properties})` to `track(event: string, properties?)`
+5. **Preserved Privacy**: Fire-and-forget async persistence, no PII auto-injection, graceful degradation, buffer cap at 500 events
+6. **Complete Opt-Out**: `CompositeAnalyticsAdapter.optOutProvider` gate now applies to all three adapters, including local storage
+
+### Key Changes
+
+#### Files Created (2)
+- `src/infrastructure/analytics/AsyncStorageAnalyticsAdapter.ts` — Refactored `AsyncStorageAnalyticsService` to extend `AnalyticsAdapter`
+- `__tests__/unit/analytics/AsyncStorageAnalyticsAdapter.test.ts` — Unit tests for the new adapter (10 test scenarios)
+
+#### Files Modified (17)
+| File | Change |
+|---|---|
+| `src/hooks/useAnalytics.ts` | Resolve `'AnalyticsAdapter'` token; return `{ track, screen }`; fallback to `NoopAnalyticsAdapter` |
+| `src/hooks/useScreenView.ts` | Call `screen(...)` instead of `trackScreen(...)` |
+| `src/infrastructure/di/registerServices.ts` | Add `AsyncStorageAnalyticsAdapter` to composite; remove `'AnalyticsService'` registration |
+| `src/features/dashboard/hooks/useDashboard.ts` | Update `track({name, ...})` → `track(name, ...)` signatures |
+| `src/features/tasks/hooks/useTaskScreen.ts` | Update track call signatures |
+| `src/features/projects/hooks/useProjectsPage.ts` | Update track call signatures |
+| `src/features/invoices/hooks/useInvoiceUpload.ts` | Update track call signatures |
+| `src/features/receipts/hooks/useSnapReceiptScreen.ts` | Update track call signatures |
+| `src/features/quotations/hooks/useQuotationUpload.ts` | Update track call signatures |
+| `__tests__/unit/useAnalytics.test.tsx` | Update hook assertions to new API |
+| `__tests__/unit/analytics/useScreenTracking.test.ts` | Update `trackScreen` → `screen` assertions |
+| `__tests__/integration/analytics/container.analytics.integration.test.ts` | Add composite 3-adapter test |
+| `src/infrastructure/analytics/AsyncStorageAnalyticsService.ts` | Mark `@deprecated` — superseded by `AsyncStorageAnalyticsAdapter` |
+| `src/application/services/IAnalyticsService.ts` | Mark `@deprecated` — superseded by `AnalyticsAdapter` |
+| `src/infrastructure/analytics/NullAnalyticsService.ts` | Mark `@deprecated` — superseded by `NoopAnalyticsAdapter` |
+| Removed from DI | `'AnalyticsService'` token removed from `registerServices.ts` |
+
+#### API Changes
+
+**`useAnalytics` Hook**:
+| Old | New |
+|---|---|
+| `track({name, properties})` | `track(event: string, properties?)` |
+| `trackScreen(screenName, properties)` | `screen(screenName, properties)` |
+
+**`AsyncStorageAnalyticsAdapter`**:
+| Method | Signature | Notes |
+|---|---|---|
+| `track` | `track(event: string, properties?: Record<string, unknown>)` | Bridges to internal `AnalyticsEvent` |
+| `screen` | `screen(screenName, properties?)` | Stored as `{ name: 'screen.viewed', properties: { screen: screenName } }` |
+| `identify` | `identify(userId: string)` | No-op — local storage, no user identity |
+| `reset` | `reset()` | Clears buffer and AsyncStorage |
+| `getEvents` | `getEvents(): Promise<AnalyticsEvent[]>` | Extra public method for dev tooling |
+| `clearEvents` | `clearEvents(): Promise<void>` | Extra public method for dev tooling |
+
+### DI Registration Changes
+```ts
+// Before:
+container.registerSingleton('AnalyticsService', AsyncStorageAnalyticsService);
+
+// After:
+container.register('AnalyticsAdapter', {
+  useFactory: () => new CompositeAnalyticsAdapter(
+    [
+      new FirebaseAnalyticsAdapter(),
+      new MixpanelAnalyticsAdapter(mixpanelToken),
+      new AsyncStorageAnalyticsAdapter(),  // ← Local storage now peer of cloud providers
+    ],
+    getOptOutState,
+  ),
+});
+```
+
+### Testing & Validation
+- ✅ **TypeScript**: `npx tsc --noEmit` — **PASSES** (all implementation files clean)
+  - Pre-existing errors in BDD test files (`__tests__/bdd/steps/`) unrelated to this work
+- ✅ **Unit Tests**: AsyncStorageAnalyticsAdapter (10 scenarios), useAnalytics hook, integration composite test
+- ✅ **API Coverage**: All 5 feature hooks updated with new unified call signatures
+- ✅ **Opt-Out Verification**: CompositeAnalyticsAdapter gates all three adapters uniformly
+
+### Acceptance Criteria Met
+| # | Criterion | Status |
+|---|---|---|
+| AC-1 | `AsyncStorageAnalyticsAdapter extends AnalyticsAdapter` | ✅ |
+| AC-2 | `CompositeAnalyticsAdapter` contains all 3 adapters (Firebase, Mixpanel, AsyncStorage) | ✅ |
+| AC-3 | Opting out suppresses events from all adapters including local storage | ✅ |
+| AC-4 | All call sites use unified `track(string, object?)` and `screen(string, object?)` API | ✅ |
+| AC-5 | `npx tsc --noEmit` passes for all implementation files | ✅ |
+| AC-6 | All analytics unit + integration tests pass | ✅ |
+| AC-7 | `IAnalyticsService`, `AsyncStorageAnalyticsService`, `NullAnalyticsService` marked @deprecated | ✅ |
+| AC-8 | `'AnalyticsService'` DI token removed from registration | ✅ |
+
+### Design Documentation
+- [design/issue-223x219-reconciliation.md](design/issue-223x219-reconciliation.md) — full architecture, API delta, file inventory, TDD plan, acceptance criteria
+
+---
+
 ## ✅ Issue #219 — Application Monitoring: Firebase + Mixpanel Analytics & Sentry Error Reporting + useTaskForm Refactor
 **Status**: COMPLETED (Phases 1–8)  
 **Branch**: `issue-219-bdd-tests2` (PR branch)  

@@ -190,7 +190,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
   };
 
   const handleUploadPdf = async () => {
-    track({ name: 'quotation.creation_started' });
+    track('quotation.creation_started');
     try {
       setProcessingStep('copying');
       setProcessingError(null);
@@ -217,7 +217,7 @@ export function useQuotationUpload(options: QuotationUploadOptions): QuotationUp
     try {
       // createQuotation delegates to CreateQuotationUseCase which handles QuotationEntity instantiation
       const created = await createQuotation(data);
-      track({ name: 'quotation.created' });
+      track('quotation.created');
       onSuccess?.(created);
       onClose();
     } catch (error) {

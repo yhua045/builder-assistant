@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react-native';
 const mockTrack = jest.fn();
 
 jest.mock('../../src/hooks/useAnalytics', () => ({
-  useAnalytics: () => ({ track: mockTrack, trackScreen: jest.fn() }),
+  useAnalytics: () => ({ track: mockTrack, screen: jest.fn() }),
 }));
 
 jest.mock('tsyringe', () => ({
@@ -91,37 +91,25 @@ describe('useTaskScreen — analytics instrumentation', () => {
   it('handleManual emits task.creation_method_selected with method=manual', () => {
     const { result } = renderHook(() => useTaskScreen());
     act(() => result.current.handleManual());
-    expect(mockTrack).toHaveBeenCalledWith({
-      name: 'task.creation_method_selected',
-      properties: { method: 'manual' },
-    });
+    expect(mockTrack).toHaveBeenCalledWith('task.creation_method_selected', { method: 'manual' });
   });
 
   it('handleStartVoice emits task.creation_method_selected with method=voice', async () => {
     const { result } = renderHook(() => useTaskScreen());
     await act(async () => { await result.current.handleStartVoice(); });
-    expect(mockTrack).toHaveBeenCalledWith({
-      name: 'task.creation_method_selected',
-      properties: { method: 'voice' },
-    });
+    expect(mockTrack).toHaveBeenCalledWith('task.creation_method_selected', { method: 'voice' });
   });
 
   it('handleStopVoice emits task.created with method=voice on success', async () => {
     const { result } = renderHook(() => useTaskScreen());
     await act(async () => { await result.current.handleStopVoice(); });
-    expect(mockTrack).toHaveBeenCalledWith({
-      name: 'task.created',
-      properties: { method: 'voice' },
-    });
+    expect(mockTrack).toHaveBeenCalledWith('task.created', { method: 'voice' });
   });
 
   it('handleUseCamera emits task.creation_method_selected with method=camera', async () => {
     const { result } = renderHook(() => useTaskScreen());
     await act(async () => { await result.current.handleUseCamera(); });
-    expect(mockTrack).toHaveBeenCalledWith({
-      name: 'task.creation_method_selected',
-      properties: { method: 'camera' },
-    });
+    expect(mockTrack).toHaveBeenCalledWith('task.creation_method_selected', { method: 'camera' });
   });
 
   it('handleConfirm emits task.created with method=camera on success', async () => {
@@ -130,10 +118,7 @@ describe('useTaskScreen — analytics instrumentation', () => {
     await act(async () => { await result.current.handleUseCamera(); });
     mockTrack.mockClear();
     await act(async () => { await result.current.handleConfirm(); });
-    expect(mockTrack).toHaveBeenCalledWith({
-      name: 'task.created',
-      properties: { method: 'camera' },
-    });
+    expect(mockTrack).toHaveBeenCalledWith('task.created', { method: 'camera' });
   });
 
   it('handleCancelPreview emits task.creation_cancelled', async () => {
@@ -141,7 +126,7 @@ describe('useTaskScreen — analytics instrumentation', () => {
     await act(async () => { await result.current.handleUseCamera(); });
     mockTrack.mockClear();
     act(() => result.current.handleCancelPreview());
-    expect(mockTrack).toHaveBeenCalledWith({ name: 'task.creation_cancelled' });
+    expect(mockTrack).toHaveBeenCalledWith('task.creation_cancelled');
   });
 
   it('handleStopVoice does NOT emit task.created when parsing fails', async () => {
@@ -155,7 +140,7 @@ describe('useTaskScreen — analytics instrumentation', () => {
 
     const { result } = renderHook(() => useTaskScreen());
     await act(async () => { await result.current.handleStopVoice(); });
-    const createdCalls = mockTrack.mock.calls.filter(([e]) => e.name === 'task.created');
+    const createdCalls = mockTrack.mock.calls.filter(([e]) => e === 'task.created');
     expect(createdCalls).toHaveLength(0);
   });
 });

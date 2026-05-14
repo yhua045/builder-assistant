@@ -2,12 +2,12 @@ import type { AnalyticsEvent } from '../../domain/analytics/AnalyticsEvent';
 import type { IAnalyticsService } from '../../application/services/IAnalyticsService';
 
 /**
+ * @deprecated Use `NoopAnalyticsAdapter` instead.
+ * Superseded by `NoopAnalyticsAdapter` which extends `AnalyticsAdapter`
+ * (Issue #223 × #219 reconciliation). No new code should import this class.
+ * Kept here for transition only.
+ *
  * NullAnalyticsService — in-memory stub for tests and safe defaults.
- *
- * Does not persist to AsyncStorage. Collects events in a plain array so
- * tests can assert what was tracked.
- *
- * AC-5: Wired in test suites instead of the production adapter.
  */
 export class NullAnalyticsService implements IAnalyticsService {
   private _events: AnalyticsEvent[] = [];

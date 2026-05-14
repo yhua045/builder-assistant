@@ -108,7 +108,7 @@ export function useSnapReceiptScreen(
   const { track } = useAnalytics();
 
   const handleSnapPhoto = async () => {
-    track({ name: 'receipt.snap_started' });
+    track('receipt.snap_started');
     try {
       setIsCapturing(true);
       const result = await camera.capturePhoto();
@@ -165,7 +165,7 @@ export function useSnapReceiptScreen(
   };
 
   const handleUploadPdf = async () => {
-    track({ name: 'receipt.snap_started' });
+    track('receipt.snap_started');
     try {
       const picked = await filePicker.pickDocument();
       if (picked.cancelled || !picked.uri) return;
@@ -201,7 +201,7 @@ export function useSnapReceiptScreen(
   const handleSave = async (data: SnapReceiptDTO) => {
     const result = await saveReceipt(data);
     if (result.success) {
-      track({ name: 'receipt.captured', properties: { via_ocr: normalizedData !== null } });
+      track('receipt.captured', { via_ocr: normalizedData !== null });
       Alert.alert('Success', 'Receipt saved successfully');
       onClose();
     } else {

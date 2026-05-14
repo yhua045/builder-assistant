@@ -225,7 +225,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   };
 
   const handleUploadPdf = async () => {
-    track({ name: 'invoice.capture_started' });
+    track('invoice.capture_started');
     try {
       setProcessingStep('copying');
       setProcessingError(null);
@@ -285,7 +285,7 @@ export function useInvoiceUpload(options: InvoiceUploadOptions): InvoiceUploadVi
   const handleFormSave = async (data: any) => {
     const result = await createInvoice(data);
     if (result.success) {
-      track({ name: 'invoice.created', properties: { via_ocr: normalizedResult !== null } });
+      track('invoice.created', { via_ocr: normalizedResult !== null });
       onClose();
     } else {
       Alert.alert('Error', result.error || 'Failed to save invoice');

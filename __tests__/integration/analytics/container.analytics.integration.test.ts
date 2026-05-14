@@ -11,6 +11,7 @@ import { NoopErrorReportingAdapter } from '../../../src/infrastructure/analytics
 import { FirebaseAnalyticsAdapter } from '../../../src/infrastructure/analytics/FirebaseAnalyticsAdapter';
 import { MixpanelAnalyticsAdapter } from '../../../src/infrastructure/analytics/MixpanelAnalyticsAdapter';
 import { SentryErrorReportingAdapter } from '../../../src/infrastructure/analytics/SentryErrorReportingAdapter';
+import { AsyncStorageAnalyticsAdapter } from '../../../src/infrastructure/analytics/AsyncStorageAnalyticsAdapter';
 import { AnalyticsAdapter } from '../../../src/infrastructure/analytics/AnalyticsAdapter';
 import { ErrorReportingAdapter } from '../../../src/infrastructure/analytics/ErrorReportingAdapter';
 
@@ -49,6 +50,13 @@ describe('Analytics DI contract', () => {
     });
   });
 
+  describe('AsyncStorageAnalyticsAdapter', () => {
+    it('AsyncStorageAnalyticsAdapter is an AnalyticsAdapter', () => {
+      const adapter = new AsyncStorageAnalyticsAdapter();
+      expect(adapter).toBeInstanceOf(AnalyticsAdapter);
+    });
+  });
+
   describe('production composite wiring', () => {
     it('CompositeAnalyticsAdapter fans events to Firebase and Mixpanel children', () => {
       const noopA = new NoopAnalyticsAdapter();
@@ -59,6 +67,32 @@ describe('Analytics DI contract', () => {
 
       expect(noopA.getCallsFor('track')).toHaveLength(1);
       expect(noopB.getCallsFor('track')).toHaveLength(1);
+    });
+
+    it('3-adapter composite fans events to all 3 children (Firebase, Mixpanel, AsyncStorage)', () => {
+      const noopA = new NoopAnalyticsAdapter();
+      const noopB = new NoopAnalyticsAdapter();
+      const noopC = new NoopAnalyticsAdapter();
+      const composite = new CompositeAnalyticsAdapter([noopA, noopB, noopC]);
+
+      composite.track('task_created', { projectId: 'p-1' });
+
+      expect(noopA.getCallsFor('track')).toHaveLength(1);
+      expect(noopB.getCallsFor('track')).toHaveLength(1);
+      expect(noopC.getCallsFor('track')).toHaveLength(1);
+    });
+
+    it('3-adapter composite opt-out suppresses all 3 children', () => {
+      const noopA = new NoopAnalyticsAdapter();
+      const noopB = new NoopAnalyticsAdapter();
+      const noopC = new NoopAnalyticsAdapter();
+      const composite = new CompositeAnalyticsAdapter([noopA, noopB, noopC], () => true);
+
+      composite.track('task_created');
+
+      expect(noopA.getCallsFor('track')).toHaveLength(0);
+      expect(noopB.getCallsFor('track')).toHaveLength(0);
+      expect(noopC.getCallsFor('track')).toHaveLength(0);
     });
 
     it('test config: NoopAnalyticsAdapter is used directly and records calls', () => {

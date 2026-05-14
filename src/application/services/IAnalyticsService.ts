@@ -1,6 +1,10 @@
 import type { AnalyticsEvent } from '../../domain/analytics/AnalyticsEvent';
 
 /**
+ * @deprecated Use `AnalyticsAdapter` abstract class instead.
+ * Superseded by the unified `AnalyticsAdapter` abstraction (Issue #223 × #219 reconciliation).
+ * No new code should import this interface. Kept for transition only.
+ *
  * Application-layer port (interface) for UX analytics.
  *
  * AC-3: `track` and `trackScreen` are fire-and-forget — callers MUST NOT await them.

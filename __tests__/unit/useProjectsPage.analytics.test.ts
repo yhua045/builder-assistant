@@ -14,7 +14,7 @@ import { renderHook, act } from '@testing-library/react-native';
 const mockTrack = jest.fn();
 
 jest.mock('../../src/hooks/useAnalytics', () => ({
-  useAnalytics: () => ({ track: mockTrack, trackScreen: jest.fn() }),
+  useAnalytics: () => ({ track: mockTrack, screen: jest.fn() }),
 }));
 
 jest.mock('@react-navigation/native', () => ({
@@ -47,13 +47,13 @@ describe('useProjectsPage — analytics instrumentation', () => {
   it('openCreate emits project.creation_started', () => {
     const { result } = renderHook(() => useProjectsPage());
     act(() => result.current.openCreate());
-    expect(mockTrack).toHaveBeenCalledWith({ name: 'project.creation_started' });
+    expect(mockTrack).toHaveBeenCalledWith('project.creation_started');
   });
 
   it('navigateToProject emits project.card_tapped', () => {
     const { result } = renderHook(() => useProjectsPage());
     act(() => result.current.navigateToProject('project-123'));
-    expect(mockTrack).toHaveBeenCalledWith({ name: 'project.card_tapped' });
+    expect(mockTrack).toHaveBeenCalledWith('project.card_tapped');
   });
 
   it('navigateToProject still calls navigation.navigate after tracking', () => {

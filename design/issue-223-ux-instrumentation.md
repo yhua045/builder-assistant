@@ -383,12 +383,17 @@ Reference design doc: `design/issue-223-ux-instrumentation.md`
 
 ---
 
-## 16. Reconciliation with Issue #219 (Future Refactoring)
+## 16. Reconciliation with Issue #219
+
+**Status**: Fully designed — see [design/issue-223x219-reconciliation.md](issue-223x219-reconciliation.md)
 
 **Context**: Issue #219 (implemented on `master`) introduces an `AnalyticsAdapter` pattern, focusing on macro-level business monitoring with cloud SDKs (Firebase/Mixpanel) and error tracking (Sentry). Issue #223 (this document) introduces an `IAnalyticsService` pattern, focusing on granular, privacy-safe, local on-device UX debugging.
 
-When this branch is rebased/merged with `master`, these two overlapping systems must be reconciled:
+The reconciliation plan (see linked doc) specifies:
 
-1. **Unify the Interface**: Refactor `AsyncStorageAnalyticsService` to implement the `AnalyticsAdapter` abstract class from Issue #219 instead of the `IAnalyticsService` interface.
-2. **Combine via Composite**: Add the refactored `AsyncStorageAnalyticsAdapter` into the `CompositeAnalyticsAdapter` array (introduced in #219).
-3. **Preserve Granularity & Privacy**: Keep the granular UX payload structure and strict PII exclusion rules established in #223. The cloud adapters (Firebase/Mixpanel) handle high-level funnels, while the local AsyncStorage adapter safely buffers high-fidelity UX state flows on-device without leaking PII or bloating cloud ingest.
+1. **Unify the Interface**: Rename `AsyncStorageAnalyticsService` → `AsyncStorageAnalyticsAdapter` and change it to extend the `AnalyticsAdapter` abstract class from Issue #219. `IAnalyticsService` is deprecated with no new consumers.
+2. **Combine via Composite**: Add `AsyncStorageAnalyticsAdapter` as the third child in the `CompositeAnalyticsAdapter` array. The existing opt-out gate then automatically covers local storage events.
+3. **Update hooks**: `useAnalytics` resolves `'AnalyticsAdapter'` (not `'AnalyticsService'`), returning `track(string, props?)` and `screen(string, props?)`. All call sites update accordingly.
+4. **Preserve Granularity & Privacy**: The granular `<feature>.<action>` event taxonomy and strict PII-exclusion rules from #223 are unchanged. The `AsyncStorageAnalyticsAdapter` stores only what callers pass, with no auto-added fields. `identify()` is a no-op.
+
+Full TDD plan, file inventory, and acceptance criteria are in [design/issue-223x219-reconciliation.md](issue-223x219-reconciliation.md).

@@ -122,7 +122,7 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   // ── Voice handlers ─────────────────────────────────────────────────────────
 
   const handleStartVoice = useCallback(async () => {
-    track({ name: 'task.creation_method_selected', properties: { method: 'voice' } });
+    track('task.creation_method_selected', { method: 'voice' });
     try {
       await startRecording();
     } catch (e: any) {
@@ -135,14 +135,14 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
       const draft = await stopAndParse();
       setInitialDraft(draft);
       setView('form');
-      track({ name: 'task.created', properties: { method: 'voice' } });
+      track('task.created', { method: 'voice' });
     } catch (e: any) {
       Alert.alert('Parsing failed', e?.message ?? '');
     }
   }, [stopAndParse, track]);
 
   const handleManual = useCallback(() => {
-    track({ name: 'task.creation_method_selected', properties: { method: 'manual' } });
+    track('task.creation_method_selected', { method: 'manual' });
     setInitialDraft(undefined);
     setCreatedTask(null);
     setView('form');
@@ -163,7 +163,7 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   }, [cameraHook]);
 
   const handleUseCamera = useCallback(async () => {
-    track({ name: 'task.creation_method_selected', properties: { method: 'camera' } });
+    track('task.creation_method_selected', { method: 'camera' });
     const uri = await doCapture();
     if (!uri) return; // cancelled → stay on choose
     setCapturedUri(uri);
@@ -183,7 +183,7 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
       const task = await cameraHook.createFromPhoto(capturedUri, undefined);
       setCreatedTask(task);
       setView('form');
-      track({ name: 'task.created', properties: { method: 'camera' } });
+      track('task.created', { method: 'camera' });
     } catch {
       Alert.alert('Error', 'Could not create task from photo');
     } finally {
@@ -192,7 +192,7 @@ export function useTaskScreen(options?: UseTaskScreenOptions): TaskScreenViewMod
   }, [capturedUri, cameraHook, track]);
 
   const handleCancelPreview = useCallback(() => {
-    track({ name: 'task.creation_cancelled' });
+    track('task.creation_cancelled');
     setCapturedUri(null);
     setView('choose');
   }, [track]);

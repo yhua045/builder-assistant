@@ -94,7 +94,7 @@ export function useDashboard(): DashboardViewModel {
 
   const handleQuickAction = useCallback((actionId: string) => {
     const action = QUICK_ACTIONS.find(a => a.id === actionId);
-    track({ name: 'dashboard.quick_action_selected', properties: { action_id: actionId, action_title: action?.title ?? '' } });
+    track('dashboard.quick_action_selected', { action_id: actionId, action_title: action?.title ?? '' });
     setShowQuickActions(false);
     if (actionId === '1') {
       setShowSnapReceipt(true);
@@ -122,11 +122,11 @@ export function useDashboard(): DashboardViewModel {
   }, [navigation]);
 
   const openQuickActions = useCallback(() => {
-    track({ name: 'dashboard.quick_actions_opened' });
+    track('dashboard.quick_actions_opened');
     setShowQuickActions(true);
   }, [track]);
   const closeQuickActions = useCallback(() => {
-    track({ name: 'dashboard.quick_actions_dismissed' });
+    track('dashboard.quick_actions_dismissed');
     setShowQuickActions(false);
   }, [track]);
   const closeSnapReceipt = useCallback(() => setShowSnapReceipt(false), []);

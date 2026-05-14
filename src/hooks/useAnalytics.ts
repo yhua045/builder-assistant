@@ -1,49 +1,50 @@
 import { useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
 import '../infrastructure/di/registerServices';
-import type { IAnalyticsService } from '../application/services/IAnalyticsService';
-import { NullAnalyticsService } from '../infrastructure/analytics/NullAnalyticsService';
+import type { AnalyticsAdapter } from '../infrastructure/analytics/AnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../infrastructure/analytics/NoopAnalyticsAdapter';
 
 /**
  * useAnalytics — global singleton hook for UX event tracking.
  *
- * Resolves IAnalyticsService from the tsyringe DI container
- * (token: 'AnalyticsService'). Falls back to NullAnalyticsService
+ * Resolves AnalyticsAdapter from the tsyringe DI container
+ * (token: 'AnalyticsAdapter'). Falls back to NoopAnalyticsAdapter
  * when the token is not registered (e.g., in isolated tests).
  *
- * AC-3: track/trackScreen calls are fire-and-forget and never throw.
+ * AC-3: track/screen calls are fire-and-forget and never throw.
+ * AC-4: Single DI token 'AnalyticsAdapter' consumed by hooks.
  * AC-5: The hook is the stable abstraction; swapping the adapter requires
  *        zero changes here or in any UI code.
  */
 export function useAnalytics(): {
-  track: IAnalyticsService['track'];
-  trackScreen: IAnalyticsService['trackScreen'];
+  track: (event: string, properties?: Record<string, unknown>) => void;
+  screen: (screenName: string, properties?: Record<string, unknown>) => void;
 } {
-  const service = useMemo<IAnalyticsService>(() => {
+  const adapter = useMemo<AnalyticsAdapter>(() => {
     try {
-      return container.resolve<IAnalyticsService>('AnalyticsService');
+      return container.resolve<AnalyticsAdapter>('AnalyticsAdapter');
     } catch {
-      return new NullAnalyticsService();
+      return new NoopAnalyticsAdapter();
     }
   }, []);
 
-  const track = useCallback<IAnalyticsService['track']>(
-    (event) => {
+  const track = useCallback(
+    (event: string, properties?: Record<string, unknown>) => {
       try {
-        service.track(event);
+        adapter.track(event, properties);
       } catch {/* silently ignored — analytics must never crash the app */}
     },
-    [service],
+    [adapter],
   );
 
-  const trackScreen = useCallback<IAnalyticsService['trackScreen']>(
-    (screenName, properties) => {
+  const screen = useCallback(
+    (screenName: string, properties?: Record<string, unknown>) => {
       try {
-        service.trackScreen(screenName, properties);
+        adapter.screen(screenName, properties);
       } catch {/* silently ignored */}
     },
-    [service],
+    [adapter],
   );
 
-  return { track, trackScreen };
+  return { track, screen };
 }
