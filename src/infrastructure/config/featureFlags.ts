@@ -1,3 +1,5 @@
+declare const process: any;
+
 /**
  * Feature flags for issue #171 fast lookup entry.
  * Flip to `true` once the corresponding adapter/UI is production-ready.
@@ -14,4 +16,9 @@ export const FeatureFlags = {
    * Flip to `true` for quality/cost experimentation.
    */
   useVisionOcr: false,
-} as const;
+  /**
+   * When true AND the user is authenticated, OcrAdapterFactory routes
+   * to the premium backend OCR endpoint instead of local ML Kit. (#226)
+   */
+  premiumOcr: (process?.env?.FEATURE_PREMIUM_OCR ?? '') === 'true',
+};

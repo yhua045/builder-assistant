@@ -8,6 +8,9 @@ module.exports = {
     '^@react-native-firebase/analytics$': '<rootDir>/__mocks__/@react-native-firebase/analytics.js',
     '^mixpanel-react-native$': '<rootDir>/__mocks__/mixpanel-react-native.js',
     '^@sentry/react-native$': '<rootDir>/__mocks__/@sentry/react-native.js',
+    // Auth native module mocks (issue #226)
+    '^react-native-keychain$': '<rootDir>/__mocks__/react-native-keychain.js',
+    '^react-native-app-auth$': '<rootDir>/__mocks__/react-native-app-auth.js',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@react-navigation|@react-native-async-storage|@react-native-ml-kit|react-native-image-picker|react-native-nitro-sound|react-native-permissions|nativewind|react-native-css-interop|lucide-react-native|jest-cucumber|@cucumber|uuid)/)',

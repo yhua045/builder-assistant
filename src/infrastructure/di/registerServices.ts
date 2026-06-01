@@ -42,6 +42,11 @@ import { RemoteVoiceParsingService } from '../voice/RemoteVoiceParsingService';
 import { GroqSTTAdapter } from '../voice/GroqSTTAdapter';
 import { GroqTranscriptParser } from '../voice/GroqTranscriptParser';
 import { StubSuggestionService } from '../ai/suggestionService';
+import { KeychainTokenStorage } from '../auth/KeychainTokenStorage';
+import { ReactNativeAppAuthService } from '../auth/ReactNativeAppAuthService';
+import { MlKitOcrAdapter } from '../ocr/MlKitOcrAdapter';
+import { ApiOcrAdapter } from '../ocr/ApiOcrAdapter';
+import { OcrAdapterFactory } from '../ocr/OcrAdapterFactory';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter';
@@ -69,6 +74,27 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.registerSingleton('IFilePickerAdapter', MobileFilePickerAdapter);
 	// AI suggestion service — stub returns null; swap for a real LLM adapter when ready
 	container.registerSingleton('SuggestionService', StubSuggestionService);
+
+	// ── Auth Services (issue #226) ────────────────────────────────────────────
+	container.registerSingleton('ITokenStorage', KeychainTokenStorage);
+	container.register('IAuthService', {
+		useFactory: (c) => new ReactNativeAppAuthService(
+			c.resolve('ITokenStorage' as any),
+		),
+	});
+
+	// ── OCR Adapters (issue #226) ─────────────────────────────────────────────
+	container.registerSingleton('MlKitOcrAdapter', MlKitOcrAdapter);
+	container.register('ApiOcrAdapter', {
+		useFactory: (c) => new ApiOcrAdapter(c.resolve('IAuthService' as any)),
+	});
+	container.register('OcrAdapterFactory', {
+		useFactory: (c) => new OcrAdapterFactory(
+			c.resolve('IAuthService' as any),
+			c.resolve('MlKitOcrAdapter' as any),
+			c.resolve('ApiOcrAdapter' as any),
+		),
+	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────
 	const mixpanelToken = (ENV_MIXPANEL_TOKEN as string | undefined) ?? process.env.MIXPANEL_TOKEN ?? '';
