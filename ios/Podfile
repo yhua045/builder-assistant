@@ -6,6 +6,8 @@ require Pod::Executable.execute_command('node', ['-p',
   )', __dir__]).strip
 
 platform :ios, '15.5'
+use_frameworks! :linkage => :static
+use_modular_headers!
 prepare_react_native_project!
 
 # Configure iOS permission handlers compiled into the app (react-native-permissions)

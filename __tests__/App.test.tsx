@@ -16,6 +16,14 @@ jest.mock('nativewind', () => ({
 // Mock the app's tabs layout to avoid importing navigation ESM modules
 jest.mock('../src/pages/tabs', () => ({ __esModule: true, default: () => null }));
 
+jest.mock('../src/features/projects', () => ({
+  useProjects: () => ({ projects: [], loading: false }),
+}));
+
+jest.mock('../src/features/knowledge-embedding', () => ({
+  KnowledgeEmbeddingLaunchScreen: () => null,
+}));
+
 // Mock random-values polyfill to avoid runtime issues in Jest
 jest.mock('react-native-get-random-values', () => ({}));
 

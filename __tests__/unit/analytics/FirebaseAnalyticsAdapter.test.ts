@@ -44,4 +44,15 @@ describe('FirebaseAnalyticsAdapter', () => {
     adapter.reset();
     expect(mockInstance.resetAnalyticsData).toHaveBeenCalled();
   });
+
+  it('does not throw when Firebase app has not been initialized', () => {
+    (analytics as jest.Mock).mockImplementationOnce(() => {
+      throw new Error("No Firebase App '[DEFAULT]' has been created - call firebase.initializeApp()");
+    });
+
+    expect(() => adapter.track('task_created', { projectId: 'proj-1' })).not.toThrow();
+    expect(() => adapter.screen('Dashboard')).not.toThrow();
+    expect(() => adapter.identify('anon-uuid')).not.toThrow();
+    expect(() => adapter.reset()).not.toThrow();
+  });
 });

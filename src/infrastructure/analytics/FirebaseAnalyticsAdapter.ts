@@ -8,22 +8,35 @@ import { AnalyticsAdapter } from './AnalyticsAdapter';
  * never imports the Firebase SDK directly.
  */
 export class FirebaseAnalyticsAdapter extends AnalyticsAdapter {
+  private safeFirebaseCall<T>(operation: () => T): T | undefined {
+    try {
+      return operation();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("No Firebase App") || message.includes("firebase.initializeApp")) {
+        return undefined;
+      }
+
+      throw error;
+    }
+  }
+
   identify(userId: string, _traits?: Record<string, unknown>): void {
-    analytics().setUserId(userId);
+    this.safeFirebaseCall(() => analytics().setUserId(userId));
   }
 
   track(event: string, properties?: Record<string, unknown>): void {
-    analytics().logEvent(event, properties);
+    this.safeFirebaseCall(() => analytics().logEvent(event, properties));
   }
 
   screen(screenName: string, _properties?: Record<string, unknown>): void {
-    analytics().logScreenView({
+    this.safeFirebaseCall(() => analytics().logScreenView({
       screen_name: screenName,
       screen_class: screenName,
-    });
+    }));
   }
 
   reset(): void {
-    analytics().resetAnalyticsData();
+    this.safeFirebaseCall(() => analytics().resetAnalyticsData());
   }
 }

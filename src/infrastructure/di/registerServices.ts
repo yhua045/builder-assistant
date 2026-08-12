@@ -97,12 +97,15 @@ if (typeof (container as any).registerSingleton === 'function') {
 	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────
-	const mixpanelToken = (ENV_MIXPANEL_TOKEN as string | undefined) ?? process.env.MIXPANEL_TOKEN ?? '';
+	const mixpanelToken =
+		(typeof ENV_MIXPANEL_TOKEN === 'string' ? ENV_MIXPANEL_TOKEN : '') ||
+		(typeof process.env.MIXPANEL_TOKEN === 'string' ? process.env.MIXPANEL_TOKEN : '') ||
+		'';
 	container.register('AnalyticsAdapter', {
 		useFactory: () => new CompositeAnalyticsAdapter(
 			[
 				new FirebaseAnalyticsAdapter(),
-				new MixpanelAnalyticsAdapter(mixpanelToken),
+				new MixpanelAnalyticsAdapter(mixpanelToken.trim()),
 				new AsyncStorageAnalyticsAdapter(),
 			],
 			getOptOutState,
