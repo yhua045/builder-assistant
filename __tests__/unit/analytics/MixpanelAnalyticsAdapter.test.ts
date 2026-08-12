@@ -25,6 +25,16 @@ describe('MixpanelAnalyticsAdapter', () => {
     expect(Mixpanel).toHaveBeenCalledWith('test-token', true);
   });
 
+  it('does not initialize Mixpanel when the token is blank', () => {
+    jest.clearAllMocks();
+
+    const blankAdapter = new MixpanelAnalyticsAdapter('   ');
+
+    expect(blankAdapter).toBeInstanceOf(AnalyticsAdapter);
+    expect(Mixpanel).not.toHaveBeenCalled();
+    expect(() => blankAdapter.track('invoice_created')).not.toThrow();
+  });
+
   it('calls client.track with event and properties on track()', () => {
     adapter.track('invoice_created', { projectId: 'proj-2' });
     expect(mockClient.track).toHaveBeenCalledWith('invoice_created', { projectId: 'proj-2' });

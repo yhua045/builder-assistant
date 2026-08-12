@@ -12,6 +12,8 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+import { useProjects } from './src/features/projects';
+import { KnowledgeEmbeddingLaunchScreen } from './src/features/knowledge-embedding';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
@@ -55,8 +57,10 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
   const isDarkMode = rnUseColorScheme() === 'dark';
+  const { projects, loading } = useProjects();
+  const hasProjects = (projects?.length ?? 0) > 0;
 
   // Resolve error reporting adapter once (stable singleton)
   const errorReporter = useMemo<ErrorReportingAdapter | undefined>(() => {
@@ -116,17 +120,27 @@ function App() {
   const containerStyle = [isDark ? darkTheme : lightTheme, styles.container, { backgroundColor }];
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-        <View style={containerStyle}>
-          <ErrorBoundary errorReportingAdapter={errorReporter}>
-            <NavigationContainer>
+    <SafeAreaProvider>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={containerStyle}>
+        <ErrorBoundary errorReportingAdapter={errorReporter}>
+          <NavigationContainer>
+            {!loading && !hasProjects ? (
+              <KnowledgeEmbeddingLaunchScreen />
+            ) : (
               <TabsLayout />
-            </NavigationContainer>
-          </ErrorBoundary>
-        </View>
-      </SafeAreaProvider>
+            )}
+          </NavigationContainer>
+        </ErrorBoundary>
+      </View>
+    </SafeAreaProvider>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
     </QueryClientProvider>
   );
 }

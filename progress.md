@@ -1,4 +1,92 @@
-# Project Progress — Summary (updated 2026-05-14)
+# Project Progress — Summary (updated 2026-06-01)
+
+## ✅ Issue #226 — Optional Login + Centralized Auth + Feature-Gating for Premium OCR
+**Status**: COMPLETED  
+**Branch**: `issue-226-optional-login-auth` (PR branch)  
+**Date Completed**: 2026-06-01
+
+### Summary
+Implemented optional OAuth 2.0 authentication with PKCE flow and feature-gated premium OCR backend:
+
+**Key Changes**:
+1. **Centralized AuthService** — OAuth 2.0 PKCE via `react-native-app-auth`, Keychain token storage
+2. **OcrAdapterFactory Routing** — Authenticates users get `ApiOcrAdapter` (cloud OCR), unauthenticated users get `MlKitOcrAdapter` (on-device)
+3. **AuthContext Provider** — Global auth state for UI consumption via `useAuth` hook
+4. **Profile Screen Integration** — LoginButton (unauthenticated), SignOut option (authenticated)
+5. **Persistent Sessions** — Tokens read from Keychain on app launch with automatic silent refresh
+6. **Graceful Degradation** — API failures demote transparently to ML Kit with warning log
+
+### Acceptance Criteria Met
+| # | Criterion | Status |
+|---|---|---|
+| AC-1 | App launches with zero auth prompts; all existing flows uninterrupted | ✅ |
+| AC-2 | LoginButton on Profile tab triggers OAuth PKCE flow via `react-native-app-auth` | ✅ |
+| AC-3 | Tokens persisted in Keychain; `AuthContext` available globally | ✅ |
+| AC-4 | `OcrAdapterFactory` returns `ApiOcrAdapter` when authenticated, `MlKitOcrAdapter` otherwise | ✅ |
+| AC-5 | Bearer token injected before API call; silent refresh on expiry | ✅ |
+| AC-6 | Same `OcrResult` shape returned by both adapters (transparent to UI) | ✅ |
+| AC-7 | SignOut clears Keychain and resets `AuthContext` | ✅ |
+| AC-8 | Session restored on app restart (tokens read from Keychain, refresh if needed) | ✅ |
+| AC-9 | Linting and TypeScript checks pass; all tests green | ✅ |
+
+### Files Created (7)
+- `src/domain/services/IAuthService.ts` — Auth port abstraction
+- `src/application/useCases/LoginUseCase.ts` — OAuth login business logic
+- `src/application/useCases/LogoutUseCase.ts` — Sign-out and token cleanup
+- `src/application/useCases/GetAuthStateUseCase.ts` — Session restoration on app launch
+- `src/infrastructure/auth/ReactNativeAppAuthService.ts` — PKCE implementation via `react-native-app-auth`
+- `src/infrastructure/auth/KeychainTokenStorage.ts` — Keychain wrapper for `react-native-keychain`
+- `src/components/auth/AuthContext.tsx` — React Context provider + `useAuth` hook
+
+### Files Modified (5)
+| File | Change |
+|---|---|
+| `src/infrastructure/ocr/OcrAdapterFactory.ts` | Route to `ApiOcrAdapter` if authenticated + premium OCR flag enabled; fallback to `MlKitOcrAdapter` on error |
+| `src/infrastructure/ocr/ApiOcrAdapter.ts` | Inject Bearer token via `IAuthService.getAccessToken()` before API calls |
+| `src/features/profile/screens/ProfileScreen.tsx` | Add LoginButton (unauthenticated) and SignOut option (authenticated) |
+| `src/infrastructure/di/registerServices.ts` | Register `IAuthService`, use cases, and token storage in DI container |
+| `.env.example` | Add OAuth provider config (client ID, scopes, etc.) |
+
+### Files Tested (6 unit + integration tests)
+- `__tests__/unit/auth/ReactNativeAppAuthService.test.ts` (OAuth flow, token expiry, refresh)
+- `__tests__/unit/auth/KeychainTokenStorage.test.ts` (save, read, delete tokens)
+- `__tests__/unit/auth/GetAuthStateUseCase.test.ts` (session restoration, error handling)
+- `__tests__/unit/auth/LoginUseCase.test.ts` (PKCE success, cancellation, error cases)
+- `__tests__/unit/auth/ApiOcrAdapter.test.ts` (token injection, multipart upload)
+- `__tests__/unit/auth/OcrAdapterFactory.test.ts` (routing logic, degradation policy)
+
+### Testing & Validation
+- ✅ **Linting**: `npm run lint` — **0 errors** (fixed 1 unused parameter warning in OcrAdapterFactory.test.ts)
+- ✅ **TypeScript**: `npx tsc --noEmit` — **PASSES**
+- ✅ **Unit Tests**: All 6 test suites pass (OAuth, token storage, use cases, adapters, routing)
+- ✅ **Integration**: Profile screen LoginButton/SignOut wired to AuthContext; OCR routing tested end-to-end
+- ✅ **Feature Flag**: Premium OCR enabled/disabled via `FeatureFlags.premiumOcr`
+
+### API Additions
+
+**`IAuthService` Port**:
+```ts
+interface IAuthService {
+  login(): Promise<AuthUser | null>;        // Returns AuthUser on success
+  logout(): Promise<void>;                   // Clears tokens
+  getAuthState(): Promise<AuthUser | null>; // For session restoration
+  getAccessToken(): Promise<string | null>;  // Returns current/refreshed token
+  isAuthenticated(): boolean;                // Sync check of auth state
+}
+```
+
+**`useAuth` Hook**:
+```ts
+interface AuthContextValue {
+  user: AuthUser | null;
+  isLoading: boolean;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+}
+```
+
+---
 
 ## ✅ Issue #223x219 — Reconciliation: Unified Analytics Adapter Architecture
 **Status**: COMPLETED  
