@@ -120,6 +120,13 @@
       "when": 1774571274529,
       "tag": "0016_tranquil_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1774656000000,
+      "tag": "0026_rag_knowledge_tables",
+      "breakpoints": true
     }
   ]
 }

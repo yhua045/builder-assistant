@@ -18,6 +18,7 @@ import m0013 from './0013_icy_professor_monster.sql';
 import m0014 from './0014_harsh_mulholland_black.sql';
 import m0015 from './0015_short_spyke.sql';
 import m0016 from './0016_tranquil_sugar_man.sql';
+import m0026 from './0026_rag_knowledge_tables.sql';
 
   export default {
     journal,
@@ -38,7 +39,8 @@ m0012,
 m0013,
 m0014,
 m0015,
-m0016
+m0016,
+m0026
     }
   }
   

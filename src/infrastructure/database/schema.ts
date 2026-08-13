@@ -515,3 +515,51 @@ export const auditLogs = sqliteTable('audit_logs', {
   taskIdx:    index('idx_audit_logs_task').on(table.taskId),
   tsIdx:      index('idx_audit_logs_ts').on(table.timestampUtc),
 }));
+
+// RAG / knowledge graph tables for persisted project facts, chunks, and embeddings.
+export const projectFacts = sqliteTable('project_facts', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  factType: text('fact_type', {
+    enum: ['budget', 'schedule', 'scope', 'risk', 'requirement', 'constraint', 'assumption', 'procurement', 'quality', 'other'],
+  }).notNull(),
+  canonicalText: text('canonical_text').notNull(),
+  normalizedText: text('normalized_text'),
+  status: text('status', {
+    enum: ['proposed', 'confirmed', 'rejected', 'stale'],
+  }).notNull(),
+  confidence: real('confidence'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  projectIdx: index('idx_project_facts_project').on(table.projectId),
+  typeIdx: index('idx_project_facts_type').on(table.factType),
+}));
+
+export const knowledgeChunks = sqliteTable('knowledge_chunks', {
+  id: text('id').primaryKey(),
+  documentId: text('document_id').notNull(),
+  content: text('content').notNull(),
+  chunkIndex: integer('chunk_index').notNull(),
+  tokenCount: integer('token_count'),
+  startOffset: integer('start_offset'),
+  endOffset: integer('end_offset'),
+  metadata: text('metadata'),
+}, (table) => ({
+  documentIdx: index('idx_knowledge_chunks_document').on(table.documentId),
+  indexIdx: index('idx_knowledge_chunks_index').on(table.chunkIndex),
+}));
+
+export const knowledgeEmbeddings = sqliteTable('knowledge_embeddings', {
+  id: text('id').primaryKey(),
+  chunkId: text('chunk_id').notNull(),
+  vector: text('vector').notNull(),
+  dimension: integer('dimension').notNull(),
+  provider: text('provider'),
+  modelVersion: text('model_version'),
+  fingerprint: text('fingerprint'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  chunkIdx: index('idx_knowledge_embeddings_chunk').on(table.chunkId),
+  providerIdx: index('idx_knowledge_embeddings_provider').on(table.provider),
+}));

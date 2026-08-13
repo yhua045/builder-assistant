@@ -1,0 +1,111 @@
+import { getDatabase, initDatabase } from '../database/connection';
+import { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk';
+
+export interface ChunkRepository {
+  save(chunk: KnowledgeChunk): Promise<void>;
+  findById(id: string): Promise<KnowledgeChunk | null>;
+  findByDocumentId(documentId: string): Promise<KnowledgeChunk[]>;
+  delete(id: string): Promise<void>;
+}
+
+export class DrizzleChunkRepository implements ChunkRepository {
+  private initialized = false;
+
+  private async ensureInitialized() {
+    if (this.initialized) return;
+    await initDatabase();
+    this.initialized = true;
+  }
+
+  private mapRowToChunk(row: any): KnowledgeChunk {
+    return {
+      id: row.id,
+      documentId: row.document_id,
+      content: row.content,
+      chunkIndex: row.chunk_index,
+      tokenCount: row.token_count ?? undefined,
+      startOffset: row.start_offset ?? undefined,
+      endOffset: row.end_offset ?? undefined,
+      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+    };
+  }
+
+  async save(chunk: KnowledgeChunk): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+
+    const existing = await this.findById(chunk.id);
+    if (existing) {
+      await db.executeSql(
+        `UPDATE knowledge_chunks SET
+          document_id = ?,
+          content = ?,
+          chunk_index = ?,
+          token_count = ?,
+          start_offset = ?,
+          end_offset = ?,
+          metadata = ?
+        WHERE id = ?`,
+        [
+          chunk.documentId,
+          chunk.content,
+          chunk.chunkIndex,
+          chunk.tokenCount ?? null,
+          chunk.startOffset ?? null,
+          chunk.endOffset ?? null,
+          chunk.metadata ? JSON.stringify(chunk.metadata) : null,
+          chunk.id,
+        ],
+      );
+      return;
+    }
+
+    await db.executeSql(
+      `INSERT INTO knowledge_chunks (
+        id,
+        document_id,
+        content,
+        chunk_index,
+        token_count,
+        start_offset,
+        end_offset,
+        metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        chunk.id,
+        chunk.documentId,
+        chunk.content,
+        chunk.chunkIndex,
+        chunk.tokenCount ?? null,
+        chunk.startOffset ?? null,
+        chunk.endOffset ?? null,
+        chunk.metadata ? JSON.stringify(chunk.metadata) : null,
+      ],
+    );
+  }
+
+  async findById(id: string): Promise<KnowledgeChunk | null> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    const [result] = await db.executeSql('SELECT * FROM knowledge_chunks WHERE id = ?', [id]);
+    if (result.rows.length === 0) return null;
+    return this.mapRowToChunk(result.rows.item(0));
+  }
+
+  async findByDocumentId(documentId: string): Promise<KnowledgeChunk[]> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    const [result] = await db.executeSql('SELECT * FROM knowledge_chunks WHERE document_id = ? ORDER BY chunk_index ASC', [documentId]);
+    const chunks: KnowledgeChunk[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      chunks.push(this.mapRowToChunk(result.rows.item(i)));
+    }
+    return chunks;
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    await db.executeSql('DELETE FROM knowledge_chunks WHERE id = ?', [id]);
+  }
+}
