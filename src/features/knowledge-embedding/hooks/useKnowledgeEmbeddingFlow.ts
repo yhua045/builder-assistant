@@ -5,9 +5,11 @@ import { KnowledgeEmbeddingStep } from '../domain/value-objects/KnowledgeEmbeddi
 export interface KnowledgeEmbeddingFlowViewModel {
   currentStep: KnowledgeEmbeddingStep;
   projectName: string;
+  address: string;
+  projectType: string;
   documents: Array<{ id: string; name: string; type?: string; uri?: string }>;
   isLoading: boolean;
-  startFlow: () => Promise<void>;
+  startFlow: (draft?: { projectName?: string; address?: string; projectType?: string }) => Promise<void>;
   continueFlow: () => void;
   skipForNow: () => void;
 }
@@ -15,17 +17,21 @@ export interface KnowledgeEmbeddingFlowViewModel {
 export function useKnowledgeEmbeddingFlow(): KnowledgeEmbeddingFlowViewModel {
   const [currentStep, setCurrentStep] = useState<KnowledgeEmbeddingStep>(KnowledgeEmbeddingStep.WELCOME);
   const [projectName, setProjectName] = useState('');
+  const [address, setAddress] = useState('');
+  const [projectType, setProjectType] = useState('');
   const [documents, setDocuments] = useState<Array<{ id: string; name: string; type?: string; uri?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const startFlow = useCallback(async () => {
+  const startFlow = useCallback(async (draft?: { projectName?: string; address?: string; projectType?: string }) => {
     setIsLoading(true);
 
     const useCase = new StartKnowledgeEmbeddingFlowUseCase();
-    const result = await useCase.execute();
+    const result = await useCase.execute(draft);
 
     setCurrentStep(result.currentStep);
-    setProjectName(result.projectName);
+    setProjectName(result.projectName ?? '');
+    setAddress(result.address ?? '');
+    setProjectType(result.projectType ?? '');
     setDocuments(result.documents);
     setIsLoading(false);
   }, []);
@@ -57,10 +63,12 @@ export function useKnowledgeEmbeddingFlow(): KnowledgeEmbeddingFlowViewModel {
   return useMemo(() => ({
     currentStep,
     projectName,
+    address,
+    projectType,
     documents,
     isLoading,
     startFlow,
     continueFlow,
     skipForNow,
-  }), [currentStep, projectName, documents, isLoading, startFlow, continueFlow, skipForNow]);
+  }), [currentStep, projectName, address, projectType, documents, isLoading, startFlow, continueFlow, skipForNow]);
 }
