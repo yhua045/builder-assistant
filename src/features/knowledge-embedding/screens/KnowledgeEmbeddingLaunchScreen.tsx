@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useKnowledgeEmbeddingFlow } from '../hooks/useKnowledgeEmbeddingFlow';
+import { useProjects } from '../../projects';
 
 type Screen = 'welcome' | 'project-type' | 'add-documents' | 'processing';
 type DocType = 'engineering' | 'flooring' | 'council' | 'other';
@@ -94,13 +95,19 @@ function inferDocType(name: string): DocType {
 }
 
 function WelcomeStep({
+  projectName,
+  setProjectName,
   address,
   setAddress,
   onStart,
+  isCreating,
 }: {
+  projectName: string;
+  setProjectName: (value: string) => void;
   address: string;
   setAddress: (value: string) => void;
   onStart: () => void;
+  isCreating: boolean;
 }) {
   return (
     <View style={styles.screenContainer}>
@@ -147,6 +154,15 @@ function WelcomeStep({
           </View>
 
           <View style={styles.ctaWrap}>
+            <Text style={styles.labelText}>Project name</Text>
+            <TextInput
+              value={projectName}
+              onChangeText={setProjectName}
+              placeholder="e.g. My New Home"
+              placeholderTextColor="#94a3b8"
+              style={styles.input}
+            />
+
             <Text style={styles.labelText}>Property address</Text>
             <TextInput
               value={address}
@@ -159,10 +175,10 @@ function WelcomeStep({
             <Pressable
               accessibilityRole="button"
               onPress={onStart}
-              disabled={address.trim().length === 0}
-              style={[styles.primaryButton, address.trim().length === 0 && styles.primaryButtonDisabled]}
+              disabled={projectName.trim().length === 0 || isCreating}
+              style={[styles.primaryButton, (projectName.trim().length === 0 || isCreating) && styles.primaryButtonDisabled]}
             >
-              <Text style={styles.primaryButtonText}>Get started</Text>
+              <Text style={styles.primaryButtonText}>{isCreating ? 'Creating…' : 'Get started'}</Text>
               <ArrowRight size={18} color="#ffffff" />
             </Pressable>
 
@@ -442,10 +458,14 @@ type FlowState = 'welcome' | 'project-type' | 'add-documents' | 'processing';
 
 const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
   const vm = useKnowledgeEmbeddingFlow();
+  const { createProject } = useProjects();
   const [currentStep, setCurrentStep] = useState<FlowState>('welcome');
+  const [projectName, setProjectName] = useState('');
   const [address, setAddress] = useState('');
   const [selectedType, setSelectedType] = useState<ConstructionType>(null);
   const [docs, setDocs] = useState<DocFile[]>([]);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
 
   const title = useMemo(() => {
     if (currentStep === 'welcome') return 'Welcome';
@@ -460,6 +480,29 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
 
   const handleRemoveDoc = (id: string) => {
     setDocs((prev) => prev.filter((doc) => doc.id !== id));
+  };
+
+  const handleCreateProject = async (): Promise<boolean> => {
+    const trimmedName = projectName.trim();
+    if (!trimmedName) return false;
+
+    setIsCreatingProject(true);
+    try {
+      const result = await createProject({
+        name: trimmedName,
+        address: address.trim() || undefined,
+        description: `Knowledge embedding onboarding • ${selectedType ?? 'project'} project`,
+      });
+
+      if (result.success && result.projectId) {
+        setCreatedProjectId(result.projectId);
+        return true;
+      }
+
+      return false;
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   if (vm.isLoading) {
@@ -477,7 +520,19 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
       <View style={styles.outerStage}>
         <View style={styles.phoneFrame}>
           {currentStep === 'welcome' && (
-            <WelcomeStep address={address} setAddress={setAddress} onStart={() => setCurrentStep('project-type')} />
+            <WelcomeStep
+              projectName={projectName}
+              setProjectName={setProjectName}
+              address={address}
+              setAddress={setAddress}
+              isCreating={isCreatingProject}
+              onStart={async () => {
+                const trimmedName = projectName.trim();
+                if (!trimmedName) return;
+                await vm.startFlow({ projectName: trimmedName, address: address.trim(), projectType: selectedType ?? undefined });
+                setCurrentStep('project-type');
+              }}
+            />
           )}
 
           {currentStep === 'project-type' && (
@@ -485,7 +540,13 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
               selected={selectedType}
               setSelected={setSelectedType}
               onBack={() => setCurrentStep('welcome')}
-              onContinue={() => setCurrentStep('add-documents')}
+              onContinue={async () => {
+                const didCreate = await handleCreateProject();
+                if (didCreate) {
+                  await vm.startFlow({ projectName: projectName.trim(), address: address.trim(), projectType: selectedType ?? undefined });
+                  setCurrentStep('add-documents');
+                }
+              }}
             />
           )}
 
@@ -494,7 +555,10 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
               docs={docs}
               onAddDemoDoc={handleAddDemoDoc}
               onRemoveDoc={handleRemoveDoc}
-              onProcess={() => setCurrentStep('processing')}
+              onProcess={async () => {
+                await vm.startFlow({ projectName: projectName.trim(), address: address.trim(), projectType: selectedType ?? undefined });
+                setCurrentStep('processing');
+              }}
             />
           )}
 
