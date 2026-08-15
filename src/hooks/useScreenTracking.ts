@@ -13,12 +13,17 @@ import '../infrastructure/di/registerServices';
  *   }
  */
 export function useScreenTracking(screenName: string): void {
-  const analytics = useMemo(
-    () => container.resolve<AnalyticsAdapter>('AnalyticsAdapter'),
-    [],
-  );
+  const analytics = useMemo(() => {
+    try {
+      return container.resolve<AnalyticsAdapter>('AnalyticsAdapter');
+    } catch {
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    analytics.screen(screenName);
+    if (analytics && typeof (analytics as AnalyticsAdapter & { screen?: (name: string) => void }).screen === 'function') {
+      analytics.screen(screenName);
+    }
   }, [analytics, screenName]);
 }

@@ -999,6 +999,34 @@ const migrations: RNMigration[] = [
       `CREATE INDEX IF NOT EXISTS "idx_knowledge_embeddings_provider" ON "knowledge_embeddings" ("provider");`,
     ],
   },
+  {
+    tag: '0027_document_chunking_workflows',
+    hash: '0027_document_chunking_workflows',
+    folderMillis: 1774742400000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "document_chunking_workflows" (
+        "id" text PRIMARY KEY NOT NULL,
+        "document_id" text NOT NULL,
+        "document_version" integer NOT NULL DEFAULT 1,
+        "project_id" text,
+        "status" text NOT NULL,
+        "workflow_state" text NOT NULL,
+        "checkpoint_id" text,
+        "last_event" text,
+        "retry_count" integer NOT NULL DEFAULT 0,
+        "circuit_open" integer NOT NULL DEFAULT 0,
+        "supported_for_analysis" integer,
+        "validation_reason" text,
+        "is_already_analyzed" integer NOT NULL DEFAULT 0,
+        "resume_from_checkpoint" integer NOT NULL DEFAULT 0,
+        "created_at" integer NOT NULL,
+        "updated_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_document" ON "document_chunking_workflows" ("document_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_version" ON "document_chunking_workflows" ("document_version");`,
+      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_status" ON "document_chunking_workflows" ("status");`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

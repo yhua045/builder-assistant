@@ -2,14 +2,7 @@
 
 exports[`InvoiceLifecycleActions snapshot tests matches snapshot for draft invoice 1`] = `
 <View
-  style={
-    {
-      "flexDirection": "row",
-      "flexWrap": "wrap",
-      "gap": 8,
-      "padding": 16,
-    }
-  }
+  className="flex-row flex-wrap gap-2 p-4"
 >
   <View
     accessibilityState={
@@ -41,25 +34,12 @@ exports[`InvoiceLifecycleActions snapshot tests matches snapshot for draft invoi
     onStartShouldSetResponder={[Function]}
     style={
       {
-        "alignItems": "center",
-        "backgroundColor": "#3b82f6",
-        "borderRadius": 8,
-        "justifyContent": "center",
-        "minWidth": 100,
         "opacity": 1,
-        "paddingHorizontal": 16,
-        "paddingVertical": 10,
       }
     }
   >
     <Text
-      style={
-        {
-          "color": "#ffffff",
-          "fontSize": 14,
-          "fontWeight": "600",
-        }
-      }
+      className="text-white font-semibold text-sm"
     >
       Issue
     </Text>
@@ -94,25 +74,12 @@ exports[`InvoiceLifecycleActions snapshot tests matches snapshot for draft invoi
     onStartShouldSetResponder={[Function]}
     style={
       {
-        "alignItems": "center",
-        "backgroundColor": "#ef4444",
-        "borderRadius": 8,
-        "justifyContent": "center",
-        "minWidth": 100,
         "opacity": 1,
-        "paddingHorizontal": 16,
-        "paddingVertical": 10,
       }
     }
   >
     <Text
-      style={
-        {
-          "color": "#ffffff",
-          "fontSize": 14,
-          "fontWeight": "600",
-        }
-      }
+      className="text-white font-semibold text-sm"
     >
       Cancel
     </Text>
@@ -122,14 +89,7 @@ exports[`InvoiceLifecycleActions snapshot tests matches snapshot for draft invoi
 
 exports[`InvoiceLifecycleActions snapshot tests matches snapshot for issued invoice 1`] = `
 <View
-  style={
-    {
-      "flexDirection": "row",
-      "flexWrap": "wrap",
-      "gap": 8,
-      "padding": 16,
-    }
-  }
+  className="flex-row flex-wrap gap-2 p-4"
 >
   <View
     accessibilityState={
@@ -161,25 +121,12 @@ exports[`InvoiceLifecycleActions snapshot tests matches snapshot for issued invo
     onStartShouldSetResponder={[Function]}
     style={
       {
-        "alignItems": "center",
-        "backgroundColor": "#22c55e",
-        "borderRadius": 8,
-        "justifyContent": "center",
-        "minWidth": 100,
         "opacity": 1,
-        "paddingHorizontal": 16,
-        "paddingVertical": 10,
       }
     }
   >
     <Text
-      style={
-        {
-          "color": "#ffffff",
-          "fontSize": 14,
-          "fontWeight": "600",
-        }
-      }
+      className="text-white font-semibold text-sm"
     >
       Mark Paid
     </Text>
@@ -214,25 +161,12 @@ exports[`InvoiceLifecycleActions snapshot tests matches snapshot for issued invo
     onStartShouldSetResponder={[Function]}
     style={
       {
-        "alignItems": "center",
-        "backgroundColor": "#ef4444",
-        "borderRadius": 8,
-        "justifyContent": "center",
-        "minWidth": 100,
         "opacity": 1,
-        "paddingHorizontal": 16,
-        "paddingVertical": 10,
       }
     }
   >
     <Text
-      style={
-        {
-          "color": "#ffffff",
-          "fontSize": 14,
-          "fontWeight": "600",
-        }
-      }
+      className="text-white font-semibold text-sm"
     >
       Cancel
     </Text>

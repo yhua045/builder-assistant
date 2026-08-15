@@ -47,6 +47,9 @@ import { ReactNativeAppAuthService } from '../auth/ReactNativeAppAuthService';
 import { MlKitOcrAdapter } from '../ocr/MlKitOcrAdapter';
 import { ApiOcrAdapter } from '../ocr/ApiOcrAdapter';
 import { OcrAdapterFactory } from '../ocr/OcrAdapterFactory';
+import { DefaultTextNormalizer, DefaultDocumentParser, ParserRegistry } from '../../application/services/DocumentParserService';
+import { PdfTextParser } from '../parsers/PdfTextParser';
+import { ParseDocumentUseCase } from '../../application/use-cases/ParseDocumentUseCase';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter';
@@ -94,6 +97,21 @@ if (typeof (container as any).registerSingleton === 'function') {
 			c.resolve('MlKitOcrAdapter' as any),
 			c.resolve('ApiOcrAdapter' as any),
 		),
+	});
+
+	// ── Document parser services (issue #235) ───────────────────────────────────
+	container.registerSingleton('DefaultTextNormalizer', DefaultTextNormalizer);
+	container.register('ParserRegistry', {
+		useFactory: (c) => new ParserRegistry(
+			[new PdfTextParser()],
+			c.resolve('DefaultTextNormalizer' as any),
+		),
+	});
+	container.register('DefaultDocumentParser', {
+		useFactory: (c) => new DefaultDocumentParser(c.resolve('ParserRegistry' as any)),
+	});
+	container.register('ParseDocumentUseCase', {
+		useFactory: (c) => new ParseDocumentUseCase(c.resolve('ParserRegistry' as any)),
 	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────

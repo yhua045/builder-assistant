@@ -22,6 +22,8 @@
     "seed:reset:android": "APP_ENV=reset react-native run-android"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.8",
+    "@langchain/textsplitters": "^1.0.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.6.0",
     "@react-native-firebase/analytics": "^24.0.0",
@@ -39,6 +41,7 @@
     "drizzle-orm": "^0.45.1",
     "events": "^3.3.0",
     "fs": "^0.0.1-security",
+    "langchain": "^1.5.9",
     "lucide-react-native": "^0.563.0",
     "mixpanel-react-native": "^3.3.0",
     "nativewind": "^4.2.1",
@@ -65,7 +68,8 @@
     "reflect-metadata": "^0.2.2",
     "stream-browserify": "^3.0.0",
     "tsyringe": "^4.10.0",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "xstate": "^5.32.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

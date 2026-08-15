@@ -1,12 +1,7 @@
-# GitHub Copilot Instructions — builder-assistant
+# Agent Execution Protocol
+When working on new features or task tickets, strictly follow this sequential state machine. Do not skip phases:
 
-# Project-Specific Instructions
-
-ALWAYS reference the `Claude.md` file in this project before implementing any feature or answering coding questions. The Claude.md contains:
-- Project architecture patterns
-- Implementation guidelines
-- Code style conventions
-- Domain-specific rules
-- Preferred libraries and frameworks
-
-Before writing code, check Claude.md for relevant guidance. If Claude.md has conflicting information with general best practices, prioritize Claude.md.
+1. **PHASE 1 (Design):** Read requirements. Propose domain model, key abstractions, and source code structure. STOP and await human confirmation.
+2. **PHASE 2 (Tests):** Write comprehensive test cases (TDD). STOP and await human confirmation. Note: Default step but can be skipped if specifically instructed by the user, otherwise, always write tests first.
+3. **PHASE 3 (Implementation):** Implement code to pass tests.
+4. **PHASE 4 (Review & Refactor):** Clean up, optimize, and verify coverage.

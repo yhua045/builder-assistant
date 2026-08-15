@@ -563,3 +563,26 @@ export const knowledgeEmbeddings = sqliteTable('knowledge_embeddings', {
   chunkIdx: index('idx_knowledge_embeddings_chunk').on(table.chunkId),
   providerIdx: index('idx_knowledge_embeddings_provider').on(table.provider),
 }));
+
+export const documentChunkingWorkflows = sqliteTable('document_chunking_workflows', {
+  id: text('id').primaryKey(),
+  documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull().default(1),
+  projectId: text('project_id'),
+  status: text('status').notNull(),
+  workflowState: text('workflow_state').notNull(),
+  checkpointId: text('checkpoint_id'),
+  lastEvent: text('last_event'),
+  retryCount: integer('retry_count').notNull().default(0),
+  circuitOpen: integer('circuit_open', { mode: 'boolean' }).notNull().default(false),
+  supportedForAnalysis: integer('supported_for_analysis', { mode: 'boolean' }),
+  validationReason: text('validation_reason'),
+  isAlreadyAnalyzed: integer('is_already_analyzed', { mode: 'boolean' }).notNull().default(false),
+  resumeFromCheckpoint: integer('resume_from_checkpoint', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  documentIdx: index('idx_document_chunking_workflows_document').on(table.documentId),
+  versionIdx: index('idx_document_chunking_workflows_version').on(table.documentVersion),
+  statusIdx: index('idx_document_chunking_workflows_status').on(table.status),
+}));
