@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SnapReceiptDTO, ReceiptLineItemDTO } from '../application/SnapReceiptUseCase';
 import { NormalizedReceipt } from '../application/IReceiptNormalizer';
-import DatePickerInput from '../../../components/inputs/DatePickerInput';
+import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
 import { CheckCircle, AlertCircle, AlertTriangle, X, Plus } from 'lucide-react-native';
-import OptionList from '../../../components/inputs/OptionList';
-import { ContractorLookupField } from '../../../components/inputs/ContractorLookupField';
-import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
+import OptionList from '../../../shared/ui/components/inputs/OptionList';
+import { ContractorLookupField } from '../../../shared/ui/components/inputs/ContractorLookupField';
+import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
 import { Project } from '../../../shared/domain/entities/Project';
 
 interface ReceiptFormProps {

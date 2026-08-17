@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeToggle } from '../../components/ThemeToggle';
+import { ThemeToggle } from '../../shared/ui/components/ThemeToggle';
 import { cssInterop } from 'nativewind';
 import { User, Mail, Phone, Briefcase, Building2, MapPin, Settings, Bell, Lock, CreditCard, HelpCircle, LogOut, ChevronRight, Edit } from 'lucide-react-native';
 import { useScreenTracking } from '../../hooks/useScreenTracking';

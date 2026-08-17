@@ -1,1 +1,1 @@
-export { ErrorBoundary } from '../../components/shared/ErrorBoundary.tsx';
+export { ErrorBoundary } from '../../shared/ui/components/ErrorBoundary';

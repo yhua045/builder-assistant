@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import OptionList from '../../src/components/inputs/OptionList';
+import OptionList from '../../src/shared/ui/components/inputs/OptionList';
 
 const OPTIONS = [
   { label: 'Renovation',  value: 'renovation'  },

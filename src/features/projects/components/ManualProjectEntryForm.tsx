@@ -2,13 +2,13 @@ import React, { useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ChevronRight } from 'lucide-react-native';
-import DatePickerInput from '../../../components/inputs/DatePickerInput';
-import ContactSelector from '../../../components/inputs/ContactSelector';
-import TeamSelector from '../../../components/inputs/TeamSelector';
+import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
+import ContactSelector from '../../../shared/ui/components/inputs/ContactSelector';
+import TeamSelector from '../../../shared/ui/components/inputs/TeamSelector';
 import { CriticalPathPreview } from './CriticalPathPreview/CriticalPathPreview';
-import Dropdown from '../../../components/inputs/Dropdown';
-import type { DropdownOption } from '../../../components/inputs/Dropdown';
-import OptionList from '../../../components/inputs/OptionList';
+import Dropdown from '../../../shared/ui/components/inputs/Dropdown';
+import type { DropdownOption } from '../../../shared/ui/components/inputs/Dropdown';
+import OptionList from '../../../shared/ui/components/inputs/OptionList';
 
 const PROJECT_TYPE_OPTIONS: DropdownOption[] = [
   { label: 'Complete Rebuild',  value: 'complete_rebuild'  },

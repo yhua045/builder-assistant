@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import TeamSelector from '../../src/components/inputs/TeamSelector';
+import TeamSelector from '../../src/shared/ui/components/inputs/TeamSelector';
 
 describe('TeamSelector', () => {
   it('renders and allows selecting a team', async () => {

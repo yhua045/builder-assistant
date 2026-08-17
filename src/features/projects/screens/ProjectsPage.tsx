@@ -3,7 +3,7 @@ import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-nati
 import { ProjectCard } from '../components/ProjectCard';
 import ManualProjectEntry from '../components/ManualProjectEntry';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeToggle } from '../../../components/ThemeToggle';
+import { ThemeToggle } from '../../../shared/ui/components/ThemeToggle';
 import { Layers, Plus } from 'lucide-react-native';
 import { useProjectsPage } from '../hooks/useProjectsPage';
 

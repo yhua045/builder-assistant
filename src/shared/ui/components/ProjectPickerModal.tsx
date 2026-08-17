@@ -20,9 +20,9 @@ import {
 } from 'react-native';
 import { X, ChevronRight, Check } from 'lucide-react-native';
 import { container } from 'tsyringe';
-import { Project } from '../../shared/domain/entities/Project';
-import { ProjectRepository } from '../../shared/domain/repositories/ProjectRepository';
-import '../../shared/infrastructure/di/registerServices';
+import { Project } from '../../domain/entities/Project';
+import { ProjectRepository } from '../../domain/repositories/ProjectRepository';
+import '../../infrastructure/di/registerServices';
 
 export interface ProjectPickerModalProps {
   visible: boolean;

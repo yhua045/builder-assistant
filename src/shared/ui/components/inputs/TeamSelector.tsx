@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
-import useTeams from '../../hooks/useTeams';
+import useTeams from '../../../../hooks/useTeams';
 
 interface Props {
   label: string;

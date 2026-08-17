@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useNavigation } from '@react-navigation/native';
-import { ThemeToggle } from '../../../components/ThemeToggle';
+import { ThemeToggle } from '../../../shared/ui/components/ThemeToggle';
 import AmountPayableBanner from '../components/AmountPayableBanner';
 import PaymentCard, { PaymentCardPayment } from '../components/PaymentCard';
 import { PaymentTypeFilterChips } from '../components/PaymentTypeFilterChips';

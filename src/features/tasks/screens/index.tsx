@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus } from 'lucide-react-native';
-import { ThemeToggle } from '../../../components/ThemeToggle';
+import { ThemeToggle } from '../../../shared/ui/components/ThemeToggle';
 import { cssInterop } from 'nativewind';
 import { useNavigation } from '@react-navigation/native';
 import { useTasks } from '../hooks/useTasks';

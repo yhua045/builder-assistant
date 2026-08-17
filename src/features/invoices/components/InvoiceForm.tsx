@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Invoice, InvoiceLineItem } from '../../../shared/domain/entities/Invoice';
-import DatePickerInput from '../../../components/inputs/DatePickerInput';
-import { ContractorLookupField } from '../../../components/inputs/ContractorLookupField';
+import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
+import { ContractorLookupField } from '../../../shared/ui/components/inputs/ContractorLookupField';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
 
 export interface InvoiceFormProps {

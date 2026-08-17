@@ -26,8 +26,8 @@ import { container } from 'tsyringe';
 import { Payment } from '../../../shared/domain/entities/Payment';
 import { Project } from '../../../shared/domain/entities/Project';
 import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
-import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
-import DatePickerInput from '../../../components/inputs/DatePickerInput';
+import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
+import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
 import { invalidations } from '../../../hooks/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 

@@ -26,7 +26,7 @@ jest.mock('lucide-react-native', () => ({
   User: 'User',
 }));
 
-jest.mock('../../src/components/ThemeToggle', () => ({
+jest.mock('../../src/shared/ui/components/ThemeToggle', () => ({
   ThemeToggle: () => 'ThemeToggle',
 }));
 

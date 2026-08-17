@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeToggle } from '../../../components/ThemeToggle';
+import { ThemeToggle } from '../../../shared/ui/components/ThemeToggle';
 import { ProjectOverviewCard } from '../components/ProjectOverviewCard';
 import HeroSection from '../components/HeroSection';
 import { X, Plus } from 'lucide-react-native';

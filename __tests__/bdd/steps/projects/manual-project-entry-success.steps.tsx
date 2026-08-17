@@ -20,7 +20,7 @@ jest.mock('lucide-react-native', () => ({
   Check: 'Check',
 }));
 
-jest.mock('../../../../src/components/inputs/DatePickerInput', () => {
+jest.mock('../../../../src/shared/ui/components/inputs/DatePickerInput', () => {
   const React = require('react');
   const { View } = require('react-native');
   return {
@@ -29,7 +29,7 @@ jest.mock('../../../../src/components/inputs/DatePickerInput', () => {
   };
 });
 
-jest.mock('../../../../src/components/inputs/ContactSelector', () => {
+jest.mock('../../../../src/shared/ui/components/inputs/ContactSelector', () => {
   const React = require('react');
   const { View } = require('react-native');
   return {
@@ -38,7 +38,7 @@ jest.mock('../../../../src/components/inputs/ContactSelector', () => {
   };
 });
 
-jest.mock('../../../../src/components/inputs/TeamSelector', () => {
+jest.mock('../../../../src/shared/ui/components/inputs/TeamSelector', () => {
   const React = require('react');
   const { View } = require('react-native');
   return {

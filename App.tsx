@@ -31,7 +31,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Analytics & error monitoring
 import { container } from 'tsyringe';
-import { ErrorBoundary } from './src/components/shared/ErrorBoundary';
+import { ErrorBoundary } from './src/shared/ui/components/ErrorBoundary';
 import type { ErrorReportingAdapter } from './src/shared/infrastructure/analytics/ErrorReportingAdapter';
 import './src/shared/infrastructure/di/registerServices';
 

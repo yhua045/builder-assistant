@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../../shared/domain/entities/Quotation';
-import DatePickerInput from '../../../components/inputs/DatePickerInput';
+import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
 import { Plus, X, Paperclip, HardHat, UserPlus } from 'lucide-react-native';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
-import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
+import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
 import { SubcontractorPickerModal, SubcontractorContact } from '../../tasks/components/SubcontractorPickerModal';
-import { QuickAddContractorModal } from '../../../components/inputs/QuickAddContractorModal';
+import { QuickAddContractorModal } from '../../../shared/ui/components/inputs/QuickAddContractorModal';
 import { useQuickLookup } from '../../../hooks/useQuickLookup';
 import { Project } from '../../../shared/domain/entities/Project';
 

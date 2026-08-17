@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import Dropdown from '../../src/components/inputs/Dropdown';
+import Dropdown from '../../src/shared/ui/components/inputs/Dropdown';
 
 jest.mock('lucide-react-native', () => ({
   ChevronDown: 'ChevronDown',

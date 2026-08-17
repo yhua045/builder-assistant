@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeToggle } from '../../../components/ThemeToggle';
+import { ThemeToggle } from '../../../shared/ui/components/ThemeToggle';
 import { FileText, DollarSign, Eye, Edit, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { useInvoices } from '../hooks/useInvoices';

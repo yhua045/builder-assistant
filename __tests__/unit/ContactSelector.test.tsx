@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import ContactSelector from '../../src/components/inputs/ContactSelector';
+import ContactSelector from '../../src/shared/ui/components/inputs/ContactSelector';
 
 jest.mock('../../src/hooks/useContacts', () => {
   const mockSearch = jest.fn().mockResolvedValue([]);

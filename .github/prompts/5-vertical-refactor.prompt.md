@@ -102,3 +102,16 @@ src/
 3. Keep only truly shared cross-cutting types in `src/shared`.
 4. Move screen-level orchestration into `src/features/.../ui` and remove direct repository usage from hooks where possible.
 5. Keep the `src/app` layer responsible for composition and dependency wiring only.
+
+### Component migration proposal from `src/components`
+
+- Move reusable form primitives to `src/shared/ui/components/inputs/`:
+  - `ContactSelector`, `ContractorLookupField`, `DatePickerInput`, `Dropdown`, `OptionList`, `ProjectPicker`, `TeamSelector`
+- Move shared UI shell utilities to `src/shared/ui/components/`:
+  - `ErrorBoundary`, `ThemeToggle`
+- Move feature-owned pickers/modals into their feature slice:
+  - `ProjectPickerModal` -> `src/features/projects/ui/components/ProjectPickerModal.tsx`
+  - `QuickAddContractorModal` -> `src/features/projects/ui/components/QuickAddContractorModal.tsx` or `src/shared/ui/components/forms/` if reused by multiple features
+- Move dashboard-only widgets to the feature slice:
+  - `QuickStats.tsx` -> `src/features/dashboard/ui/components/QuickStats.tsx`
+- Remove the top-level `src/components` directory after migration; only shared UI should remain in `src/shared` and feature-specific UI should remain under each `src/features/*/ui` folder.

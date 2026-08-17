@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { useProjects } from '../../features/projects';
+import { useProjects } from '../../../../features/projects';
 
 interface Props {
   value: string;

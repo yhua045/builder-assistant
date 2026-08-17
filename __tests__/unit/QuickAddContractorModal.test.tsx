@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { QuickAddContractorModal } from '../../src/components/inputs/QuickAddContractorModal';
+import { QuickAddContractorModal } from '../../src/shared/ui/components/inputs/QuickAddContractorModal';
 import { Contact } from '../../src/shared/domain/entities/Contact';
 
 const makeContact = (name: string): Contact => ({

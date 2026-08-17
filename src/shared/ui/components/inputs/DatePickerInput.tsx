@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import formatDate from '../../utils/formatDate';
+import formatDate from '../../../../utils/formatDate';
 
 interface Props {
   label?: string;

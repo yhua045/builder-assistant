@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
-import DatePickerInput from '../../src/components/inputs/DatePickerInput';
+import DatePickerInput from '../../src/shared/ui/components/inputs/DatePickerInput';
 
 describe('DatePickerInput', () => {
   it('opens the picker and calls onChange when a date is confirmed', () => {

@@ -10,7 +10,7 @@ import {
 import { X, HardHat, UserPlus } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import useContacts from '../../../hooks/useContacts';
-import { QuickAddContractorModal } from '../../../components/inputs/QuickAddContractorModal';
+import { QuickAddContractorModal } from '../../../shared/ui/components/inputs/QuickAddContractorModal';
 import { useQuickLookup } from '../../../hooks/useQuickLookup';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
