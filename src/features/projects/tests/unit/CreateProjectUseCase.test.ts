@@ -1,5 +1,5 @@
 import { CreateProjectUseCase } from '../../application/CreateProjectUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 
 describe('CreateProjectUseCase (TDD)', () => {
   it('rejects when project name is missing', async () => {

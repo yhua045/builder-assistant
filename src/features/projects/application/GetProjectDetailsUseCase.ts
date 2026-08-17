@@ -1,5 +1,5 @@
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 
 export class GetProjectDetailsUseCase {
   constructor(private readonly repo: ProjectRepository) {}

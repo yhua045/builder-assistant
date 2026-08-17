@@ -1,7 +1,7 @@
 import { LinkInvoiceToProjectUseCase } from '../../application/LinkInvoiceToProjectUseCase';
 import { InvoiceNotEditableError } from '../../../../features/payments/application/PaymentErrors';
-import { InvoiceRepository } from '../../../../domain/repositories/InvoiceRepository';
-import { Invoice } from '../../../../domain/entities/Invoice';
+import { InvoiceRepository } from '../../../../shared/domain/repositories/InvoiceRepository';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
 
 function makeRepo(invoice?: Invoice | null): jest.Mocked<InvoiceRepository> {
   return {

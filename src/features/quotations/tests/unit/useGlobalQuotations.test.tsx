@@ -5,10 +5,10 @@
 import { act } from '@testing-library/react-native';
 import { useGlobalQuotations } from '../../hooks/useGlobalQuotations';
 import { renderHookWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
-import type { Quotation } from '../../../../domain/entities/Quotation';
+import type { Quotation } from '../../../../shared/domain/entities/Quotation';
 
 // Mock infrastructure layer
-jest.mock('../../infrastructure/DrizzleQuotationRepository', () => ({
+jest.mock('../../shared/infrastructure/DrizzleQuotationRepository', () => ({
   DrizzleQuotationRepository: jest.fn().mockImplementation(() => ({})),
 }));
 

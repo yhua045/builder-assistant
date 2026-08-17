@@ -65,10 +65,10 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzlePaymentRepository } from '../../infrastructure/DrizzlePaymentRepository';
 import { DrizzleInvoiceRepository } from '../../../../features/invoices/infrastructure/DrizzleInvoiceRepository';
-import { PaymentEntity } from '../../../../domain/entities/Payment';
-import { InvoiceEntity } from '../../../../domain/entities/Invoice';
+import { PaymentEntity } from '../../../../shared/domain/entities/Payment';
+import { InvoiceEntity } from '../../../../shared/domain/entities/Invoice';
 import { ListProjectPaymentsFeedUseCase } from '../../application/ListProjectPaymentsFeedUseCase';
-import { closeDatabase } from '../../../../infrastructure/database/connection';
+import { closeDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('ListProjectPaymentsFeedUseCase integration', () => {
   let paymentRepo: DrizzlePaymentRepository;

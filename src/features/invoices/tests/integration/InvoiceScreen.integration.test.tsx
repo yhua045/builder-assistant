@@ -69,15 +69,15 @@ import React from 'react';
 import { wrapWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
 import renderer, { act } from 'react-test-renderer';
 import { InvoiceScreen } from '../../screens/InvoiceScreen';
-import { IFilePickerAdapter, FilePickerResult } from '../../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IFilePickerAdapter, FilePickerResult } from '../../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import {
   IInvoiceNormalizer,
   InvoiceCandidates,
   NormalizedInvoice,
 } from '../../application/IInvoiceNormalizer';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 /** Flush all pending microtasks so that sequential `await` chains settle. */
 const flushPromises = () => new Promise<void>(resolve => setImmediate(resolve));

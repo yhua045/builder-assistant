@@ -21,8 +21,8 @@ import renderer, { act } from 'react-test-renderer';
 import TasksScreen from '../../screens/index';
 import { TouchableOpacity } from "react-native";
 
-import type { Task } from '../../../../domain/entities/Task';
-import type { CockpitData, BlockerBarResult } from '../../../../domain/entities/CockpitData';
+import type { Task } from '../../../../shared/domain/entities/Task';
+import type { CockpitData, BlockerBarResult } from '../../../../shared/domain/entities/CockpitData';
 
 // ─── Global mocks ─────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
-import { ApiOcrAdapter } from '../../../src/infrastructure/ocr/ApiOcrAdapter';
-import { IAuthService } from '../../../src/domain/services/IAuthService';
-import { AuthState } from '../../../src/domain/entities/AuthUser';
+import { ApiOcrAdapter } from '../../../src/shared/infrastructure/ocr/ApiOcrAdapter';
+import { IAuthService } from '../../../src/shared/domain/services/IAuthService';
+import { AuthState } from '../../../src/shared/domain/entities/AuthUser';
 
 // Silence network in tests
 global.fetch = jest.fn();

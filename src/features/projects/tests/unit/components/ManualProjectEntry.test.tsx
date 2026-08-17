@@ -35,7 +35,7 @@ jest.mock('../../../../../hooks/useCriticalPath', () => ({
 }));
 
 // Stub DI registration (avoids native module resolution)
-jest.mock('../../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 // Stub heavy native-code repositories used inside CriticalPathStep
 jest.mock('../../../../tasks/infrastructure/DrizzleTaskRepository', () => ({

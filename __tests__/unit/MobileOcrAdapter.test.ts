@@ -1,4 +1,4 @@
-import { MobileOcrAdapter } from '../../src/infrastructure/ocr/MobileOcrAdapter';
+import { MobileOcrAdapter } from '../../src/shared/infrastructure/ocr/MobileOcrAdapter';
 
 // Mock the ML Kit module
 jest.mock('@react-native-ml-kit/text-recognition', () => ({

@@ -10,10 +10,10 @@ import { AddProgressLogUseCase } from '../../application/AddProgressLogUseCase';
 import { UpdateProgressLogUseCase } from '../../application/UpdateProgressLogUseCase';
 import { DeleteProgressLogUseCase } from '../../application/DeleteProgressLogUseCase';
 import { CreateTaskUseCase } from '../../application/CreateTaskUseCase';
-import { Task } from '../../../../domain/entities/Task';
-import { ProgressLog } from '../../../../domain/entities/ProgressLog';
-import { DelayReason } from '../../../../domain/entities/DelayReason';
-import { TaskRepository } from '../../../../domain/repositories/TaskRepository';
+import { Task } from '../../../../shared/domain/entities/Task';
+import { ProgressLog } from '../../../../shared/domain/entities/ProgressLog';
+import { DelayReason } from '../../../../shared/domain/entities/DelayReason';
+import { TaskRepository } from '../../../../shared/domain/repositories/TaskRepository';
 
 // ── In-memory repository ──────────────────────────────────────────────────────
 

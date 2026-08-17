@@ -53,8 +53,8 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepository';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DrizzleTaskRepository — order field', () => {
   let repo: DrizzleTaskRepository;

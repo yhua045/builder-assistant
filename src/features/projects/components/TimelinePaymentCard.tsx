@@ -15,7 +15,7 @@ import {
   CheckCircle,
 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Payment } from '../../../domain/entities/Payment';
+import { Payment } from '../../../shared/domain/entities/Payment';
 import { getDueStatus } from '../../../utils/getDueStatus';
 
 cssInterop(DollarSign, { className: { target: 'style', nativeStyleToProp: { color: true } } });

@@ -24,8 +24,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../hooks/queryKeys';
 import { useTaskTimeline } from '../../tasks/hooks/useTaskTimeline';
 import { useProjectDetail } from './useProjectDetail';
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { Task } from '../../../domain/entities/Task';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { Task } from '../../../shared/domain/entities/Task';
 
 export interface UseProjectTimelineReturn {
   project: ProjectDetails | null;

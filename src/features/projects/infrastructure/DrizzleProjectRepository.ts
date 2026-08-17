@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
-import { Project, Material, ProjectPhase } from '../../../domain/entities/Project';
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
-import { initDatabase, getDatabase } from '../../../infrastructure/database/connection';
+import { Project, Material, ProjectPhase } from '../../../shared/domain/entities/Project';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
+import { initDatabase, getDatabase } from '../../../shared/infrastructure/database/connection';
 import { mapContactFromRow, mapPropertyFromRow } from './ProjectMapper';
 
 /**

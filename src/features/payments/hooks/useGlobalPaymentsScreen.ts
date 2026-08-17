@@ -1,15 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { ListGlobalPaymentsUseCase } from '../application/ListGlobalPaymentsUseCase';
 import { usePayments, PaymentWithProject } from './usePayments';
 import { useGlobalQuotations } from '../../quotations/hooks/useGlobalQuotations';
 import { sortByPaymentPriority, sortByPaidDateDesc } from '../utils/sortByPaymentPriority';
 import { queryKeys } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export type PaymentsFilterOption = 'quotations' | 'pending' | 'paid' | 'all' | 'unassigned';
 

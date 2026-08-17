@@ -1,6 +1,6 @@
 import analytics from '@react-native-firebase/analytics';
-import { FirebaseAnalyticsAdapter } from '../../../src/infrastructure/analytics/FirebaseAnalyticsAdapter';
-import { AnalyticsAdapter } from '../../../src/infrastructure/analytics/AnalyticsAdapter';
+import { FirebaseAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/FirebaseAnalyticsAdapter';
+import { AnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/AnalyticsAdapter';
 
 // Get the stable mock instance that the mock factory always returns
 const mockInstance = (analytics as jest.Mock)();

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Task } from '../../../domain/entities/Task';
+import { Task } from '../../../shared/domain/entities/Task';
 import { TaskStatusBadge } from './TaskStatusBadge';
 import { Clock, Briefcase } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';

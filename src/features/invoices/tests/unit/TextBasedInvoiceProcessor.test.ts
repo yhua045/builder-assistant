@@ -1,5 +1,5 @@
 import { TextBasedInvoiceProcessor } from '../../infrastructure/processors/TextBasedInvoiceProcessor';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import { IInvoiceParsingStrategy } from '../../application/IInvoiceParsingStrategy';
 import { IInvoiceNormalizer, NormalizedInvoice, InvoiceCandidates } from '../../application/IInvoiceNormalizer';
 import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';

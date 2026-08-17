@@ -59,10 +59,10 @@ import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepositor
 import { DrizzlePaymentRepository } from '../../../payments/infrastructure/DrizzlePaymentRepository';
 import { DrizzleInvoiceRepository } from '../../../invoices/infrastructure/DrizzleInvoiceRepository';
 import { DrizzleQuotationRepository } from '../../../quotations/infrastructure/DrizzleQuotationRepository';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { PaymentEntity } from '../../../../domain/entities/Payment';
-import { InvoiceEntity } from '../../../../domain/entities/Invoice';
-import { closeDatabase, initDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { PaymentEntity } from '../../../../shared/domain/entities/Payment';
+import { InvoiceEntity } from '../../../../shared/domain/entities/Invoice';
+import { closeDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('CompleteTaskAndSettlePaymentsUseCase integration (better-sqlite3 :memory:)', () => {
   let taskRepo: DrizzleTaskRepository;

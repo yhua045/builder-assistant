@@ -1,8 +1,8 @@
-import { Task, TaskEntity } from '../../../domain/entities/Task';
-import { DocumentEntity } from '../../../domain/entities/Document';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { Task, TaskEntity } from '../../../shared/domain/entities/Task';
+import { DocumentEntity } from '../../../shared/domain/entities/Document';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DocumentRepository } from '../../../shared/domain/repositories/DocumentRepository';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 
 export interface CreateTaskFromPhotoParams {
   /** Temporary file URI returned by the camera (in cache directory) */

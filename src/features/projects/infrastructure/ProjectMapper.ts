@@ -1,5 +1,5 @@
-import { Contact } from '../../../domain/entities/Contact';
-import { Property } from '../../../domain/entities/Property';
+import { Contact } from '../../../shared/domain/entities/Contact';
+import { Property } from '../../../shared/domain/entities/Property';
 
 const toIsoString = (value?: number | string | null): string | undefined => {
   if (value === undefined || value === null) return undefined;

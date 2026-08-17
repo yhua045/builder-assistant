@@ -1,7 +1,7 @@
 import { TaskPaymentValidator } from '../../src/features/tasks/application/TaskPaymentValidator';
-import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
-import { Task } from '../../src/domain/entities/Task';
-import { Payment } from '../../src/domain/entities/Payment';
+import { PaymentRepository } from '../../src/shared/domain/repositories/PaymentRepository';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { Payment } from '../../src/shared/domain/entities/Payment';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {

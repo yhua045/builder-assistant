@@ -1,7 +1,7 @@
 import { GetDelayStatisticsUseCase } from '../../src/features/tasks/application/GetDelayStatisticsUseCase';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import { DelayReasonTypeRepository } from '../../src/domain/repositories/DelayReasonTypeRepository';
-import { DelayReasonType } from '../../src/domain/entities/DelayReason';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import { DelayReasonTypeRepository } from '../../src/shared/domain/repositories/DelayReasonTypeRepository';
+import { DelayReasonType } from '../../src/shared/domain/entities/DelayReason';
 
 function makeMockTaskRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {

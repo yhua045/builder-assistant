@@ -9,8 +9,8 @@ import {
   useColorScheme
 } from 'react-native';
 import { AlertCircle, Calendar, ChevronRight, AlertTriangle } from 'lucide-react-native';
-import { BlockerBarResult } from '../../../domain/entities/CockpitData';
-import { Task } from '../../../domain/entities/Task';
+import { BlockerBarResult } from '../../../shared/domain/entities/CockpitData';
+import { Task } from '../../../shared/domain/entities/Task';
 
 export interface BlockerCarouselProps {
   data: BlockerBarResult;

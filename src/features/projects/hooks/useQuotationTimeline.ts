@@ -14,15 +14,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 import { AcceptStandaloneQuotationUseCase } from '../../quotations/application/AcceptStandaloneQuotationUseCase';
 import { UpdateQuotationUseCase } from '../../quotations/application/UpdateQuotationUseCase';
 import { formatDayLabel } from './useProjectTimeline';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 

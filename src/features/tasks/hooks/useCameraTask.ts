@@ -1,12 +1,12 @@
 import { useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
-import { ICameraService } from '../../../application/services/ICameraService';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import '../../../shared/infrastructure/di/registerServices';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DocumentRepository } from '../../../shared/domain/repositories/DocumentRepository';
+import { ICameraService } from '../../../shared/application/ports/ICameraService';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 import { CreateTaskFromPhotoUseCase } from '../application/CreateTaskFromPhotoUseCase';
-import type { Task } from '../../../domain/entities/Task';
+import type { Task } from '../../../shared/domain/entities/Task';
 
 export interface UseCameraTaskReturn {
   /** Launches the camera and returns the captured local URI, or null if cancelled. */

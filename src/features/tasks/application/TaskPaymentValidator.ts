@@ -1,6 +1,6 @@
-import type { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import type { Task } from '../../../domain/entities/Task';
-import type { Payment } from '../../../domain/entities/Payment';
+import type { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import type { Task } from '../../../shared/domain/entities/Task';
+import type { Payment } from '../../../shared/domain/entities/Payment';
 
 export interface PaymentValidationResult {
   ok: boolean;

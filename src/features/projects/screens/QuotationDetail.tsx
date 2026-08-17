@@ -22,11 +22,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, FileText, FolderOpen } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { container } from 'tsyringe';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import { useQuotations } from '../../quotations/hooks/useQuotations';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });

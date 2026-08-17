@@ -1,6 +1,6 @@
-import { LoginUseCase } from '../../../src/application/usecases/auth/LoginUseCase';
-import { IAuthService } from '../../../src/domain/services/IAuthService';
-import { AuthUser, AuthState } from '../../../src/domain/entities/AuthUser';
+import { LoginUseCase } from '../../../src/app/auth/usecases/LoginUseCase';
+import { IAuthService } from '../../../src/shared/domain/services/IAuthService';
+import { AuthUser, AuthState } from '../../../src/shared/domain/entities/AuthUser';
 
 function makeAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
   return {

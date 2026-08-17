@@ -1,6 +1,6 @@
 import { TaskCompletionValidator } from '../../src/features/tasks/application/TaskCompletionValidator';
-import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
-import { Quotation } from '../../src/domain/entities/Quotation';
+import { QuotationRepository } from '../../src/shared/domain/repositories/QuotationRepository';
+import { Quotation } from '../../src/shared/domain/entities/Quotation';
 
 function makeQuotation(overrides: Partial<Quotation> = {}): Quotation {
   return {

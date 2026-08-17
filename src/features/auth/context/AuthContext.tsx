@@ -1,9 +1,9 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react';
-import { AuthState } from '../../../domain/entities/AuthUser';
-import { LoginUseCase } from '../../../application/usecases/auth/LoginUseCase';
-import { LogoutUseCase } from '../../../application/usecases/auth/LogoutUseCase';
-import { GetAuthStateUseCase } from '../../../application/usecases/auth/GetAuthStateUseCase';
-import { IAuthService } from '../../../domain/services/IAuthService';
+import { AuthState } from '../../../shared/domain/entities/AuthUser';
+import { LoginUseCase } from '../../../app/auth/usecases/LoginUseCase';
+import { LogoutUseCase } from '../../../app/auth/usecases/LogoutUseCase';
+import { GetAuthStateUseCase } from '../../../app/auth/usecases/GetAuthStateUseCase';
+import { IAuthService } from '../../../shared/domain/services/IAuthService';
 
 export interface AuthContextValue {
   authState: AuthState;

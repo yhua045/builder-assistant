@@ -45,10 +45,10 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { initDatabase, closeDatabase, getDatabase } from '../../../../infrastructure/database/connection';
+import { initDatabase, closeDatabase, getDatabase } from '../../../../shared/infrastructure/database/connection';
 import { DrizzleReceiptRepository } from '../../infrastructure/DrizzleReceiptRepository';
-import { InvoiceEntity } from '../../../../domain/entities/Invoice';
-import { PaymentEntity } from '../../../../domain/entities/Payment';
+import { InvoiceEntity } from '../../../../shared/domain/entities/Invoice';
+import { PaymentEntity } from '../../../../shared/domain/entities/Payment';
 
 describe('DrizzleReceiptRepository transaction behavior', () => {
   beforeAll(async () => {

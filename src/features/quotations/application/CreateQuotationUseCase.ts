@@ -1,5 +1,5 @@
-import { Quotation, QuotationEntity } from '../../../domain/entities/Quotation';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import { Quotation, QuotationEntity } from '../../../shared/domain/entities/Quotation';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 
 export type CreateQuotationDTO = Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>;
 

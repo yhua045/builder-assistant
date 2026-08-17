@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Text, TextInput } from 'react-native';
 import { InvoiceForm } from '../../../components/InvoiceForm';
-import { Invoice } from '../../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../../shared/domain/entities/Invoice';
 
 describe.skip('InvoiceForm', () => {
   const mockOnCreate = jest.fn();

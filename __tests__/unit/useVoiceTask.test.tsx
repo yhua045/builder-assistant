@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native';
-import MockAudioRecorder from '../../src/infrastructure/voice/MockAudioRecorder';
-import MockVoiceParsingService from '../../src/infrastructure/voice/MockVoiceParsingService';
+import MockAudioRecorder from '../../src/shared/infrastructure/voice/MockAudioRecorder';
+import MockVoiceParsingService from '../../src/shared/infrastructure/voice/MockVoiceParsingService';
 import { MAX_RECORDING_SECONDS, useVoiceTask } from '../../src/features/tasks/hooks/useVoiceTask';
 
 function makeHook(maxSeconds?: number) {

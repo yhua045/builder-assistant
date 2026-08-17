@@ -17,7 +17,7 @@ import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 import { useTasks, TaskDetail } from './useTasks';
 import { useDelayReasonTypes } from '../../../hooks/useDelayReasonTypes';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -31,7 +31,7 @@ import type {
   TaskStatus,
   TaskPriority,
 } from '../application/TaskViewDTOs';
-import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAdapter';
+import { IFilePickerAdapter } from '../../../shared/infrastructure/files/IFilePickerAdapter';
 import { AddTaskDocumentUseCase } from '../application/AddTaskDocumentUseCase';
 import { GetTaskDetailsUseCase, SubcontractorInfo } from '../application/GetTaskDetailsUseCase';
 import { TaskCompletionValidationError, PendingPaymentsForTaskError } from '../application/TaskCompletionErrors';

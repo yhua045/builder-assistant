@@ -39,7 +39,7 @@ jest.mock('tsyringe', () => ({
   inject: () => () => {},
 }));
 
-jest.mock('../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 // ── TanStack Query mock ───────────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ jest.mock('../../../../components/shared/ProjectPickerModal', () => ({
 // ── Import after mocks ────────────────────────────────────────────────────────
 
 import { PendingPaymentForm } from '../../components/PendingPaymentForm';
-import { Payment } from '../../../../domain/entities/Payment';
+import { Payment } from '../../../../shared/domain/entities/Payment';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

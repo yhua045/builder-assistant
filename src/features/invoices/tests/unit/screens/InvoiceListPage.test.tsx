@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import InvoiceListPage from '../../../screens/InvoiceListPage';
 import { useInvoices } from '../../../hooks/useInvoices';
-import { Invoice } from '../../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../../shared/domain/entities/Invoice';
 
 // Mock dependencies
 jest.mock('../../../hooks/useInvoices');

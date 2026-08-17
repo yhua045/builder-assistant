@@ -1,20 +1,20 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { ContactRepository } from '../../../domain/repositories/ContactRepository';
-import { Payment } from '../../../domain/entities/Payment';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Project } from '../../../domain/entities/Project';
-import { PaymentMetrics } from '../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { ContactRepository } from '../../../shared/domain/repositories/ContactRepository';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Project } from '../../../shared/domain/entities/Project';
+import { PaymentMetrics } from '../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { ListGlobalPaymentsUseCase } from '../application/ListGlobalPaymentsUseCase';
 import { GetPaymentMetricsUseCase } from '../application/GetPaymentMetricsUseCase';
 import { resolveInvoiceDueDate } from '../../../features/invoices';
 import { queryKeys } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export type PaymentsMode = 'firefighter' | 'site_manager';
 

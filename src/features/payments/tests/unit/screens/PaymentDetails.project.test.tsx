@@ -66,7 +66,7 @@ jest.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-jest.mock('../../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 // ─── Mock usePaymentDetails (MVVM — component is pure presentation) ───────────
 jest.mock('../../../hooks/usePaymentDetails');

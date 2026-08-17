@@ -29,7 +29,7 @@ jest.mock('tsyringe', () => ({
   registry: jest.fn(),
 }));
 
-jest.mock('../../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 jest.mock('../../../hooks/useVoiceTask', () => ({
   useVoiceTask: jest.fn(),
@@ -39,7 +39,7 @@ jest.mock('../../../hooks/useCameraTask', () => ({
   useCameraTask: jest.fn(),
 }));
 
-jest.mock('../../../../../infrastructure/voice/MockAudioRecorder', () => ({
+jest.mock('../../../../../shared/infrastructure/voice/MockAudioRecorder', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     startRecording: jest.fn().mockResolvedValue(undefined),
@@ -51,7 +51,7 @@ jest.mock('../../../../../infrastructure/voice/MockAudioRecorder', () => ({
   })),
 }));
 
-jest.mock('../../../../../infrastructure/voice/MockVoiceParsingService', () => ({
+jest.mock('../../../../../shared/infrastructure/voice/MockVoiceParsingService', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     parseAudio: jest.fn().mockResolvedValue({ title: 'Mock Task' }),
@@ -67,8 +67,8 @@ import { container } from 'tsyringe';
 import { useVoiceTask } from '../../../hooks/useVoiceTask';
 import { useCameraTask } from '../../../hooks/useCameraTask';
 import { useTaskScreen } from '../../../hooks/useTaskScreen';
-import MockAudioRecorder from '../../../../../infrastructure/voice/MockAudioRecorder';
-import MockVoiceParsingService from '../../../../../infrastructure/voice/MockVoiceParsingService';
+import MockAudioRecorder from '../../../../../shared/infrastructure/voice/MockAudioRecorder';
+import MockVoiceParsingService from '../../../../../shared/infrastructure/voice/MockVoiceParsingService';
 
 // ── Typed helpers ─────────────────────────────────────────────────────────────
 

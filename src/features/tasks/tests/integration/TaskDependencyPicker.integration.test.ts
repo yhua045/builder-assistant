@@ -50,8 +50,8 @@ import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepositor
 import { AddTaskDependencyUseCase } from '../../application/AddTaskDependencyUseCase';
 import { RemoveTaskDependencyUseCase } from '../../application/RemoveTaskDependencyUseCase';
 import { GetTaskDetailUseCase } from '../../application/GetTaskDetailUseCase';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('Task dependency picker — add + remove flow (integration)', () => {
   let repo: DrizzleTaskRepository;

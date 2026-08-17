@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
-import '../infrastructure/di/registerServices';
-import { TaskRepository } from '../domain/repositories/TaskRepository';
-import { BlockerBarResult } from '../domain/entities/CockpitData';
-import { Project } from '../domain/entities/Project';
+import '../shared/infrastructure/di/registerServices';
+import { TaskRepository } from '../shared/domain/repositories/TaskRepository';
+import { BlockerBarResult } from '../shared/domain/entities/CockpitData';
+import { Project } from '../shared/domain/entities/Project';
 import {
   GetBlockerBarDataUseCase,
   ProjectSummary,

@@ -11,7 +11,7 @@ import {
   ViewStyle,
   Pressable
 } from 'react-native';
-import { ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectStatus } from '../../../shared/domain/entities/Project';
 import { ProjectCardDto } from '../application/ProjectCardDto';
 import { 
   MapPin,  

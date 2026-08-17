@@ -1,7 +1,7 @@
-import type { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import type { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import type { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import type { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import type { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import type { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 import { TaskNotFoundError } from './TaskCompletionErrors';
 import { MarkPaymentAsPaidUseCase } from '../../../features/payments/application/MarkPaymentAsPaidUseCase';
 import { CompleteTaskUseCase } from './CompleteTaskUseCase';

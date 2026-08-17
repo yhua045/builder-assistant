@@ -1,4 +1,4 @@
-import { PaymentEntity } from '../../../../domain/entities/Payment';
+import { PaymentEntity } from '../../../../shared/domain/entities/Payment';
 
 describe('PaymentEntity', () => {
   it('creates a payment entity with id and timestamps', () => {

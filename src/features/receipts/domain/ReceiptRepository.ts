@@ -1,5 +1,5 @@
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Payment } from '../../../domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Payment } from '../../../shared/domain/entities/Payment';
 
 export interface ReceiptRepository {
   createReceipt(invoice: Invoice, payment: Payment): Promise<{ invoice: Invoice; payment: Payment }>;

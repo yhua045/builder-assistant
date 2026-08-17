@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act, type ReactTestInstance } from 'react-test-renderer';
 import InvoiceDetailPage from '../../../screens/InvoiceDetailPage';
-import { Invoice } from '../../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../../shared/domain/entities/Invoice';
 import { useInvoices } from '../../../hooks/useInvoices';
 
 // Mock dependencies

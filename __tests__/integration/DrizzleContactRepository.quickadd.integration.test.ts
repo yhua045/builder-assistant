@@ -52,9 +52,9 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { DrizzleContactRepository } from '../../src/infrastructure/repositories/DrizzleContactRepository';
-import { ContactEntity } from '../../src/domain/entities/Contact';
-import { closeDatabase } from '../../src/infrastructure/database/connection';
+import { DrizzleContactRepository } from '../../src/shared/infrastructure/repositories/DrizzleContactRepository';
+import { ContactEntity } from '../../src/shared/domain/entities/Contact';
+import { closeDatabase } from '../../src/shared/infrastructure/database/connection';
 
 describe('DrizzleContactRepository — issue #171 quickadd integration', () => {
   afterEach(async () => {

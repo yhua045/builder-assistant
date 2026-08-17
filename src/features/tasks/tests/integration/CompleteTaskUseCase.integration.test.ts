@@ -57,9 +57,9 @@ import { CompleteTaskUseCase } from '../../application/CompleteTaskUseCase';
 import { TaskCompletionValidationError } from '../../application/TaskCompletionErrors';
 import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepository';
 import { DrizzleQuotationRepository } from '../../../quotations/infrastructure/DrizzleQuotationRepository';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { QuotationEntity } from '../../../../domain/entities/Quotation';
-import { closeDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { QuotationEntity } from '../../../../shared/domain/entities/Quotation';
+import { closeDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('CompleteTaskUseCase integration (better-sqlite3 :memory:)', () => {
   let taskRepo: DrizzleTaskRepository;

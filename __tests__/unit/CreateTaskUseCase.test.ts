@@ -5,7 +5,7 @@
  */
 
 import { CreateTaskUseCase } from '../../src/features/tasks/application/CreateTaskUseCase';
-import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+import type { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
 
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 

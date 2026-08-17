@@ -1,6 +1,6 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { BlockerBarResult, BlockerItem } from '../../../domain/entities/CockpitData';
-import { Task } from '../../../domain/entities/Task';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { BlockerBarResult, BlockerItem } from '../../../shared/domain/entities/CockpitData';
+import { Task } from '../../../shared/domain/entities/Task';
 import { computeBlockers } from './CockpitScorer';
 
 export interface ProjectSummary {

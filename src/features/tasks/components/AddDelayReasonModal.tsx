@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { DelayReasonType } from '../../../domain/entities/DelayReason';
+import { DelayReasonType } from '../../../shared/domain/entities/DelayReason';
 import { X, Check } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 

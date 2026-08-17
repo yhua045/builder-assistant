@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTasks } from '../hooks/useTasks';
-import { Task } from '../../../domain/entities/Task';
+import { Task } from '../../../shared/domain/entities/Task';
 import { TaskStatusBadge } from '../components/TaskStatusBadge';
 import { X } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';

@@ -1,5 +1,5 @@
 import { LlmVisionInvoiceParser } from '../../infrastructure/LlmVisionInvoiceParser';
-import { IImageReader } from '../../../../application/services/IImageReader';
+import { IImageReader } from '../../../../shared/application/ports/IImageReader';
 
 function makeImageReader(base64 = 'base64imagedata', mimeType = 'image/jpeg'): IImageReader {
   return {

@@ -46,10 +46,10 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { DrizzleDocumentRepository } from '../../../../infrastructure/repositories/DrizzleDocumentRepository';
+import { DrizzleDocumentRepository } from '../../../../shared/infrastructure/repositories/DrizzleDocumentRepository';
 import { AddTaskDocumentUseCase } from '../../application/AddTaskDocumentUseCase';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 function makeMockFileSystem(localPath = '/app/storage/test.pdf'): IFileSystemAdapter {
   return {

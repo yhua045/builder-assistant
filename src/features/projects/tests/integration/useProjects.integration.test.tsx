@@ -54,7 +54,7 @@ import renderer, { act } from 'react-test-renderer';
 import React, { useEffect } from 'react';
 import { useProjects } from '../../hooks/useProjects';
 import { DrizzleProjectRepository } from '../../infrastructure/DrizzleProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../../../../domain/entities/Project';import { wrapWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';import { closeDatabase } from '../../../../infrastructure/database/connection';
+import { ProjectEntity, ProjectStatus } from '../../../../shared/domain/entities/Project';import { wrapWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';import { closeDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe.skip('useProjects integration', () => {
   it('loads projects from Drizzle-backed repository', async () => {

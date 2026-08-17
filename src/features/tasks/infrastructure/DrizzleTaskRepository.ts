@@ -1,8 +1,8 @@
-import { Task } from '../../../domain/entities/Task';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DelayReason } from '../../../domain/entities/DelayReason';
-import { ProgressLog } from '../../../domain/entities/ProgressLog';
-import { getDatabase, initDatabase } from '../../../infrastructure/database/connection';
+import { Task } from '../../../shared/domain/entities/Task';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DelayReason } from '../../../shared/domain/entities/DelayReason';
+import { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
+import { getDatabase, initDatabase } from '../../../shared/infrastructure/database/connection';
 
 export class DrizzleTaskRepository implements TaskRepository {
   private initialized = false;

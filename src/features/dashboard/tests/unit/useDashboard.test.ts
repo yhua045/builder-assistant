@@ -26,7 +26,7 @@ jest.mock('../../hooks/useProjectsOverview', () => ({
   useProjectsOverview: jest.fn(),
 }));
 
-jest.mock('../../../../infrastructure/ocr/MobileOcrAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/ocr/MobileOcrAdapter', () => ({
   MobileOcrAdapter: jest.fn().mockImplementation(() => ({ extractText: jest.fn() })),
 }));
 
@@ -34,7 +34,7 @@ jest.mock('../../../invoices/application/InvoiceNormalizer', () => ({
   InvoiceNormalizer: jest.fn().mockImplementation(() => ({ normalize: jest.fn() })),
 }));
 
-jest.mock('../../../../infrastructure/files/PdfThumbnailConverter', () => ({
+jest.mock('../../../../shared/infrastructure/files/PdfThumbnailConverter', () => ({
   PdfThumbnailConverter: jest.fn().mockImplementation(() => ({ convertToImages: jest.fn() })),
 }));
 

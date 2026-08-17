@@ -8,9 +8,9 @@ jest.mock('react-native', () => {
 });
 import { QuotationScreen } from '../../screens/QuotationScreen';
 import { useQuotations } from '../../hooks/useQuotations';
-import { IFilePickerAdapter, FilePickerResult } from '../../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
-import { IOcrAdapter } from '../../../../application/services/IOcrAdapter';
+import { IFilePickerAdapter, FilePickerResult } from '../../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
+import { IOcrAdapter } from '../../../../shared/application/ports/IOcrAdapter';
 import { IQuotationParsingStrategy, NormalizedQuotation } from '../../application/ai/IQuotationParsingStrategy';
 
 jest.mock('../../hooks/useQuotations');

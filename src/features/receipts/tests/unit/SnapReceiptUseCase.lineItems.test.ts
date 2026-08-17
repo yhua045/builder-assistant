@@ -1,6 +1,6 @@
 import { SnapReceiptUseCase, SnapReceiptDTO } from '../../application/SnapReceiptUseCase';
-import { Invoice } from '../../../../domain/entities/Invoice';
-import { Payment } from '../../../../domain/entities/Payment';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
+import { Payment } from '../../../../shared/domain/entities/Payment';
 import { ReceiptRepository } from '../../domain/ReceiptRepository';
 
 function makeReceiptRepo(): jest.Mocked<ReceiptRepository> {

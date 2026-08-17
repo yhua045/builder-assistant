@@ -1,4 +1,4 @@
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
+import { IPdfConverter } from '../../../../shared/infrastructure/files/IPdfConverter';
 import { IReceiptVisionParsingStrategy } from '../../application/IReceiptVisionParsingStrategy';
 import { NormalizedReceipt } from '../../application/IReceiptNormalizer';
 import {

@@ -1,6 +1,6 @@
 import { AddTaskDependencyUseCase } from '../../src/features/tasks/application/AddTaskDependencyUseCase';
-import { Task } from '../../src/domain/entities/Task';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
 // DelayReason not used in this test
 
 function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {

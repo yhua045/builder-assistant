@@ -1,4 +1,4 @@
-import { QuotationRepository } from '../../../../domain/repositories/QuotationRepository';
+import { QuotationRepository } from '../../../../shared/domain/repositories/QuotationRepository';
 import { DeleteQuotationUseCase } from '../../application/DeleteQuotationUseCase';
 
 describe('DeleteQuotationUseCase', () => {

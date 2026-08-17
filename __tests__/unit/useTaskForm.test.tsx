@@ -2,7 +2,7 @@ import renderer, { act } from 'react-test-renderer';
 import React, { useEffect } from 'react';
 import { container } from 'tsyringe';
 import { useTaskForm } from '../../src/features/tasks/hooks/useTaskForm';
-import { Task } from '../../src/domain/entities/Task';
+import { Task } from '../../src/shared/domain/entities/Task';
 import { wrapWithQuery } from '../utils/queryClientWrapper';
 
 // ── helpers ───────────────────────────────────────────────────────────────────

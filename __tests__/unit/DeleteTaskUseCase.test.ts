@@ -1,5 +1,5 @@
 import { DeleteTaskUseCase } from '../../src/features/tasks/application/DeleteTaskUseCase';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
 
 function makeMockTaskRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {

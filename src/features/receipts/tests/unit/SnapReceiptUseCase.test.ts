@@ -1,6 +1,6 @@
 import { SnapReceiptUseCase, SnapReceiptDTO } from '../../application/SnapReceiptUseCase';
 import { ReceiptRepository } from '../../domain/ReceiptRepository';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import { ReceiptFieldParser, ReceiptCandidates } from '../../application/ReceiptFieldParser';
 import { IReceiptNormalizer, NormalizedReceipt } from '../../application/IReceiptNormalizer';
 // removed unused entity imports

@@ -1,6 +1,6 @@
-import { CreateAuditLogEntryUseCase } from '../../src/application/usecases/auditlog/CreateAuditLogEntryUseCase';
-import { AuditLogRepository } from '../../src/domain/repositories/AuditLogRepository';
-import { AuditLog } from '../../src/domain/entities/AuditLog';
+import { CreateAuditLogEntryUseCase } from '../../src/shared/application/usecases/auditlog/CreateAuditLogEntryUseCase';
+import { AuditLogRepository } from '../../src/shared/domain/repositories/AuditLogRepository';
+import { AuditLog } from '../../src/shared/domain/entities/AuditLog';
 
 function makeMockAuditLogRepo(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
   return {

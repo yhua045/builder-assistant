@@ -1,5 +1,5 @@
 import { TextBasedQuotationProcessor } from '../../infrastructure/processors/TextBasedQuotationProcessor';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import {
   IQuotationParsingStrategy,
   NormalizedQuotation,

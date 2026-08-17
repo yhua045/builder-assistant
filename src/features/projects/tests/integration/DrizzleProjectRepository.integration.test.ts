@@ -55,8 +55,8 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { DrizzleProjectRepository } from '../../infrastructure/DrizzleProjectRepository';
-import { ProjectEntity, ProjectStatus } from '../../../../domain/entities/Project';
-import { closeDatabase, getDatabase } from '../../../../infrastructure/database/connection';
+import { ProjectEntity, ProjectStatus } from '../../../../shared/domain/entities/Project';
+import { closeDatabase, getDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DrizzleProjectRepository integration (better-sqlite3 :memory:)', () => {
   it('runs real SQL via Drizzle: create, read, update, delete', async () => {

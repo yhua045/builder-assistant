@@ -1,4 +1,4 @@
-import { IImageReader } from '../../../../application/services/IImageReader';
+import { IImageReader } from '../../../../shared/application/ports/IImageReader';
 import {
   IQuotationVisionParsingStrategy,
   QuotationVisionStrategyType,

@@ -1,5 +1,5 @@
 import { ListPaymentsUseCase } from '../../application/ListPaymentsUseCase';
-import { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
+import { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
 
 describe('ListPaymentsUseCase (presets)', () => {
   const fixedNow = new Date('2026-02-13T00:00:00.000Z');

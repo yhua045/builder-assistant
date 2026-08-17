@@ -1,6 +1,6 @@
-import { GetAuthStateUseCase } from '../../../src/application/usecases/auth/GetAuthStateUseCase';
-import { IAuthService } from '../../../src/domain/services/IAuthService';
-import { AuthState } from '../../../src/domain/entities/AuthUser';
+import { GetAuthStateUseCase } from '../../../src/app/auth/usecases/GetAuthStateUseCase';
+import { IAuthService } from '../../../src/shared/domain/services/IAuthService';
+import { AuthState } from '../../../src/shared/domain/entities/AuthUser';
 
 function makeStubAuthService(overrides: Partial<IAuthService> = {}): IAuthService {
   return {

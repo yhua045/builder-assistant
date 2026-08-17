@@ -1,5 +1,5 @@
-import type { Quotation } from '../../../domain/entities/Quotation';
-import type { Payment } from '../../../domain/entities/Payment';
+import type { Quotation } from '../../../shared/domain/entities/Quotation';
+import type { Payment } from '../../../shared/domain/entities/Payment';
 
 export class TaskNotFoundError extends Error {
   constructor(taskId: string) {

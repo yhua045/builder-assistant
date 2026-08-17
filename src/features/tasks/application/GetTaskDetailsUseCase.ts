@@ -9,11 +9,11 @@
  * Design: design/issue-210-task-screens-refactor.md §4
  */
 
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { ContactRepository } from '../../../domain/repositories/ContactRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DocumentRepository } from '../../../shared/domain/repositories/DocumentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { ContactRepository } from '../../../shared/domain/repositories/ContactRepository';
 import { TaskDetail } from './GetTaskDetailUseCase';
 import {
   TaskViewDTO,

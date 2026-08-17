@@ -14,7 +14,7 @@ import {
   groupFeedItemsByDay,
 } from '../../hooks/usePaymentsTimeline';
 import { PaymentFeedItem } from '../../domain/PaymentFeedItem';
-import { Payment } from '../../../../domain/entities/Payment';
+import { Payment } from '../../../../shared/domain/entities/Payment';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

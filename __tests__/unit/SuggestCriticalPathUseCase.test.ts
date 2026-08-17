@@ -1,6 +1,6 @@
-import { SuggestCriticalPathUseCase } from '../../src/application/usecases/criticalpath/SuggestCriticalPathUseCase';
-import { CriticalPathService } from '../../src/application/services/CriticalPathService';
-import { SuggestCriticalPathRequest } from '../../src/data/critical-path/schema';
+import { SuggestCriticalPathUseCase } from '../../src/shared/application/usecases/criticalpath/SuggestCriticalPathUseCase';
+import { CriticalPathService } from '../../src/shared/application/services/CriticalPathService';
+import { SuggestCriticalPathRequest } from '../../src/shared/data/critical-path/schema';
 
 describe('SuggestCriticalPathUseCase', () => {
   const service = new CriticalPathService();

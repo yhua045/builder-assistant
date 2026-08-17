@@ -1,9 +1,9 @@
 import { GetTaskDetailUseCase } from '../../src/features/tasks/application/GetTaskDetailUseCase';
-import { Task } from '../../src/domain/entities/Task';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import { DelayReason } from '../../src/domain/entities/DelayReason';
-import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
-import { Quotation } from '../../src/domain/entities/Quotation';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import { DelayReason } from '../../src/shared/domain/entities/DelayReason';
+import { QuotationRepository } from '../../src/shared/domain/repositories/QuotationRepository';
+import { Quotation } from '../../src/shared/domain/entities/Quotation';
 
 function makeMockRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {

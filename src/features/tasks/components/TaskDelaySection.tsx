@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { DelayReason } from '../../../domain/entities/DelayReason';
+import { DelayReason } from '../../../shared/domain/entities/DelayReason';
 import { Clock, Plus, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 

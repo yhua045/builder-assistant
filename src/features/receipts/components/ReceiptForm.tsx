@@ -7,7 +7,7 @@ import { CheckCircle, AlertCircle, AlertTriangle, X, Plus } from 'lucide-react-n
 import OptionList from '../../../components/inputs/OptionList';
 import { ContractorLookupField } from '../../../components/inputs/ContractorLookupField';
 import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
-import { Project } from '../../../domain/entities/Project';
+import { Project } from '../../../shared/domain/entities/Project';
 
 interface ReceiptFormProps {
   initialValues?: Partial<SnapReceiptDTO>;

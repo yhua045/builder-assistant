@@ -16,17 +16,17 @@ import renderer, { act } from 'react-test-renderer';
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
 // Enable the AI flag for these tests
-jest.mock('../../src/config/featureFlags', () => ({
+jest.mock('../../src/shared/config/featureFlags', () => ({
   FEATURE_AI_SUGGESTIONS: true,
 }));
 
 import { useTaskDetail } from '../../src/features/tasks/hooks/useTaskDetail';
-import type { Task } from '../../src/domain/entities/Task';
-import type { Project } from '../../src/domain/entities/Project';
+import type { Task } from '../../src/shared/domain/entities/Task';
+import type { Project } from '../../src/shared/domain/entities/Project';
 import type {
   SuggestionService,
   SuggestionResult,
-} from '../../src/infrastructure/ai/suggestionService';
+} from '../../src/shared/infrastructure/ai/suggestionService';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

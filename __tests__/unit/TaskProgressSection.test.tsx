@@ -7,7 +7,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { TaskProgressSection, formatRelativeTime } from '../../src/features/tasks/components/TaskProgressSection';
-import { ProgressLog } from '../../src/domain/entities/ProgressLog';
+import { ProgressLog } from '../../src/shared/domain/entities/ProgressLog';
 
 // ── Stubs ──────────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
-import { GetBestLocationUseCase } from '../../src/application/usecases/location/GetBestLocationUseCase';
-import { MockStoredLocationRepository } from '../../src/infrastructure/location/MockStoredLocationRepository';
-import { GeoLocation } from '../../src/application/services/IGpsService';
+import { GetBestLocationUseCase } from '../../src/shared/application/usecases/location/GetBestLocationUseCase';
+import { MockStoredLocationRepository } from '../../src/shared/infrastructure/location/MockStoredLocationRepository';
+import { GeoLocation } from '../../src/shared/application/ports/IGpsService';
 
 function makeLoc(deltaMs = 0, accuracy = 10): GeoLocation {
   return {

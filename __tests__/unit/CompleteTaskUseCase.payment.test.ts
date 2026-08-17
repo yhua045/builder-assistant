@@ -3,14 +3,14 @@
  * The existing quotation-validation tests live in CompleteTaskUseCase.test.ts.
  */
 import { CompleteTaskUseCase } from '../../src/features/tasks/application/CompleteTaskUseCase';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
-import { PaymentRepository } from '../../src/domain/repositories/PaymentRepository';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import { QuotationRepository } from '../../src/shared/domain/repositories/QuotationRepository';
+import { PaymentRepository } from '../../src/shared/domain/repositories/PaymentRepository';
 import {
   PendingPaymentsForTaskError,
 } from '../../src/features/tasks/application/TaskCompletionErrors';
-import { Task } from '../../src/domain/entities/Task';
-import { Payment } from '../../src/domain/entities/Payment';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { Payment } from '../../src/shared/domain/entities/Payment';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {

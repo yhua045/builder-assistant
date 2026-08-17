@@ -4,8 +4,8 @@
  * Changes a project's status, validating the transition through workflow rules.
  */
 
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
-import { ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
+import { ProjectStatus } from '../../../shared/domain/entities/Project';
 import { ProjectValidationService } from '../domain/ProjectValidationService';
 
 export type UseCaseResult<T> = 

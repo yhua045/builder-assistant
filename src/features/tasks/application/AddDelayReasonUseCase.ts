@@ -1,6 +1,6 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DelayReasonTypeRepository } from '../../../domain/repositories/DelayReasonTypeRepository';
-import { DelayReason } from '../../../domain/entities/DelayReason';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DelayReasonTypeRepository } from '../../../shared/domain/repositories/DelayReasonTypeRepository';
+import { DelayReason } from '../../../shared/domain/entities/DelayReason';
 
 export interface AddDelayReasonInput {
   taskId: string;

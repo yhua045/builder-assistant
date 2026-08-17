@@ -42,10 +42,10 @@ import { TimelineSectionHeader } from '../components/TimelineSectionHeader';
 import { TimelinePaymentCard } from '../components/TimelinePaymentCard';
 import { TimelineInvoiceCard } from '../components/TimelineInvoiceCard';
 import { TimelineQuotationCard } from '../components/TimelineQuotationCard';
-import { Task } from '../../../domain/entities/Task';
-import { Payment } from '../../../domain/entities/Payment';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Task } from '../../../shared/domain/entities/Task';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 import { DayGroup } from '../../tasks/hooks/useTaskTimeline';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });

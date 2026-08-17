@@ -1,9 +1,9 @@
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { Task } from '../../../domain/entities/Task';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { Task } from '../../../shared/domain/entities/Task';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export interface ApproveQuotationInput {
   quotationId: string;

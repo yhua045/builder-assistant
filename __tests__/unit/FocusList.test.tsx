@@ -5,8 +5,8 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { FocusList } from '../../src/features/tasks/components/FocusList';
-import type { FocusItem } from '../../src/domain/entities/CockpitData';
-import type { Task } from '../../src/domain/entities/Task';
+import type { FocusItem } from '../../src/shared/domain/entities/CockpitData';
+import type { Task } from '../../src/shared/domain/entities/Task';
 
 // ---------------------------------------------------------------------------
 // Helpers

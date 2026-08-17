@@ -25,7 +25,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { FileText, Check, X, ExternalLink, Paperclip } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 
 cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Check, { className: { target: 'style', nativeStyleToProp: { color: true } } });

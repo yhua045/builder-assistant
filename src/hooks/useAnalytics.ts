@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
-import '../infrastructure/di/registerServices';
-import type { AnalyticsAdapter } from '../infrastructure/analytics/AnalyticsAdapter';
-import { NoopAnalyticsAdapter } from '../infrastructure/analytics/NoopAnalyticsAdapter';
+import '../shared/infrastructure/di/registerServices';
+import type { AnalyticsAdapter } from '../shared/infrastructure/analytics/AnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../shared/infrastructure/analytics/NoopAnalyticsAdapter';
 
 /**
  * useAnalytics — global singleton hook for UX event tracking.

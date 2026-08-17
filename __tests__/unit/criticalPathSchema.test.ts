@@ -1,7 +1,7 @@
 import {
   validateLookupFile,
   CriticalPathLookupFile,
-} from '../../src/data/critical-path/schema';
+} from '../../src/shared/data/critical-path/schema';
 
 const validFile: CriticalPathLookupFile = {
   project_type: 'complete_rebuild',

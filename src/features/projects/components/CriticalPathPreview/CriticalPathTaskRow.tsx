@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import type { CriticalPathSuggestion } from '../../../../data/critical-path/schema';
+import type { CriticalPathSuggestion } from '../../../../shared/data/critical-path/schema';
 
 interface CriticalPathTaskRowProps {
   suggestion: CriticalPathSuggestion;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Task } from '../../../domain/entities/Task';
+import { Task } from '../../../shared/domain/entities/Task';
 import { Check, X, Clock, AlertTriangle } from 'lucide-react-native';
 
 interface TaskIconRowProps {

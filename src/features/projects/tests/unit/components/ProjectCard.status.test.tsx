@@ -25,7 +25,7 @@ jest.mock('lucide-react-native', () => {
   };
 });
 import { ProjectCard } from '../../../components/ProjectCard';
-import { ProjectStatus } from '../../../../../domain/entities/Project';
+import { ProjectStatus } from '../../../../../shared/domain/entities/Project';
 import { ProjectCardDto } from '../../../application/ProjectCardDto';
 
 const minimalDto = (status: ProjectStatus): ProjectCardDto => ({

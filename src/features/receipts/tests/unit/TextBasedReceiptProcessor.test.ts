@@ -1,5 +1,5 @@
 import { TextBasedReceiptProcessor } from '../../infrastructure/processors/TextBasedReceiptProcessor';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import { IReceiptParsingStrategy } from '../../application/IReceiptParsingStrategy';
 import { NormalizedReceipt } from '../../application/IReceiptNormalizer';
 import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';

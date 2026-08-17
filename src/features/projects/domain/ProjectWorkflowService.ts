@@ -5,7 +5,7 @@
  * Ensures that project status changes follow allowed business rules.
  */
 
-import { ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectStatus } from '../../../shared/domain/entities/Project';
 
 /**
  * Result of a workflow transition check

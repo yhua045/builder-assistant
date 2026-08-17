@@ -23,13 +23,13 @@ import { X } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Payment } from '../../../domain/entities/Payment';
-import { Project } from '../../../domain/entities/Project';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Project } from '../../../shared/domain/entities/Project';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { ProjectPickerModal } from '../../../components/shared/ProjectPickerModal';
 import DatePickerInput from '../../../components/inputs/DatePickerInput';
 import { invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 interface Props {
   visible: boolean;

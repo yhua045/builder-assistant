@@ -1,6 +1,6 @@
-import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { Invoice, InvoiceEntity } from '../../../shared/domain/entities/Invoice';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 
 export interface CancelInvoiceOptions {
   reason?: string;

@@ -50,7 +50,7 @@ jest.mock('tsyringe', () => ({
 }));
 
 // Suppress DI registration side-effects in useInvoices
-jest.mock('../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 // ── Navigation stubs ──────────────────────────────────────────────────────────
 

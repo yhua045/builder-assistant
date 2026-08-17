@@ -1,14 +1,14 @@
-import { Contact } from '../../../domain/entities/Contact';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { Task } from '../../../domain/entities/Task';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Contact } from '../../../shared/domain/entities/Contact';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { Task } from '../../../shared/domain/entities/Task';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 import {
   resolveVendorDetails,
   VendorResolutionContext,
-} from '../../../domain/services/VendorDetailsResolver';
+} from '../../../shared/domain/services/VendorDetailsResolver';
 
 export interface AcceptQuotationInput {
   /** ID of an existing quotation record to accept. Optional — omit for variation tasks with no prior quotation. */

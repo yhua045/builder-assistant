@@ -58,8 +58,8 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { DrizzleInvoiceRepository } from '../../infrastructure/DrizzleInvoiceRepository';
-import { InvoiceEntity } from '../../../../domain/entities/Invoice';
-import { closeDatabase } from '../../../../infrastructure/database/connection';
+import { InvoiceEntity } from '../../../../shared/domain/entities/Invoice';
+import { closeDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DrizzleInvoiceRepository', () => {
   let repo: DrizzleInvoiceRepository;

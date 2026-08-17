@@ -1,5 +1,5 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DelayReasonTypeRepository } from '../../../domain/repositories/DelayReasonTypeRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DelayReasonTypeRepository } from '../../../shared/domain/repositories/DelayReasonTypeRepository';
 
 export interface DelayStatEntry {
   reasonTypeId: string;

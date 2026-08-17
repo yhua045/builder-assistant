@@ -1,6 +1,6 @@
 import { PaymentFeedItem } from '../domain/PaymentFeedItem';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 
 const MAX_ITEMS = 500;
 

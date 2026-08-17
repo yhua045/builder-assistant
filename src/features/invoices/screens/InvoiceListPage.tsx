@@ -5,7 +5,7 @@ import { ThemeToggle } from '../../../components/ThemeToggle';
 import { FileText, DollarSign, Eye, Edit, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { useInvoices } from '../hooks/useInvoices';
-import type { Invoice } from '../../../domain/entities/Invoice';
+import type { Invoice } from '../../../shared/domain/entities/Invoice';
 
 cssInterop(FileText, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(DollarSign, { className: { target: 'style', nativeStyleToProp: { color: true } } });

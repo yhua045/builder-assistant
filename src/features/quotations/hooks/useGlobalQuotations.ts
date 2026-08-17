@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 import { DrizzleQuotationRepository } from '../infrastructure/DrizzleQuotationRepository';
 import { ListQuotationsUseCase } from '../application/ListQuotationsUseCase';
 import { queryKeys } from '../../../hooks/queryKeys';

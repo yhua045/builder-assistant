@@ -1,5 +1,5 @@
 import { LlmInvoiceParser } from '../../infrastructure/LlmInvoiceParser';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 const mockOcrResult: OcrResult = {
   fullText:

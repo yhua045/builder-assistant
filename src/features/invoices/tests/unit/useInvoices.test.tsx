@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { waitFor } from '@testing-library/react-native';
 import { container } from 'tsyringe';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Invoice } from '../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
 import { wrapWithQuery, renderHookWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
 
 describe('useInvoices hook', () => {

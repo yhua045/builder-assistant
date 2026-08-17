@@ -17,7 +17,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Task } from '../../../domain/entities/Task';
+import { Task } from '../../../shared/domain/entities/Task';
 import { DayGroup } from '../hooks/useProjectTimeline';
 import { TimelineTaskCard } from './TimelineTaskCard';
 

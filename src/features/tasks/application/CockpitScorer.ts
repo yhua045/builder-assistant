@@ -4,11 +4,11 @@
  * All functions are side-effect-free and accept a `now: Date` argument for
  * deterministic, time-injected testing.
  *
- * Domain references:  src/domain/entities/CockpitData.ts
+ * Domain references:  src/shared/domain/entities/CockpitData.ts
  */
 
-import { Task } from '../../../domain/entities/Task';
-import { BlockerItem, BlockerSeverity, FocusItem } from '../../../domain/entities/CockpitData';
+import { Task } from '../../../shared/domain/entities/Task';
+import { BlockerItem, BlockerSeverity, FocusItem } from '../../../shared/domain/entities/CockpitData';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

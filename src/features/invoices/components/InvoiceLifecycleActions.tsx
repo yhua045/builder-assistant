@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Invoice } from '../../../domain/entities/Invoice';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
 
 interface InvoiceLifecycleActionsProps {
   invoice: Invoice;

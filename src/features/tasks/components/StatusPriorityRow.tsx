@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import type { Task } from '../../../domain/entities/Task';
+import type { Task } from '../../../shared/domain/entities/Task';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

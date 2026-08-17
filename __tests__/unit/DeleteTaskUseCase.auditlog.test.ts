@@ -1,7 +1,7 @@
 import { DeleteTaskUseCase } from '../../src/features/tasks/application/DeleteTaskUseCase';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import { AuditLogRepository } from '../../src/domain/repositories/AuditLogRepository';
-import { Task } from '../../src/domain/entities/Task';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import { AuditLogRepository } from '../../src/shared/domain/repositories/AuditLogRepository';
+import { Task } from '../../src/shared/domain/entities/Task';
 
 function makeMockTaskRepo(overrides: Partial<TaskRepository> = {}): TaskRepository {
   return {

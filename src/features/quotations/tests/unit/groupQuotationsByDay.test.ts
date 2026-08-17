@@ -10,7 +10,7 @@ import {
   getQuotationDateKey,
   groupQuotationsByDay,
 } from '../../../projects/hooks/useQuotationsTimeline';
-import { Quotation } from '../../../../domain/entities/Quotation';
+import { Quotation } from '../../../../shared/domain/entities/Quotation';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

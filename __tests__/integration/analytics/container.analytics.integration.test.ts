@@ -5,15 +5,15 @@
  * Uses only in-process classes (no native modules / tsyringe) so it stays
  * fast and deterministic.
  */
-import { CompositeAnalyticsAdapter } from '../../../src/infrastructure/analytics/CompositeAnalyticsAdapter';
-import { NoopAnalyticsAdapter } from '../../../src/infrastructure/analytics/NoopAnalyticsAdapter';
-import { NoopErrorReportingAdapter } from '../../../src/infrastructure/analytics/NoopErrorReportingAdapter';
-import { FirebaseAnalyticsAdapter } from '../../../src/infrastructure/analytics/FirebaseAnalyticsAdapter';
-import { MixpanelAnalyticsAdapter } from '../../../src/infrastructure/analytics/MixpanelAnalyticsAdapter';
-import { SentryErrorReportingAdapter } from '../../../src/infrastructure/analytics/SentryErrorReportingAdapter';
-import { AsyncStorageAnalyticsAdapter } from '../../../src/infrastructure/analytics/AsyncStorageAnalyticsAdapter';
-import { AnalyticsAdapter } from '../../../src/infrastructure/analytics/AnalyticsAdapter';
-import { ErrorReportingAdapter } from '../../../src/infrastructure/analytics/ErrorReportingAdapter';
+import { CompositeAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/CompositeAnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/NoopAnalyticsAdapter';
+import { NoopErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/NoopErrorReportingAdapter';
+import { FirebaseAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/FirebaseAnalyticsAdapter';
+import { MixpanelAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/MixpanelAnalyticsAdapter';
+import { SentryErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/SentryErrorReportingAdapter';
+import { AsyncStorageAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/AsyncStorageAnalyticsAdapter';
+import { AnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/AnalyticsAdapter';
+import { ErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/ErrorReportingAdapter';
 
 describe('Analytics DI contract', () => {
   describe('production adapter hierarchy', () => {

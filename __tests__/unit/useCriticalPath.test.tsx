@@ -10,10 +10,10 @@ import { createTestQueryClient } from '../utils/queryClientWrapper';
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
 import { useCriticalPath, UseCriticalPathOptions } from '../../src/hooks/useCriticalPath';
-import { SuggestCriticalPathUseCase } from '../../src/application/usecases/criticalpath/SuggestCriticalPathUseCase';
+import { SuggestCriticalPathUseCase } from '../../src/shared/application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import { CreateTaskUseCase } from '../../src/features/tasks/application/CreateTaskUseCase';
-import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../../src/data/critical-path/schema';
-import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../../src/shared/data/critical-path/schema';
+import type { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

@@ -5,8 +5,8 @@ import { container } from 'tsyringe';
 import { TaskForm } from '../components/TaskForm';
 import { VoiceRecordingOverlay } from '../components/VoiceRecordingOverlay';
 import { useVoiceTask } from '../hooks/useVoiceTask';
-import { IAudioRecorder } from '../../../application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../../application/services/IVoiceParsingService';
+import { IAudioRecorder } from '../../../shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CreateTaskPage() {

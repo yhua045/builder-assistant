@@ -13,7 +13,7 @@ import PaymentCard, { PaymentCardPayment } from '../components/PaymentCard';
 import { PaymentTypeFilterChips } from '../components/PaymentTypeFilterChips';
 import GlobalQuotationCard from '../components/GlobalQuotationCard';
 import { useGlobalPaymentsScreen } from '../hooks/useGlobalPaymentsScreen';
-import type { Quotation } from '../../../domain/entities/Quotation';
+import type { Quotation } from '../../../shared/domain/entities/Quotation';
 import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 const EMPTY_MESSAGES: Record<string, { title: string; subtitle: (hasSearch: boolean) => string }> = {

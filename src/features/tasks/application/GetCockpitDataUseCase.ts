@@ -1,6 +1,6 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { CockpitData } from '../../../domain/entities/CockpitData';
-import { Task } from '../../../domain/entities/Task';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { CockpitData } from '../../../shared/domain/entities/CockpitData';
+import { Task } from '../../../shared/domain/entities/Task';
 import { computeBlockers, computeFocus3 } from './CockpitScorer';
 
 /**

@@ -2,7 +2,7 @@ import {
   IPdfConverter,
   PdfConversionError,
   PdfPageImage,
-} from '../src/infrastructure/files/IPdfConverter';
+} from '../src/shared/infrastructure/files/IPdfConverter';
 
 /**
  * Configurable in-memory mock for `IPdfConverter`.

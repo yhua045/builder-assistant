@@ -1,4 +1,4 @@
-import GroqSTTAdapter from '../../src/infrastructure/voice/GroqSTTAdapter';
+import GroqSTTAdapter from '../../src/shared/infrastructure/voice/GroqSTTAdapter';
 
 describe('GroqSTTAdapter', () => {
   const API_KEY = 'test-key';

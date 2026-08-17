@@ -1,6 +1,6 @@
-import { GetAuthStateUseCase } from '../../../../application/usecases/auth/GetAuthStateUseCase';
-import { IAuthService } from '../../../../domain/services/IAuthService';
-import { AuthState } from '../../../../domain/entities/AuthUser';
+import { GetAuthStateUseCase } from '../../../../app/auth/usecases/GetAuthStateUseCase';
+import { IAuthService } from '../../../../shared/domain/services/IAuthService';
+import { AuthState } from '../../../../shared/domain/entities/AuthUser';
 
 function makeAuthService(state: AuthState): IAuthService {
   return {

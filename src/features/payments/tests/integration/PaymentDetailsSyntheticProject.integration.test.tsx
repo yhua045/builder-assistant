@@ -80,7 +80,7 @@ jest.mock('tsyringe', () => {
   };
 });
 
-jest.mock('../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 // ── Navigation mocks ──────────────────────────────────────────────────────────
 

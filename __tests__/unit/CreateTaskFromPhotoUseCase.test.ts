@@ -11,11 +11,11 @@
  */
 
 import { CreateTaskFromPhotoUseCase } from '../../src/features/tasks/application/CreateTaskFromPhotoUseCase';
-import type { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import type { DocumentRepository } from '../../src/domain/repositories/DocumentRepository';
-import type { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
-import type { Task } from '../../src/domain/entities/Task';
-import type { Document } from '../../src/domain/entities/Document';
+import type { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import type { DocumentRepository } from '../../src/shared/domain/repositories/DocumentRepository';
+import type { IFileSystemAdapter } from '../../src/shared/infrastructure/files/IFileSystemAdapter';
+import type { Task } from '../../src/shared/domain/entities/Task';
+import type { Document } from '../../src/shared/domain/entities/Document';
 
 // ---------------------------------------------------------------------------
 // Mocks

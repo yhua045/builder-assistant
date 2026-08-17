@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Payment } from '../../../domain/entities/Payment';
+import { Payment } from '../../../shared/domain/entities/Payment';
 import { getDueStatus } from '../../../utils/getDueStatus';
 
 export type PaymentCardPayment = Payment & {

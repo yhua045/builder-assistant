@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import '../infrastructure/di/registerServices';
-import { ContactRepository } from '../domain/repositories/ContactRepository';
-import { ILookupProvider } from '../domain/services/ILookupProvider';
-import { QuickAddContactUseCase, QuickAddContactInput } from '../application/usecases/contact/QuickAddContactUseCase';
-import { LookupProviderSearchUseCase } from '../application/usecases/contact/LookupProviderSearchUseCase';
-import { GetSuggestedContractorsUseCase } from '../application/usecases/contact/GetSuggestedContractorsUseCase';
-import { Contact } from '../domain/entities/Contact';
+import '../shared/infrastructure/di/registerServices';
+import { ContactRepository } from '../shared/domain/repositories/ContactRepository';
+import { ILookupProvider } from '../shared/domain/services/ILookupProvider';
+import { QuickAddContactUseCase, QuickAddContactInput } from '../app/contacts/usecases/QuickAddContactUseCase';
+import { LookupProviderSearchUseCase } from '../shared/application/usecases/contact/LookupProviderSearchUseCase';
+import { GetSuggestedContractorsUseCase } from '../shared/application/usecases/contact/GetSuggestedContractorsUseCase';
+import { Contact } from '../shared/domain/entities/Contact';
 import { queryKeys } from './queryKeys';
-import { FeatureFlags } from '../infrastructure/config/featureFlags';
+import { FeatureFlags } from '../shared/infrastructure/config/featureFlags';
 
 export function useQuickLookup(onChange?: (id: string) => void) {
   const queryClient = useQueryClient();

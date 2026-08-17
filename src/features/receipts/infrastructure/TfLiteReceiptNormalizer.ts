@@ -1,6 +1,6 @@
 import { IReceiptNormalizer, NormalizedReceipt } from '../application/IReceiptNormalizer';
 import { ReceiptCandidates } from '../application/ReceiptFieldParser';
-import { OcrResult } from '../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../shared/application/ports/IOcrAdapter';
 
 /**
  * TfLiteReceiptNormalizer - TensorFlow Lite ML-based receipt normalization

@@ -1,5 +1,5 @@
-import { NoopAnalyticsAdapter } from '../../../src/infrastructure/analytics/NoopAnalyticsAdapter';
-import { AnalyticsAdapter } from '../../../src/infrastructure/analytics/AnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/NoopAnalyticsAdapter';
+import { AnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/AnalyticsAdapter';
 
 describe('NoopAnalyticsAdapter', () => {
   let adapter: NoopAnalyticsAdapter;

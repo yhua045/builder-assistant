@@ -8,8 +8,8 @@
  * AC-6: Unit tests verify event emission.
  */
 
-import { NullAnalyticsService } from '../../src/infrastructure/analytics/NullAnalyticsService';
-import type { IAnalyticsService } from '../../src/application/services/IAnalyticsService';
+import { NullAnalyticsService } from '../../src/shared/infrastructure/analytics/NullAnalyticsService';
+import type { IAnalyticsService } from '../../src/shared/application/ports/IAnalyticsService';
 
 function makeService(): IAnalyticsService {
   return new NullAnalyticsService();

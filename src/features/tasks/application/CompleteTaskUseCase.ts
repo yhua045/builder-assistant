@@ -1,6 +1,6 @@
-import type { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import type { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import type { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import type { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import type { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import type { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { TaskCompletionValidator } from './TaskCompletionValidator';
 import { TaskPaymentValidator } from './TaskPaymentValidator';
 import { TaskNotFoundError, TaskCompletionValidationError, PendingPaymentsForTaskError } from './TaskCompletionErrors';

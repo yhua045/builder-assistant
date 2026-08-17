@@ -6,10 +6,10 @@ import ManualProjectEntryForm from './ManualProjectEntryForm';
 import { useProjects } from '../hooks/useProjects';
 import { useCriticalPath } from '../../../hooks/useCriticalPath';
 import type { CreateProjectRequest } from '../application/CreateProjectUseCase';
-import { SuggestCriticalPathUseCase } from '../../../application/usecases/criticalpath/SuggestCriticalPathUseCase';
+import { SuggestCriticalPathUseCase } from '../../../shared/application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import { CreateTaskUseCase } from '../../tasks/application/CreateTaskUseCase';
-import type { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { CriticalPathService } from '../../../application/services/CriticalPathService';
+import type { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { CriticalPathService } from '../../../shared/application/services/CriticalPathService';
 
 interface Props {
   initialVisible?: boolean;

@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
-import { SentryErrorReportingAdapter } from '../../../src/infrastructure/analytics/SentryErrorReportingAdapter';
-import { ErrorReportingAdapter } from '../../../src/infrastructure/analytics/ErrorReportingAdapter';
+import { SentryErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/SentryErrorReportingAdapter';
+import { ErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/ErrorReportingAdapter';
 
 describe('SentryErrorReportingAdapter', () => {
   let adapter: SentryErrorReportingAdapter;

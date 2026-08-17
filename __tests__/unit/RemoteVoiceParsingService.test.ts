@@ -1,4 +1,4 @@
-import { RemoteVoiceParsingService } from '../../src/infrastructure/voice/RemoteVoiceParsingService';
+import { RemoteVoiceParsingService } from '../../src/shared/infrastructure/voice/RemoteVoiceParsingService';
 
 describe('RemoteVoiceParsingService', () => {
   it('delegates to stt then parser', async () => {

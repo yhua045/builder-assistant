@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import ProjectsPage from '../../../screens/ProjectsPage';
 import { useProjectsPage } from '../../../hooks/useProjectsPage';
-import { ProjectStatus } from '../../../../../domain/entities/Project';
+import { ProjectStatus } from '../../../../../shared/domain/entities/Project';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),

@@ -6,8 +6,8 @@
  */
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { FocusItem } from '../../../domain/entities/CockpitData';
-import { Task } from '../../../domain/entities/Task';
+import { FocusItem } from '../../../shared/domain/entities/CockpitData';
+import { Task } from '../../../shared/domain/entities/Task';
 
 export interface FocusListProps {
   /** Max 3 items from useCockpitData focus3. */

@@ -1,7 +1,7 @@
 import { LinkPaymentToProjectUseCase } from '../../application/LinkPaymentToProjectUseCase';
 import { PaymentNotPendingError } from '../../application/PaymentErrors';
-import { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
-import { Payment } from '../../../../domain/entities/Payment';
+import { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
+import { Payment } from '../../../../shared/domain/entities/Payment';
 
 function makeRepo(payment?: Payment | null): jest.Mocked<PaymentRepository> {
   return {

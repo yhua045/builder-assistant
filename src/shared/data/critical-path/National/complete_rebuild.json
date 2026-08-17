@@ -1,0 +1,138 @@
+{
+  "project_type": "complete_rebuild",
+  "state": "National",
+  "title": "Complete Rebuild (National canonical)",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "id": "nat-cr-01",
+      "title": "Development Approval / CDC",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "order": 1,
+      "notes": "Lodge through your state planning portal. Allow 40–120 business days."
+    },
+    {
+      "id": "nat-cr-02",
+      "title": "Heritage Impact Assessment",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "condition": "heritage_flag === true",
+      "order": 2,
+      "notes": "Required when property is heritage listed or inside a conservation area."
+    },
+    {
+      "id": "nat-cr-03",
+      "title": "Asbestos Survey & Demolition Permit",
+      "recommended_start_offset_days": 5,
+      "critical_flag": true,
+      "order": 3,
+      "notes": "Mandatory before demolition of any pre-2003 structure."
+    },
+    {
+      "id": "nat-cr-04",
+      "title": "Demolition",
+      "recommended_start_offset_days": 10,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-01", "nat-cr-03"],
+      "order": 4
+    },
+    {
+      "id": "nat-cr-05",
+      "title": "Site Preparation & Earthworks",
+      "recommended_start_offset_days": 15,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-04"],
+      "order": 5
+    },
+    {
+      "id": "nat-cr-06",
+      "title": "Foundation & Footings",
+      "recommended_start_offset_days": 20,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-05"],
+      "order": 6
+    },
+    {
+      "id": "nat-cr-07",
+      "title": "Slab Pour",
+      "recommended_start_offset_days": 30,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-06"],
+      "order": 7
+    },
+    {
+      "id": "nat-cr-08",
+      "title": "Wall Framing",
+      "recommended_start_offset_days": 40,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-07"],
+      "order": 8
+    },
+    {
+      "id": "nat-cr-09",
+      "title": "Roof Framing & Sarking",
+      "recommended_start_offset_days": 55,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-08"],
+      "order": 9
+    },
+    {
+      "id": "nat-cr-10",
+      "title": "External Cladding & Windows",
+      "recommended_start_offset_days": 70,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-09"],
+      "order": 10
+    },
+    {
+      "id": "nat-cr-11",
+      "title": "Rough-in (Electrical, Plumbing, HVAC)",
+      "recommended_start_offset_days": 80,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-08"],
+      "order": 11
+    },
+    {
+      "id": "nat-cr-12",
+      "title": "Insulation & Internal Lining",
+      "recommended_start_offset_days": 95,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-11"],
+      "order": 12
+    },
+    {
+      "id": "nat-cr-13",
+      "title": "Fit-out (Flooring, Joinery, Fixtures)",
+      "recommended_start_offset_days": 115,
+      "critical_flag": false,
+      "blocked_by": ["nat-cr-12"],
+      "order": 13
+    },
+    {
+      "id": "nat-cr-14",
+      "title": "Constrained-Site Logistics Plan",
+      "recommended_start_offset_days": 0,
+      "critical_flag": true,
+      "condition": "constrained_site_flag === true",
+      "order": 14,
+      "notes": "Crane, vehicle access, and neighbour notification plan required."
+    },
+    {
+      "id": "nat-cr-15",
+      "title": "Landscaping & External Works",
+      "recommended_start_offset_days": 130,
+      "critical_flag": false,
+      "blocked_by": ["nat-cr-13"],
+      "order": 15
+    },
+    {
+      "id": "nat-cr-16",
+      "title": "Practical Completion Inspection",
+      "recommended_start_offset_days": 140,
+      "critical_flag": true,
+      "blocked_by": ["nat-cr-13", "nat-cr-15"],
+      "order": 16
+    }
+  ]
+}

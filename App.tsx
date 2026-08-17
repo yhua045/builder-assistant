@@ -32,13 +32,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Analytics & error monitoring
 import { container } from 'tsyringe';
 import { ErrorBoundary } from './src/components/shared/ErrorBoundary';
-import type { ErrorReportingAdapter } from './src/infrastructure/analytics/ErrorReportingAdapter';
-import './src/infrastructure/di/registerServices';
+import type { ErrorReportingAdapter } from './src/shared/infrastructure/analytics/ErrorReportingAdapter';
+import './src/shared/infrastructure/di/registerServices';
 
 // Demo data imports (dev only)
-import { initDatabase } from './src/infrastructure/database/connection';
-import { seedDemoData } from './src/infrastructure/demo/seedDemoData';
-import { resetDemoData } from './src/infrastructure/demo/resetDemoData';
+import { initDatabase } from './src/shared/infrastructure/database/connection';
+import { seedDemoData } from './src/shared/infrastructure/demo/seedDemoData';
+import { resetDemoData } from './src/shared/infrastructure/demo/resetDemoData';
 import { SEED_DEMO_DATA, RESET_DEMO_DATA } from '@env';
 
 if (__DEV__) {

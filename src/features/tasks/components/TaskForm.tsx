@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 import { launchCamera } from 'react-native-image-picker';
-import { Task, PREDEFINED_WORK_TYPES } from '../../../domain/entities/Task';
-import { Document } from '../../../domain/entities/Document';
+import { Task, PREDEFINED_WORK_TYPES } from '../../../shared/domain/entities/Task';
+import { Document } from '../../../shared/domain/entities/Document';
 import ProjectPicker from '../../../components/inputs/ProjectPicker';
-import { TaskDraft } from '../../../application/services/IVoiceParsingService';
+import { TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
 import DatePickerInput from '../../../components/inputs/DatePickerInput';
 import { X, Save, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';

@@ -5,7 +5,7 @@
  */
 import { ProcessInvoiceUploadUseCase } from '../../application/ProcessInvoiceUploadUseCase';
 import { IInvoiceDocumentProcessor } from '../../application/IInvoiceDocumentProcessor';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
 import { NormalizedInvoice } from '../../application/IInvoiceNormalizer';
 
 const makeNormalized = (): NormalizedInvoice => ({

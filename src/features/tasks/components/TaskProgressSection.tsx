@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Image, Pressable, TouchableOpacity, Alert } from 'react-native';
 import { Plus, MoreVertical, Edit2, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { ProgressLog } from '../../../domain/entities/ProgressLog';
+import { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
 
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(MoreVertical, { className: { target: 'style', nativeStyleToProp: { color: true } } });

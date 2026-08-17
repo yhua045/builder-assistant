@@ -1,6 +1,6 @@
 import { Mixpanel } from 'mixpanel-react-native';
-import { MixpanelAnalyticsAdapter } from '../../../src/infrastructure/analytics/MixpanelAnalyticsAdapter';
-import { AnalyticsAdapter } from '../../../src/infrastructure/analytics/AnalyticsAdapter';
+import { MixpanelAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/MixpanelAnalyticsAdapter';
+import { AnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/AnalyticsAdapter';
 
 describe('MixpanelAnalyticsAdapter', () => {
   let adapter: MixpanelAnalyticsAdapter;

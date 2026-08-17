@@ -1,4 +1,4 @@
-import { InvoiceEntity } from '../../../../domain/entities/Invoice';
+import { InvoiceEntity } from '../../../../shared/domain/entities/Invoice';
 
 describe('InvoiceEntity validations', () => {
   it('throws when total is negative', () => {

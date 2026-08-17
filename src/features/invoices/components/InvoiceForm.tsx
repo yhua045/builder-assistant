@@ -7,7 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { Invoice, InvoiceLineItem } from '../../../domain/entities/Invoice';
+import { Invoice, InvoiceLineItem } from '../../../shared/domain/entities/Invoice';
 import DatePickerInput from '../../../components/inputs/DatePickerInput';
 import { ContractorLookupField } from '../../../components/inputs/ContractorLookupField';
 import { PdfFileMetadata } from '../../../types/PdfFileMetadata';

@@ -1,4 +1,4 @@
-import { Invoice } from '../../../domain/entities/Invoice';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
 import { addWorkingDays } from '../../../utils/workingDays';
 
 /**

@@ -1,9 +1,9 @@
-import { OcrAdapterFactory } from '../../../src/infrastructure/ocr/OcrAdapterFactory';
-import { MlKitOcrAdapter } from '../../../src/infrastructure/ocr/MlKitOcrAdapter';
-import { ApiOcrAdapter } from '../../../src/infrastructure/ocr/ApiOcrAdapter';
-import { IAuthService } from '../../../src/domain/services/IAuthService';
-import { AuthState } from '../../../src/domain/entities/AuthUser';
-import { OcrResult } from '../../../src/application/services/IOcrAdapter';
+import { OcrAdapterFactory } from '../../../src/shared/infrastructure/ocr/OcrAdapterFactory';
+import { MlKitOcrAdapter } from '../../../src/shared/infrastructure/ocr/MlKitOcrAdapter';
+import { ApiOcrAdapter } from '../../../src/shared/infrastructure/ocr/ApiOcrAdapter';
+import { IAuthService } from '../../../src/shared/domain/services/IAuthService';
+import { AuthState } from '../../../src/shared/domain/entities/AuthUser';
+import { OcrResult } from '../../../src/shared/application/ports/IOcrAdapter';
 
 // Control FeatureFlags.premiumOcr in tests
 jest.mock('../../../src/infrastructure/config/featureFlags', () => ({

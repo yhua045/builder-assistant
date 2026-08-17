@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { IAudioRecorder } from '../../../application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../../application/services/IVoiceParsingService';
+import { IAudioRecorder } from '../../../shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
 import { ParseVoiceTaskUseCase } from '../application/ParseVoiceTaskUseCase';
 
 export const MAX_RECORDING_SECONDS = 60;

@@ -2,7 +2,7 @@ import renderer, { act } from 'react-test-renderer';
 import React, { useEffect } from 'react';
 import { container } from 'tsyringe';
 import { useDelayReasonTypes } from '../../src/hooks/useDelayReasonTypes';
-import { DelayReasonType } from '../../src/domain/entities/DelayReason';
+import { DelayReasonType } from '../../src/shared/domain/entities/DelayReason';
 
 const seededTypes: DelayReasonType[] = [
   { id: 'WEATHER', label: 'Bad weather', displayOrder: 1, isActive: true },

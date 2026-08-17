@@ -1,5 +1,5 @@
 import { ReceiptFieldParser } from '../../application/ReceiptFieldParser';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 describe('ReceiptFieldParser', () => {
   let parser: ReceiptFieldParser;

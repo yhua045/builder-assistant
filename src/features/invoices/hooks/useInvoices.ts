@@ -4,17 +4,17 @@
 
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { Invoice, InvoiceEntity } from '../../../shared/domain/entities/Invoice';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 import { CreateInvoiceUseCase } from '../application/CreateInvoiceUseCase';
 import { UpdateInvoiceUseCase } from '../application/UpdateInvoiceUseCase';
 import { DeleteInvoiceUseCase } from '../application/DeleteInvoiceUseCase';
 import { GetInvoiceByIdUseCase } from '../application/GetInvoiceByIdUseCase';
 import { ListInvoicesUseCase } from '../application/ListInvoicesUseCase';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
-import type { AnalyticsAdapter } from '../../../infrastructure/analytics/AnalyticsAdapter';
+import type { AnalyticsAdapter } from '../../../shared/infrastructure/analytics/AnalyticsAdapter';
 
 export interface UseInvoicesOptions {
   status?: Invoice['status'];

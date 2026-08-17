@@ -1,4 +1,4 @@
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 import { validatePdfFile } from '../../../utils/fileValidation';
 import { NormalizedQuotation } from './ai/IQuotationParsingStrategy';
 import { IQuotationDocumentProcessor } from './IQuotationDocumentProcessor';

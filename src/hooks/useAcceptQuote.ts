@@ -1,11 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import '../infrastructure/di/registerServices';
-import { TaskRepository } from '../domain/repositories/TaskRepository';
-import { InvoiceRepository } from '../domain/repositories/InvoiceRepository';
-import { ContactRepository } from '../domain/repositories/ContactRepository';
-import { QuotationRepository } from '../domain/repositories/QuotationRepository';
+import '../shared/infrastructure/di/registerServices';
+import { TaskRepository } from '../shared/domain/repositories/TaskRepository';
+import { InvoiceRepository } from '../shared/domain/repositories/InvoiceRepository';
+import { ContactRepository } from '../shared/domain/repositories/ContactRepository';
+import { QuotationRepository } from '../shared/domain/repositories/QuotationRepository';
 import { AcceptQuotationUseCase } from '../features/quotations/application/AcceptQuotationUseCase';
 import { invalidations } from './queryKeys';
 

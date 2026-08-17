@@ -3,7 +3,7 @@
  * Verifies that pickDocument accepts images in addition to PDFs.
  */
 
-import { MobileFilePickerAdapter } from '../../src/infrastructure/files/MobileFilePickerAdapter';
+import { MobileFilePickerAdapter } from '../../src/shared/infrastructure/files/MobileFilePickerAdapter';
 
 // ─── Mock react-native-document-picker ────────────────────────────────────────
 

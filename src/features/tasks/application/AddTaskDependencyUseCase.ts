@@ -1,4 +1,4 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 // Task type not required here
 
 export interface AddTaskDependencyInput {

@@ -1,17 +1,17 @@
 // Must mock featureFlags before importing OcrAdapterFactory
-jest.mock('../../../../infrastructure/config/featureFlags', () => ({
+jest.mock('../../../../shared/infrastructure/config/featureFlags', () => ({
   FeatureFlags: { premiumOcr: false },
 }));
 
 // Mock native ML Kit to prevent native module errors
 jest.mock('@react-native-ml-kit/text-recognition', () => ({ recognize: jest.fn() }));
 
-import { OcrAdapterFactory } from '../../../../infrastructure/ocr/OcrAdapterFactory';
-import { MlKitOcrAdapter } from '../../../../infrastructure/ocr/MlKitOcrAdapter';
-import { ApiOcrAdapter } from '../../../../infrastructure/ocr/ApiOcrAdapter';
-import { IAuthService } from '../../../../domain/services/IAuthService';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
-import { FeatureFlags } from '../../../../infrastructure/config/featureFlags';
+import { OcrAdapterFactory } from '../../../../shared/infrastructure/ocr/OcrAdapterFactory';
+import { MlKitOcrAdapter } from '../../../../shared/infrastructure/ocr/MlKitOcrAdapter';
+import { ApiOcrAdapter } from '../../../../shared/infrastructure/ocr/ApiOcrAdapter';
+import { IAuthService } from '../../../../shared/domain/services/IAuthService';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
+import { FeatureFlags } from '../../../../shared/infrastructure/config/featureFlags';
 
 const mlKitResult: OcrResult = { fullText: 'ML Kit result', tokens: [], imageUri: 'uri' };
 const apiResult: OcrResult = { fullText: 'API result', tokens: [], imageUri: 'uri' };

@@ -6,7 +6,7 @@
 
 import { ProjectValidationService } from '../../domain/ProjectValidationService';
 import { ProjectWorkflowService } from '../../domain/ProjectWorkflowService';
-import { ProjectStatus } from '../../../../domain/entities/Project';
+import { ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 describe('ProjectValidationService - Workflow Integration', () => {
   let service: ProjectValidationService;

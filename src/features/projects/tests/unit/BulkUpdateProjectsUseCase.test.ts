@@ -1,5 +1,5 @@
 import { BulkUpdateProjectsUseCase } from '../../application/BulkUpdateProjectsUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 
 describe('BulkUpdateProjectsUseCase (TDD)', () => {
   it('should call repository.update for each id and return per-item results', async () => {

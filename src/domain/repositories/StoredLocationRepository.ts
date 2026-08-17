@@ -1,4 +1,4 @@
-import { GeoLocation } from '../../application/services/IGpsService';
+import { GeoLocation } from '../../shared/application/ports/IGpsService';
 
 export interface StoredLocationRepository {
   getLastKnown(): Promise<GeoLocation | null>;

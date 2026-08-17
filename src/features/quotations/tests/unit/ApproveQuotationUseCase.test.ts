@@ -1,9 +1,9 @@
-import { Quotation } from '../../../../domain/entities/Quotation';
-import { Task } from '../../../../domain/entities/Task';
-import { Invoice } from '../../../../domain/entities/Invoice';
-import { QuotationRepository } from '../../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../../domain/repositories/TaskRepository';
-import { InvoiceRepository } from '../../../../domain/repositories/InvoiceRepository';
+import { Quotation } from '../../../../shared/domain/entities/Quotation';
+import { Task } from '../../../../shared/domain/entities/Task';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
+import { QuotationRepository } from '../../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../../shared/domain/repositories/TaskRepository';
+import { InvoiceRepository } from '../../../../shared/domain/repositories/InvoiceRepository';
 import {
   ApproveQuotationUseCase,
 } from '../../application/ApproveQuotationUseCase';

@@ -1,6 +1,6 @@
-import { Task } from '../../../domain/entities/Task';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Task } from '../../../shared/domain/entities/Task';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export interface DeclineQuotationInput {
   quotationId: string;

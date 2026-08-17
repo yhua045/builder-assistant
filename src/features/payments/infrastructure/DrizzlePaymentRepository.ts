@@ -1,6 +1,6 @@
-import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository, PaymentFilters, PaymentListResult } from '../../../domain/repositories/PaymentRepository';
-import { initDatabase } from '../../../infrastructure/database/connection';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { PaymentRepository, PaymentFilters, PaymentListResult } from '../../../shared/domain/repositories/PaymentRepository';
+import { initDatabase } from '../../../shared/infrastructure/database/connection';
 
 function isoToMillis(iso?: string) {
   return iso ? new Date(iso).getTime() : null;

@@ -12,7 +12,7 @@ import {
 import { X, Camera, Trash2 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { ProgressLog } from '../../../domain/entities/ProgressLog';
+import { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
 import OptionList from '../../../components/inputs/OptionList';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });

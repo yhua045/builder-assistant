@@ -4,12 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Paperclip, X } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { QuotationForm } from '../components/QuotationForm';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
-import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { IFilePickerAdapter } from '../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
+import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
-import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
+import { IPdfConverter } from '../../../shared/infrastructure/files/IPdfConverter';
 import { useQuotationUpload } from '../hooks/useQuotationUpload';
 import { useScreenTracking } from '../../../hooks/useScreenTracking';
 

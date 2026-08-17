@@ -20,7 +20,7 @@ import {
   Camera,
   Paperclip,
 } from 'lucide-react-native';
-import { Task } from '../../../domain/entities/Task';
+import { Task } from '../../../shared/domain/entities/Task';
 
 cssInterop(AlertCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Clock, { className: { target: 'style', nativeStyleToProp: { color: true } } });

@@ -1,5 +1,5 @@
 import { UnarchiveProjectUseCase } from '../../application/UnarchiveProjectUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 
 describe('UnarchiveProjectUseCase (TDD)', () => {
   it('should unarchive a project by clearing archived flag and calling repository update', async () => {

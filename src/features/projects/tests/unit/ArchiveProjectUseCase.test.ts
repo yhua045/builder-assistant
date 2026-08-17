@@ -1,5 +1,5 @@
 import { ArchiveProjectUseCase } from '../../application/ArchiveProjectUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 
 describe('ArchiveProjectUseCase (TDD)', () => {
   it('should archive a project by setting archived flag and calling repository update', async () => {

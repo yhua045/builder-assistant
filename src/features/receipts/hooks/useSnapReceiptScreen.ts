@@ -15,10 +15,10 @@ import { useSnapReceipt } from './useSnapReceipt';
 import { NormalizedReceipt } from '../application/IReceiptNormalizer';
 import { SnapReceiptDTO } from '../application/SnapReceiptUseCase';
 import { normalizedReceiptToFormValues } from '../utils/normalizedReceiptToFormValues';
-import { ICameraAdapter } from '../../../infrastructure/camera/ICameraAdapter';
-import { MobileCameraAdapter } from '../../../infrastructure/camera/MobileCameraAdapter';
-import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAdapter';
-import { MobileFilePickerAdapter } from '../../../infrastructure/files/MobileFilePickerAdapter';
+import { ICameraAdapter } from '../../../shared/infrastructure/camera/ICameraAdapter';
+import { MobileCameraAdapter } from '../../../shared/infrastructure/camera/MobileCameraAdapter';
+import { IFilePickerAdapter } from '../../../shared/infrastructure/files/IFilePickerAdapter';
+import { MobileFilePickerAdapter } from '../../../shared/infrastructure/files/MobileFilePickerAdapter';
 import { IReceiptParsingStrategy } from '../application/IReceiptParsingStrategy';
 
 export type SnapReceiptScreenView = 'selecting' | 'capturing' | 'processing' | 'form';

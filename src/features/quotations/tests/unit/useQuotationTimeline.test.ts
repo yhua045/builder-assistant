@@ -17,7 +17,7 @@ import {
   getQuotationDateKey,
   useQuotationTimeline,
 } from '../../../projects/hooks/useQuotationTimeline';
-import { Quotation } from '../../../../domain/entities/Quotation';
+import { Quotation } from '../../../../shared/domain/entities/Quotation';
 import { renderHookWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
 
 // ─── Factories ────────────────────────────────────────────────────────────────

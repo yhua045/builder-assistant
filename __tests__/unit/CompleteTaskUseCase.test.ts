@@ -1,9 +1,9 @@
 import { CompleteTaskUseCase } from '../../src/features/tasks/application/CompleteTaskUseCase';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
-import { QuotationRepository } from '../../src/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
+import { QuotationRepository } from '../../src/shared/domain/repositories/QuotationRepository';
 import { TaskNotFoundError, TaskCompletionValidationError } from '../../src/features/tasks/application/TaskCompletionErrors';
-import { Task } from '../../src/domain/entities/Task';
-import { Quotation } from '../../src/domain/entities/Quotation';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { Quotation } from '../../src/shared/domain/entities/Quotation';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {

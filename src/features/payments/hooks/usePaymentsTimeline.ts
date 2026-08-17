@@ -11,13 +11,13 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Payment } from '../../../domain/entities/Payment';
+import { Payment } from '../../../shared/domain/entities/Payment';
 import { PaymentFeedItem } from '../domain/PaymentFeedItem';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { ListProjectPaymentsFeedUseCase } from '../application/ListProjectPaymentsFeedUseCase';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 // Re-export for consumers
 export type { PaymentFeedItem };

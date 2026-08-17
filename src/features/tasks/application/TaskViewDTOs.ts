@@ -140,11 +140,11 @@ export interface TaskDetailViewDTO extends TaskViewDTO {
 // They live here so each use case can import them; they MUST NOT be called from
 // UI components or hooks directly.
 
-import type { Task } from '../../../domain/entities/Task';
-import type { Document } from '../../../domain/entities/Document';
-import type { ProgressLog } from '../../../domain/entities/ProgressLog';
-import type { Invoice } from '../../../domain/entities/Invoice';
-import type { DelayReason } from '../../../domain/entities/DelayReason';
+import type { Task } from '../../../shared/domain/entities/Task';
+import type { Document } from '../../../shared/domain/entities/Document';
+import type { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
+import type { Invoice } from '../../../shared/domain/entities/Invoice';
+import type { DelayReason } from '../../../shared/domain/entities/DelayReason';
 import type { TaskDetail } from './GetTaskDetailUseCase';
 
 export function mapTaskToViewDTO(task: Task): TaskViewDTO {

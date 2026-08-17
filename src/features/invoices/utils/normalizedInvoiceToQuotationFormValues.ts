@@ -1,4 +1,4 @@
-import { Quotation, QuotationLineItem } from '../../../domain/entities/Quotation';
+import { Quotation, QuotationLineItem } from '../../../shared/domain/entities/Quotation';
 import { NormalizedInvoice, NormalizedInvoiceLineItem } from '../application/IInvoiceNormalizer';
 
 /**

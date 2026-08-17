@@ -12,12 +12,12 @@ import { RemoveTaskDocumentUseCase } from '../../application/RemoveTaskDocumentU
 import { AddTaskDependencyUseCase } from '../../application/AddTaskDependencyUseCase';
 import { RemoveTaskDependencyUseCase } from '../../application/RemoveTaskDependencyUseCase';
 
-import { Task } from '../../../../domain/entities/Task';
-import { Document } from '../../../../domain/entities/Document';
-import { TaskRepository } from '../../../../domain/repositories/TaskRepository';
-import { DocumentRepository } from '../../../../domain/repositories/DocumentRepository';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
-import { DelayReason } from '../../../../domain/entities/DelayReason';
+import { Task } from '../../../../shared/domain/entities/Task';
+import { Document } from '../../../../shared/domain/entities/Document';
+import { TaskRepository } from '../../../../shared/domain/repositories/TaskRepository';
+import { DocumentRepository } from '../../../../shared/domain/repositories/DocumentRepository';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
+import { DelayReason } from '../../../../shared/domain/entities/DelayReason';
 
 // ── In-memory TaskRepository ──────────────────────────────────────────────────
 

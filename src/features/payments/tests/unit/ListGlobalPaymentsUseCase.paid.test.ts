@@ -6,7 +6,7 @@ import { ListGlobalPaymentsUseCase } from '../../application/ListGlobalPaymentsU
 import {
   PaymentRepository,
   PaymentListResult,
-} from '../../../../domain/repositories/PaymentRepository';
+} from '../../../../shared/domain/repositories/PaymentRepository';
 
 function makeRepo(): jest.Mocked<PaymentRepository> {
   return {

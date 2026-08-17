@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QuotationForm } from '../../components/QuotationForm';
-import { Quotation } from '../../../../domain/entities/Quotation';
+import { Quotation } from '../../../../shared/domain/entities/Quotation';
 
 // ── Mocks for new pickers ─────────────────────────────────────────────────
 jest.mock('../../../../components/shared/ProjectPickerModal', () => ({

@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
-import { NoopAnalyticsAdapter } from '../../../src/infrastructure/analytics/NoopAnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../../../src/shared/infrastructure/analytics/NoopAnalyticsAdapter';
 
 // Mock tsyringe so the hook resolves to our test adapter
 const mockAdapter = new NoopAnalyticsAdapter();

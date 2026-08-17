@@ -1,6 +1,6 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { AuditLogRepository } from '../../../domain/repositories/AuditLogRepository';
-import { CreateAuditLogEntryUseCase } from '../../../application/usecases/auditlog/CreateAuditLogEntryUseCase';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { AuditLogRepository } from '../../../shared/domain/repositories/AuditLogRepository';
+import { CreateAuditLogEntryUseCase } from '../../../shared/application/usecases/auditlog/CreateAuditLogEntryUseCase';
 
 export class DeleteTaskUseCase {
   constructor(

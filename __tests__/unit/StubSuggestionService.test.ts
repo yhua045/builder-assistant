@@ -8,7 +8,7 @@
 import {
   StubSuggestionService,
   type SuggestionContext,
-} from '../../src/infrastructure/ai/suggestionService';
+} from '../../src/shared/infrastructure/ai/suggestionService';
 
 const makeCtx = (overrides: Partial<SuggestionContext> = {}): SuggestionContext => ({
   taskId: 'task-1',

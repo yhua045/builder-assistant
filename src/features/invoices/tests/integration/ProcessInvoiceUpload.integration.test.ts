@@ -6,15 +6,15 @@
  */
 import { ProcessInvoiceUploadUseCase } from '../../application/ProcessInvoiceUploadUseCase';
 import { TextBasedInvoiceProcessor } from '../../infrastructure/processors/TextBasedInvoiceProcessor';
-import { IOcrAdapter, OcrResult } from '../../../../application/services/IOcrAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 import {
   IInvoiceNormalizer,
   InvoiceCandidates,
   NormalizedInvoice,
 } from '../../application/IInvoiceNormalizer';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
 import { MockPdfConverter } from '../../../../../__mocks__/MockPdfConverter';
-import { PdfPageImage } from '../../../../infrastructure/files/IPdfConverter';
+import { PdfPageImage } from '../../../../shared/infrastructure/files/IPdfConverter';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stub factories

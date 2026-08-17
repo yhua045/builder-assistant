@@ -3,7 +3,7 @@
  * Run: npx jest sortByPaymentPriority
  */
 import { sortByPaymentPriority } from '../../utils/sortByPaymentPriority';
-import type { Payment } from '../../../../domain/entities/Payment';
+import type { Payment } from '../../../../shared/domain/entities/Payment';
 
 const NOW = new Date('2026-03-30T12:00:00Z');
 

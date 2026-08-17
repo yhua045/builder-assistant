@@ -23,13 +23,13 @@ jest.mock('../../../hooks/useQuotations', () => ({
   useQuotations: jest.fn(),
 }));
 
-jest.mock('../../../../../infrastructure/files/MobileFilePickerAdapter', () => ({
+jest.mock('../../../../../shared/infrastructure/files/MobileFilePickerAdapter', () => ({
   MobileFilePickerAdapter: jest.fn().mockImplementation(() => ({
     pickDocument: jest.fn().mockResolvedValue({ cancelled: true }),
   })),
 }));
 
-jest.mock('../../../../../infrastructure/files/MobileFileSystemAdapter', () => ({
+jest.mock('../../../../../shared/infrastructure/files/MobileFileSystemAdapter', () => ({
   MobileFileSystemAdapter: jest.fn().mockImplementation(() => ({
     copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/quote.pdf'),
     exists: jest.fn().mockResolvedValue(true),
@@ -59,9 +59,9 @@ jest.mock('../../../application/ProcessQuotationUploadUseCase', () => ({
 import { useQuotations } from '../../../hooks/useQuotations';
 import { useQuotationUpload } from '../../../hooks/useQuotationUpload';
 import { ProcessQuotationUploadUseCase } from '../../../application/ProcessQuotationUploadUseCase';
-import type { IFilePickerAdapter, FilePickerResult } from '../../../../../infrastructure/files/IFilePickerAdapter';
-import type { IFileSystemAdapter } from '../../../../../infrastructure/files/IFileSystemAdapter';
-import type { IOcrAdapter } from '../../../../../application/services/IOcrAdapter';
+import type { IFilePickerAdapter, FilePickerResult } from '../../../../../shared/infrastructure/files/IFilePickerAdapter';
+import type { IFileSystemAdapter } from '../../../../../shared/infrastructure/files/IFileSystemAdapter';
+import type { IOcrAdapter } from '../../../../../shared/application/ports/IOcrAdapter';
 import type { IQuotationParsingStrategy, NormalizedQuotation } from '../../../application/ai/IQuotationParsingStrategy';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────

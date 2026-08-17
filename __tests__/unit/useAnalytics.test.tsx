@@ -25,7 +25,7 @@ jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
 import { container } from 'tsyringe';
 import { useAnalytics } from '../../src/hooks/useAnalytics';
-import { NoopAnalyticsAdapter } from '../../src/infrastructure/analytics/NoopAnalyticsAdapter';
+import { NoopAnalyticsAdapter } from '../../src/shared/infrastructure/analytics/NoopAnalyticsAdapter';
 
 const mockResolve = container.resolve as jest.MockedFunction<typeof container.resolve>;
 

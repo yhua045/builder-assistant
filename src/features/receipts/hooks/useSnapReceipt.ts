@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 import { SnapReceiptUseCase, SnapReceiptDTO } from '../application/SnapReceiptUseCase';
 import { ReceiptRepository } from '../domain/ReceiptRepository';
 import { NormalizedReceipt } from '../application/IReceiptNormalizer';
-import { MobileOcrAdapter } from '../../../infrastructure/ocr/MobileOcrAdapter';
+import { MobileOcrAdapter } from '../../../shared/infrastructure/ocr/MobileOcrAdapter';
 import { ReceiptFieldParser } from '../application/ReceiptFieldParser';
 import { DeterministicReceiptNormalizer } from '../application/DeterministicReceiptNormalizer';
 import { IReceiptParsingStrategy } from '../application/IReceiptParsingStrategy';
@@ -11,14 +11,14 @@ import {
     ProcessReceiptUploadUseCase,
     ProcessReceiptUploadInput,
 } from '../application/ProcessReceiptUploadUseCase';
-import { PdfThumbnailConverter } from '../../../infrastructure/files/PdfThumbnailConverter';
-import { FeatureFlags } from '../../../infrastructure/config/featureFlags';
+import { PdfThumbnailConverter } from '../../../shared/infrastructure/files/PdfThumbnailConverter';
+import { FeatureFlags } from '../../../shared/infrastructure/config/featureFlags';
 import { LlmVisionReceiptParser } from '../infrastructure/LlmVisionReceiptParser';
-import { ReactNativeImageReader } from '../../../infrastructure/files/ReactNativeImageReader';
+import { ReactNativeImageReader } from '../../../shared/infrastructure/files/ReactNativeImageReader';
 import { TextBasedReceiptProcessor } from '../infrastructure/processors/TextBasedReceiptProcessor';
 import { VisionBasedReceiptProcessor } from '../infrastructure/processors/VisionBasedReceiptProcessor';
 import { GROQ_API_KEY } from '@env';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export const useSnapReceipt = (
     enableOcr: boolean = false,

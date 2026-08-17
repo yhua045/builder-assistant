@@ -3,7 +3,7 @@
  * Run: npx jest sortByPaidDateDesc
  */
 import { sortByPaidDateDesc } from '../../utils/sortByPaymentPriority';
-import type { Payment } from '../../../../domain/entities/Payment';
+import type { Payment } from '../../../../shared/domain/entities/Payment';
 
 const paid = (id: string, date: string): Payment => ({
   id,

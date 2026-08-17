@@ -46,8 +46,8 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { initDatabase } from '../../src/infrastructure/database/connection';
-import { DrizzleDelayReasonTypeRepository } from '../../src/infrastructure/repositories/DrizzleDelayReasonTypeRepository';
+import { initDatabase } from '../../src/shared/infrastructure/database/connection';
+import { DrizzleDelayReasonTypeRepository } from '../../src/shared/infrastructure/repositories/DrizzleDelayReasonTypeRepository';
 
 describe('DrizzleDelayReasonTypeRepository (integration)', () => {
   let repo: DrizzleDelayReasonTypeRepository;

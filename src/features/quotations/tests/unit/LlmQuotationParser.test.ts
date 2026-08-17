@@ -1,5 +1,5 @@
 import { LlmQuotationParser } from '../../infrastructure/ai/LlmQuotationParser';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 const mockOcrResult: OcrResult = {
   fullText: 'Quote from Builder Co\nRef: QUO-001\nTotal: $5,500.00',

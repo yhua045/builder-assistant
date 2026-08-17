@@ -6,8 +6,8 @@
  */
 
 import { UpdateProjectUseCase, UpdateProjectRequest } from '../../application/UpdateProjectUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
-import { Project, ProjectStatus } from '../../../../domain/entities/Project';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
+import { Project, ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

@@ -2,8 +2,8 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QuotationScreen } from '../../screens/QuotationScreen';
 import { useQuotations } from '../../hooks/useQuotations';
-import { IFilePickerAdapter } from '../../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { IFilePickerAdapter } from '../../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
 
 // Mock the dependencies
 jest.mock('../../hooks/useQuotations');
@@ -151,7 +151,7 @@ describe('QuotationScreen Integration', () => {
     // Re-import to get real component (note: jest module isolation - this test validates
     // that auto-ref path is hit when reference is blank)
     // Validate through domain logic directly:
-    const { QuotationEntity } = require('../../../../domain/entities/Quotation');
+    const { QuotationEntity } = require('../../../../shared/domain/entities/Quotation');
     const entity = QuotationEntity.create({ date: '2026-03-27', total: 500 });
     expect(entity.data().reference).toMatch(/^QUO-\d{8}-[A-Z0-9]{6}$/);
   });

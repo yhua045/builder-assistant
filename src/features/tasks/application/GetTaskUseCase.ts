@@ -1,5 +1,5 @@
-import { Task } from '../../../domain/entities/Task';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Task } from '../../../shared/domain/entities/Task';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export class GetTaskUseCase {
   constructor(private readonly taskRepository: TaskRepository) {}

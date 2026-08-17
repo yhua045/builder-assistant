@@ -1,7 +1,7 @@
-import { Quotation } from '../../../domain/entities/Quotation';
-import { Task } from '../../../domain/entities/Task';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { Task } from '../../../shared/domain/entities/Task';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export interface CreateQuotationWithTaskInput {
   quotation: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt' | 'taskId' | 'status'>;

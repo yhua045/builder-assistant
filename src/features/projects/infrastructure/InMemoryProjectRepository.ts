@@ -1,6 +1,6 @@
-import { Project } from '../../../domain/entities/Project';
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { Project } from '../../../shared/domain/entities/Project';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 
 export class InMemoryProjectRepository implements ProjectRepository {
   private items: Project[] = [];

@@ -1,5 +1,5 @@
-import { Quotation } from '../../../../domain/entities/Quotation';
-import { QuotationRepository } from '../../../../domain/repositories/QuotationRepository';
+import { Quotation } from '../../../../shared/domain/entities/Quotation';
+import { QuotationRepository } from '../../../../shared/domain/repositories/QuotationRepository';
 import { ListQuotationsUseCase } from '../../application/ListQuotationsUseCase';
 
 describe('ListQuotationsUseCase', () => {

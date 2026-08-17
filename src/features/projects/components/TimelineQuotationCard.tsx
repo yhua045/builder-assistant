@@ -16,7 +16,7 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 
 cssInterop(ExternalLink, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });

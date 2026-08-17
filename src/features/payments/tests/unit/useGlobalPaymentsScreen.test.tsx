@@ -7,8 +7,8 @@ import { container } from 'tsyringe';
 import { renderHookWithQuery } from '../../../../../__tests__/utils/queryClientWrapper';
 import { useGlobalPaymentsScreen } from '../../hooks/useGlobalPaymentsScreen';
 import type { PaymentWithProject } from '../../hooks/usePayments';
-import type { Quotation } from '../../../../domain/entities/Quotation';
-import type { Payment } from '../../../../domain/entities/Payment';
+import type { Quotation } from '../../../../shared/domain/entities/Quotation';
+import type { Payment } from '../../../../shared/domain/entities/Payment';
 
 // ─── Mock dependencies (factories cannot reference module-scope variables) ──
 

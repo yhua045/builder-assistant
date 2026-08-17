@@ -1,5 +1,5 @@
-import { ImportContractorsFromCsvUseCase } from '../../src/application/usecases/contact/ImportContractorsFromCsvUseCase';
-import { ContactRepository } from '../../src/domain/repositories/ContactRepository';
+import { ImportContractorsFromCsvUseCase } from '../../src/app/contacts/usecases/ImportContractorsFromCsvUseCase';
+import { ContactRepository } from '../../src/shared/domain/repositories/ContactRepository';
 
 const makeMockRepo = (): jest.Mocked<ContactRepository> => ({
   save: jest.fn().mockResolvedValue(undefined),

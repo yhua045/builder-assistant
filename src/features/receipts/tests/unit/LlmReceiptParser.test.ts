@@ -1,5 +1,5 @@
 import { LlmReceiptParser } from '../../infrastructure/LlmReceiptParser';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 const mockOcrResult: OcrResult = {
   fullText: 'Receipt from Bunnings\nDate: 2026-04-10\nTotal: $150.00\nGST: $13.64',

@@ -1,4 +1,4 @@
-import { Payment } from '../../../domain/entities/Payment';
+import { Payment } from '../../../shared/domain/entities/Payment';
 
 /**
  * Sorts payments by urgency: ascending due date (overdue items first as they

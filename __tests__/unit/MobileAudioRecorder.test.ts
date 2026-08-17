@@ -18,7 +18,7 @@ jest.mock('react-native-fs', () => ({
 
 import RNFS from 'react-native-fs';
 import AudioRecorderPlayer from 'react-native-nitro-sound';
-import { MobileAudioRecorder } from '../../src/infrastructure/voice/MobileAudioRecorder';
+import { MobileAudioRecorder } from '../../src/shared/infrastructure/voice/MobileAudioRecorder';
 
 // "hello" encoded as base64
 const HELLO_B64 = 'aGVsbG8=';

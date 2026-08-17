@@ -1,8 +1,8 @@
-import { Payment } from '../../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../../domain/repositories/InvoiceRepository';
+import { Payment } from '../../../../shared/domain/entities/Payment';
+import { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../../shared/domain/repositories/InvoiceRepository';
 import { RecordPaymentUseCase } from '../../application/RecordPaymentUseCase';
-import { Invoice } from '../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
 import { RecordPaymentDto } from '../../application/RecordPaymentUseCase';
 
 const makeInvoice = (overrides: Partial<Invoice> = {}): Invoice => ({

@@ -1,5 +1,5 @@
 import { ReceiptCandidates } from './ReceiptFieldParser';
-import { OcrResult } from '../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../shared/application/ports/IOcrAdapter';
 
 export interface NormalizedLineItem {
   description: string;

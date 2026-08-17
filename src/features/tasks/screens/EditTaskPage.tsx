@@ -6,9 +6,9 @@ import { TaskForm } from '../components/TaskForm';
 import { VoiceRecordingOverlay } from '../components/VoiceRecordingOverlay';
 import { useTasks } from '../hooks/useTasks';
 import { useVoiceTask } from '../hooks/useVoiceTask';
-import { IAudioRecorder } from '../../../application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../../application/services/IVoiceParsingService';
-import { Task } from '../../../domain/entities/Task';
+import { IAudioRecorder } from '../../../shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
+import { Task } from '../../../shared/domain/entities/Task';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EditTaskPage() {

@@ -5,9 +5,9 @@
  */
 
 import { UpdateProjectStatusUseCase } from '../../application/UpdateProjectStatusUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 import { ProjectValidationService } from '../../domain/ProjectValidationService';
-import { Project, ProjectStatus } from '../../../../domain/entities/Project';
+import { Project, ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 describe('UpdateProjectStatusUseCase', () => {
   let useCase: UpdateProjectStatusUseCase;

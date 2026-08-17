@@ -1,4 +1,4 @@
-import { Invoice, InvoiceLineItem } from '../../../domain/entities/Invoice';
+import { Invoice, InvoiceLineItem } from '../../../shared/domain/entities/Invoice';
 import { NormalizedInvoice, NormalizedInvoiceLineItem } from '../application/IInvoiceNormalizer';
 
 /**

@@ -4,7 +4,7 @@ jest.mock('@react-native-ml-kit/text-recognition', () => ({
 }));
 
 import TextRecognition from '@react-native-ml-kit/text-recognition';
-import { MlKitOcrAdapter } from '../../../../infrastructure/ocr/MlKitOcrAdapter';
+import { MlKitOcrAdapter } from '../../../../shared/infrastructure/ocr/MlKitOcrAdapter';
 
 describe('MlKitOcrAdapter — pure ML Kit translator', () => {
   let adapter: MlKitOcrAdapter;

@@ -1,5 +1,5 @@
-import { LookupProviderSearchUseCase, LookupUnavailableError } from '../../src/application/usecases/contact/LookupProviderSearchUseCase';
-import { ILookupProvider, LookupResult } from '../../src/domain/services/ILookupProvider';
+import { LookupProviderSearchUseCase, LookupUnavailableError } from '../../src/shared/application/usecases/contact/LookupProviderSearchUseCase';
+import { ILookupProvider, LookupResult } from '../../src/shared/domain/services/ILookupProvider';
 
 const mockResult: LookupResult = {
   licenseNumber: 'VBA-001',

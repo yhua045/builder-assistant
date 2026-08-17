@@ -5,7 +5,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { TaskIconRow } from '../../components/TaskIconRow';
-import type { Task } from '../../../../domain/entities/Task';
+import type { Task } from '../../../../shared/domain/entities/Task';
 
 function makeTask(id: string, status: Task['status']): Task {
   return { id, title: `Task ${id}`, status, isCriticalPath: false };

@@ -1,8 +1,8 @@
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 import {
   QuotationRepository,
   QuotationFilterParams,
-} from '../../../domain/repositories/QuotationRepository';
+} from '../../../shared/domain/repositories/QuotationRepository';
 
 export class ListQuotationsUseCase {
   constructor(private readonly repo: QuotationRepository) {}

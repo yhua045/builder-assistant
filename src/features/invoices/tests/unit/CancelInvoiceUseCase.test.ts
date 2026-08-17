@@ -1,6 +1,6 @@
-import { Invoice } from '../../../../domain/entities/Invoice';
-import { InvoiceRepository } from '../../../../domain/repositories/InvoiceRepository';
-import { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
+import { InvoiceRepository } from '../../../../shared/domain/repositories/InvoiceRepository';
+import { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
 import { CancelInvoiceUseCase } from '../../application/CancelInvoiceUseCase';
 
 describe('CancelInvoiceUseCase', () => {

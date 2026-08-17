@@ -9,8 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Contact } from '../../domain/entities/Contact';
-import { FeatureFlags } from '../../infrastructure/config/featureFlags';
+import { Contact } from '../../shared/domain/entities/Contact';
+import { FeatureFlags } from '../../shared/infrastructure/config/featureFlags';
 
 export interface QuickAddContractorModalProps {
   visible: boolean;

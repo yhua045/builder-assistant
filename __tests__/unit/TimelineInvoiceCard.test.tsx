@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { Invoice } from '../../src/domain/entities/Invoice';
+import { Invoice } from '../../src/shared/domain/entities/Invoice';
 import { TimelineInvoiceCard } from '../../src/features/projects/components/TimelineInvoiceCard';
 
 jest.mock('nativewind', () => ({

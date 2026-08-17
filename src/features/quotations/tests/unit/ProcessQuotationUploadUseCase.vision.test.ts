@@ -7,7 +7,7 @@ import {
   ProcessQuotationUploadInput,
 } from '../../application/ProcessQuotationUploadUseCase';
 import { IQuotationDocumentProcessor } from '../../application/IQuotationDocumentProcessor';
-import { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
+import { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
 import { NormalizedQuotation } from '../../application/ai/IQuotationParsingStrategy';
 
 function makeNormalized(): NormalizedQuotation {

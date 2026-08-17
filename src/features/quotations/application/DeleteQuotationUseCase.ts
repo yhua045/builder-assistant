@@ -1,4 +1,4 @@
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 
 export class DeleteQuotationUseCase {
   constructor(private readonly repo: QuotationRepository) {}

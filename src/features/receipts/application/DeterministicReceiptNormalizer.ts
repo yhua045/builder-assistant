@@ -1,6 +1,6 @@
 import { IReceiptNormalizer, NormalizedReceipt } from './IReceiptNormalizer';
 import { ReceiptCandidates } from './ReceiptFieldParser';
-import { OcrResult } from '../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../shared/application/ports/IOcrAdapter';
 
 /**
  * DeterministicReceiptNormalizer - Rules-based receipt field normalization

@@ -1,5 +1,5 @@
-import { ApiOcrAdapter } from '../../../../infrastructure/ocr/ApiOcrAdapter';
-import { IAuthService } from '../../../../domain/services/IAuthService';
+import { ApiOcrAdapter } from '../../../../shared/infrastructure/ocr/ApiOcrAdapter';
+import { IAuthService } from '../../../../shared/domain/services/IAuthService';
 
 function makeAuthService(token = 'bearer-token'): IAuthService {
   return {

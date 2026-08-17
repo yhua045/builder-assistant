@@ -6,7 +6,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
-jest.mock('../../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 jest.mock('../../../../../hooks/useContacts', () => ({
   __esModule: true,

@@ -1,7 +1,7 @@
-import { Document } from '../../../domain/entities/Document';
-import { DocumentEntity } from '../../../domain/entities/Document';
-import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { Document } from '../../../shared/domain/entities/Document';
+import { DocumentEntity } from '../../../shared/domain/entities/Document';
+import { DocumentRepository } from '../../../shared/domain/repositories/DocumentRepository';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 
 export interface AddTaskDocumentInput {
   taskId: string;

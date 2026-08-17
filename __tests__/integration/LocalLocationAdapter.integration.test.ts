@@ -40,8 +40,8 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { initDatabase, closeDatabase, getDatabase } from '../../src/infrastructure/database/connection';
-import { LocalLocationAdapter } from '../../src/infrastructure/location/LocalLocationAdapter';
+import { initDatabase, closeDatabase, getDatabase } from '../../src/shared/infrastructure/database/connection';
+import { LocalLocationAdapter } from '../../src/shared/infrastructure/location/LocalLocationAdapter';
 
 // ─── Sydney-area test fixtures ───────────────────────────────────────────────
 //

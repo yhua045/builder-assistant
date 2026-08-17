@@ -48,8 +48,8 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepository';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DrizzleTaskRepository — task detail extensions (better-sqlite3 :memory:)', () => {
   let repo: DrizzleTaskRepository;
@@ -187,7 +187,7 @@ describe('DrizzleTaskRepository — task detail extensions (better-sqlite3 :memo
   describe('delay reason types (seeded)', () => {
     it('has seeded delay reason types accessible via raw query', async () => {
       // Directly verify migration seeded the lookup table
-      const { db } = require('../../../../infrastructure/database/connection').getDatabase();
+      const { db } = require('../../../../shared/infrastructure/database/connection').getDatabase();
       const [result] = await db.executeSql('SELECT * FROM delay_reason_types ORDER BY display_order');
       expect(result.rows.length).toBe(10);
       expect(result.rows.item(0).id).toBe('WEATHER');

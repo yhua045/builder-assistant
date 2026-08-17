@@ -1,9 +1,9 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { eq } from 'drizzle-orm';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { InvoiceRepository, InvoiceFilterParams } from '../../../domain/repositories/InvoiceRepository';
-import { initDatabase } from '../../../infrastructure/database/connection';
-import { invoices } from '../../../infrastructure/database/schema';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { InvoiceRepository, InvoiceFilterParams } from '../../../shared/domain/repositories/InvoiceRepository';
+import { initDatabase } from '../../../shared/infrastructure/database/connection';
+import { invoices } from '../../../shared/infrastructure/database/schema';
 
 export class DrizzleInvoiceRepository implements InvoiceRepository {
     private db: ReturnType<typeof drizzle> | null = null;

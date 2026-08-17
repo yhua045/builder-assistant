@@ -1,5 +1,5 @@
-import type { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import type { Quotation } from '../../../domain/entities/Quotation';
+import type { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import type { Quotation } from '../../../shared/domain/entities/Quotation';
 
 /** Statuses that block task completion (quotation not yet resolved). */
 const BLOCKING_STATUSES: Quotation['status'][] = ['draft', 'sent'];

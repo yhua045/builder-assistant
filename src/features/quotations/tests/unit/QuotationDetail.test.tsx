@@ -18,7 +18,7 @@ jest.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-jest.mock('../../../../infrastructure/di/registerServices', () => {});
+jest.mock('../../../../shared/infrastructure/di/registerServices', () => {});
 
 const mockGetQuotation = jest.fn();
 jest.mock('tsyringe', () => ({

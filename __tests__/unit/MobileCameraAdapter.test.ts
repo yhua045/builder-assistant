@@ -3,7 +3,7 @@
  * Tests camera capture functionality with mocked react-native-image-picker
  */
 
-import { MobileCameraAdapter } from '../../src/infrastructure/camera/MobileCameraAdapter';
+import { MobileCameraAdapter } from '../../src/shared/infrastructure/camera/MobileCameraAdapter';
 import * as ImagePicker from 'react-native-image-picker';
 
 // Mock react-native-image-picker

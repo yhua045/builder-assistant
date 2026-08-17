@@ -1,6 +1,6 @@
-import { LogoutUseCase } from '../../../src/application/usecases/auth/LogoutUseCase';
-import { IAuthService } from '../../../src/domain/services/IAuthService';
-import { AuthState } from '../../../src/domain/entities/AuthUser';
+import { LogoutUseCase } from '../../../src/app/auth/usecases/LogoutUseCase';
+import { IAuthService } from '../../../src/shared/domain/services/IAuthService';
+import { AuthState } from '../../../src/shared/domain/entities/AuthUser';
 
 function makeStubAuthService(overrides: Partial<IAuthService> = {}): IAuthService {
   return {

@@ -56,8 +56,8 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzleTaskRepository } from '../../src/features/tasks/infrastructure/DrizzleTaskRepository';
 import { GetCockpitDataUseCase } from '../../src/features/tasks/application/GetCockpitDataUseCase';
-import { TaskEntity } from '../../src/domain/entities/Task';
-import { initDatabase } from '../../src/infrastructure/database/connection';
+import { TaskEntity } from '../../src/shared/domain/entities/Task';
+import { initDatabase } from '../../src/shared/infrastructure/database/connection';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

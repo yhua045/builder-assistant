@@ -31,8 +31,8 @@ jest.mock('../../../hooks/useProjects', () => ({
 import { useNavigation } from '@react-navigation/native';
 import { useProjects } from '../../../hooks/useProjects';
 import { useProjectsPage } from '../../../hooks/useProjectsPage';
-import { ProjectStatus } from '../../../../../domain/entities/Project';
-import type { ProjectDetails } from '../../../../../domain/entities/ProjectDetails';
+import { ProjectStatus } from '../../../../../shared/domain/entities/Project';
+import type { ProjectDetails } from '../../../../../shared/domain/entities/ProjectDetails';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────
 

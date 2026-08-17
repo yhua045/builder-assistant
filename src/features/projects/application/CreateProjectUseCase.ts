@@ -5,8 +5,8 @@
  * This is part of the application layer that orchestrates domain entities.
  */
 
-import { ProjectEntity, ProjectStatus, Project } from '../../../domain/entities/Project';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectEntity, ProjectStatus, Project } from '../../../shared/domain/entities/Project';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 
 export interface CreateProjectRequest {
   name: string;

@@ -8,7 +8,7 @@
  * Issue #176 — Track D
  */
 
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 
 export interface UpdateProjectRequest {
   projectId: string;

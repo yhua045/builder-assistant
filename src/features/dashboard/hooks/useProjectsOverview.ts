@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { queryKeys } from '../../../hooks/queryKeys';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { Task } from '../../../domain/entities/Task';
-import { Project } from '../../../domain/entities/Project';
-import { Payment } from '../../../domain/entities/Payment';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { Task } from '../../../shared/domain/entities/Task';
+import { Project } from '../../../shared/domain/entities/Project';
+import { Payment } from '../../../shared/domain/entities/Payment';
 
 export interface PhaseOverview {
   phaseId: string | null;

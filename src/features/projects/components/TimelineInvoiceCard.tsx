@@ -11,7 +11,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { CheckCircle, AlertCircle, Clock, FileText } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
-import { Invoice } from '../../../domain/entities/Invoice';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
 import { getDueStatus } from '../../../utils/getDueStatus';
 
 cssInterop(CheckCircle, { className: { target: 'style', nativeStyleToProp: { color: true } } });

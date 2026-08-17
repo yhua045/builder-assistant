@@ -1,6 +1,6 @@
-import { IOcrAdapter } from '../../../../application/services/IOcrAdapter';
-import { OcrDocumentService } from '../../../../application/services/IOcrDocumentService';
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
+import { IOcrAdapter } from '../../../../shared/application/ports/IOcrAdapter';
+import { OcrDocumentService } from '../../../../shared/application/services/IOcrDocumentService';
+import { IPdfConverter } from '../../../../shared/infrastructure/files/IPdfConverter';
 import {
   IQuotationParsingStrategy,
   NormalizedQuotation,

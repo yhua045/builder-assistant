@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import '../infrastructure/di/registerServices';
-import { ContactRepository } from '../domain/repositories/ContactRepository';
-import { Contact } from '../domain/entities/Contact';
+import '../shared/infrastructure/di/registerServices';
+import { ContactRepository } from '../shared/domain/repositories/ContactRepository';
+import { Contact } from '../shared/domain/entities/Contact';
 import { queryKeys } from './queryKeys';
 
 export function useContacts() {

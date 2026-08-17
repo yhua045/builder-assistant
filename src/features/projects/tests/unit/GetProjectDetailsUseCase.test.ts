@@ -1,6 +1,6 @@
 import { GetProjectDetailsUseCase } from '../../application/GetProjectDetailsUseCase';
-import { ProjectDetails } from '../../../../domain/entities/ProjectDetails';
-import { ProjectStatus } from '../../../../domain/entities/Project';
+import { ProjectDetails } from '../../../../shared/domain/entities/ProjectDetails';
+import { ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 describe('GetProjectDetailsUseCase', () => {
   it('returns project details from repository', async () => {

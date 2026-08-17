@@ -12,12 +12,12 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Task } from '../../../domain/entities/Task';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { Task } from '../../../shared/domain/entities/Task';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 import { ListTasksUseCase } from '../application/ListTasksUseCase';
 import { UpdateTaskUseCase } from '../application/UpdateTaskUseCase';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 

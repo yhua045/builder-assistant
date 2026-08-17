@@ -1,5 +1,5 @@
 import { MergeProjectsUseCase } from '../../application/MergeProjectsUseCase';
-import { ProjectRepository } from '../../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../../shared/domain/repositories/ProjectRepository';
 
 describe('MergeProjectsUseCase (TDD)', () => {
   it('should load both projects and call repository to persist merged result', async () => {

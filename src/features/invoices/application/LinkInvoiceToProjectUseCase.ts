@@ -1,4 +1,4 @@
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { InvoiceNotEditableError } from '../../../features/payments/application/PaymentErrors';
 
 export interface LinkInvoiceToProjectInput {

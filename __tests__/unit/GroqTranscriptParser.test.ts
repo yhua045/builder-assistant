@@ -1,4 +1,4 @@
-import GroqTranscriptParser from '../../src/infrastructure/voice/GroqTranscriptParser';
+import GroqTranscriptParser from '../../src/shared/infrastructure/voice/GroqTranscriptParser';
 
 describe('GroqTranscriptParser', () => {
   const API_KEY = 'test';

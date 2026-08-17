@@ -1,4 +1,4 @@
-import { PaymentRepository, PaymentFilters, PaymentListResult } from '../../../domain/repositories/PaymentRepository';
+import { PaymentRepository, PaymentFilters, PaymentListResult } from '../../../shared/domain/repositories/PaymentRepository';
 
 export interface ListGlobalPaymentsRequest {
   contractorSearch?: string;

@@ -1,4 +1,4 @@
-import { OcrResult } from '../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../shared/application/ports/IOcrAdapter';
 import { NormalizedReceipt } from './IReceiptNormalizer';
 
 export type ReceiptParsingStrategyType = 'llm';

@@ -1,4 +1,4 @@
-import { ProjectStatus } from '../../../domain/entities/Project';
+import { ProjectStatus } from '../../../shared/domain/entities/Project';
 
 export interface ProjectCardDto {
   id: string;

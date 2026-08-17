@@ -51,7 +51,7 @@ jest.mock('tsyringe', () => ({
   registry: jest.fn(),
 }));
 
-jest.mock('../../../../infrastructure/di/registerServices', () => ({}));
+jest.mock('../../../../shared/infrastructure/di/registerServices', () => ({}));
 
 const mockMarkPaidExecute = jest.fn().mockResolvedValue({ payment: {} });
 jest.mock('../../application/MarkPaymentAsPaidUseCase', () => ({

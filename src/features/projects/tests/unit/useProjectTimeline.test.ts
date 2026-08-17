@@ -15,7 +15,7 @@ import {
   getTaskDateKey,
   useProjectTimeline,
 } from '../../hooks/useProjectTimeline';
-import { Task } from '../../../../domain/entities/Task';
+import { Task } from '../../../../shared/domain/entities/Task';
 import { renderHookWithQuery, createTestQueryClient } from '../../../../../__tests__/utils/queryClientWrapper';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

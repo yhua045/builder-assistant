@@ -21,16 +21,16 @@ import { Alert } from 'react-native';
 import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Payment } from '../../../domain/entities/Payment';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Project } from '../../../domain/entities/Project';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Project } from '../../../shared/domain/entities/Project';
 import { GetPaymentDetailsUseCase, PaymentDetailsDTO } from '../application/GetPaymentDetailsUseCase';
 import { MarkPaymentAsPaidUseCase } from '../application/MarkPaymentAsPaidUseCase';
 import { RecordPaymentUseCase } from '../application/RecordPaymentUseCase';
 import { AssignProjectToPaymentRecordUseCase } from '../application/AssignProjectToPaymentRecordUseCase';
 import type { DueStatus } from '../../../utils/getDueStatus';
 import { invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export type { DueStatus };
 

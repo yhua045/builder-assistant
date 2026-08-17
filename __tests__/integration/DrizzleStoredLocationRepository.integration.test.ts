@@ -45,9 +45,9 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { initDatabase, getDatabase, closeDatabase } from '../../src/infrastructure/database/connection';
-import { DrizzleStoredLocationRepository } from '../../src/infrastructure/location/DrizzleStoredLocationRepository';
-import { GeoLocation } from '../../src/application/services/IGpsService';
+import { initDatabase, getDatabase, closeDatabase } from '../../src/shared/infrastructure/database/connection';
+import { DrizzleStoredLocationRepository } from '../../src/shared/infrastructure/location/DrizzleStoredLocationRepository';
+import { GeoLocation } from '../../src/shared/application/ports/IGpsService';
 
 describe('DrizzleStoredLocationRepository (integration)', () => {
   beforeAll(async () => {

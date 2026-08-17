@@ -1,6 +1,6 @@
 import { DeterministicReceiptNormalizer } from '../../application/DeterministicReceiptNormalizer';
 import { ReceiptCandidates } from '../../application/ReceiptFieldParser';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 describe('DeterministicReceiptNormalizer', () => {
   let normalizer: DeterministicReceiptNormalizer;

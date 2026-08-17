@@ -1,8 +1,8 @@
 import { defineFeature, loadFeature } from 'jest-cucumber';
 import path from 'path';
 import { CreateTaskUseCase } from '../../../src/features/tasks/application/CreateTaskUseCase';
-import type { TaskRepository } from '../../../src/domain/repositories/TaskRepository';
-import type { Task } from '../../../src/domain/entities/Task';
+import type { TaskRepository } from '../../../src/shared/domain/repositories/TaskRepository';
+import type { Task } from '../../../src/shared/domain/entities/Task';
 
 const feature = loadFeature(
   path.join(__dirname, '../features/create-task.feature'),

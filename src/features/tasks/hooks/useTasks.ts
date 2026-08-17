@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Task } from '../../../domain/entities/Task';
-import { DelayReason } from '../../../domain/entities/DelayReason';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { DelayReasonTypeRepository } from '../../../domain/repositories/DelayReasonTypeRepository';
+import { Task } from '../../../shared/domain/entities/Task';
+import { DelayReason } from '../../../shared/domain/entities/DelayReason';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { DelayReasonTypeRepository } from '../../../shared/domain/repositories/DelayReasonTypeRepository';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 import { CreateTaskUseCase } from '../application/CreateTaskUseCase';
 import { UpdateTaskUseCase, UpdateTaskDTO } from '../application/UpdateTaskUseCase';
 import { DeleteTaskUseCase } from '../application/DeleteTaskUseCase';
@@ -18,14 +18,14 @@ import { AddDelayReasonUseCase, AddDelayReasonInput } from '../application/AddDe
 import { AddProgressLogUseCase, AddProgressLogInput } from '../application/AddProgressLogUseCase';
 import { UpdateProgressLogUseCase, UpdateProgressLogInput } from '../application/UpdateProgressLogUseCase';
 import { DeleteProgressLogUseCase } from '../application/DeleteProgressLogUseCase';
-import { ProgressLog } from '../../../domain/entities/ProgressLog';
+import { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
 import { RemoveDelayReasonUseCase } from '../application/RemoveDelayReasonUseCase';
 import { ResolveDelayReasonUseCase } from '../application/ResolveDelayReasonUseCase';
 import { CompleteTaskUseCase } from '../application/CompleteTaskUseCase';
 import { CompleteTaskAndSettlePaymentsUseCase } from '../application/CompleteTaskAndSettlePaymentsUseCase';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';
 

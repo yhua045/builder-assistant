@@ -6,7 +6,7 @@ import { cssInterop } from 'nativewind';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useInvoices } from '../hooks/useInvoices';
 import { InvoiceForm } from '../components/InvoiceForm';
-import type { Invoice } from '../../../domain/entities/Invoice';
+import type { Invoice } from '../../../shared/domain/entities/Invoice';
 import { useScreenTracking } from '../../../hooks/useScreenTracking';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });

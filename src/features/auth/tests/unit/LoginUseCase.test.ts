@@ -1,6 +1,6 @@
-import { LoginUseCase } from '../../../../application/usecases/auth/LoginUseCase';
-import { IAuthService } from '../../../../domain/services/IAuthService';
-import { AuthUser } from '../../../../domain/entities/AuthUser';
+import { LoginUseCase } from '../../../../app/auth/usecases/LoginUseCase';
+import { IAuthService } from '../../../../shared/domain/services/IAuthService';
+import { AuthUser } from '../../../../shared/domain/entities/AuthUser';
 
 const mockUser: AuthUser = {
   id: 'user-123',

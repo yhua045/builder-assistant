@@ -1,5 +1,5 @@
-import { IAudioRecorder } from '../../../application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../../application/services/IVoiceParsingService';
+import { IAudioRecorder } from '../../../shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
 
 export class ParseVoiceTaskUseCase {
   constructor(

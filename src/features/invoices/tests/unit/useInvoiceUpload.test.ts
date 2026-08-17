@@ -25,13 +25,13 @@ jest.mock('../../hooks/useInvoices', () => ({
   useInvoices: jest.fn(),
 }));
 
-jest.mock('../../../../infrastructure/files/MobileFilePickerAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/files/MobileFilePickerAdapter', () => ({
   MobileFilePickerAdapter: jest.fn().mockImplementation(() => ({
     pickDocument: jest.fn().mockResolvedValue({ cancelled: true }),
   })),
 }));
 
-jest.mock('../../../../infrastructure/files/MobileFileSystemAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/files/MobileFileSystemAdapter', () => ({
   MobileFileSystemAdapter: jest.fn().mockImplementation(() => ({
     copyToAppStorage: jest.fn().mockResolvedValue('file:///app/storage/invoice.pdf'),
     exists: jest.fn().mockResolvedValue(true),
@@ -66,9 +66,9 @@ jest.mock('../../application/ProcessInvoiceUploadUseCase', () => ({
 import { useInvoices } from '../../hooks/useInvoices';
 import { useInvoiceUpload } from '../../hooks/useInvoiceUpload';
 import { ProcessInvoiceUploadUseCase } from '../../application/ProcessInvoiceUploadUseCase';
-import type { IFilePickerAdapter, FilePickerResult } from '../../../../infrastructure/files/IFilePickerAdapter';
-import type { IFileSystemAdapter } from '../../../../infrastructure/files/IFileSystemAdapter';
-import type { IOcrAdapter } from '../../../../application/services/IOcrAdapter';
+import type { IFilePickerAdapter, FilePickerResult } from '../../../../shared/infrastructure/files/IFilePickerAdapter';
+import type { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
+import type { IOcrAdapter } from '../../../../shared/application/ports/IOcrAdapter';
 import type { IInvoiceNormalizer } from '../../application/IInvoiceNormalizer';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────

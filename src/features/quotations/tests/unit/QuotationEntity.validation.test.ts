@@ -1,4 +1,4 @@
-import { QuotationEntity } from '../../../../domain/entities/Quotation';
+import { QuotationEntity } from '../../../../shared/domain/entities/Quotation';
 
 describe('QuotationEntity validations', () => {
   it('auto-generates reference when reference is missing', () => {

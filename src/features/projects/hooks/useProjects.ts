@@ -5,10 +5,10 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 // Project entity type not used in this hook
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 import { CreateProjectUseCase, CreateProjectRequest } from '../application/CreateProjectUseCase';
 import { GetProjectAnalysisUseCase } from '../application/GetProjectAnalysisUseCase';
 import { queryKeys, invalidations } from '../../../hooks/queryKeys';

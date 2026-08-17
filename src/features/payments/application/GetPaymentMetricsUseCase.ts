@@ -1,4 +1,4 @@
-import { PaymentRepository, PaymentMetrics } from '../../../domain/repositories/PaymentRepository';
+import { PaymentRepository, PaymentMetrics } from '../../../shared/domain/repositories/PaymentRepository';
 
 export class GetPaymentMetricsUseCase {
   constructor(private readonly repo: PaymentRepository) {}

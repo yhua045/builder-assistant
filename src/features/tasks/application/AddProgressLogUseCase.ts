@@ -1,5 +1,5 @@
-import { ProgressLog } from '../../../domain/entities/ProgressLog';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { ProgressLog } from '../../../shared/domain/entities/ProgressLog';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export interface AddProgressLogInput {
   taskId: string;

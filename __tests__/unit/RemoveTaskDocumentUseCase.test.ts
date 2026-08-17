@@ -1,7 +1,7 @@
 import { RemoveTaskDocumentUseCase } from '../../src/features/tasks/application/RemoveTaskDocumentUseCase';
-import { DocumentRepository } from '../../src/domain/repositories/DocumentRepository';
-import { IFileSystemAdapter } from '../../src/infrastructure/files/IFileSystemAdapter';
-import { Document } from '../../src/domain/entities/Document';
+import { DocumentRepository } from '../../src/shared/domain/repositories/DocumentRepository';
+import { IFileSystemAdapter } from '../../src/shared/infrastructure/files/IFileSystemAdapter';
+import { Document } from '../../src/shared/domain/entities/Document';
 
 function makeMockDocumentRepo(overrides: Partial<DocumentRepository> = {}): DocumentRepository {
   return {

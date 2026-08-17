@@ -11,7 +11,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AsyncStorageAnalyticsService } from '../../src/infrastructure/analytics/AsyncStorageAnalyticsService';
+import { AsyncStorageAnalyticsService } from '../../src/shared/infrastructure/analytics/AsyncStorageAnalyticsService';
 
 const STORAGE_KEY = '@analytics/events';
 

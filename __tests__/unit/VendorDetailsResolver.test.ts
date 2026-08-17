@@ -1,9 +1,9 @@
 import {
   resolveVendorDetails,
   VendorResolutionContext,
-} from '../../src/domain/services/VendorDetailsResolver';
-import { Contact } from '../../src/domain/entities/Contact';
-import { Quotation } from '../../src/domain/entities/Quotation';
+} from '../../src/shared/domain/services/VendorDetailsResolver';
+import { Contact } from '../../src/shared/domain/entities/Contact';
+import { Quotation } from '../../src/shared/domain/entities/Quotation';
 
 const makeContact = (overrides: Partial<Contact> = {}): Contact => ({
   id: 'contact-1',

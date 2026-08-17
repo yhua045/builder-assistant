@@ -8,8 +8,8 @@ jest.mock('lucide-react-native', () => ({ X: 'X' }));
 // Use real TaskForm; it renders inputs whose values we can inspect
 
 import TaskScreen from '../../screens/TaskScreen';
-import MockAudioRecorder from '../../../../infrastructure/voice/MockAudioRecorder';
-import MockVoiceParsingService from '../../../../infrastructure/voice/MockVoiceParsingService';
+import MockAudioRecorder from '../../../../shared/infrastructure/voice/MockAudioRecorder';
+import MockVoiceParsingService from '../../../../shared/infrastructure/voice/MockVoiceParsingService';
 
 // Mock useTasks to avoid DB access
 jest.mock('../../hooks/useTasks', () => ({ useTasks: () => ({ createTask: jest.fn() }) }));

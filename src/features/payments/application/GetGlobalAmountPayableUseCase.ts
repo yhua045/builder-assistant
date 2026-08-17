@@ -1,4 +1,4 @@
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 
 /**
  * Returns the sum of all pending payment amounts globally,

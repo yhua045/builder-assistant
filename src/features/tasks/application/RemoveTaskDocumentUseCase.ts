@@ -1,5 +1,5 @@
-import { DocumentRepository } from '../../../domain/repositories/DocumentRepository';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { DocumentRepository } from '../../../shared/domain/repositories/DocumentRepository';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 
 /**
  * Removes a Document record (and its local file if present) linked to a task.

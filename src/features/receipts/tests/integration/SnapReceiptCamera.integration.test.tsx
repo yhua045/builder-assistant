@@ -8,10 +8,10 @@ import { wrapWithQuery } from '../../../../../__tests__/utils/queryClientWrapper
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { SnapReceiptScreen } from '../../screens/SnapReceiptScreen';
-import { MockCameraAdapter } from '../../../../infrastructure/camera/MockCameraAdapter';
+import { MockCameraAdapter } from '../../../../shared/infrastructure/camera/MockCameraAdapter';
 import { container } from 'tsyringe';
 import { ReceiptRepository } from '../../domain/ReceiptRepository';
-import '../../../../infrastructure/di/registerServices';
+import '../../../../shared/infrastructure/di/registerServices';
 
 // Mock Alert
 jest.spyOn(Alert, 'alert');
@@ -20,7 +20,7 @@ jest.spyOn(Alert, 'alert');
 jest.mock('../../hooks/useSnapReceipt');
 
 // Mock the actual OCR adapter to return predictable results
-jest.mock('../../../../infrastructure/ocr/MobileOcrAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/ocr/MobileOcrAdapter', () => ({
   MobileOcrAdapter: jest.fn().mockImplementation(() => ({
     extractText: jest.fn().mockResolvedValue({
       fullText: 'HOME DEPOT\n02/15/2026\nTotal: $127.50',
@@ -183,7 +183,7 @@ describe.skip('SnapReceiptCamera Integration', () => {
     mockCameraAdapter.setShouldCancel(false);
     
     // Mock OCR failure
-    const { MobileOcrAdapter } = require('../../../../infrastructure/ocr/MobileOcrAdapter');
+    const { MobileOcrAdapter } = require('../../../../shared/infrastructure/ocr/MobileOcrAdapter');
     MobileOcrAdapter.mockImplementationOnce(() => ({
       extractText: jest.fn().mockRejectedValue(new Error('OCR processing failed')),
     }));
@@ -239,7 +239,7 @@ describe.skip('SnapReceiptCamera Integration', () => {
     mockCameraAdapter.setShouldCancel(false);
     let callCount = 0;
     
-    const { MobileOcrAdapter } = require('../../../../infrastructure/ocr/MobileOcrAdapter');
+    const { MobileOcrAdapter } = require('../../../../shared/infrastructure/ocr/MobileOcrAdapter');
     MobileOcrAdapter.mockImplementation(() => ({
       extractText: jest.fn().mockImplementation(() => {
         callCount++;

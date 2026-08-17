@@ -1,5 +1,5 @@
-import { QuickAddContactUseCase } from '../../src/application/usecases/contact/QuickAddContactUseCase';
-import { ContactRepository } from '../../src/domain/repositories/ContactRepository';
+import { QuickAddContactUseCase } from '../../src/app/contacts/usecases/QuickAddContactUseCase';
+import { ContactRepository } from '../../src/shared/domain/repositories/ContactRepository';
 // Contact entity type not needed in this test
 
 const makeMockRepo = (): jest.Mocked<ContactRepository> => ({

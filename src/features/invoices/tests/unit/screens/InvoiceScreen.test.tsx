@@ -3,9 +3,9 @@ import { wrapWithQuery } from '../../../../../../__tests__/utils/queryClientWrap
 import renderer, { act } from 'react-test-renderer';
 import { Alert } from 'react-native';
 import { InvoiceScreen } from '../../../screens/InvoiceScreen';
-import { IFilePickerAdapter, FilePickerResult } from '../../../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../../../infrastructure/files/IFileSystemAdapter';
-import { IOcrAdapter, OcrResult } from '../../../../../application/services/IOcrAdapter';
+import { IFilePickerAdapter, FilePickerResult } from '../../../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../../../shared/infrastructure/files/IFileSystemAdapter';
+import { IOcrAdapter, OcrResult } from '../../../../../shared/application/ports/IOcrAdapter';
 import {
   IInvoiceNormalizer,
   InvoiceCandidates,

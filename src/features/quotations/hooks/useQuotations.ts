@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { QuotationRepository, QuotationFilterParams } from '../../../domain/repositories/QuotationRepository';
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { QuotationRepository, QuotationFilterParams } from '../../../shared/domain/repositories/QuotationRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { CreateQuotationUseCase } from '../application/CreateQuotationUseCase';
 import { ListQuotationsUseCase } from '../application/ListQuotationsUseCase';
 import { GetQuotationByIdUseCase } from '../application/GetQuotationByIdUseCase';
@@ -13,7 +13,7 @@ import { ApproveQuotationUseCase, ApproveQuotationOutput } from '../application/
 import { DeclineQuotationUseCase } from '../application/DeclineQuotationUseCase';
 import { DrizzleQuotationRepository } from '../infrastructure/DrizzleQuotationRepository';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 import { queryKeys } from '../../../hooks/queryKeys';
 
 export interface UseQuotationsOptions {

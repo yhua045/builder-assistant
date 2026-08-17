@@ -1,6 +1,6 @@
 import { toOverview } from '../../hooks/useProjectsOverview';
-import { Project, ProjectStatus } from '../../../../domain/entities/Project';
-import { Task } from '../../../../domain/entities/Task';
+import { Project, ProjectStatus } from '../../../../shared/domain/entities/Project';
+import { Task } from '../../../../shared/domain/entities/Task';
 
 describe('useProjectsOverview - toOverview', () => {
   const mockProject: Project = {

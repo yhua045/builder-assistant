@@ -1,5 +1,5 @@
-import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { PaymentNotPendingError } from './PaymentErrors';
 
 export interface LinkPaymentToProjectInput {

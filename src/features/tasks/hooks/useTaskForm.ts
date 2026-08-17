@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo, useEffect, useRef, useReducer } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
-import { Task } from '../../../domain/entities/Task';
-import { Document } from '../../../domain/entities/Document';
+import { Task } from '../../../shared/domain/entities/Task';
+import { Document } from '../../../shared/domain/entities/Document';
 import { RemoveTaskDocumentUseCase } from '../application/RemoveTaskDocumentUseCase';
 import {
   ProcessTaskFormUseCase,
@@ -12,7 +12,7 @@ import {
 } from '../application/ProcessTaskFormUseCase';
 import { invalidations } from '../../../hooks/queryKeys';
 import { useCreateAuditLog } from '../../../hooks/useCreateAuditLog';
-import type { AnalyticsAdapter } from '../../../infrastructure/analytics/AnalyticsAdapter';
+import type { AnalyticsAdapter } from '../../../shared/infrastructure/analytics/AnalyticsAdapter';
 
 /** A document that has been picked but not yet persisted (pre-save state). */
 export interface PendingDocument {

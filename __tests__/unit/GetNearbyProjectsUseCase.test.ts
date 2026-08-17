@@ -1,5 +1,5 @@
-import { GetNearbyProjectsUseCase, NetworkStatusProvider } from '../../src/application/usecases/location/GetNearbyProjectsUseCase';
-import { ILocationService, PropertyMatch } from '../../src/application/services/ILocationService';
+import { GetNearbyProjectsUseCase, NetworkStatusProvider } from '../../src/shared/application/usecases/location/GetNearbyProjectsUseCase';
+import { ILocationService, PropertyMatch } from '../../src/shared/application/ports/ILocationService';
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 

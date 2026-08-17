@@ -24,13 +24,13 @@ jest.mock('../../hooks/useSnapReceipt', () => ({
   useSnapReceipt: jest.fn(),
 }));
 
-jest.mock('../../../../infrastructure/camera/MobileCameraAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/camera/MobileCameraAdapter', () => ({
   MobileCameraAdapter: jest.fn().mockImplementation(() => ({
     capturePhoto: jest.fn().mockResolvedValue({ cancelled: true, uri: '', width: 0, height: 0, fileSize: 0 }),
   })),
 }));
 
-jest.mock('../../../../infrastructure/files/MobileFilePickerAdapter', () => ({
+jest.mock('../../../../shared/infrastructure/files/MobileFilePickerAdapter', () => ({
   MobileFilePickerAdapter: jest.fn().mockImplementation(() => ({
     pickDocument: jest.fn().mockResolvedValue({ cancelled: true }),
   })),
@@ -47,8 +47,8 @@ jest.mock('../../utils/normalizedReceiptToFormValues', () => ({
 
 import { useSnapReceipt } from '../../hooks/useSnapReceipt';
 import { useSnapReceiptScreen } from '../../hooks/useSnapReceiptScreen';
-import type { ICameraAdapter } from '../../../../infrastructure/camera/ICameraAdapter';
-import type { IFilePickerAdapter } from '../../../../infrastructure/files/IFilePickerAdapter';
+import type { ICameraAdapter } from '../../../../shared/infrastructure/camera/ICameraAdapter';
+import type { IFilePickerAdapter } from '../../../../shared/infrastructure/files/IFilePickerAdapter';
 
 // ── Typed mock helpers ───────────────────────────────────────────────────────
 

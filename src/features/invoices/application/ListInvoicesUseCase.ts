@@ -1,5 +1,5 @@
-import { Invoice } from '../../../domain/entities/Invoice';
-import { InvoiceRepository, InvoiceFilterParams } from '../../../domain/repositories/InvoiceRepository';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { InvoiceRepository, InvoiceFilterParams } from '../../../shared/domain/repositories/InvoiceRepository';
 
 export class ListInvoicesUseCase {
   constructor(private readonly repo: InvoiceRepository) {}

@@ -1,4 +1,4 @@
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
+import { IPdfConverter } from '../../../../shared/infrastructure/files/IPdfConverter';
 import { IInvoiceVisionParsingStrategy } from '../../application/IInvoiceVisionParsingStrategy';
 import { NormalizedInvoice } from '../../application/IInvoiceNormalizer';
 import {

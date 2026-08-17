@@ -8,10 +8,10 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import { queryKeys } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export interface UseProjectDetailReturn {
   project: ProjectDetails | null;

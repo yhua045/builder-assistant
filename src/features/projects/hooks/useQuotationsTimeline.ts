@@ -10,11 +10,11 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 import { ListProjectQuotationsUseCase } from '../application/ListProjectQuotationsUseCase';
 import { queryKeys } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 

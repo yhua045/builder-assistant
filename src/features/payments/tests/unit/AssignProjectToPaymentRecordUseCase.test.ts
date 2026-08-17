@@ -19,10 +19,10 @@ import {
   AssignProjectToPaymentRecordInput,
 } from '../../application/AssignProjectToPaymentRecordUseCase';
 import { PaymentNotPendingError, InvoiceNotEditableError } from '../../application/PaymentErrors';
-import { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../../domain/repositories/InvoiceRepository';
-import { Payment } from '../../../../domain/entities/Payment';
-import { Invoice } from '../../../../domain/entities/Invoice';
+import { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../../shared/domain/repositories/InvoiceRepository';
+import { Payment } from '../../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 

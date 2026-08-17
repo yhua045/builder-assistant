@@ -12,7 +12,7 @@ import { useBlockerBar } from '../../../hooks/useBlockerBar';
 import { TasksList } from '../components/TasksList';
 import { BlockerCarousel } from '../components/BlockerCarousel';
 import { CriticalTasksTimeline } from '../components/CriticalTasksTimeline';
-import type { Task } from '../../../domain/entities/Task';
+import type { Task } from '../../../shared/domain/entities/Task';
 import { selectTopBlockedTasks, BlockedTaskItem } from '../utils/selectTopBlockedTasks';
 
 cssInterop(Plus, { className: { target: 'style', nativeStyleToProp: { color: true } } });

@@ -58,8 +58,8 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { DrizzleQuotationRepository } from '../../infrastructure/DrizzleQuotationRepository';
-import { QuotationEntity } from '../../../../domain/entities/Quotation';
-import { closeDatabase } from '../../../../infrastructure/database/connection';
+import { QuotationEntity } from '../../../../shared/domain/entities/Quotation';
+import { closeDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DrizzleQuotationRepository integration (better-sqlite3 :memory:)', () => {
   let repo: DrizzleQuotationRepository;

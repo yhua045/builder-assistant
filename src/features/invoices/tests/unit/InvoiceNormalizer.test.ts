@@ -1,6 +1,6 @@
 import { InvoiceNormalizer } from '../../application/InvoiceNormalizer';
 import { InvoiceCandidates } from '../../application/IInvoiceNormalizer';
-import { OcrResult } from '../../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../../shared/application/ports/IOcrAdapter';
 
 describe('InvoiceNormalizer', () => {
   let normalizer: InvoiceNormalizer;

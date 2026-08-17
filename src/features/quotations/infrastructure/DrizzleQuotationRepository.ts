@@ -1,12 +1,12 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { eq } from 'drizzle-orm';
-import { Quotation } from '../../../domain/entities/Quotation';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
 import {
   QuotationRepository,
   QuotationFilterParams,
-} from '../../../domain/repositories/QuotationRepository';
-import { initDatabase } from '../../../infrastructure/database/connection';
-import { quotations } from '../../../infrastructure/database/schema';
+} from '../../../shared/domain/repositories/QuotationRepository';
+import { initDatabase } from '../../../shared/infrastructure/database/connection';
+import { quotations } from '../../../shared/infrastructure/database/schema';
 
 export class DrizzleQuotationRepository implements QuotationRepository {
   private db: ReturnType<typeof drizzle> | null = null;

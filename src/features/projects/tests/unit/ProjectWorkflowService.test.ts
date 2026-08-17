@@ -5,7 +5,7 @@
  */
 
 import { ProjectWorkflowService } from '../../domain/ProjectWorkflowService';
-import { ProjectStatus } from '../../../../domain/entities/Project';
+import { ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 describe('ProjectWorkflowService', () => {
   let service: ProjectWorkflowService;

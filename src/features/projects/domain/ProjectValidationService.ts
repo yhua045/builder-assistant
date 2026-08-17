@@ -5,7 +5,7 @@
  * to a specific entity but is part of the business rules.
  */
 
-import { Project, ProjectPhase, Material, ProjectStatus } from '../../../domain/entities/Project';
+import { Project, ProjectPhase, Material, ProjectStatus } from '../../../shared/domain/entities/Project';
 import { ProjectWorkflowService, WorkflowCheck } from './ProjectWorkflowService';
 
 export class ProjectValidationService {

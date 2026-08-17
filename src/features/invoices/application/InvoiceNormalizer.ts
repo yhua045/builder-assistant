@@ -1,5 +1,5 @@
 import { IInvoiceNormalizer, InvoiceCandidates, InvoiceLineItemCandidate, NormalizedInvoice, NormalizedInvoiceLineItem } from './IInvoiceNormalizer';
-import { OcrResult } from '../../../application/services/IOcrAdapter';
+import { OcrResult } from '../../../shared/application/ports/IOcrAdapter';
 
 /**
  * InvoiceNormalizer - Rules-based invoice field normalization

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ErrorReportingAdapter } from '../../infrastructure/analytics/ErrorReportingAdapter';
+import { ErrorReportingAdapter } from '../../shared/infrastructure/analytics/ErrorReportingAdapter';
 
 interface Props {
   children: React.ReactNode;

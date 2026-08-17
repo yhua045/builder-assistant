@@ -1,5 +1,5 @@
-import { LogoutUseCase } from '../../../../application/usecases/auth/LogoutUseCase';
-import { IAuthService } from '../../../../domain/services/IAuthService';
+import { LogoutUseCase } from '../../../../app/auth/usecases/LogoutUseCase';
+import { IAuthService } from '../../../../shared/domain/services/IAuthService';
 
 function makeAuthService(overrides: Partial<IAuthService> = {}): IAuthService {
   return {

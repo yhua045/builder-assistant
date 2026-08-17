@@ -1,5 +1,5 @@
-import { InvoiceEntity, Invoice } from '../../../../domain/entities/Invoice';
-import { Payment } from '../../../../domain/entities/Payment';
+import { InvoiceEntity, Invoice } from '../../../../shared/domain/entities/Invoice';
+import { Payment } from '../../../../shared/domain/entities/Payment';
 
 const makeInvoice = (overrides: Partial<Invoice> = {}): Invoice => ({
   id: 'inv_1',

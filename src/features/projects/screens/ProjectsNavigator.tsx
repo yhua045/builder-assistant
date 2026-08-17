@@ -9,7 +9,7 @@ import CreateTaskPage from '../../tasks/screens/CreateTaskPage';
 import EditTaskPage from '../../tasks/screens/EditTaskPage';
 import { InvoiceDetailPage } from '../../invoices';
 import PaymentDetails from '../../payments/screens/PaymentDetails';
-import { Payment } from '../../../domain/entities/Payment';
+import { Payment } from '../../../shared/domain/entities/Payment';
 
 export type ProjectsStackParamList = {
   ProjectsList: undefined;

@@ -50,13 +50,13 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { closeDatabase, initDatabase } from '../../../../infrastructure/database/connection';
-import { DrizzleKnowledgeRepository } from '../../../../infrastructure/repositories/DrizzleKnowledgeRepository';
-import { DrizzleChunkRepository } from '../../../../infrastructure/repositories/DrizzleChunkRepository';
-import { DrizzleEmbeddingRepository } from '../../../../infrastructure/repositories/DrizzleEmbeddingRepository';
-import { ProjectFactEntity } from '../../../../domain/entities/ProjectFact';
-import { KnowledgeChunkEntity } from '../../../../domain/entities/KnowledgeChunk';
-import { KnowledgeEmbeddingEntity } from '../../../../domain/entities/KnowledgeEmbedding';
+import { closeDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection';
+import { DrizzleKnowledgeRepository } from '../../../../shared/infrastructure/repositories/DrizzleKnowledgeRepository';
+import { DrizzleChunkRepository } from '../../../../shared/infrastructure/repositories/DrizzleChunkRepository';
+import { DrizzleEmbeddingRepository } from '../../../../shared/infrastructure/repositories/DrizzleEmbeddingRepository';
+import { ProjectFactEntity } from '../../../../shared/domain/entities/ProjectFact';
+import { KnowledgeChunkEntity } from '../../../../shared/domain/entities/KnowledgeChunk';
+import { KnowledgeEmbeddingEntity } from '../../../../shared/domain/entities/KnowledgeEmbedding';
 
 describe('RAG SQLite persistence', () => {
   it('persists facts, chunks and embeddings for a project and restores them after reopening', async () => {

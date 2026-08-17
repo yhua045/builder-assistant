@@ -1,5 +1,5 @@
-import { Payment } from '../../../domain/entities/Payment';
-import { Invoice } from '../../../domain/entities/Invoice';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
 
 /**
  * Discriminated union representing one row in the project payments feed.

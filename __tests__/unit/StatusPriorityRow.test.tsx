@@ -9,7 +9,7 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { StatusPriorityRow } from '../../src/features/tasks/components/StatusPriorityRow';
-import type { Task } from '../../src/domain/entities/Task';
+import type { Task } from '../../src/shared/domain/entities/Task';
 
 // ---------------------------------------------------------------------------
 // Helpers

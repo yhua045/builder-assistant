@@ -7,8 +7,8 @@
  */
 
 import { ParseVoiceTaskUseCase } from '../../src/features/tasks/application/ParseVoiceTaskUseCase';
-import { IAudioRecorder, AudioRecording } from '../../src/application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../src/application/services/IVoiceParsingService';
+import { IAudioRecorder, AudioRecording } from '../../src/shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../src/shared/application/ports/IVoiceParsingService';
 
 const MOCK_RECORDING: AudioRecording = {
   data: new ArrayBuffer(8),

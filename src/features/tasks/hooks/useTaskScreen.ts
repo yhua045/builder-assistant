@@ -14,16 +14,16 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
-import { IAudioRecorder } from '../../../application/services/IAudioRecorder';
-import { IVoiceParsingService, TaskDraft } from '../../../application/services/IVoiceParsingService';
-import { ICameraService } from '../../../application/services/ICameraService';
+import '../../../shared/infrastructure/di/registerServices';
+import { IAudioRecorder } from '../../../shared/application/ports/IAudioRecorder';
+import { IVoiceParsingService, TaskDraft } from '../../../shared/application/ports/IVoiceParsingService';
+import { ICameraService } from '../../../shared/application/ports/ICameraService';
 import { useVoiceTask } from './useVoiceTask';
 import { useCameraTask, type UseCameraTaskReturn } from './useCameraTask';
-import MockVoiceParsingService from '../../../infrastructure/voice/MockVoiceParsingService';
-import MockAudioRecorder from '../../../infrastructure/voice/MockAudioRecorder';
+import MockVoiceParsingService from '../../../shared/infrastructure/voice/MockVoiceParsingService';
+import MockAudioRecorder from '../../../shared/infrastructure/voice/MockAudioRecorder';
 import { useAnalytics } from '../../../hooks/useAnalytics';
-import type { Task } from '../../../domain/entities/Task';
+import type { Task } from '../../../shared/domain/entities/Task';
 
 // ── View types ─────────────────────────────────────────────────────────────────
 

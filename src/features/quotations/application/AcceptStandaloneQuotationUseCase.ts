@@ -1,7 +1,7 @@
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Quotation } from '../../../domain/entities/Quotation';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { QuotationRepository } from '../../../domain/repositories/QuotationRepository';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Quotation } from '../../../shared/domain/entities/Quotation';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 
 export interface AcceptStandaloneQuotationInput {
   quotationId: string;

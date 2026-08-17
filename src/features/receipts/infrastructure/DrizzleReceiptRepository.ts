@@ -1,7 +1,7 @@
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Payment } from '../../../domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Payment } from '../../../shared/domain/entities/Payment';
 import { ReceiptRepository } from '../domain/ReceiptRepository';
-import { getDatabase } from '../../../infrastructure/database/connection';
+import { getDatabase } from '../../../shared/infrastructure/database/connection';
 
 function isoToMillis(iso?: string) {
   return iso ? new Date(iso).getTime() : null;

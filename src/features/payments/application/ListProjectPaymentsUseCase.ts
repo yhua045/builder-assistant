@@ -1,5 +1,5 @@
-import { Payment } from '../../../domain/entities/Payment';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 
 const MAX_ITEMS = 500;
 

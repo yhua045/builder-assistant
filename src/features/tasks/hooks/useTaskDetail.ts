@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { container } from 'tsyringe';
-import '../../../infrastructure/di/registerServices';
-import type { Task } from '../../../domain/entities/Task';
-import type { Project } from '../../../domain/entities/Project';
-import type { SuggestionService, SuggestionResult } from '../../../infrastructure/ai/suggestionService';
-import { FEATURE_AI_SUGGESTIONS } from '../../../config/featureFlags';
+import '../../../shared/infrastructure/di/registerServices';
+import type { Task } from '../../../shared/domain/entities/Task';
+import type { Project } from '../../../shared/domain/entities/Project';
+import type { SuggestionService, SuggestionResult } from '../../../shared/infrastructure/ai/suggestionService';
+import { FEATURE_AI_SUGGESTIONS } from '../../../shared/config/featureFlags';
 
 export interface UseTaskDetailReturn {
   suggestion: SuggestionResult | null;

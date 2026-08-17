@@ -3,11 +3,11 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Paperclip } from 'lucide-react-native';
 import { ExtractionResultsPanel } from '../components/ExtractionResultsPanel';
 import { InvoiceForm } from '../components/InvoiceForm';
-import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
+import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { IInvoiceNormalizer } from '../application/IInvoiceNormalizer';
-import { IPdfConverter } from '../../../infrastructure/files/IPdfConverter';
-import { IFilePickerAdapter } from '../../../infrastructure/files/IFilePickerAdapter';
-import { IFileSystemAdapter } from '../../../infrastructure/files/IFileSystemAdapter';
+import { IPdfConverter } from '../../../shared/infrastructure/files/IPdfConverter';
+import { IFilePickerAdapter } from '../../../shared/infrastructure/files/IFilePickerAdapter';
+import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 import { useInvoiceUpload } from '../hooks/useInvoiceUpload';
 import { useScreenTracking } from '../../../hooks/useScreenTracking';
 

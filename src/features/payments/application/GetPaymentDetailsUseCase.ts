@@ -1,9 +1,9 @@
-import { Payment } from '../../../domain/entities/Payment';
-import { Invoice } from '../../../domain/entities/Invoice';
-import { Project } from '../../../domain/entities/Project';
-import { PaymentRepository } from '../../../domain/repositories/PaymentRepository';
-import { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { Payment } from '../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../shared/domain/entities/Invoice';
+import { Project } from '../../../shared/domain/entities/Project';
+import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
+import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import { getDueStatus } from '../../../utils/getDueStatus';
 import type { DueStatus } from '../../../utils/getDueStatus';
 

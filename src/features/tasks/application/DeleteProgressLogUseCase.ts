@@ -1,4 +1,4 @@
-import { TaskRepository } from '../../../domain/repositories/TaskRepository';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 
 export interface DeleteProgressLogInput {
   logId: string;

@@ -1,5 +1,5 @@
-import { CriticalPathService, CriticalPathLookupNotFoundError } from '../../src/application/services/CriticalPathService';
-import { SuggestCriticalPathRequest } from '../../src/data/critical-path/schema';
+import { CriticalPathService, CriticalPathLookupNotFoundError } from '../../src/shared/application/services/CriticalPathService';
+import { SuggestCriticalPathRequest } from '../../src/shared/data/critical-path/schema';
 
 describe('CriticalPathService', () => {
   let service: CriticalPathService;

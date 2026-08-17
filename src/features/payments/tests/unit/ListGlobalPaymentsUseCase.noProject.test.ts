@@ -3,7 +3,7 @@
  * When noProject: true, repo.list() is called with noProject: true and no status filter.
  */
 import { ListGlobalPaymentsUseCase } from '../../application/ListGlobalPaymentsUseCase';
-import type { PaymentRepository } from '../../../../domain/repositories/PaymentRepository';
+import type { PaymentRepository } from '../../../../shared/domain/repositories/PaymentRepository';
 
 describe('ListGlobalPaymentsUseCase — noProject flag (T-18)', () => {
   const mockRepo: jest.Mocked<Pick<PaymentRepository, 'list'>> = {

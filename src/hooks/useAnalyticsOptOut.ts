@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setOptOutState } from '../infrastructure/analytics/analyticsOptOutState';
+import { setOptOutState } from '../shared/infrastructure/analytics/analyticsOptOutState';
 
 const OPT_OUT_KEY = 'analytics_opt_out';
 

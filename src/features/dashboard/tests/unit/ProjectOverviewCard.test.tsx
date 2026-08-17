@@ -6,7 +6,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { ProjectOverviewCard } from '../../components/ProjectOverviewCard';
 import { ProjectOverview } from '../../hooks/useProjectsOverview';
-import { ProjectStatus } from '../../../../domain/entities/Project';
+import { ProjectStatus } from '../../../../shared/domain/entities/Project';
 
 // Mock sub-components to isolate unit under test
 jest.mock('../../components/PhaseProgressRow', () => ({

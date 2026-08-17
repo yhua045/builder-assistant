@@ -11,7 +11,7 @@ import renderer, { act } from 'react-test-renderer';
 import TasksScreen from '../../src/features/tasks/screens/index';
 import { useTasks } from '../../src/features/tasks/hooks/useTasks';
 import { wrapWithQuery } from '../utils/queryClientWrapper';
-import type { Task } from '../../src/domain/entities/Task';
+import type { Task } from '../../src/shared/domain/entities/Task';
 
 // --- Global mocks (nativewind, safe-area-context) already applied in jest.setup.js ---
 

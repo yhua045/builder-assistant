@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 import { Alert } from 'react-native';
 import { InvoiceLifecycleActions } from '../../../components/InvoiceLifecycleActions';
-import { Invoice } from '../../../../../domain/entities/Invoice';
+import { Invoice } from '../../../../../shared/domain/entities/Invoice';
 
 // Mock Alert
 jest.spyOn(Alert, 'alert').mockImplementation((title, message, buttons) => {

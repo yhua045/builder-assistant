@@ -6,8 +6,8 @@
  */
 
 import { GetCockpitDataUseCase } from '../../src/features/tasks/application/GetCockpitDataUseCase';
-import { Task } from '../../src/domain/entities/Task';
-import { TaskRepository } from '../../src/domain/repositories/TaskRepository';
+import { Task } from '../../src/shared/domain/entities/Task';
+import { TaskRepository } from '../../src/shared/domain/repositories/TaskRepository';
 
 // ─── Mock Repository Factory ──────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@ import { MockPdfConverter } from '../../__mocks__/MockPdfConverter';
 import {
   PdfConversionError,
   PdfPageImage,
-} from '../../src/infrastructure/files/IPdfConverter';
+} from '../../src/shared/infrastructure/files/IPdfConverter';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers

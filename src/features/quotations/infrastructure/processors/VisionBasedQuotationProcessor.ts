@@ -1,4 +1,4 @@
-import { IPdfConverter } from '../../../../infrastructure/files/IPdfConverter';
+import { IPdfConverter } from '../../../../shared/infrastructure/files/IPdfConverter';
 import { IQuotationVisionParsingStrategy } from '../../application/ai/IQuotationVisionParsingStrategy';
 import { NormalizedQuotation } from '../../application/ai/IQuotationParsingStrategy';
 import {

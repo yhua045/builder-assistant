@@ -11,7 +11,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import { Project } from '../../../domain/entities/Project';
+import { Project } from '../../../shared/domain/entities/Project';
 import { ProjectCardDto } from '../application/ProjectCardDto';
 import { ProjectCard } from './ProjectCard';
 

@@ -1,7 +1,7 @@
-import { Invoice, InvoiceEntity } from '../../../domain/entities/Invoice';
-import { Payment, PaymentEntity } from '../../../domain/entities/Payment';
+import { Invoice, InvoiceEntity } from '../../../shared/domain/entities/Invoice';
+import { Payment, PaymentEntity } from '../../../shared/domain/entities/Payment';
 import { ReceiptRepository } from '../domain/ReceiptRepository';
-import { IOcrAdapter } from '../../../application/services/IOcrAdapter';
+import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { ReceiptFieldParser } from './ReceiptFieldParser';
 import { IReceiptNormalizer, NormalizedReceipt } from './IReceiptNormalizer';
 

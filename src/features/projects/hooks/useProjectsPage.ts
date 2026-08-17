@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useProjects } from './useProjects';
 import { ProjectCardDto } from '../application/ProjectCardDto';
-import { ProjectDetails } from '../../../domain/entities/ProjectDetails';
+import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
 import { useAnalytics } from '../../../hooks/useAnalytics';
 
 // ── Private mapping function ─────────────────────────────────────────────────

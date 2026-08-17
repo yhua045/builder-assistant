@@ -48,19 +48,19 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { AnalysisRunEntity } from '../../../src/domain/entities/AnalysisRun';
-import { AnalysisCheckpointEntity } from '../../../src/domain/entities/AnalysisCheckpoint';
-import { DocumentAnalysisEntity } from '../../../src/domain/entities/DocumentAnalysis';
-import { ProjectFactEntity } from '../../../src/domain/entities/ProjectFact';
-import { KnowledgeEmbeddingEntity } from '../../../src/domain/entities/KnowledgeEmbedding';
-import { KnowledgeChunkEntity } from '../../../src/domain/entities/KnowledgeChunk';
-import { DocumentVersionEntity } from '../../../src/domain/entities/DocumentVersion';
-import { ExtractedDocumentTextEntity } from '../../../src/domain/entities/ExtractedDocumentText';
-import { DocumentChunkingRunEntity } from '../../../src/domain/entities/DocumentChunkingRun';
-import { transitionDocumentChunkingWorkflow } from '../../../src/domain/services/DocumentChunkingWorkflow';
-import { DefaultDocumentChunkingService } from '../../../src/application/services/DocumentChunkingService';
-import { initDatabase } from '../../../src/infrastructure/database/connection';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../../src/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import { AnalysisRunEntity } from '../../../src/shared/domain/entities/AnalysisRun';
+import { AnalysisCheckpointEntity } from '../../../src/shared/domain/entities/AnalysisCheckpoint';
+import { DocumentAnalysisEntity } from '../../../src/shared/domain/entities/DocumentAnalysis';
+import { ProjectFactEntity } from '../../../src/shared/domain/entities/ProjectFact';
+import { KnowledgeEmbeddingEntity } from '../../../src/shared/domain/entities/KnowledgeEmbedding';
+import { KnowledgeChunkEntity } from '../../../src/shared/domain/entities/KnowledgeChunk';
+import { DocumentVersionEntity } from '../../../src/shared/domain/entities/DocumentVersion';
+import { ExtractedDocumentTextEntity } from '../../../src/shared/domain/entities/ExtractedDocumentText';
+import { DocumentChunkingRunEntity } from '../../../src/shared/domain/entities/DocumentChunkingRun';
+import { transitionDocumentChunkingWorkflow } from '../../../src/shared/domain/services/DocumentChunkingWorkflow';
+import { DefaultDocumentChunkingService } from '../../../src/shared/application/services/DocumentChunkingService';
+import { initDatabase } from '../../../src/shared/infrastructure/database/connection';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../../src/shared/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
 
 describe('RAG domain entities', () => {
   it('creates valid AnalysisRun and DocumentAnalysis records', () => {

@@ -4,8 +4,8 @@
 
 import { mapFeedItemToPaymentCard } from '../../utils/mapFeedItemToPaymentCard';
 import { PaymentFeedItem } from '../../domain/PaymentFeedItem';
-import { Payment } from '../../../../domain/entities/Payment';
-import { Invoice } from '../../../../domain/entities/Invoice';
+import { Payment } from '../../../../shared/domain/entities/Payment';
+import { Invoice } from '../../../../shared/domain/entities/Invoice';
 
 function makePaymentFeedItem(overrides: Partial<Payment> = {}): PaymentFeedItem {
   const payment: Payment = {

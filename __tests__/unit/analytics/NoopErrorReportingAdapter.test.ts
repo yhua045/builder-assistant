@@ -1,5 +1,5 @@
-import { NoopErrorReportingAdapter } from '../../../src/infrastructure/analytics/NoopErrorReportingAdapter';
-import { ErrorReportingAdapter } from '../../../src/infrastructure/analytics/ErrorReportingAdapter';
+import { NoopErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/NoopErrorReportingAdapter';
+import { ErrorReportingAdapter } from '../../../src/shared/infrastructure/analytics/ErrorReportingAdapter';
 
 describe('NoopErrorReportingAdapter', () => {
   let adapter: NoopErrorReportingAdapter;

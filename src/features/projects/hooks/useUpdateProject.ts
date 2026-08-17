@@ -10,14 +10,14 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { ProjectRepository } from '../../../domain/repositories/ProjectRepository';
+import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import {
   UpdateProjectUseCase,
   UpdateProjectRequest,
   UpdateProjectResponse,
 } from '../application/UpdateProjectUseCase';
 import { invalidations } from '../../../hooks/queryKeys';
-import '../../../infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export interface UseUpdateProjectReturn {
   updateProject: (request: UpdateProjectRequest) => Promise<UpdateProjectResponse>;

@@ -7,7 +7,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { SnapReceiptScreen } from '../../../screens/SnapReceiptScreen';
-import { MockCameraAdapter } from '../../../../../infrastructure/camera/MockCameraAdapter';
+import { MockCameraAdapter } from '../../../../../shared/infrastructure/camera/MockCameraAdapter';
 
 // Mock dependencies
 jest.mock('../../../hooks/useSnapReceipt');

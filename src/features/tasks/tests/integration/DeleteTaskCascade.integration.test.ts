@@ -48,8 +48,8 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { DrizzleTaskRepository } from '../../infrastructure/DrizzleTaskRepository';
 import { DeleteTaskUseCase } from '../../application/DeleteTaskUseCase';
-import { TaskEntity } from '../../../../domain/entities/Task';
-import { initDatabase } from '../../../../infrastructure/database/connection';
+import { TaskEntity } from '../../../../shared/domain/entities/Task';
+import { initDatabase } from '../../../../shared/infrastructure/database/connection';
 
 describe('DeleteTaskUseCase — cascade delete (integration)', () => {
   let repo: DrizzleTaskRepository;
