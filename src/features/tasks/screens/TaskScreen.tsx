@@ -8,7 +8,7 @@ import { IVoiceParsingService } from '../../../shared/application/ports/IVoicePa
 import { ICameraService } from '../../../shared/application/ports/ICameraService';
 import { type UseCameraTaskReturn } from '../hooks/useCameraTask';
 import { useTaskScreen } from '../hooks/useTaskScreen';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 interface Props {
   onClose: () => void;

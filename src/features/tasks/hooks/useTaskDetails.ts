@@ -19,8 +19,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import '../../../shared/infrastructure/di/registerServices';
 import { useTasks, TaskDetail } from './useTasks';
-import { useDelayReasonTypes } from '../../../hooks/useDelayReasonTypes';
-import { useConfirm } from '../../../hooks/useConfirm';
+import { useDelayReasonTypes } from './useDelayReasonTypes';
+import { useConfirm } from '../../../shared/ui/hooks/useConfirm';
 import type {
   TaskViewDTO,
   TaskDetailViewDTO,
@@ -38,7 +38,7 @@ import { TaskCompletionValidationError, PendingPaymentsForTaskError } from '../a
 import { AddDelayReasonFormData } from '../components/AddDelayReasonModal';
 import { AddProgressLogFormData } from '../components/AddProgressLogModal';
 import { SubcontractorContact } from '../components/SubcontractorPickerModal';
-import { invalidations } from '../../../hooks/queryKeys';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
 
 export type { SubcontractorInfo };
 
@@ -429,7 +429,7 @@ export function useTaskDetails(
           await Promise.all(
             invalidations
               .taskEdited({ projectId: task.projectId, taskId: task.id })
-              .map((key) => queryClient.invalidateQueries({ queryKey: key })),
+              .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
           );
         }
         await loadData();

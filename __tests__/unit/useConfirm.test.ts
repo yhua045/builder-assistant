@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
-import { useConfirm } from '../../src/hooks/useConfirm';
+import { useConfirm } from '../../src/shared/ui/hooks/useConfirm';
 
 describe('useConfirm', () => {
   let alertSpy: jest.SpyInstance;

@@ -8,7 +8,7 @@ jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
 import { CriticalPathPreview } from '../../src/features/projects/components/CriticalPathPreview/CriticalPathPreview';
 import type { CriticalPathSuggestion } from '../../src/shared/data/critical-path/schema';
-import type { UseCriticalPathReturn } from '../../src/hooks/useCriticalPath';
+import type { UseCriticalPathReturn } from '../../src/features/tasks/hooks/useCriticalPath';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

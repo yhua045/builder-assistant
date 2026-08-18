@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { container } from 'tsyringe';
-import { AnalyticsAdapter } from '../shared/infrastructure/analytics/AnalyticsAdapter';
-import '../shared/infrastructure/di/registerServices';
+import { AnalyticsAdapter } from '../../infrastructure/analytics/AnalyticsAdapter';
+import '../../infrastructure/di/registerServices';
 
 /**
  * Fires a screen-view event via the AnalyticsAdapter on mount.

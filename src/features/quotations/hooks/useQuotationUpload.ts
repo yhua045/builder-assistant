@@ -10,7 +10,7 @@
 
 import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 import { useQuotations } from './useQuotations';
 import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
@@ -21,7 +21,7 @@ import { MobileFilePickerAdapter } from '../../../shared/infrastructure/files/Mo
 import { MobileFileSystemAdapter } from '../../../shared/infrastructure/files/MobileFileSystemAdapter';
 import { ICameraAdapter } from '../../../shared/infrastructure/camera/ICameraAdapter';
 import { MobileCameraAdapter } from '../../../shared/infrastructure/camera/MobileCameraAdapter';
-import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
+import { PdfFileMetadata } from '../../../shared/application/dto/PdfFileMetadata';
 import { ProcessQuotationUploadUseCase } from '../application/ProcessQuotationUploadUseCase';
 import { normalizedQuotationToFormValues } from './normalizedQuotationToFormValues';
 import { Quotation } from '../../../shared/domain/entities/Quotation';

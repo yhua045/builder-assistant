@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, act } from '@testing-library/react-native';
-import { useAnalyticsOptOut } from '../../../src/hooks/useAnalyticsOptOut';
+import { useAnalyticsOptOut } from '../../../src/shared/ui/hooks/useAnalyticsOptOut';
 
 describe('useAnalyticsOptOut', () => {
   beforeEach(() => {

@@ -13,7 +13,7 @@ import { container } from 'tsyringe';
 import { Quotation } from '../../../shared/domain/entities/Quotation';
 import { QuotationRepository } from '../../../shared/domain/repositories/QuotationRepository';
 import { ListProjectQuotationsUseCase } from '../application/ListProjectQuotationsUseCase';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────

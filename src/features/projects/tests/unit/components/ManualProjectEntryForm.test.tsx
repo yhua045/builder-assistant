@@ -8,7 +8,7 @@ import renderer, { act } from 'react-test-renderer';
 
 jest.mock('../../../../../shared/infrastructure/di/registerServices', () => ({}));
 
-jest.mock('../../../../../hooks/useContacts', () => ({
+jest.mock('../../../../../shared/ui/hooks/useContacts', () => ({
   __esModule: true,
   default: () => ({ contacts: [], loading: false, search: jest.fn(), refresh: jest.fn() }),
   useContacts: () => ({ contacts: [], loading: false, search: jest.fn(), refresh: jest.fn() }),
@@ -23,7 +23,7 @@ jest.mock('../../../../../components/inputs/DatePickerInput', () => { return fun
 jest.mock('../../../components/CriticalPathPreview/CriticalPathPreview', () => { return { CriticalPathPreview: function CriticalPathPreview() { const { View } = require('react-native'); const React = require('react'); return <View testID="critical-path-preview" />; } }; });
 
 import ManualProjectEntryForm from '../../../components/ManualProjectEntryForm';
-import type { UseCriticalPathReturn } from '../../../../../hooks/useCriticalPath';
+import type { UseCriticalPathReturn } from '../../../../tasks/hooks/useCriticalPath';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

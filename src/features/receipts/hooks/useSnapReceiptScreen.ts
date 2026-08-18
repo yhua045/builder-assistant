@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Alert } from 'react-native';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 import { useSnapReceipt } from './useSnapReceipt';
 import { NormalizedReceipt } from '../application/IReceiptNormalizer';
 import { SnapReceiptDTO } from '../application/SnapReceiptUseCase';

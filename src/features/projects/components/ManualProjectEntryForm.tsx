@@ -28,7 +28,7 @@ const STATE_OPTIONS: DropdownOption[] = [
   { label: 'ACT', value: 'ACT' },
   { label: 'NT',  value: 'NT'  },
 ];
-import type { UseCriticalPathReturn } from '../../../hooks/useCriticalPath';
+import type { UseCriticalPathReturn } from '../../tasks/hooks/useCriticalPath';
 
 interface Props {
   visible?: boolean;

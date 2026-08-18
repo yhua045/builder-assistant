@@ -11,7 +11,7 @@ import { container } from 'tsyringe';
 import '../../../shared/infrastructure/di/registerServices';
 import { CreateProjectUseCase, CreateProjectRequest } from '../application/CreateProjectUseCase';
 import { GetProjectAnalysisUseCase } from '../application/GetProjectAnalysisUseCase';
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 
 interface UseProjectsReturn {
   projects: ProjectDetails[];
@@ -50,7 +50,7 @@ export const useProjects = (): UseProjectsReturn => {
 
       if (result.success) {
         await Promise.all(
-          invalidations.projectCreated().map(key =>
+          invalidations.projectCreated().map((key: any) =>
             queryClient.invalidateQueries({ queryKey: key }),
           ),
         );

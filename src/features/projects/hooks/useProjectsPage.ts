@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useProjects } from './useProjects';
 import { ProjectCardDto } from '../application/ProjectCardDto';
 import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 
 // ── Private mapping function ─────────────────────────────────────────────────
 

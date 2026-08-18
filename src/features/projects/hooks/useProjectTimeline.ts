@@ -21,7 +21,7 @@ export {
 
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import { useTaskTimeline } from '../../tasks/hooks/useTaskTimeline';
 import { useProjectDetail } from './useProjectDetail';
 import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';

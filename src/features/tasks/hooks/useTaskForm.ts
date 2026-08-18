@@ -10,8 +10,8 @@ import {
   ProcessTaskFormUseCase,
   ProcessTaskFormValidationError,
 } from '../application/ProcessTaskFormUseCase';
-import { invalidations } from '../../../hooks/queryKeys';
-import { useCreateAuditLog } from '../../../hooks/useCreateAuditLog';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
+import { useCreateAuditLog } from './useCreateAuditLog';
 import type { AnalyticsAdapter } from '../../../shared/infrastructure/analytics/AnalyticsAdapter';
 
 /** A document that has been picked but not yet persisted (pre-save state). */

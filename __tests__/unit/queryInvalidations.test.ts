@@ -13,7 +13,7 @@
 import { act } from '@testing-library/react-native';
 import { container } from 'tsyringe';
 import { renderHookWithQuery } from '../utils/queryClientWrapper';
-import { useAcceptQuote } from '../../src/hooks/useAcceptQuote';
+import { useAcceptQuote } from '../../src/features/tasks/hooks/useAcceptQuote';
 import { useTasks } from '../../src/features/tasks/hooks/useTasks';
 import { useInvoices } from '../../src/features/invoices';
 

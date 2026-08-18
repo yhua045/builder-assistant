@@ -16,7 +16,7 @@ import {
   UpdateProjectRequest,
   UpdateProjectResponse,
 } from '../application/UpdateProjectUseCase';
-import { invalidations } from '../../../hooks/queryKeys';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 export interface UseUpdateProjectReturn {

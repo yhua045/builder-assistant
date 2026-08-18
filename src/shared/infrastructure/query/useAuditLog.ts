@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { queryKeys } from './queryKeys';
-import { AuditLogRepository } from '../shared/domain/repositories/AuditLogRepository';
-import { GetAuditLogsByProjectUseCase } from '../shared/application/usecases/auditlog/GetAuditLogsByProjectUseCase';
-import { GetAuditLogsByTaskUseCase } from '../shared/application/usecases/auditlog/GetAuditLogsByTaskUseCase';
-import '../shared/infrastructure/di/registerServices';
+import type { AuditLogRepository } from '../../domain/repositories/AuditLogRepository';
+import { GetAuditLogsByProjectUseCase } from '../../application/usecases/auditlog/GetAuditLogsByProjectUseCase';
+import { GetAuditLogsByTaskUseCase } from '../../application/usecases/auditlog/GetAuditLogsByTaskUseCase';
+import '../di/registerServices';
 
 /** Fetch all audit logs for a project (cross-task view). */
 export function useAuditLogsByProject(projectId: string) {

@@ -4,7 +4,7 @@ import { container } from 'tsyringe';
 import ManualProjectEntry from '../../../components/ManualProjectEntry';
 import { useProjects } from '../../../hooks/useProjects';
 
-jest.mock('../../../../../hooks/useContacts', () => {
+jest.mock('../../../../../shared/ui/hooks/useContacts', () => {
   const mockSearch = jest.fn().mockResolvedValue([]);
   return {
     __esModule: true,
@@ -17,7 +17,7 @@ jest.mock('../../../hooks/useProjects');
 const mockedUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
 
 // Mock useCriticalPath so CriticalPathStep doesn't try to load native modules
-jest.mock('../../../../../hooks/useCriticalPath', () => ({
+jest.mock('../../../../tasks/hooks/useCriticalPath', () => ({
   useCriticalPath: jest.fn().mockReturnValue({
     suggestions: [],
     isLoading: false,

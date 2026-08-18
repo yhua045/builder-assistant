@@ -21,15 +21,15 @@ import { cssInterop } from 'nativewind';
 import { useTaskForm, PendingDocument } from '../hooks/useTaskForm';
 // Dropdown not used in this component
 import OptionList from '../../../shared/ui/components/inputs/OptionList';
-import { useAcceptQuote } from '../../../hooks/useAcceptQuote';
+import { useAcceptQuote } from '../hooks/useAcceptQuote';
 import { TaskDocumentSection } from './TaskDocumentSection';
 import { TaskSubcontractorSection } from './TaskSubcontractorSection';
 import { TaskDependencySection } from './TaskDependencySection';
 import { AddDelayReasonModal, AddDelayReasonFormData } from './AddDelayReasonModal';
 import { SubcontractorPickerModal, SubcontractorContact } from './SubcontractorPickerModal';
 import { TaskPickerModal } from '../screens/TaskPickerModal';
-import useContacts from '../../../hooks/useContacts';
-import { useDelayReasonTypes } from '../../../hooks/useDelayReasonTypes';
+import useContacts from '../../../shared/ui/hooks/useContacts';
+import { useDelayReasonTypes } from '../hooks/useDelayReasonTypes';
 import { useTasks } from '../hooks/useTasks';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });

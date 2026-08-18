@@ -12,7 +12,7 @@ import { LlmReceiptParser } from '../../receipts/infrastructure/LlmReceiptParser
 import { GROQ_API_KEY } from '@env';
 import type { IQuotationParsingStrategy } from '../../quotations/application/ai/IQuotationParsingStrategy';
 import type { IReceiptParsingStrategy } from '../../receipts/application/IReceiptParsingStrategy';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 
 export interface QuickAction {
   id: string;

@@ -12,13 +12,13 @@ import { renderHook } from '@testing-library/react-native';
 
 const mockScreen = jest.fn();
 
-jest.mock('../../src/hooks/useAnalytics', () => ({
+jest.mock('../../src/shared/ui/hooks/useAnalytics', () => ({
   useAnalytics: () => ({ track: jest.fn(), screen: mockScreen }),
 }));
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
-import { useScreenView } from '../../src/hooks/useScreenView';
+import { useScreenView } from '../../src/shared/ui/hooks/useScreenView';
 
 describe('useScreenView', () => {
   beforeEach(() => {

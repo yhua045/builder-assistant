@@ -10,7 +10,7 @@ import {
 import { Invoice, InvoiceLineItem } from '../../../shared/domain/entities/Invoice';
 import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
 import { ContractorLookupField } from '../../../shared/ui/components/inputs/ContractorLookupField';
-import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
+import { PdfFileMetadata } from '../../../shared/application/dto/PdfFileMetadata';
 
 export interface InvoiceFormProps {
   mode: 'create' | 'edit';

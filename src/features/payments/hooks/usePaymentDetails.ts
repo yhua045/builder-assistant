@@ -29,7 +29,7 @@ import { MarkPaymentAsPaidUseCase } from '../application/MarkPaymentAsPaidUseCas
 import { RecordPaymentUseCase } from '../application/RecordPaymentUseCase';
 import { AssignProjectToPaymentRecordUseCase } from '../application/AssignProjectToPaymentRecordUseCase';
 import type { DueStatus } from '../../../utils/getDueStatus';
-import { invalidations } from '../../../hooks/queryKeys';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 export type { DueStatus };
@@ -224,7 +224,7 @@ export function usePaymentDetails(): PaymentDetailsViewModel {
         await Promise.all(
           invalidations
             .paymentProjectAssigned({ oldProjectId, newProjectId, isInvoice: recordContext === 'synthetic-invoice' })
-            .map((key) => queryClient.invalidateQueries({ queryKey: key })),
+            .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
         );
         await loadData();
       } catch (e: any) {

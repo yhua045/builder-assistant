@@ -22,7 +22,7 @@ import { useVoiceTask } from './useVoiceTask';
 import { useCameraTask, type UseCameraTaskReturn } from './useCameraTask';
 import MockVoiceParsingService from '../../../shared/infrastructure/voice/MockVoiceParsingService';
 import MockAudioRecorder from '../../../shared/infrastructure/voice/MockAudioRecorder';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 import type { Task } from '../../../shared/domain/entities/Task';
 
 // ── View types ─────────────────────────────────────────────────────────────────

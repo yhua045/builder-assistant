@@ -14,7 +14,7 @@ import { PaymentTypeFilterChips } from '../components/PaymentTypeFilterChips';
 import GlobalQuotationCard from '../components/GlobalQuotationCard';
 import { useGlobalPaymentsScreen } from '../hooks/useGlobalPaymentsScreen';
 import type { Quotation } from '../../../shared/domain/entities/Quotation';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 const EMPTY_MESSAGES: Record<string, { title: string; subtitle: (hasSearch: boolean) => string }> = {
   quotations: {

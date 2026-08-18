@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '../../shared/ui/components/ThemeToggle';
 import { cssInterop } from 'nativewind';
 import { User, Mail, Phone, Briefcase, Building2, MapPin, Settings, Bell, Lock, CreditCard, HelpCircle, LogOut, ChevronRight, Edit } from 'lucide-react-native';
-import { useScreenTracking } from '../../hooks/useScreenTracking';
-import { useAnalyticsOptOut } from '../../hooks/useAnalyticsOptOut';
+import { useScreenTracking } from '../../shared/ui/hooks/useScreenTracking';
+import { useAnalyticsOptOut } from '../../shared/ui/hooks/useAnalyticsOptOut';
 
 cssInterop(User, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Mail, { className: { target: 'style', nativeStyleToProp: { color: true } } });

@@ -3,7 +3,7 @@
  * Issue #203: Tasks screen refresh — tasksCreated must bust the global (unscoped) key
  */
 
-import { invalidations, queryKeys } from '../../src/hooks/queryKeys';
+import { invalidations, queryKeys } from '../../src/shared/infrastructure/query/queryKeys';
 
 describe('invalidations.tasksCreated', () => {
   const projectId = 'proj-abc';

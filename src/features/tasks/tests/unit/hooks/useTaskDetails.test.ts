@@ -54,15 +54,15 @@ jest.mock('../../../hooks/useTasks', () => ({
   useTasks: jest.fn(),
 }));
 
-jest.mock('../../../../../hooks/useDelayReasonTypes', () => ({
+jest.mock('../../../hooks/useDelayReasonTypes', () => ({
   useDelayReasonTypes: jest.fn(),
 }));
 
-jest.mock('../../../../../hooks/useConfirm', () => ({
+jest.mock('../../../../../shared/ui/hooks/useConfirm', () => ({
   useConfirm: jest.fn(),
 }));
 
-jest.mock('../../../../../hooks/queryKeys', () => ({
+jest.mock('../../../../../shared/infrastructure/query/queryKeys', () => ({
   invalidations: {
     taskEdited: jest.fn().mockReturnValue([['tasks-edited']]),
     documentMutated: jest.fn().mockReturnValue([['documents-mutated']]),
@@ -75,8 +75,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { useTasks } from '../../../hooks/useTasks';
-import { useDelayReasonTypes } from '../../../../../hooks/useDelayReasonTypes';
-import { useConfirm } from '../../../../../hooks/useConfirm';
+import { useDelayReasonTypes } from '../../../hooks/useDelayReasonTypes';
+import { useConfirm } from '../../../../../shared/ui/hooks/useConfirm';
 import { useTaskDetails } from '../../../hooks/useTaskDetails';
 import {
   PendingPaymentsForTaskError,

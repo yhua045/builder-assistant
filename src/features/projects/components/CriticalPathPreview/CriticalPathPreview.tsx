@@ -6,7 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import type { UseCriticalPathReturn } from '../../../../hooks/useCriticalPath';
+import type { UseCriticalPathReturn } from '../../../tasks/hooks/useCriticalPath';
 import { CriticalPathTaskRow } from './CriticalPathTaskRow';
 
 interface CriticalPathPreviewProps {

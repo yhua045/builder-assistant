@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { DelayReasonType } from '../shared/domain/entities/DelayReason';
-import { DelayReasonTypeRepository } from '../shared/domain/repositories/DelayReasonTypeRepository';
+import { DelayReasonType } from '../../../shared/domain/entities/DelayReason';
+import { DelayReasonTypeRepository } from '../../../shared/domain/repositories/DelayReasonTypeRepository';
 import { container } from 'tsyringe';
-import '../shared/infrastructure/di/registerServices';
+import '../../../shared/infrastructure/di/registerServices';
 
 export interface UseDelayReasonTypesReturn {
   delayReasonTypes: DelayReasonType[];

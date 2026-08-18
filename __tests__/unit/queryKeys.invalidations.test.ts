@@ -8,7 +8,7 @@
  * Issue #172: Project Card ↔ Task Detail Sync
  */
 
-import { invalidations, queryKeys } from '../../src/hooks/queryKeys';
+import { invalidations, queryKeys } from '../../src/shared/infrastructure/query/queryKeys';
 
 const PROJECTS_OVERVIEW_KEY = queryKeys.projectsOverview();
 

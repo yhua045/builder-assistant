@@ -27,7 +27,7 @@ import { QuotationRepository } from '../../../shared/domain/repositories/Quotati
 import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 
 export type { TaskDetail } from '../application/GetTaskDetailUseCase';
 export type { AddDelayReasonInput } from '../application/AddDelayReasonUseCase';

@@ -5,7 +5,7 @@ import { Camera, FileText, Pencil } from 'lucide-react-native';
 import { IReceiptParsingStrategy } from '../application/IReceiptParsingStrategy';
 import { ICameraAdapter } from '../../../shared/infrastructure/camera/ICameraAdapter';
 import { useSnapReceiptScreen } from '../hooks/useSnapReceiptScreen';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 interface Props {
     onClose: () => void;

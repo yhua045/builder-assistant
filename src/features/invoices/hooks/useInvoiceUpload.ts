@@ -13,7 +13,7 @@
 
 import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
-import { useAnalytics } from '../../../hooks/useAnalytics';
+import { useAnalytics } from '../../../shared/ui/hooks/useAnalytics';
 import { useInvoices } from './useInvoices';
 import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { IInvoiceNormalizer, NormalizedInvoice } from '../application/IInvoiceNormalizer';
@@ -24,7 +24,7 @@ import { MobileFilePickerAdapter } from '../../../shared/infrastructure/files/Mo
 import { MobileFileSystemAdapter } from '../../../shared/infrastructure/files/MobileFileSystemAdapter';
 import { ICameraAdapter } from '../../../shared/infrastructure/camera/ICameraAdapter';
 import { MobileCameraAdapter } from '../../../shared/infrastructure/camera/MobileCameraAdapter';
-import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
+import { PdfFileMetadata } from '../../../shared/application/dto/PdfFileMetadata';
 import { ProcessInvoiceUploadUseCase } from '../application/ProcessInvoiceUploadUseCase';
 import { IInvoiceParsingStrategy } from '../application/IInvoiceParsingStrategy';
 import { IInvoiceDocumentProcessor } from '../application/IInvoiceDocumentProcessor';

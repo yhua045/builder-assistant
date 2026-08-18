@@ -79,7 +79,7 @@ jest.mock('../../hooks/useTasks', () => ({
 const mockRefreshCockpit = jest.fn().mockResolvedValue(undefined);
 let mockCockpitData: CockpitData | null = null;
 
-jest.mock('../../../../hooks/useCockpitData', () => ({
+jest.mock('../../hooks/useCockpitData', () => ({
   useCockpitData: () => ({
     cockpit: mockCockpitData,
     loading: false,
@@ -91,7 +91,7 @@ const mockRefreshBlockerBar = jest.fn().mockResolvedValue(undefined);
 let mockTasks: Task[] = [];
 let mockBlockerBarResult: BlockerBarResult | null = null;
 
-jest.mock('../../../../hooks/useBlockerBar', () => ({
+jest.mock('../../hooks/useBlockerBar', () => ({
   useBlockerBar: () => ({
     result: mockBlockerBarResult,
     loading: false,

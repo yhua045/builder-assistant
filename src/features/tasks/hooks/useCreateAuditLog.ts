@@ -1,13 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { AuditLogRepository } from '../shared/domain/repositories/AuditLogRepository';
+import type { AuditLogRepository } from '../../../shared/domain/repositories/AuditLogRepository';
 import {
   CreateAuditLogEntryUseCase,
-  CreateAuditLogEntryParams,
-} from '../shared/application/usecases/auditlog/CreateAuditLogEntryUseCase';
-import { invalidations } from './queryKeys';
-import '../shared/infrastructure/di/registerServices';
+  type CreateAuditLogEntryParams,
+} from '../../../shared/application/usecases/auditlog/CreateAuditLogEntryUseCase';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
+import '../../../shared/infrastructure/di/registerServices';
 
 export function useCreateAuditLog() {
   const queryClient = useQueryClient();

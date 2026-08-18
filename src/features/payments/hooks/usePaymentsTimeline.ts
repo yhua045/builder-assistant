@@ -16,7 +16,7 @@ import { PaymentFeedItem } from '../domain/PaymentFeedItem';
 import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRepository';
 import { ListProjectPaymentsFeedUseCase } from '../application/ListProjectPaymentsFeedUseCase';
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 // Re-export for consumers
@@ -139,7 +139,7 @@ export function usePaymentsTimeline(projectId: string): UsePaymentsTimelineRetur
       await Promise.all(
         invalidations
           .paymentRecorded({ projectId })
-          .map((key) => queryClient.invalidateQueries({ queryKey: key })),
+          .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
       );
     },
     [queryClient, projectId],

@@ -284,3 +284,129 @@ src/shared/application/
 ```
 
 This keeps the architecture consistent with the repo’s existing feature modules while preserving the Clean Architecture dependency direction: UI -> app feature -> shared application -> domain/infrastructure.
+
+## Hooks migration plan
+
+### Goal
+
+The root `src/hooks` folder should be dissolved as a migration step. The refactor is not about renaming files only; it is about making each hook live next to the feature or shared concern that owns it. This reduces hidden cross-feature imports, keeps screen logic near the relevant feature, and removes the last “global utility bucket” that violates the vertical-slice direction.
+
+### Migration rule
+
+1. Feature-owned hooks stay with their feature slice.
+2. Reused UI hooks that are not tied to a single business domain move under `src/shared/ui/hooks` or `src/shared/infrastructure/query`.
+3. No hook should live in a root-level folder once the migration is complete.
+4. `src/hooks` becomes a temporary compatibility shim only during the transition; it should be removed before final cleanup.
+
+### Proposed mapping of the current hook set
+
+| Current hook | Final location | Reason |
+| --- | --- | --- |
+| `useBlockerBar` | `src/features/tasks/hooks/useBlockerBar.ts` | It computes task blocker data and is owned by the task cockpit flow. |
+| `useCockpitData` | `src/features/tasks/hooks/useCockpitData.ts` | Task cockpit is part of the tasks feature boundary. |
+| `useCriticalPath` | `src/features/tasks/hooks/useCriticalPath.ts` | This is tightly coupled to task scheduling and suggestion creation. |
+| `useAuditLog.ts` | `src/features/projects/hooks/useAuditLogsByProject.ts` and `src/features/tasks/hooks/useAuditLogsByTask.ts` or a shared query wrapper under `src/shared/infrastructure/query` | Audit log access is consumed by both projects and tasks, so the final form should be a shared query abstraction with feature-specific adapters. |
+| `useContacts` | `src/shared/ui/hooks/useContacts.ts` | It is used across task forms, quotation forms, and shared selectors rather than a single feature. |
+| `useTeams` | `src/shared/ui/hooks/useTeams.ts` | It is used by shared selector inputs rather than a domain feature. |
+| `useQuickLookup` | `src/shared/ui/hooks/useQuickLookup.ts` | It powers reusable contractor lookup and quick-add flows across multiple features. |
+| `useConfirm` | `src/shared/ui/hooks/useConfirm.ts` | This is a presentation utility for any confirm flow. |
+| `useAnalytics`, `useScreenTracking`, `useScreenView` | `src/shared/ui/hooks/useAnalytics.ts`, `src/shared/ui/hooks/useScreenTracking.ts`, `src/shared/ui/hooks/useScreenView.ts` | These are app-wide tracking concerns and should live with cross-cutting UI hooks. |
+| `useAnalyticsOptOut` | `src/shared/ui/hooks/useAnalyticsOptOut.ts` | Privacy preference is app-wide and not scoped to a business feature. |
+| `useDelayReasonTypes` | `src/features/tasks/hooks/useDelayReasonTypes.ts` | The delay reason taxonomy is part of the task detail workflow. |
+| `queryKeys.ts` | `src/shared/infrastructure/query/queryKeys.ts` | This is a cross-feature cache registry and should not sit in a feature folder. |
+
+### Recommended source structure after the hook refactor
+
+```text
+src/
+  app/
+    App.tsx
+    navigation/
+    providers/
+    bootstrap/
+
+  features/
+    auth/
+      hooks/
+      ui/
+      application/
+      infrastructure/
+
+    dashboard/
+      hooks/
+      screens/
+      components/
+
+    projects/
+      domain/
+      application/
+      infrastructure/
+      hooks/
+      ui/
+
+    tasks/
+      domain/
+      application/
+      infrastructure/
+      hooks/
+      ui/
+
+    payments/
+      hooks/
+      ui/
+
+    quotations/
+      hooks/
+      ui/
+
+    receipts/
+      hooks/
+      ui/
+
+  shared/
+    infrastructure/
+      query/
+        queryKeys.ts
+      di/
+      analytics/
+    ui/
+      hooks/
+        useAnalytics.ts
+        useAnalyticsOptOut.ts
+        useScreenTracking.ts
+        useScreenView.ts
+        useConfirm.ts
+        useContacts.ts
+        useTeams.ts
+        useQuickLookup.ts
+      components/
+      theme/
+```
+
+### Implementation approach
+
+1. Start with the clearly feature-owned hooks under `src/features/*/hooks`.
+2. Move the shared UI and analytics hooks into `src/shared/ui/hooks`.
+3. Promote the query cache definitions into `src/shared/infrastructure/query` and update imports to the new path.
+4. Replace deep root imports with feature/domain-appropriate imports.
+5. Keep compatibility re-exports temporarily so the app continues to compile during the transition.
+6. Remove the root `src/hooks` directory only after all imports have been migrated and TypeScript validation is green.
+
+### Why this structure works
+
+- Feature hooks stay close to the feature they serve.
+- Cross-cutting hooks are not hidden behind a root-level “miscellaneous” folder.
+- `queryKeys` remains a shared source of truth for cache invalidation without coupling a cache registry to one feature.
+- The final layout aligns with the vertical slice principle: stateful logic, orchestration, and UI stay inside the feature boundary unless the concern is truly cross-cutting.
+
+### Migration checklist for the hook cleanup
+
+- [ ] Move task cockpit hooks under `src/features/tasks/hooks`
+- [ ] Move project-specific audit-log hooks under the owning feature
+- [ ] Move reusable contact and lookup hooks under `src/shared/ui/hooks`
+- [ ] Move analytics and confirmation hooks under `src/shared/ui/hooks`
+- [ ] Move `queryKeys.ts` under `src/shared/infrastructure/query`
+- [ ] Delete `src/hooks` once all imports are updated
+- [ ] Validate with `npx tsc --noEmit`
+
+This hook migration is the final architectural cleanup step that makes the vertical-slice structure consistent end-to-end: features own their stateful logic, while the shared layer owns only truly cross-cutting concerns.

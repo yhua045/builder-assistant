@@ -11,7 +11,7 @@ import { IOcrAdapter } from '../../../shared/application/ports/IOcrAdapter';
 import { IQuotationParsingStrategy } from '../application/ai/IQuotationParsingStrategy';
 import { IPdfConverter } from '../../../shared/infrastructure/files/IPdfConverter';
 import { useQuotationUpload } from '../hooks/useQuotationUpload';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 cssInterop(X, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 

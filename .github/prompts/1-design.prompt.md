@@ -6,8 +6,9 @@ Read the requirements provided in the active ticket/document or conversation.
 Generate a moderate **Design Plan** before writing any implementation code. Your response must include:
 1. **Domain Model & Entities:** Core domain concepts, state models, and relationships.
 2. **Key Abstractions & Interfaces:** Core contracts, services, and extension points.
-3. **Source Code Structure:** Project folder/file layout and module boundaries.
+3. **Source Code Structure:** Project folder/file layout and module boundaries. We use a vertical slice architecture, where each feature is self-contained and includes its own domain, application, infrastructure, and UI layers. The shared feature/services should be placed in the `src/shared` or `src/app` folder. The app folder is responsible for application-wide concerns, such as bootstrapping, dependency injection, and global providers.
 4. **Architectural Trade-offs & Risks:** Potential edge cases or performance bottlenecks.
+
 
 The design plan should be clear, concise and created under the "design" folder with ticket reference prepended to the file name. For example, if the ticket number is `#123`, the design plan should be saved as `design/123-design-plan.md`.
 Wait for user approval on this design plan before proceeding.

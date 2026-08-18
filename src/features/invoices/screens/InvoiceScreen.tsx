@@ -9,7 +9,7 @@ import { IPdfConverter } from '../../../shared/infrastructure/files/IPdfConverte
 import { IFilePickerAdapter } from '../../../shared/infrastructure/files/IFilePickerAdapter';
 import { IFileSystemAdapter } from '../../../shared/infrastructure/files/IFileSystemAdapter';
 import { useInvoiceUpload } from '../hooks/useInvoiceUpload';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 interface InvoiceScreenProps {
   onClose: () => void;

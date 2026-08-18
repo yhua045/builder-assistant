@@ -57,7 +57,7 @@ jest.mock('../../../../components/inputs/DatePickerInput', () => {
 });
 
 // ── useDelayReasonTypes stub to avoid DB/native calls in tests
-jest.mock('../../../../hooks/useDelayReasonTypes', () => ({
+jest.mock('../../hooks/useDelayReasonTypes', () => ({
   useDelayReasonTypes: () => ({ delayReasonTypes: [], loading: false }),
 }));
 

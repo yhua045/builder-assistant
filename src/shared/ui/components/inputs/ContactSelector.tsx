@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
-import useContacts from '../../../../hooks/useContacts';
+import useContacts from '../../hooks/useContacts';
 
 interface Props {
   label: string;

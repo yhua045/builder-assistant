@@ -16,7 +16,7 @@ import { SubcontractorPickerModal } from '../components/SubcontractorPickerModal
 import { Edit, Trash2, Calendar, Clock, ArrowLeft, FileText, CheckCircle } from 'lucide-react-native';
 import { cssInterop } from 'nativewind';
 import { useTaskDetails } from '../hooks/useTaskDetails';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Trash2, { className: { target: 'style', nativeStyleToProp: { color: true } } });

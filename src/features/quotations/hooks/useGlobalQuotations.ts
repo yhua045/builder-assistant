@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Quotation } from '../../../shared/domain/entities/Quotation';
 import { DrizzleQuotationRepository } from '../infrastructure/DrizzleQuotationRepository';
 import { ListQuotationsUseCase } from '../application/ListQuotationsUseCase';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 
 export interface UseGlobalQuotationsOptions {
   vendorSearch?: string;

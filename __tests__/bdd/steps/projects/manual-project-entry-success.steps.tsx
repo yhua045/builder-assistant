@@ -74,12 +74,12 @@ jest.mock('../../../../src/features/tasks/infrastructure/DrizzleTaskRepository',
 
 // Mock the hooks under test
 jest.mock('../../../../src/features/projects/hooks/useProjects');
-jest.mock('../../../../src/hooks/useCriticalPath');
+jest.mock('../../../../src/features/tasks/hooks/useCriticalPath');
 
 // ── Import mocked hooks ───────────────────────────────────────────────────────
 
 import { useProjects } from '../../../../src/features/projects/hooks/useProjects';
-import { useCriticalPath } from '../../../../src/hooks/useCriticalPath';
+import { useCriticalPath } from '../../../../src/features/tasks/hooks/useCriticalPath';
 
 const mockUseProjects = useProjects as jest.MockedFunction<typeof useProjects>;
 const mockUseCriticalPath = useCriticalPath as jest.MockedFunction<typeof useCriticalPath>;

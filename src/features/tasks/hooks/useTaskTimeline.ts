@@ -16,7 +16,7 @@ import { Task } from '../../../shared/domain/entities/Task';
 import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 import { ListTasksUseCase } from '../application/ListTasksUseCase';
 import { UpdateTaskUseCase } from '../application/UpdateTaskUseCase';
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ export function useTaskTimeline(projectId: string): UseTaskTimelineReturn {
       await Promise.all(
         invalidations
           .taskEdited({ projectId, taskId: task.id })
-          .map((key) => queryClient.invalidateQueries({ queryKey: key })),
+          .map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
       );
     },
     [updateUseCase, queryClient, projectId],

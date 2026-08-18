@@ -8,7 +8,7 @@ import { ListGlobalPaymentsUseCase } from '../application/ListGlobalPaymentsUseC
 import { usePayments, PaymentWithProject } from './usePayments';
 import { useGlobalQuotations } from '../../quotations/hooks/useGlobalQuotations';
 import { sortByPaymentPriority, sortByPaidDateDesc } from '../utils/sortByPaymentPriority';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 export type PaymentsFilterOption = 'quotations' | 'pending' | 'paid' | 'all' | 'unassigned';

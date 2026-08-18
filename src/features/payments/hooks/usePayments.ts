@@ -13,7 +13,7 @@ import { InvoiceRepository } from '../../../shared/domain/repositories/InvoiceRe
 import { ListGlobalPaymentsUseCase } from '../application/ListGlobalPaymentsUseCase';
 import { GetPaymentMetricsUseCase } from '../application/GetPaymentMetricsUseCase';
 import { resolveInvoiceDueDate } from '../../../features/invoices';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 export type PaymentsMode = 'firefighter' | 'site_manager';

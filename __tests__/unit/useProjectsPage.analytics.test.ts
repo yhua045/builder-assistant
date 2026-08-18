@@ -13,7 +13,7 @@ import { renderHook, act } from '@testing-library/react-native';
 
 const mockTrack = jest.fn();
 
-jest.mock('../../src/hooks/useAnalytics', () => ({
+jest.mock('../../src/shared/ui/hooks/useAnalytics', () => ({
   useAnalytics: () => ({ track: mockTrack, screen: jest.fn() }),
 }));
 

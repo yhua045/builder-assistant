@@ -7,7 +7,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useInvoices } from '../hooks/useInvoices';
 import { InvoiceForm } from '../components/InvoiceForm';
 import type { Invoice } from '../../../shared/domain/entities/Invoice';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 cssInterop(ArrowLeft, { className: { target: 'style', nativeStyleToProp: { color: true } } });
 cssInterop(Edit, { className: { target: 'style', nativeStyleToProp: { color: true } } });

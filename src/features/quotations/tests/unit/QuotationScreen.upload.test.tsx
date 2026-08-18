@@ -26,7 +26,7 @@ jest.mock('../../../../components/shared/ProjectPickerModal', () => ({
 jest.mock('../../../../components/inputs/QuickAddContractorModal', () => ({
   QuickAddContractorModal: () => null,
 }));
-jest.mock('../../../../hooks/useQuickLookup', () => ({
+jest.mock('../../../../shared/ui/hooks/useQuickLookup', () => ({
   useQuickLookup: () => ({ quickAdd: jest.fn() }),
 }));
 

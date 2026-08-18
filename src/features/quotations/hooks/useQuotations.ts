@@ -14,7 +14,7 @@ import { DeclineQuotationUseCase } from '../application/DeclineQuotationUseCase'
 import { DrizzleQuotationRepository } from '../infrastructure/DrizzleQuotationRepository';
 import { container } from 'tsyringe';
 import '../../../shared/infrastructure/di/registerServices';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 
 export interface UseQuotationsOptions {
   /** When provided, subscribes reactively to quotations for this task */

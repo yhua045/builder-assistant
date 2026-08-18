@@ -3,11 +3,11 @@ import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, Toucha
 import { Quotation, QuotationLineItem, QuotationEntity } from '../../../shared/domain/entities/Quotation';
 import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
 import { Plus, X, Paperclip, HardHat, UserPlus } from 'lucide-react-native';
-import { PdfFileMetadata } from '../../../types/PdfFileMetadata';
+import { PdfFileMetadata } from '../../../shared/application/dto/PdfFileMetadata';
 import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
 import { SubcontractorPickerModal, SubcontractorContact } from '../../tasks/components/SubcontractorPickerModal';
 import { QuickAddContractorModal } from '../../../shared/ui/components/inputs/QuickAddContractorModal';
-import { useQuickLookup } from '../../../hooks/useQuickLookup';
+import { useQuickLookup } from '../../../shared/ui/hooks/useQuickLookup';
 import { Project } from '../../../shared/domain/entities/Project';
 
 interface QuotationFormProps {

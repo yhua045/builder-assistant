@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
 import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
 import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';

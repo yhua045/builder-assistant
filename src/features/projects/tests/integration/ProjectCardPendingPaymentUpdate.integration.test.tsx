@@ -25,7 +25,7 @@
  */
 
 import { act } from '@testing-library/react-native';
-import { invalidations, queryKeys } from '../../../../hooks/queryKeys';
+import { invalidations, queryKeys } from '../../../../shared/infrastructure/query/queryKeys';
 import { renderHookWithQuery, createTestQueryClient } from '../../../../../__tests__/utils/queryClientWrapper';
 import { useInvoices } from '../../../invoices';
 
@@ -132,15 +132,15 @@ jest.mock('../../../tasks/hooks/useTasks', () => ({
 
 const mockListQuotations = jest.fn().mockResolvedValue({ items: [] });
 
-jest.mock('../../../../hooks/useDelayReasonTypes', () => ({
+jest.mock('../../../tasks/hooks/useDelayReasonTypes', () => ({
   useDelayReasonTypes: () => ({ delayReasonTypes: [] }),
 }));
 
-jest.mock('../../../../hooks/useConfirm', () => ({
+jest.mock('../../../../shared/ui/hooks/useConfirm', () => ({
   useConfirm: () => ({ confirm: jest.fn().mockResolvedValue(true) }),
 }));
 
-jest.mock('../../../../hooks/useContacts', () => {
+jest.mock('../../../../shared/ui/hooks/useContacts', () => {
   // The module-level STABLE_EMPTY_CONTACTS array must outlive individual renders
   // to prevent allContacts from changing reference each call, which would
   // invalidate loadData's useCallback deps and cause an infinite render loop.

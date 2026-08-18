@@ -9,7 +9,7 @@ import { createTestQueryClient } from '../utils/queryClientWrapper';
 // Mock DI registration to avoid native module resolution during unit tests
 jest.mock('../../src/infrastructure/di/registerServices', () => ({}));
 
-import { useCriticalPath, UseCriticalPathOptions } from '../../src/hooks/useCriticalPath';
+import { useCriticalPath, UseCriticalPathOptions } from '../../src/features/tasks/hooks/useCriticalPath';
 import { SuggestCriticalPathUseCase } from '../../src/shared/application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import { CreateTaskUseCase } from '../../src/features/tasks/application/CreateTaskUseCase';
 import type { CriticalPathSuggestion, SuggestCriticalPathRequest } from '../../src/shared/data/critical-path/schema';

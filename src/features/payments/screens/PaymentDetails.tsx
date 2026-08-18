@@ -18,7 +18,7 @@ import { useColorScheme } from 'nativewind';
 import { usePaymentDetails } from '../hooks/usePaymentDetails';
 import { PendingPaymentForm } from '../components/PendingPaymentForm';
 import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
-import { useScreenTracking } from '../../../hooks/useScreenTracking';
+import { useScreenTracking } from '../../../shared/ui/hooks/useScreenTracking';
 
 export default function PaymentDetails() {
   useScreenTracking('PaymentDetail');

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
-import '../shared/infrastructure/di/registerServices';
-import { TaskRepository } from '../shared/domain/repositories/TaskRepository';
-import { CockpitData } from '../shared/domain/entities/CockpitData';
-import { GetCockpitDataUseCase } from '../features/tasks/application/GetCockpitDataUseCase';
+import '../../../shared/infrastructure/di/registerServices';
+import { TaskRepository } from '../../../shared/domain/repositories/TaskRepository';
+import { CockpitData } from '../../../shared/domain/entities/CockpitData';
+import { GetCockpitDataUseCase } from '../application/GetCockpitDataUseCase';
 
 export interface UseCockpitDataReturn {
   cockpit: CockpitData | null;

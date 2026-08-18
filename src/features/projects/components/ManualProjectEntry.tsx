@@ -4,7 +4,7 @@ import { container } from 'tsyringe';
 import { ManualProjectEntryButton } from './ManualProjectEntryButton';
 import ManualProjectEntryForm from './ManualProjectEntryForm';
 import { useProjects } from '../hooks/useProjects';
-import { useCriticalPath } from '../../../hooks/useCriticalPath';
+import { useCriticalPath } from '../../tasks/hooks/useCriticalPath';
 import type { CreateProjectRequest } from '../application/CreateProjectUseCase';
 import { SuggestCriticalPathUseCase } from '../../../shared/application/usecases/criticalpath/SuggestCriticalPathUseCase';
 import { CreateTaskUseCase } from '../../tasks/application/CreateTaskUseCase';

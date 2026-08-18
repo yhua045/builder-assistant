@@ -55,7 +55,7 @@ jest.mock('../../components/CriticalPathPreview/CriticalPathPreview', () => {
 });
 
 import ManualProjectEntryForm from '../../components/ManualProjectEntryForm';
-import type { UseCriticalPathReturn } from '../../../../hooks/useCriticalPath';
+import type { UseCriticalPathReturn } from '../../../tasks/hooks/useCriticalPath';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

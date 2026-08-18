@@ -13,7 +13,7 @@ import { UpdateInvoiceUseCase } from '../application/UpdateInvoiceUseCase';
 import { DeleteInvoiceUseCase } from '../application/DeleteInvoiceUseCase';
 import { GetInvoiceByIdUseCase } from '../application/GetInvoiceByIdUseCase';
 import { ListInvoicesUseCase } from '../application/ListInvoicesUseCase';
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import type { AnalyticsAdapter } from '../../../shared/infrastructure/analytics/AnalyticsAdapter';
 
 export interface UseInvoicesOptions {

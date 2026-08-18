@@ -21,7 +21,7 @@ import { TaskRepository } from '../../../shared/domain/repositories/TaskReposito
 import { AcceptStandaloneQuotationUseCase } from '../../quotations/application/AcceptStandaloneQuotationUseCase';
 import { UpdateQuotationUseCase } from '../../quotations/application/UpdateQuotationUseCase';
 import { formatDayLabel } from './useProjectTimeline';
-import { queryKeys, invalidations } from '../../../hooks/queryKeys';
+import { queryKeys, invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 // ─── Public types ─────────────────────────────────────────────────────────────

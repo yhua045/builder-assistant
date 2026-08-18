@@ -28,7 +28,7 @@ import { Project } from '../../../shared/domain/entities/Project';
 import { PaymentRepository } from '../../../shared/domain/repositories/PaymentRepository';
 import { ProjectPickerModal } from '../../../shared/ui/components/ProjectPickerModal';
 import DatePickerInput from '../../../shared/ui/components/inputs/DatePickerInput';
-import { invalidations } from '../../../hooks/queryKeys';
+import { invalidations } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 interface Props {
@@ -124,7 +124,7 @@ export function PendingPaymentForm({ visible, payment, onClose, onSaved }: Props
           oldProjectId,
           newProjectId,
           isInvoice: false,
-        }).map((key) => queryClient.invalidateQueries({ queryKey: key })),
+        }).map((key: any) => queryClient.invalidateQueries({ queryKey: key })),
       );
 
       await onSaved();

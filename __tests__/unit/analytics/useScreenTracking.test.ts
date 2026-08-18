@@ -17,7 +17,7 @@ jest.mock('tsyringe', () => ({
 // Mock registerServices to prevent real DI registrations in test env
 jest.mock('../../../src/infrastructure/di/registerServices', () => ({}));
 
-import { useScreenTracking } from '../../../src/hooks/useScreenTracking';
+import { useScreenTracking } from '../../../src/shared/ui/hooks/useScreenTracking';
 
 describe('useScreenTracking', () => {
   beforeEach(() => {

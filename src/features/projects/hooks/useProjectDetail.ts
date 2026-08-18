@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { container } from 'tsyringe';
 import { ProjectDetails } from '../../../shared/domain/entities/ProjectDetails';
 import { ProjectRepository } from '../../../shared/domain/repositories/ProjectRepository';
-import { queryKeys } from '../../../hooks/queryKeys';
+import { queryKeys } from '../../../shared/infrastructure/query/queryKeys';
 import '../../../shared/infrastructure/di/registerServices';
 
 export interface UseProjectDetailReturn {
