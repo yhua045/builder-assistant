@@ -1,5 +1,5 @@
-import { getDatabase, initDatabase } from '../database/connection.ts';
-import { KnowledgeChunk } from '../../../shared/domain/entities/KnowledgeChunk.ts';
+import { getDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection.ts';
+import { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk.ts';
 
 export interface ChunkRepository {
   save(chunk: KnowledgeChunk): Promise<void>;

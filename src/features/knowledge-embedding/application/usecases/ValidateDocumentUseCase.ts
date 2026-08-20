@@ -1,9 +1,9 @@
-import type { DocumentVersion } from '../../../shared/domain/entities/DocumentVersion';
-import type { DocumentChunkingWorkflowRepository } from '../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../../shared/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
-import type { DocumentSourceType } from '../domain/context/DocumentProcessingContext';
-import { FileTypeValidator } from '../infrastructure/validation/FileTypeValidator';
-import { SizeAndSanityValidator } from '../infrastructure/validation/SizeAndSanityValidator';
+import type { DocumentVersion } from '../../../../shared/domain/entities/DocumentVersion';
+import type { DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import type { DocumentSourceType } from '../../domain/context/DocumentProcessingContext';
+import { FileTypeValidator } from '../../infrastructure/validation/FileTypeValidator';
+import { SizeAndSanityValidator } from '../../infrastructure/validation/SizeAndSanityValidator';
 
 export interface ValidateDocumentInput {
   documentId: string;

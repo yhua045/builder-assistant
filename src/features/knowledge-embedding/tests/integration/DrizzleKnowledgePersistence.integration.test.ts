@@ -52,10 +52,10 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import { closeDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection';
 import { DrizzleKnowledgeRepository } from '../../../../shared/infrastructure/repositories/DrizzleKnowledgeRepository';
-import { DrizzleChunkRepository } from '../../../../shared/infrastructure/repositories/DrizzleChunkRepository';
+import { DrizzleChunkRepository } from '../../infrastructure/repositories/DrizzleChunkRepository';
 import { DrizzleEmbeddingRepository } from '../../../../shared/infrastructure/repositories/DrizzleEmbeddingRepository';
 import { ProjectFactEntity } from '../../../../shared/domain/entities/ProjectFact';
-import { KnowledgeChunkEntity } from '../../../../shared/domain/entities/KnowledgeChunk';
+import { KnowledgeChunkEntity } from '../../domain/entities/KnowledgeChunk';
 import { KnowledgeEmbeddingEntity } from '../../../../shared/domain/entities/KnowledgeEmbedding';
 
 describe('RAG SQLite persistence', () => {

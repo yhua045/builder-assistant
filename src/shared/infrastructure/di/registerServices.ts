@@ -49,7 +49,11 @@ import { ApiOcrAdapter } from '../ocr/ApiOcrAdapter.ts';
 import { OcrAdapterFactory } from '../ocr/OcrAdapterFactory.ts';
 import { DefaultTextNormalizer, DefaultDocumentParser, ParserRegistry } from '../../application/services/DocumentParserService';
 import { PdfTextParser } from '../parsers/PdfTextParser.ts';
-import { ParseDocumentUseCase } from '../../../shared/application/usecases/ParseDocumentUseCase.ts';
+import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ParseDocumentUseCase.ts';
+import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
+import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
+import { DrizzleChunkDocumentProgressRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleChunkDocumentProgressRepository.ts';
+import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter.ts';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter.ts';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter.ts';
@@ -111,7 +115,20 @@ if (typeof (container as any).registerSingleton === 'function') {
 		useFactory: (c) => new DefaultDocumentParser(c.resolve('ParserRegistry' as any)),
 	});
 	container.register('ParseDocumentUseCase', {
-		useFactory: (c) => new ParseDocumentUseCase(c.resolve('ParserRegistry' as any)),
+		useFactory: (c) => new ParseDocumentUseCase(
+			c.resolve('ParserRegistry' as any),
+			c.resolve('ExtractedDocumentTextRepository' as any),
+		),
+	});
+	container.registerSingleton('ExtractedDocumentTextRepository', DrizzleExtractedDocumentTextRepository);
+	container.registerSingleton('ChunkDocumentProgressRepository', DrizzleChunkDocumentProgressRepository);
+	container.register('ExtractParsedDocumentUseCase', {
+		useFactory: (c) => new ExtractParsedDocumentUseCase(c.resolve('ExtractedDocumentTextRepository' as any)),
+	});
+	container.register('ChunkDocumentUseCase', {
+		useFactory: (c) => new ChunkDocumentUseCase({
+			progressRepository: c.resolve('ChunkDocumentProgressRepository' as any),
+		}),
 	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────

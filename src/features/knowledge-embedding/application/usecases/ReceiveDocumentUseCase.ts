@@ -1,6 +1,6 @@
-import type { DocumentChunkingWorkflowRepository } from '../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../../shared/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
-import type { DocumentSourceType } from '../domain/context/DocumentProcessingContext';
+import type { DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import type { DocumentSourceType } from '../../domain/context/DocumentProcessingContext';
 
 export interface ReceiveDocumentInput {
   sessionId: string;

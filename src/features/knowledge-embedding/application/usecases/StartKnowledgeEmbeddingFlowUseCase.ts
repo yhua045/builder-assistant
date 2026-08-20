@@ -1,5 +1,5 @@
-import { KnowledgeEmbeddingSession } from '../domain/entities/KnowledgeEmbeddingSession';
-import { KnowledgeEmbeddingStep } from '../domain/value-objects/KnowledgeEmbeddingStep';
+import { KnowledgeEmbeddingSession } from '../../domain/entities/KnowledgeEmbeddingSession';
+import { KnowledgeEmbeddingStep } from '../../domain/value-objects/KnowledgeEmbeddingStep';
 
 export interface StartKnowledgeEmbeddingFlowInput {
   projectName?: string;

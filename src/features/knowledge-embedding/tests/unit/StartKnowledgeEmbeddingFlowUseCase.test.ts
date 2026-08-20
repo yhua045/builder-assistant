@@ -1,4 +1,4 @@
-import { StartKnowledgeEmbeddingFlowUseCase } from '../../application/StartKnowledgeEmbeddingFlowUseCase';
+import { StartKnowledgeEmbeddingFlowUseCase } from '../../application/usecases/StartKnowledgeEmbeddingFlowUseCase';
 import { KnowledgeEmbeddingStep } from '../../domain/value-objects/KnowledgeEmbeddingStep';
 
 describe('StartKnowledgeEmbeddingFlowUseCase', () => {

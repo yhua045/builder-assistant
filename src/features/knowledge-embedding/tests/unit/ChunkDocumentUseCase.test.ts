@@ -1,7 +1,24 @@
-import { ChunkDocumentUseCase } from '../../application/ChunkDocumentUseCase';
+import { ChunkDocumentUseCase } from '../../application/usecases/ChunkDocumentUseCase';
 import { InMemoryDocumentChunkingWorkflowRepository } from '../../infrastructure/repository/InMemoryDocumentChunkingWorkflowRepository';
-import type { ChunkRepository } from '../../../../shared/infrastructure/repositories/DrizzleChunkRepository';
-import type { KnowledgeChunk } from '../../../../shared/domain/entities/KnowledgeChunk';
+import type { ChunkRepository } from '../../infrastructure/repositories/DrizzleChunkRepository';
+import type { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk';
+import type { ChunkDocumentProgress, ChunkDocumentProgressRepository } from '../../domain/repositories/ChunkDocumentProgressRepository';
+
+function createProgressRepository(): ChunkDocumentProgressRepository {
+  let progress: ChunkDocumentProgress | null = null;
+  return {
+    load: async () => progress,
+    saveUnitCompleted: async (next, unitId) => {
+      progress = { ...next, completedUnitIds: [...next.completedUnitIds, unitId] };
+    },
+    recordFailure: async (next, failure) => {
+      progress = { ...next, failures: [...next.failures, failure] };
+    },
+    recordFallback: async (next, fallback) => {
+      progress = { ...next, fallbackEvents: [...next.fallbackEvents, fallback] };
+    },
+  };
+}
 
 describe('ChunkDocumentUseCase', () => {
   it('does not create chunks for a version that failed validation', async () => {
@@ -32,6 +49,7 @@ describe('ChunkDocumentUseCase', () => {
     const useCase = new ChunkDocumentUseCase({
       workflowRepository,
       chunkRepository: chunkRepository as ChunkRepository,
+      progressRepository: createProgressRepository(),
     });
 
     const result = await useCase.execute({
@@ -76,6 +94,7 @@ describe('ChunkDocumentUseCase', () => {
     const useCase = new ChunkDocumentUseCase({
       workflowRepository,
       chunkRepository: chunkRepository as ChunkRepository,
+      progressRepository: createProgressRepository(),
     });
 
     const result = await useCase.execute({
@@ -139,6 +158,7 @@ describe('ChunkDocumentUseCase', () => {
     const useCase = new ChunkDocumentUseCase({
       workflowRepository,
       chunkRepository: chunkRepository as ChunkRepository,
+      progressRepository: createProgressRepository(),
     });
 
     const result = await useCase.execute({

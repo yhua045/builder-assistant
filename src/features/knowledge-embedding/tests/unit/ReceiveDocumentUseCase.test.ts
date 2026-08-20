@@ -1,4 +1,4 @@
-import { ReceiveDocumentUseCase } from '../../application/ReceiveDocumentUseCase';
+import { ReceiveDocumentUseCase } from '../../application/usecases/ReceiveDocumentUseCase';
 import type { DocumentChunkingWorkflowRecord, DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
 
 class MockWorkflowRepository implements DocumentChunkingWorkflowRepository {

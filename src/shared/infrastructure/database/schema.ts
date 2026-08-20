@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 
 // Projects Table
 export const projects = sqliteTable('projects', {
@@ -534,6 +534,35 @@ export const projectFacts = sqliteTable('project_facts', {
 }, (table) => ({
   projectIdx: index('idx_project_facts_project').on(table.projectId),
   typeIdx: index('idx_project_facts_type').on(table.factType),
+}));
+
+export const extractedDocumentText = sqliteTable('extracted_document_text', {
+  id: text('id').primaryKey(),
+  documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull(),
+  projectId: text('project_id'),
+  text: text('text').notNull(),
+  pageMetadata: text('page_metadata').notNull(),
+  sectionHints: text('section_hints'),
+  language: text('language'),
+  warnings: text('warnings'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  documentVersionIdx: index('idx_extracted_document_text_version').on(table.documentId, table.documentVersion),
+}));
+
+export const chunkDocumentProgress = sqliteTable('chunk_document_progress', {
+  documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull(),
+  processingScope: text('processing_scope').notNull(),
+  completedUnitIds: text('completed_unit_ids').notNull(),
+  selectedStrategy: text('selected_strategy'),
+  fallbackEvents: text('fallback_events').notNull(),
+  failures: text('failures').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  scopePk: primaryKey({ columns: [table.documentId, table.documentVersion, table.processingScope] }),
 }));
 
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {

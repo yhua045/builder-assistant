@@ -1039,6 +1039,45 @@ const migrations: RNMigration[] = [
       `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_status" ON "document_chunking_workflows" ("status");`,
     ],
   },
+  {
+    tag: '0028_extracted_document_text',
+    hash: '0028_extracted_document_text',
+    folderMillis: 1774828800000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "extracted_document_text" (
+        "id" text PRIMARY KEY NOT NULL,
+        "document_id" text NOT NULL,
+        "document_version" integer NOT NULL,
+        "project_id" text,
+        "text" text NOT NULL,
+        "page_metadata" text NOT NULL,
+        "section_hints" text,
+        "language" text,
+        "warnings" text,
+        "created_at" integer NOT NULL,
+        "updated_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_extracted_document_text_version" ON "extracted_document_text" ("document_id", "document_version");`,
+    ],
+  },
+  {
+    tag: '0029_chunk_document_progress',
+    hash: '0029_chunk_document_progress',
+    folderMillis: 1774915200000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "chunk_document_progress" (
+        "document_id" text NOT NULL,
+        "document_version" integer NOT NULL,
+        "processing_scope" text NOT NULL,
+        "completed_unit_ids" text NOT NULL,
+        "selected_strategy" text,
+        "fallback_events" text NOT NULL,
+        "failures" text NOT NULL,
+        "updated_at" integer NOT NULL,
+        PRIMARY KEY ("document_id", "document_version", "processing_scope")
+      );`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {
