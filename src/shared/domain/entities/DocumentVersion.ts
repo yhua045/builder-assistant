@@ -11,6 +11,8 @@ export type DocumentVersionWorkflowState =
   | 'idle'
   | 'document_received'
   | 'validation_pending'
+  | 'validation_passed'
+  | 'validation_failed'
   | 'text_extracted'
   | 'chunking_in_progress'
   | 'chunking_complete'

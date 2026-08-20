@@ -539,14 +539,26 @@ export const projectFacts = sqliteTable('project_facts', {
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull().default(1),
+  projectId: text('project_id'),
   content: text('content').notNull(),
   chunkIndex: integer('chunk_index').notNull(),
   tokenCount: integer('token_count'),
+  wordCount: integer('word_count'),
+  charCount: integer('char_count'),
   startOffset: integer('start_offset'),
   endOffset: integer('end_offset'),
+  isOutdated: integer('is_outdated', { mode: 'boolean' }).notNull().default(false),
+  isSuperseded: integer('is_superseded', { mode: 'boolean' }).notNull().default(false),
+  supersededByChunkId: text('superseded_by_chunk_id'),
+  supersededAt: integer('superseded_at'),
   metadata: text('metadata'),
+  createdAt: integer('created_at').notNull().default(Date.now()),
+  updatedAt: integer('updated_at').notNull().default(Date.now()),
 }, (table) => ({
   documentIdx: index('idx_knowledge_chunks_document').on(table.documentId),
+  versionIdx: index('idx_knowledge_chunks_version').on(table.documentVersion),
+  projectIdx: index('idx_knowledge_chunks_project').on(table.projectId),
   indexIdx: index('idx_knowledge_chunks_index').on(table.chunkIndex),
 }));
 

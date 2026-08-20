@@ -976,14 +976,26 @@ const migrations: RNMigration[] = [
       `CREATE TABLE IF NOT EXISTS "knowledge_chunks" (
         "id" text PRIMARY KEY NOT NULL,
         "document_id" text NOT NULL,
+        "document_version" integer NOT NULL DEFAULT 1,
+        "project_id" text,
         "content" text NOT NULL,
         "chunk_index" integer NOT NULL,
         "token_count" integer,
+        "word_count" integer,
+        "char_count" integer,
         "start_offset" integer,
         "end_offset" integer,
-        "metadata" text
+        "is_outdated" integer NOT NULL DEFAULT 0,
+        "is_superseded" integer NOT NULL DEFAULT 0,
+        "superseded_by_chunk_id" text,
+        "superseded_at" integer,
+        "metadata" text,
+        "created_at" integer NOT NULL DEFAULT 0,
+        "updated_at" integer NOT NULL DEFAULT 0
       );`,
       `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_document" ON "knowledge_chunks" ("document_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_version" ON "knowledge_chunks" ("document_version");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_project" ON "knowledge_chunks" ("project_id");`,
       `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_index" ON "knowledge_chunks" ("chunk_index");`,
       `CREATE TABLE IF NOT EXISTS "knowledge_embeddings" (
         "id" text PRIMARY KEY NOT NULL,
