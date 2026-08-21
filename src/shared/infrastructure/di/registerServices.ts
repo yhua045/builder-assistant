@@ -48,7 +48,7 @@ import { MlKitOcrAdapter } from '../ocr/MlKitOcrAdapter.ts';
 import { ApiOcrAdapter } from '../ocr/ApiOcrAdapter.ts';
 import { OcrAdapterFactory } from '../ocr/OcrAdapterFactory.ts';
 import { DefaultTextNormalizer, DefaultDocumentParser, ParserRegistry } from '../../application/services/DocumentParserService';
-import { PdfTextParser } from '../parsers/PdfTextParser.ts';
+import { PdfTextParser } from '../../../features/knowledge-embedding/infrastructure/parsers/PdfTextParser.ts';
 import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ParseDocumentUseCase.ts';
 import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
 import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';

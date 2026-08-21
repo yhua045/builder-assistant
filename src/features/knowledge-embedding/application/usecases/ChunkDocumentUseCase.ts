@@ -1,8 +1,8 @@
-import { DefaultDocumentChunkingService } from '../services/DocumentChunkingService';
+import { DefaultDocumentChunkingService } from '../services/DefaultDocumentChunkingService';
 import type { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk';
 import type { DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
 import type { ExtractedDocumentText } from '../../domain/entities/ExtractedDocumentText';
-import type { ChunkingConfig } from '../../domain/services/DocumentChunkingService';
+import type { ChunkingConfig } from '../../domain/services/DocumentChunkingStrategy';
 import type { ChunkDocumentProgress, ChunkDocumentProgressRepository } from '../../domain/repositories/ChunkDocumentProgressRepository';
 import { DrizzleDocumentChunkingWorkflowRepository } from '../../infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
 import { DrizzleChunkRepository, type ChunkRepository } from '../../infrastructure/repositories/DrizzleChunkRepository';

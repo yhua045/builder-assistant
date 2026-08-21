@@ -20,6 +20,7 @@ export class DrizzleExtractedDocumentTextRepository implements ExtractedDocument
       text: row.text,
       pageMetadata: row.page_metadata ? JSON.parse(row.page_metadata) : [],
       sectionHints: row.section_hints ? JSON.parse(row.section_hints) : undefined,
+      elements: row.elements ? JSON.parse(row.elements) : undefined,
       language: row.language ?? undefined,
       warnings: row.warnings ? JSON.parse(row.warnings) : undefined,
       createdAt: new Date(Number(row.created_at)),
@@ -34,8 +35,8 @@ export class DrizzleExtractedDocumentTextRepository implements ExtractedDocument
     await db.executeSql(
       `INSERT OR REPLACE INTO extracted_document_text (
         id, document_id, document_version, project_id, text, page_metadata,
-        section_hints, language, warnings, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        section_hints, elements, language, warnings, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         extractedText.id,
         extractedText.documentId,
@@ -44,6 +45,7 @@ export class DrizzleExtractedDocumentTextRepository implements ExtractedDocument
         extractedText.text,
         JSON.stringify(extractedText.pageMetadata),
         extractedText.sectionHints ? JSON.stringify(extractedText.sectionHints) : null,
+        extractedText.elements ? JSON.stringify(extractedText.elements) : null,
         extractedText.language ?? null,
         extractedText.warnings ? JSON.stringify(extractedText.warnings) : null,
         extractedText.createdAt.getTime(),

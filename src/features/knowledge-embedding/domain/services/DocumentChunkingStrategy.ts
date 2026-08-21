@@ -1,4 +1,5 @@
 import { KnowledgeChunk } from '../entities/KnowledgeChunk.ts';
+import type { ParsedDocumentElement } from '../../../../shared/domain/services/DocumentParser';
 
 export type ChunkBoundary = 'page' | 'section' | 'paragraph' | 'sentence' | 'word';
 
@@ -30,10 +31,11 @@ export interface ChunkingContext {
   rawText: string;
   pageMetadata?: ChunkingPageMetadata[];
   sectionHints?: ChunkingSectionHint[];
+  elements?: ParsedDocumentElement[];
   config: ChunkingConfig;
 }
 
-export interface DocumentChunkingService {
+export interface DocumentChunkingStrategy {
   chunkDocument(context: ChunkingContext): Promise<KnowledgeChunk[]>;
   chunkParagraphs(text: string, config: ChunkingConfig): Promise<KnowledgeChunk[]>;
 }

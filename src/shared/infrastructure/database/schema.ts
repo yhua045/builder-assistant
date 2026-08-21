@@ -544,6 +544,7 @@ export const extractedDocumentText = sqliteTable('extracted_document_text', {
   text: text('text').notNull(),
   pageMetadata: text('page_metadata').notNull(),
   sectionHints: text('section_hints'),
+  elements: text('elements'),
   language: text('language'),
   warnings: text('warnings'),
   createdAt: integer('created_at').notNull(),

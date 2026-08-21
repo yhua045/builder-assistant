@@ -1078,6 +1078,22 @@ const migrations: RNMigration[] = [
       );`,
     ],
   },
+  {
+    tag: '0030_extracted_document_elements',
+    hash: '0030_extracted_document_elements',
+    folderMillis: 1775001600000,
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('extracted_document_text')`);
+      const columns = new Set<string>();
+      for (let index = 0; index < result.rows.length; index++) {
+        columns.add(result.rows.item(index).name);
+      }
+      if (!columns.has('elements')) {
+        await db.executeSql(`ALTER TABLE "extracted_document_text" ADD COLUMN "elements" text`);
+      }
+    },
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

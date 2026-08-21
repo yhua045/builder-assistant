@@ -90,16 +90,32 @@ Only include areas that are genuinely relevant.
 
 Document how the feature should fit into the existing architecture and save the file under **architecture/[feature-name].md**.
 
-Explain:
+Focus exclusively on domain boundaries, system behavior, state models, and structural abstractions.
 
-* Which existing components/modules should be reused
-* Which new components/modules are required
-* Responsibilities of each component
-* Data flow
-* State flow
-* API interactions
-* Dependencies between components
-* Important boundaries between layers
+---
+
+# Design Requirements
+
+Produce a design document containing the following 4 sections:
+
+### 3.1. Domain Entities & DTOs
+* Define the core domain entities, value objects, and Data Transfer Objects.
+* Express these as clean language-agnostic interfaces/types (e.g., TypeScript or C# interfaces).
+* Include key invariants, required fields, and validation rules for each entity.
+
+### 3.2. Workflow & State Transitions
+* Map out explicit workflow states and valid state transitions (use a **Mermaid stateDiagram-v2** diagram).
+* List side effects, triggers, and guard conditions for each state change.
+
+### 3.3. Application State & Behavior Abstractions
+* Define primary interface signatures (Command/Query handlers, Application Services, or Repositories).
+* Specify input/output contracts and error types for each operation.
+* Clarify how application state (session, cached context, orchestration flags) is managed vs. persisted domain state.
+
+### 3.4. Implementation Boundaries & Constraints
+* List non-negotiable architectural rules and boundary constraints that the coding agent **must** follow during implementation.
+
+---
 
 Prefer the **simplest solution that satisfies the approved requirements**.
 
@@ -107,7 +123,7 @@ Do not introduce new abstractions, patterns, frameworks or dependencies unless t
 
 ---
 
-## Step 5 — Define the implementation plan
+## Step 4 — Define the implementation plan
 
 Translate the approved architecture into a concrete implementation plan.
 
@@ -147,6 +163,10 @@ Produce the document using exactly this structure.
 
 ## 2. Proposed Architecture
 
+### Abstract Interfaces/Contracts/DTOs Source Code Structure
+
+Map out the proposed source code structure for the new feature (or behavior change) and its abstract interfaces, contracts, and DTOs. 
+
 ### Data Flow
 
 ```text
@@ -183,7 +203,7 @@ Retrying
 
 ---
 
-## 5. Data / Persistence Changes
+## 4. Data / Persistence Changes
 
 If applicable, describe:
 
@@ -202,7 +222,7 @@ If no persistence changes are required, state:
 
 ---
 
-## 6. Error Handling & Resilience
+## 5. Error Handling & Resilience
 
 Describe how the proposed architecture handles:
 
@@ -220,7 +240,7 @@ Only include scenarios relevant to the feature.
 
 ---
 
-## 11. Implementation Sequence
+## 6. Implementation Sequence
 
 Provide the recommended implementation order.
 
@@ -232,20 +252,6 @@ Example:
 
 The sequence should reflect dependencies between changes.
 
----
-
-## 15. Implementation Guardrails
-
-Provide explicit rules for the coding agent implementing this feature.
-
-Examples:
-
-* Reuse the existing `[pattern/component/service]`.
-* Do not introduce a new state management library.
-* Do not create a new abstraction unless required.
-* Do not modify unrelated modules.
-* Do not change existing API contracts unless explicitly approved.
-* Keep feature-specific code within `[feature/module]`.
 
 * Do not implement anything listed as Out of Scope.
 

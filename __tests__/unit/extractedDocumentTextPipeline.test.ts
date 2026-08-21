@@ -2,6 +2,7 @@ import { ExtractParsedDocumentUseCase } from '../../src/features/knowledge-embed
 import type { ExtractedDocumentTextRepository } from '../../src/features/knowledge-embedding/domain/repositories/ExtractedDocumentTextRepository';
 import type { ExtractedDocumentText } from '../../src/features/knowledge-embedding/domain/entities/ExtractedDocumentText';
 import { ParseDocumentUseCase } from '../../src/features/knowledge-embedding/application/usecases/ParseDocumentUseCase';
+import type { ParsedDocumentElement } from '../../src/shared/domain/services/DocumentParser';
 
 const extractedText: ExtractedDocumentText = {
   id: 'extraction-1',
@@ -74,5 +75,31 @@ describe('ParseDocumentUseCase extraction persistence', () => {
       documentVersion: 3,
       text: 'Parsed content',
     }));
+  });
+
+  it('passes parser structural elements into the extraction artifact', async () => {
+    const repository: ExtractedDocumentTextRepository = {
+      save: jest.fn(),
+      findByDocumentVersion: jest.fn(),
+    };
+    const elements: ParsedDocumentElement[] = [{ type: 'heading', text: 'Engineering Plan' }];
+    const parserRegistry = {
+      parse: jest.fn().mockResolvedValue({
+        documentId: 'doc-3',
+        documentVersion: 1,
+        text: '45x45 mm steel post.',
+        pageMetadata: [],
+        elements,
+        createdAt: new Date(),
+      }),
+    };
+
+    await new ParseDocumentUseCase(parserRegistry as never, repository).execute({
+      documentId: 'doc-3',
+      documentVersion: 1,
+      sourceType: 'text',
+    });
+
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ elements }));
   });
 });

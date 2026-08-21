@@ -58,7 +58,7 @@ import { DocumentVersionEntity } from '../../../src/shared/domain/entities/Docum
 import { ExtractedDocumentTextEntity } from '../../../src/features/knowledge-embedding/domain/entities/ExtractedDocumentText';
 import { DocumentChunkingRunEntity } from '../../../src/shared/domain/entities/DocumentChunkingRun';
 import { transitionDocumentChunkingWorkflow } from '../../../src/shared/domain/services/DocumentChunkingWorkflow';
-import { DefaultDocumentChunkingService } from '../../../src/features/knowledge-embedding/application/services/DocumentChunkingService';
+import { DefaultDocumentChunkingService } from '../../../src/features/knowledge-embedding/application/services/DefaultDocumentChunkingService';
 import { initDatabase } from '../../../src/shared/infrastructure/database/connection';
 import { DrizzleDocumentChunkingWorkflowRepository } from '../../../src/features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
 

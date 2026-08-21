@@ -3,10 +3,10 @@ import { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk';
 import {
   ChunkingConfig,
   ChunkingContext,
-  DocumentChunkingService,
-} from '../../domain/services/DocumentChunkingService';
+  DocumentChunkingStrategy,
+} from '../../domain/services/DocumentChunkingStrategy';
 
-export class DefaultDocumentChunkingService implements DocumentChunkingService {
+export class DefaultDocumentChunkingService implements DocumentChunkingStrategy {
   static readonly DEFAULT_CONFIG: ChunkingConfig = {
     targetMinWords: 80,
     targetMaxWords: 600,
