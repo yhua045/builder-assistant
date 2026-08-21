@@ -53,14 +53,14 @@ import { AnalysisCheckpointEntity } from '../../../src/shared/domain/entities/An
 import { DocumentAnalysisEntity } from '../../../src/shared/domain/entities/DocumentAnalysis';
 import { ProjectFactEntity } from '../../../src/shared/domain/entities/ProjectFact';
 import { KnowledgeEmbeddingEntity } from '../../../src/shared/domain/entities/KnowledgeEmbedding';
-import { KnowledgeChunkEntity } from '../../../src/shared/domain/entities/KnowledgeChunk';
+import { KnowledgeChunkEntity } from '../../../src/features/knowledge-embedding/domain/entities/KnowledgeChunk';
 import { DocumentVersionEntity } from '../../../src/shared/domain/entities/DocumentVersion';
-import { ExtractedDocumentTextEntity } from '../../../src/shared/domain/entities/ExtractedDocumentText';
+import { ExtractedDocumentTextEntity } from '../../../src/features/knowledge-embedding/domain/entities/ExtractedDocumentText';
 import { DocumentChunkingRunEntity } from '../../../src/shared/domain/entities/DocumentChunkingRun';
 import { transitionDocumentChunkingWorkflow } from '../../../src/shared/domain/services/DocumentChunkingWorkflow';
-import { DefaultDocumentChunkingService } from '../../../src/shared/application/services/DocumentChunkingService';
+import { DefaultDocumentChunkingService } from '../../../src/features/knowledge-embedding/application/services/DefaultDocumentChunkingService';
 import { initDatabase } from '../../../src/shared/infrastructure/database/connection';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../../src/shared/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../../src/features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
 
 describe('RAG domain entities', () => {
   it('creates valid AnalysisRun and DocumentAnalysis records', () => {

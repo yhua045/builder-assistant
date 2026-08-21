@@ -1,8 +1,8 @@
-import { getDatabase, initDatabase } from '../database/connection.ts';
+import { getDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection.ts';
 import {
   DocumentChunkingWorkflowRecord,
   DocumentChunkingWorkflowRepository,
-} from '../../../shared/domain/repositories/DocumentChunkingWorkflowRepository.ts';
+} from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository.ts';
 
 export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunkingWorkflowRepository {
   private initialized = false;

@@ -1,3 +1,5 @@
+import type { ParsedDocumentElement } from '../../../../shared/domain/services/DocumentParser';
+
 export interface ParsedDocumentPage {
   pageNumber: number;
   text: string;
@@ -13,6 +15,7 @@ export interface ExtractedDocumentText {
   text: string;
   pageMetadata: ParsedDocumentPage[];
   sectionHints?: Array<{ heading: string; text: string }>;
+  elements?: ParsedDocumentElement[];
   language?: string;
   warnings?: string[];
   createdAt: Date;

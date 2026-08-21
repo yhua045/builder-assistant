@@ -976,14 +976,26 @@ const migrations: RNMigration[] = [
       `CREATE TABLE IF NOT EXISTS "knowledge_chunks" (
         "id" text PRIMARY KEY NOT NULL,
         "document_id" text NOT NULL,
+        "document_version" integer NOT NULL DEFAULT 1,
+        "project_id" text,
         "content" text NOT NULL,
         "chunk_index" integer NOT NULL,
         "token_count" integer,
+        "word_count" integer,
+        "char_count" integer,
         "start_offset" integer,
         "end_offset" integer,
-        "metadata" text
+        "is_outdated" integer NOT NULL DEFAULT 0,
+        "is_superseded" integer NOT NULL DEFAULT 0,
+        "superseded_by_chunk_id" text,
+        "superseded_at" integer,
+        "metadata" text,
+        "created_at" integer NOT NULL DEFAULT 0,
+        "updated_at" integer NOT NULL DEFAULT 0
       );`,
       `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_document" ON "knowledge_chunks" ("document_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_version" ON "knowledge_chunks" ("document_version");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_project" ON "knowledge_chunks" ("project_id");`,
       `CREATE INDEX IF NOT EXISTS "idx_knowledge_chunks_index" ON "knowledge_chunks" ("chunk_index");`,
       `CREATE TABLE IF NOT EXISTS "knowledge_embeddings" (
         "id" text PRIMARY KEY NOT NULL,
@@ -1026,6 +1038,61 @@ const migrations: RNMigration[] = [
       `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_version" ON "document_chunking_workflows" ("document_version");`,
       `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_status" ON "document_chunking_workflows" ("status");`,
     ],
+  },
+  {
+    tag: '0028_extracted_document_text',
+    hash: '0028_extracted_document_text',
+    folderMillis: 1774828800000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "extracted_document_text" (
+        "id" text PRIMARY KEY NOT NULL,
+        "document_id" text NOT NULL,
+        "document_version" integer NOT NULL,
+        "project_id" text,
+        "text" text NOT NULL,
+        "page_metadata" text NOT NULL,
+        "section_hints" text,
+        "language" text,
+        "warnings" text,
+        "created_at" integer NOT NULL,
+        "updated_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_extracted_document_text_version" ON "extracted_document_text" ("document_id", "document_version");`,
+    ],
+  },
+  {
+    tag: '0029_chunk_document_progress',
+    hash: '0029_chunk_document_progress',
+    folderMillis: 1774915200000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "chunk_document_progress" (
+        "document_id" text NOT NULL,
+        "document_version" integer NOT NULL,
+        "processing_scope" text NOT NULL,
+        "completed_unit_ids" text NOT NULL,
+        "selected_strategy" text,
+        "fallback_events" text NOT NULL,
+        "failures" text NOT NULL,
+        "updated_at" integer NOT NULL,
+        PRIMARY KEY ("document_id", "document_version", "processing_scope")
+      );`,
+    ],
+  },
+  {
+    tag: '0030_extracted_document_elements',
+    hash: '0030_extracted_document_elements',
+    folderMillis: 1775001600000,
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('extracted_document_text')`);
+      const columns = new Set<string>();
+      for (let index = 0; index < result.rows.length; index++) {
+        columns.add(result.rows.item(index).name);
+      }
+      if (!columns.has('elements')) {
+        await db.executeSql(`ALTER TABLE "extracted_document_text" ADD COLUMN "elements" text`);
+      }
+    },
   },
 ];
 

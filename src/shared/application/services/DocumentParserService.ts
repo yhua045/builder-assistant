@@ -48,6 +48,35 @@ export class ParserRegistry {
         ...page,
         text: this.normalizer.normalize(page.text),
       })),
+      elements: parsed.elements?.map(element => {
+        switch (element.type) {
+          case 'heading':
+          case 'paragraph':
+            return { ...element, text: this.normalizer.normalize(element.text) };
+          case 'list':
+            return {
+              ...element,
+              items: element.items.map(item => ({
+                ...item,
+                text: this.normalizer.normalize(item.text),
+              })),
+            };
+          case 'table':
+            return {
+              ...element,
+              caption: element.caption ? this.normalizer.normalize(element.caption) : undefined,
+              headers: element.headers?.map(header => this.normalizer.normalize(header)),
+              rows: element.rows.map(row => row.map(cell => this.normalizer.normalize(cell))),
+            };
+          case 'figure':
+            return {
+              ...element,
+              caption: element.caption ? this.normalizer.normalize(element.caption) : undefined,
+              altText: element.altText ? this.normalizer.normalize(element.altText) : undefined,
+              extractedText: element.extractedText ? this.normalizer.normalize(element.extractedText) : undefined,
+            };
+        }
+      }),
     };
   }
 }

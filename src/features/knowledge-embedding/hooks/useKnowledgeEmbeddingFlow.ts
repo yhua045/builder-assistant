@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StartKnowledgeEmbeddingFlowUseCase } from '../application/StartKnowledgeEmbeddingFlowUseCase';
+import { StartKnowledgeEmbeddingFlowUseCase } from '../application/usecases/StartKnowledgeEmbeddingFlowUseCase';
 import { KnowledgeEmbeddingStep } from '../domain/value-objects/KnowledgeEmbeddingStep';
 
 export interface KnowledgeEmbeddingFlowViewModel {

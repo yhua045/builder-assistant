@@ -29,6 +29,30 @@ export interface SectionHint {
   text: string;
 }
 
+export type ParsedDocumentElement =
+  | { type: 'heading'; text: string; level?: number; pageNumber?: number }
+  | { type: 'paragraph'; text: string; pageNumber?: number }
+  | {
+      type: 'list';
+      items: Array<{ text: string; level?: number; ordered?: boolean }>;
+      pageNumber?: number;
+      ordered?: boolean;
+    }
+  | {
+      type: 'table';
+      caption?: string;
+      headers?: string[];
+      rows: string[][];
+      pageNumber?: number;
+    }
+  | {
+      type: 'figure';
+      caption?: string;
+      altText?: string;
+      extractedText?: string;
+      pageNumber?: number;
+    };
+
 export interface ParsedDocumentText {
   documentId: string;
   documentVersion: number;
@@ -36,6 +60,7 @@ export interface ParsedDocumentText {
   text: string;
   pageMetadata: ParsedDocumentPage[];
   sectionHints?: SectionHint[];
+  elements?: ParsedDocumentElement[];
   language?: string;
   warnings?: string[];
   createdAt: Date;

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 
 // Projects Table
 export const projects = sqliteTable('projects', {
@@ -536,17 +536,59 @@ export const projectFacts = sqliteTable('project_facts', {
   typeIdx: index('idx_project_facts_type').on(table.factType),
 }));
 
+export const extractedDocumentText = sqliteTable('extracted_document_text', {
+  id: text('id').primaryKey(),
+  documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull(),
+  projectId: text('project_id'),
+  text: text('text').notNull(),
+  pageMetadata: text('page_metadata').notNull(),
+  sectionHints: text('section_hints'),
+  elements: text('elements'),
+  language: text('language'),
+  warnings: text('warnings'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  documentVersionIdx: index('idx_extracted_document_text_version').on(table.documentId, table.documentVersion),
+}));
+
+export const chunkDocumentProgress = sqliteTable('chunk_document_progress', {
+  documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull(),
+  processingScope: text('processing_scope').notNull(),
+  completedUnitIds: text('completed_unit_ids').notNull(),
+  selectedStrategy: text('selected_strategy'),
+  fallbackEvents: text('fallback_events').notNull(),
+  failures: text('failures').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  scopePk: primaryKey({ columns: [table.documentId, table.documentVersion, table.processingScope] }),
+}));
+
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
+  documentVersion: integer('document_version').notNull().default(1),
+  projectId: text('project_id'),
   content: text('content').notNull(),
   chunkIndex: integer('chunk_index').notNull(),
   tokenCount: integer('token_count'),
+  wordCount: integer('word_count'),
+  charCount: integer('char_count'),
   startOffset: integer('start_offset'),
   endOffset: integer('end_offset'),
+  isOutdated: integer('is_outdated', { mode: 'boolean' }).notNull().default(false),
+  isSuperseded: integer('is_superseded', { mode: 'boolean' }).notNull().default(false),
+  supersededByChunkId: text('superseded_by_chunk_id'),
+  supersededAt: integer('superseded_at'),
   metadata: text('metadata'),
+  createdAt: integer('created_at').notNull().default(Date.now()),
+  updatedAt: integer('updated_at').notNull().default(Date.now()),
 }, (table) => ({
   documentIdx: index('idx_knowledge_chunks_document').on(table.documentId),
+  versionIdx: index('idx_knowledge_chunks_version').on(table.documentVersion),
+  projectIdx: index('idx_knowledge_chunks_project').on(table.projectId),
   indexIdx: index('idx_knowledge_chunks_index').on(table.chunkIndex),
 }));
 
