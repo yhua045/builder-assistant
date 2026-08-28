@@ -54,7 +54,7 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
 
     if (existing) {
       await db.executeSql(
-        `UPDATE document_chunking_workflows SET
+        `UPDATE knowledge_embedding_runs SET
           project_id = ?,
           status = ?,
           workflow_state = ?,
@@ -88,7 +88,7 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
     }
 
     await db.executeSql(
-      `INSERT INTO document_chunking_workflows (
+      `INSERT INTO knowledge_embedding_runs (
         id,
         document_id,
         document_version,
@@ -131,7 +131,7 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
     await this.ensureInitialized();
     const { db } = getDatabase();
     const [result] = await db.executeSql(
-      'SELECT * FROM document_chunking_workflows WHERE document_id = ? AND document_version = ? ORDER BY updated_at DESC LIMIT 1',
+      'SELECT * FROM knowledge_embedding_runs WHERE document_id = ? AND document_version = ? ORDER BY updated_at DESC LIMIT 1',
       [documentId, version],
     );
 
@@ -143,7 +143,7 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
     await this.ensureInitialized();
     const { db } = getDatabase();
     const [result] = await db.executeSql(
-      'SELECT * FROM document_chunking_workflows WHERE document_id = ? ORDER BY document_version DESC, updated_at DESC LIMIT 1',
+      'SELECT * FROM knowledge_embedding_runs WHERE document_id = ? ORDER BY document_version DESC, updated_at DESC LIMIT 1',
       [documentId],
     );
 
@@ -155,7 +155,7 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
     await this.ensureInitialized();
     const { db } = getDatabase();
     const [result] = await db.executeSql(
-      'SELECT * FROM document_chunking_workflows WHERE status = ? ORDER BY updated_at DESC',
+      'SELECT * FROM knowledge_embedding_runs WHERE status = ? ORDER BY updated_at DESC',
       [status],
     );
 

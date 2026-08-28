@@ -553,19 +553,6 @@ export const extractedDocumentText = sqliteTable('extracted_document_text', {
   documentVersionIdx: index('idx_extracted_document_text_version').on(table.documentId, table.documentVersion),
 }));
 
-export const chunkDocumentProgress = sqliteTable('chunk_document_progress', {
-  documentId: text('document_id').notNull(),
-  documentVersion: integer('document_version').notNull(),
-  processingScope: text('processing_scope').notNull(),
-  completedUnitIds: text('completed_unit_ids').notNull(),
-  selectedStrategy: text('selected_strategy'),
-  fallbackEvents: text('fallback_events').notNull(),
-  failures: text('failures').notNull(),
-  updatedAt: integer('updated_at').notNull(),
-}, (table) => ({
-  scopePk: primaryKey({ columns: [table.documentId, table.documentVersion, table.processingScope] }),
-}));
-
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
@@ -606,7 +593,7 @@ export const knowledgeEmbeddings = sqliteTable('knowledge_embeddings', {
   providerIdx: index('idx_knowledge_embeddings_provider').on(table.provider),
 }));
 
-export const documentChunkingWorkflows = sqliteTable('document_chunking_workflows', {
+export const knowledgeEmbeddingRuns = sqliteTable('knowledge_embedding_runs', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
   documentVersion: integer('document_version').notNull().default(1),
@@ -624,7 +611,7 @@ export const documentChunkingWorkflows = sqliteTable('document_chunking_workflow
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 }, (table) => ({
-  documentIdx: index('idx_document_chunking_workflows_document').on(table.documentId),
-  versionIdx: index('idx_document_chunking_workflows_version').on(table.documentVersion),
-  statusIdx: index('idx_document_chunking_workflows_status').on(table.status),
+  documentIdx: index('idx_knowledge_embedding_runs_document').on(table.documentId),
+  versionIdx: index('idx_knowledge_embedding_runs_version').on(table.documentVersion),
+  statusIdx: index('idx_knowledge_embedding_runs_status').on(table.status),
 }));

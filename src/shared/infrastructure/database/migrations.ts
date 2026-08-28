@@ -1012,11 +1012,11 @@ const migrations: RNMigration[] = [
     ],
   },
   {
-    tag: '0027_document_chunking_workflows',
-    hash: '0027_document_chunking_workflows',
+    tag: '0027_knowledge_embedding_runs',
+    hash: '0027_knowledge_embedding_runs',
     folderMillis: 1774742400000,
     sql: [
-      `CREATE TABLE IF NOT EXISTS "document_chunking_workflows" (
+      `CREATE TABLE IF NOT EXISTS "knowledge_embedding_runs" (
         "id" text PRIMARY KEY NOT NULL,
         "document_id" text NOT NULL,
         "document_version" integer NOT NULL DEFAULT 1,
@@ -1034,9 +1034,9 @@ const migrations: RNMigration[] = [
         "created_at" integer NOT NULL,
         "updated_at" integer NOT NULL
       );`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_document" ON "document_chunking_workflows" ("document_id");`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_version" ON "document_chunking_workflows" ("document_version");`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_status" ON "document_chunking_workflows" ("status");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_document" ON "knowledge_embedding_runs" ("document_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_version" ON "knowledge_embedding_runs" ("document_version");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_status" ON "knowledge_embedding_runs" ("status");`,
     ],
   },
   {
@@ -1058,24 +1058,6 @@ const migrations: RNMigration[] = [
         "updated_at" integer NOT NULL
       );`,
       `CREATE INDEX IF NOT EXISTS "idx_extracted_document_text_version" ON "extracted_document_text" ("document_id", "document_version");`,
-    ],
-  },
-  {
-    tag: '0029_chunk_document_progress',
-    hash: '0029_chunk_document_progress',
-    folderMillis: 1774915200000,
-    sql: [
-      `CREATE TABLE IF NOT EXISTS "chunk_document_progress" (
-        "document_id" text NOT NULL,
-        "document_version" integer NOT NULL,
-        "processing_scope" text NOT NULL,
-        "completed_unit_ids" text NOT NULL,
-        "selected_strategy" text,
-        "fallback_events" text NOT NULL,
-        "failures" text NOT NULL,
-        "updated_at" integer NOT NULL,
-        PRIMARY KEY ("document_id", "document_version", "processing_scope")
-      );`,
     ],
   },
   {
