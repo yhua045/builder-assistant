@@ -55,9 +55,9 @@ import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowle
 import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
 import {
 	DefaultEmbeddingModelFactory,
-	EmbeddingProviderEmbeddingService,
 	EmbeddingProviderConfig,
-} from '../../../features/knowledge-embedding/application/services/EmbeddingProviderEmbeddingService.ts';
+	EmbeddingRuntimeService,
+} from '../../../features/knowledge-embedding/application/services/EmbeddingRuntimeService.ts';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter.ts';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter.ts';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter.ts';
@@ -139,8 +139,8 @@ if (typeof (container as any).registerSingleton === 'function') {
 			dimension: 8,
 		} as EmbeddingProviderConfig,
 	});
-	container.register('EmbeddingProviderEmbeddingService', {
-		useFactory: (c) => new EmbeddingProviderEmbeddingService(
+	container.register('EmbeddingRuntimeService', {
+		useFactory: (c) => new EmbeddingRuntimeService(
 			c.resolve('EmbeddingProviderConfig' as any),
 			c.resolve('EmbeddingModelFactory' as any),
 		),

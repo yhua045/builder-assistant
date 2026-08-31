@@ -5,8 +5,8 @@ import {
 } from '../../application/contracts/EmbeddingWorkflowContracts';
 import {
   DefaultEmbeddingModelFactory,
-  EmbeddingProviderEmbeddingService,
-} from '../../application/services/EmbeddingProviderEmbeddingService';
+  EmbeddingRuntimeService,
+} from '../../application/services/EmbeddingRuntimeService';
 
 describe('Embedding workflow contracts', () => {
   it('exposes the simplified embedding workflow state model', () => {
@@ -25,7 +25,7 @@ describe('Embedding workflow contracts', () => {
   });
 
   it('embeds valid chunk content and reports the success state', async () => {
-    const service = new EmbeddingProviderEmbeddingService({
+    const service = new EmbeddingRuntimeService({
       provider: 'local-test-provider',
       modelVersion: 'local-v1',
       dimension: 8,
@@ -47,7 +47,7 @@ describe('Embedding workflow contracts', () => {
   });
 
   it('rejects invalid chunk content and marks the validation failure state', async () => {
-    const service = new EmbeddingProviderEmbeddingService({
+    const service = new EmbeddingRuntimeService({
       provider: 'local-test-provider',
       modelVersion: 'local-v1',
       dimension: 8,
@@ -65,7 +65,7 @@ describe('Embedding workflow contracts', () => {
   });
 
   it('returns a valid query vector using the same provider and dimension contract', async () => {
-    const service = new EmbeddingProviderEmbeddingService(
+    const service = new EmbeddingRuntimeService(
       {
         provider: 'local-query-provider',
         modelVersion: 'local-query-v1',

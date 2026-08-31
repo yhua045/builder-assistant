@@ -1,4 +1,4 @@
-import type { EmbeddingService } from '../../application/services/EmbeddingProviderEmbeddingService';
+import type { EmbeddingService } from '../services/EmbeddingRuntimeService';
 
 export type EmbeddingWorkflowState =
   | 'chunk-received'

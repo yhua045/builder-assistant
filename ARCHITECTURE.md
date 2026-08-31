@@ -149,14 +149,48 @@ The app uses a single SQLite database managed by Drizzle. Most data is project-s
 - `tasks` + `task_dependencies` + `delay_reason_types` + `task_delay_reasons` + `task_progress_logs`: work execution, dependency ordering, delays, and progress history.
 - `documents` + `expenses` + `invoices` + `payments` + `quotations` + `contacts`: financial records, attachments, quotations, suppliers, and contacts.
 - `audit_logs` + `last_known_locations`: operational traceability and location history.
-- `extracted_document_text` + `knowledge_chunks` + `knowledge_embeddings` + `document_chunking_workflows` + `project_facts`: knowledge extraction, chunking, embedding, and project fact persistence for AI-assisted analysis.
+- `extracted_document_text` + `knowledge_chunks` + `knowledge_embeddings` + `knowledge_embedding_runs` + `project_facts`: knowledge extraction, chunking, embedding, and project fact persistence for AI-assisted analysis.
+
+The knowledge-embedding feature is treated as a first-class workflow boundary. `KnowledgeEmbeddingRunEntity` is the parent aggregate for the document lifecycle, while `KnowledgeDetailRunEntity` holds per-stage retry/resume metadata for the currently active stage. This keeps the workflow semantics local to the embedding feature without creating a second orchestration framework or a separate persistence stack.
 
 ### Shared / system core
 
 - `src/shared/infrastructure/database/schema.ts` is the single source of truth for the persisted schema and migration generation.
 - Timestamps are stored as Unix milliseconds; repository code converts them at the app boundary when needed.
-- `chunk_document_progress` tracks resumable document-chunking checkpoints and retry state.
+- `knowledge_embedding_runs` persists the durable run state for the document knowledge pipeline and its retry/restart checkpoints.
 - `project_facts` and `knowledge_*` tables are the persisted substrate for RAG-style retrieval and downstream analysis.
+
+---
+
+## Data Flow & Key Sequence Interactions
+
+The document knowledge flow is a feature-owned state machine rather than a loose set of background jobs:
+
+1. A document enters the pipeline via `ReceiveDocumentUseCase` / `ValidateDocumentUseCase`.
+2. A parent `KnowledgeEmbeddingRun` is created or resumed for the document version; this run owns lifecycle state such as `pending`, `running`, `partial`, `failed`, or `completed`.
+3. The active stage is validated via the aggregate-level rules in `KnowledgeEmbeddingRunEntity` and its child `KnowledgeDetailRunEntity` records.
+4. `ChunkDocumentUseCase` resumes only incomplete work from the last durable checkpoint, persists chunk artifacts into `knowledge_chunks`, and keeps retry data scoped to the active stage.
+5. Embedding results are persisted to `knowledge_embeddings`, while the workflow records remain responsible only for orchestration and retry metadata.
+
+This keeps chunk creation, embedding, and rerun logic tied to the document knowledge feature instead of spreading state transitions across unrelated project modules.
+
+---
+
+## Key Architectural Decisions & Non-Goals
+
+### Decisions
+
+- Clean Architecture + vertical slices: feature folders own their domain, application, infrastructure, and UI concerns.
+- Drizzle SQLite as the canonical persistence layer; raw SQL remains confined to repositories and DB-specific adapters.
+- Feature-local workflow ownership: knowledge pipeline state is controlled by the `knowledge-embedding` aggregate instead of a shared global workflow engine.
+- Retry semantics are conservative: resume only from the active or partial stage, never duplicate completed work, and require parent-child validation before a retry.
+
+### Non-Goals
+
+- No second persistence system or orchestration framework for document embedding.
+- No direct database writes from screens, hooks, or application service consumers.
+- No cross-feature workflow ownership: project management features do not own knowledge-embedding retry semantics.
+- No automatic duplication of previously persisted chunks or embeddings when a run is restarted or resumed.
 
 ---
 

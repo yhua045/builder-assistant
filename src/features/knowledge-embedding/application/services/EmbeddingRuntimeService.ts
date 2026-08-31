@@ -22,6 +22,40 @@ export interface EmbeddingModelFactory {
   create(config: EmbeddingProviderConfig): EmbeddingModel;
 }
 
+export interface AppEmbeddingCapabilityStore {
+  getNativeEmbeddingSupport(): Promise<boolean | null>;
+  setNativeEmbeddingSupport(value: boolean): Promise<void>;
+}
+
+function isNativeEmbeddingProvider(provider: string): boolean {
+  const normalized = provider.trim().toLowerCase();
+  return normalized === 'react-native-executorch' || normalized.includes('executorch');
+}
+
+function hasNativeEmbeddingSupport(providerName: string): boolean {
+  const nativeModules = getReactNativeNativeModules();
+  const candidates = [
+    providerName,
+    'ReactNativeExecuTorch',
+    'ExecuTorch',
+    'ExecuTorchModule',
+    'NativeExecuTorch',
+    'Executorch',
+  ];
+
+  for (const candidate of candidates) {
+    if (nativeModules[candidate]) {
+      return true;
+    }
+  }
+
+  const typedMatch = Object.keys(nativeModules).find((key) =>
+    /executorch|execu.*torch|embedding/i.test(key),
+  );
+
+  return Boolean(typedMatch && nativeModules[typedMatch]);
+}
+
 function getReactNativeNativeModules(): Record<string, unknown> {
   try {
     const reactNative = require('react-native') as { NativeModules?: Record<string, unknown> };
@@ -205,16 +239,22 @@ export class DefaultEmbeddingModelFactory implements EmbeddingModelFactory {
   }
 }
 
-export class EmbeddingProviderEmbeddingService implements EmbeddingService {
+export class EmbeddingRuntimeService implements EmbeddingService {
   readonly provider: string;
   readonly modelVersion?: string;
   readonly dimension: number;
 
-  private readonly model: EmbeddingModel;
+  private readonly modelFactory: EmbeddingModelFactory;
+  private readonly config: EmbeddingProviderConfig;
+  private readonly capabilityStore?: AppEmbeddingCapabilityStore;
+  private readonly nativeModel: EmbeddingModel;
+  private readonly localModel: EmbeddingModel;
+  private nativeSupportDecision?: boolean;
 
   constructor(
     config: EmbeddingProviderConfig,
-    private readonly modelFactory: EmbeddingModelFactory,
+    modelFactory: EmbeddingModelFactory,
+    capabilityStore?: AppEmbeddingCapabilityStore,
   ) {
     if (!config || typeof config !== 'object') {
       throw new Error('EmbeddingProviderConfig is required');
@@ -229,7 +269,93 @@ export class EmbeddingProviderEmbeddingService implements EmbeddingService {
     this.provider = config.provider.trim();
     this.modelVersion = config.modelVersion?.trim() || undefined;
     this.dimension = config.dimension;
-    this.model = this.modelFactory.create(config);
+    this.modelFactory = modelFactory;
+    this.config = config;
+    this.capabilityStore = capabilityStore;
+    this.localModel = new DeterministicLocalEmbeddingModel(this.dimension);
+    this.nativeModel = this.modelFactory.create(config);
+  }
+
+  private shouldCheckNativeSupport(): boolean {
+    return isNativeEmbeddingProvider(this.provider) && Boolean(this.capabilityStore);
+  }
+
+  private async resolveModel(): Promise<EmbeddingModel> {
+    if (!this.shouldCheckNativeSupport()) {
+      return this.modelFactory.create(this.config);
+    }
+
+    if (typeof this.nativeSupportDecision === 'boolean') {
+      return this.nativeSupportDecision ? this.nativeModel : this.localModel;
+    }
+
+    const storedValue = await this.capabilityStore!.getNativeEmbeddingSupport();
+
+    const detectedSupport =
+      storedValue === null || typeof storedValue === 'undefined'
+        ? hasNativeEmbeddingSupport(this.provider)
+        : storedValue;
+
+    await this.capabilityStore!.setNativeEmbeddingSupport(detectedSupport).catch(() => undefined);
+
+    this.nativeSupportDecision = detectedSupport;
+    return detectedSupport ? this.nativeModel : this.localModel;
+  }
+
+  async embed(text: string): Promise<Float32Array> {
+    const model = this.shouldCheckNativeSupport()
+      ? await this.resolveModel()
+      : this.modelFactory.create(this.config);
+    return model.embed(text);
+  }
+
+  async embedBatch(texts: string[]): Promise<Float32Array[]> {
+    const model = this.shouldCheckNativeSupport()
+      ? await this.resolveModel()
+      : this.modelFactory.create(this.config);
+    return model.embedBatch(texts);
+  }
+
+  async embedWithRetry(text: string, retries = 2): Promise<Float32Array> {
+    let attempts = 0;
+
+    while (attempts <= retries) {
+      try {
+        return await this.embed(text);
+      } catch (error) {
+        if (attempts >= retries) {
+          throw error;
+        }
+        attempts += 1;
+      }
+    }
+
+    throw new Error('embedding failed after retry attempts');
+  }
+}
+
+export class LocalEmbeddingService implements EmbeddingService {
+  readonly provider: string;
+  readonly modelVersion?: string;
+  readonly dimension: number;
+
+  private readonly model: EmbeddingModel;
+
+  constructor(config: EmbeddingProviderConfig) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('EmbeddingProviderConfig is required');
+    }
+    if (!config.provider || !config.provider.trim()) {
+      throw new Error('provider is required');
+    }
+    if (!Number.isInteger(config.dimension) || config.dimension <= 0) {
+      throw new Error('dimension must be a positive integer');
+    }
+
+    this.provider = config.provider.trim();
+    this.modelVersion = config.modelVersion?.trim() || undefined;
+    this.dimension = config.dimension;
+    this.model = new DeterministicLocalEmbeddingModel(this.dimension);
   }
 
   async embed(text: string): Promise<Float32Array> {
@@ -255,13 +381,5 @@ export class EmbeddingProviderEmbeddingService implements EmbeddingService {
     }
 
     throw new Error('embedding failed after retry attempts');
-  }
-}
-
-export class LocalEmbeddingService extends EmbeddingProviderEmbeddingService {
-  constructor(config: EmbeddingProviderConfig) {
-    super(config, {
-      create: () => new DeterministicLocalEmbeddingModel(config.dimension),
-    });
   }
 }
