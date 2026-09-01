@@ -52,8 +52,12 @@ import { PdfTextParser } from '../../../features/knowledge-embedding/infrastruct
 import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ParseDocumentUseCase.ts';
 import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
 import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
-import { DrizzleChunkDocumentProgressRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleChunkDocumentProgressRepository.ts';
 import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
+import {
+	DefaultEmbeddingModelFactory,
+	EmbeddingProviderConfig,
+	EmbeddingRuntimeService,
+} from '../../../features/knowledge-embedding/application/services/EmbeddingRuntimeService.ts';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter.ts';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter.ts';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter.ts';
@@ -121,14 +125,25 @@ if (typeof (container as any).registerSingleton === 'function') {
 		),
 	});
 	container.registerSingleton('ExtractedDocumentTextRepository', DrizzleExtractedDocumentTextRepository);
-	container.registerSingleton('ChunkDocumentProgressRepository', DrizzleChunkDocumentProgressRepository);
 	container.register('ExtractParsedDocumentUseCase', {
 		useFactory: (c) => new ExtractParsedDocumentUseCase(c.resolve('ExtractedDocumentTextRepository' as any)),
 	});
 	container.register('ChunkDocumentUseCase', {
-		useFactory: (c) => new ChunkDocumentUseCase({
-			progressRepository: c.resolve('ChunkDocumentProgressRepository' as any),
-		}),
+		useFactory: (c) => new ChunkDocumentUseCase(),
+	});
+	container.registerSingleton('EmbeddingModelFactory', DefaultEmbeddingModelFactory);
+	container.register('EmbeddingProviderConfig', {
+		useValue: {
+			provider: 'local',
+			modelVersion: 'deterministic-local-v1',
+			dimension: 8,
+		} as EmbeddingProviderConfig,
+	});
+	container.register('EmbeddingRuntimeService', {
+		useFactory: (c) => new EmbeddingRuntimeService(
+			c.resolve('EmbeddingProviderConfig' as any),
+			c.resolve('EmbeddingModelFactory' as any),
+		),
 	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────
