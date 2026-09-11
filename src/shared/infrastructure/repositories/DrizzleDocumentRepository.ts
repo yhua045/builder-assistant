@@ -17,6 +17,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     return {
       id: row.id,
       localId: row.local_id,
+      ragSourceDocumentId: row.rag_source_document_id || undefined,
       projectId: row.project_id || undefined,
       taskId: row.task_id || undefined,
       type: row.type || undefined,
@@ -53,6 +54,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     // Convert dates to timestamps and booleans/json to strings
     const params = [
         document.id,
+        document.ragSourceDocumentId || null,
         document.projectId || null,
         document.taskId || null,
         document.type || null,
@@ -82,7 +84,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     if (existing) {
        await db.executeSql(`
          UPDATE documents SET 
-           project_id=?, task_id=?, type=?, title=?, filename=?, mime_type=?, size=?, status=?,
+           rag_source_document_id=?, project_id=?, task_id=?, type=?, title=?, filename=?, mime_type=?, size=?, status=?,
            local_path=?, storage_key=?, cloud_url=?, uri=?, issued_by=?, issued_date=?,
            expires_at=?, notes=?, tags=?, ocr_text=?, source=?, uploaded_by=?, uploaded_at=?,
            checksum=?, created_at=?, updated_at=?
@@ -91,7 +93,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     } else {
        await db.executeSql(`
          INSERT INTO documents (
-           id, project_id, task_id, type, title, filename, mime_type, size, status,
+           id, rag_source_document_id, project_id, task_id, type, title, filename, mime_type, size, status,
            local_path, storage_key, cloud_url, uri, issued_by, issued_date,
            expires_at, notes, tags, ocr_text, source, uploaded_by, uploaded_at,
            checksum, created_at, updated_at
@@ -110,7 +112,7 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     return this.mapRowToDocument(result.rows.item(0));
   }
 
-  async findAll(filter?: { projectId?: string; status?: string }): Promise<Document[]> {
+  async findAll(filter?: { projectId?: string; status?: string; checksum?: string }): Promise<Document[]> {
     if (!this.drizzle) await this.init();
     const { db } = getDatabase();
     
@@ -118,6 +120,10 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     const params: any[] = [];
     
     const conditions: string[] = [];
+    if (filter?.checksum) {
+      conditions.push('checksum = ?');
+      params.push(filter.checksum);
+    }
     if (filter?.projectId) {
         conditions.push('project_id = ?');
         params.push(filter.projectId);

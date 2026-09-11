@@ -148,6 +148,7 @@ export const expenses = sqliteTable('expenses', {
 export const documents = sqliteTable('documents', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
+  ragSourceDocumentId: text('rag_source_document_id'),
   projectId: text('project_id'), // Optional
   taskId: text('task_id'),       // Optional link to a Task
   type: text('type'),
@@ -186,6 +187,7 @@ export const documents = sqliteTable('documents', {
 }, (table) => ({
   projectIdx: index('idx_documents_project').on(table.projectId),
   statusIdx: index('idx_documents_status').on(table.status),
+  checksumIdx: index('idx_documents_checksum').on(table.checksum),
 }));
 
 // Invoices Table

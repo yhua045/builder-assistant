@@ -6,6 +6,8 @@
 - All persistence goes through repository implementations; no raw database calls from screens, hooks, or use cases.
 - Preserve the aggregate boundary: the parent run validates child retry state before any stage is resumed or retried.
 - Use the existing SQLite + Drizzle schema as the canonical source of truth; never create a second DB or orchestration engine for the same feature.
+- Treat `documents.checksum` as content identity only: preserve duplicate `documents` rows and reuse RAG through `rag_source_document_id` instead of deleting or merging uploads.
+- Keep the RAG persistence chain intact: `documents` -> `extracted_document_text` -> `knowledge_chunks` -> `knowledge_embeddings`; workflow state belongs in `knowledge_embedding_runs`.
 
 ## Directory & File Location Rules
 
@@ -19,6 +21,7 @@ Shared DI wiring:           src/shared/infrastructure/di/registerServices.ts
 App bootstrap:              src/app/**
 UI screens/components:      src/features/<feature>/screens/ or src/components/
 Tests:                      src/features/<feature>/tests/**
+Embedding data-flow docs:   docs/Embedding-Data-Flow.md
 ```
 
 ## Coding Idioms & Patterns
@@ -30,6 +33,12 @@ const detail = run.createDetailRun({ id: 'detail-1', runId: run.data().id, stage
 ```
 
 ```ts
+// Search orchestration delegates to the retrieval service; repository remains the SQL boundary.
+const service = new DefaultSemanticSearchService(repository, embeddingService);
+const result = await new SearchKnowledgeUseCaseImpl(service).execute(request);
+```
+
+```ts
 // Repositories are the only boundary that touches SQLite directly.
 async function findByDocumentVersion(documentId: string, version: number) {
   return db.executeSql('SELECT * FROM knowledge_embedding_runs WHERE document_id = ? AND document_version = ?', [documentId, version]);
@@ -38,8 +47,8 @@ async function findByDocumentVersion(documentId: string, version: number) {
 
 ```ts
 // Default DI pattern for feature wiring.
-container.register('ChunkDocumentUseCase', {
-  useFactory: () => new ChunkDocumentUseCase(),
+container.register('SearchKnowledgeUseCase', {
+  useFactory: (c) => new SearchKnowledgeUseCaseImpl(c.resolve('SemanticSearchService')),
 });
 ```
 
@@ -48,6 +57,12 @@ container.register('ChunkDocumentUseCase', {
 if (run.status === 'completed' || run.status === 'cancelled') {
   throw new Error('KnowledgeEmbeddingRun retry is only allowed while active or partial');
 }
+```
+
+```ts
+// Duplicate uploads remain independent documents but reuse completed RAG data.
+const source = await documentRepository.findAll({ checksum: document.checksum });
+duplicate.ragSourceDocumentId = sourceDocument.id;
 ```
 
 ## Testing & Verification Commands

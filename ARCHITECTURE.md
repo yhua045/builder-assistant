@@ -153,6 +153,10 @@ The app uses a single SQLite database managed by Drizzle. Most data is project-s
 
 The knowledge-embedding feature is treated as a first-class workflow boundary. `KnowledgeEmbeddingRunEntity` is the parent aggregate for the document lifecycle, while `KnowledgeDetailRunEntity` holds per-stage retry/resume metadata for the currently active stage. This keeps the workflow semantics local to the embedding feature without creating a second orchestration framework or a separate persistence stack.
 
+The document-to-RAG persistence path is documented in [docs/Embedding-Data-Flow.md](docs/Embedding-Data-Flow.md). The important storage chain is `documents` -> `extracted_document_text` -> `knowledge_chunks` -> `knowledge_embeddings`, with `knowledge_embedding_runs` carrying durable workflow state. Identical uploads remain separate `documents` rows; `checksum` and `rag_source_document_id` prevent duplicate RAG processing and allow retrieval to reuse the original chunks and embeddings.
+
+For request-scoped retrieval, the feature uses a thin orchestration boundary: `SearchKnowledgeUseCase` coordinates the request and future hybrid-search decisions, while `SemanticSearchService` encapsulates the actual query-embedding + nearest-neighbour retrieval flow. The SQL/data boundary remains `SemanticSearchQueryRepository`, implemented by `DrizzleSemanticSearchRepository`, reading from `knowledge_chunks` and `knowledge_embeddings` without introducing an additional persistence store or a `LocalSemanticSearchAdapter` layer.
+
 ### Shared / system core
 
 - `src/shared/infrastructure/database/schema.ts` is the single source of truth for the persisted schema and migration generation.
@@ -171,8 +175,11 @@ The document knowledge flow is a feature-owned state machine rather than a loose
 3. The active stage is validated via the aggregate-level rules in `KnowledgeEmbeddingRunEntity` and its child `KnowledgeDetailRunEntity` records.
 4. `ChunkDocumentUseCase` resumes only incomplete work from the last durable checkpoint, persists chunk artifacts into `knowledge_chunks`, and keeps retry data scoped to the active stage.
 5. Embedding results are persisted to `knowledge_embeddings`, while the workflow records remain responsible only for orchestration and retry metadata.
+6. For search requests, `SearchKnowledgeUseCase` accepts the caller input and delegates to `SemanticSearchService`, which builds the query embedding through `EmbeddingRuntimeService` and fetches nearest matching chunks through `SemanticSearchQueryRepository`.
 
-This keeps chunk creation, embedding, and rerun logic tied to the document knowledge feature instead of spreading state transitions across unrelated project modules.
+The current `RagPipelineOrchestrator` creates, restores, and publishes workflow work; it does not itself invoke every parse, chunk, and embedding stage. Those stages remain separate application boundaries and persist their own artifacts through repositories. The full table-level flow, including this boundary and duplicate-content behavior, is maintained in [docs/Embedding-Data-Flow.md](docs/Embedding-Data-Flow.md).
+
+This keeps chunk creation, embedding, and rerun logic tied to the document knowledge feature instead of spreading state transitions across unrelated project modules. Search remains request-scoped, intentionally avoiding persistent retry/circuit state unless the caller explicitly layers that behavior above the feature boundary.
 
 ---
 
@@ -183,7 +190,9 @@ This keeps chunk creation, embedding, and rerun logic tied to the document knowl
 - Clean Architecture + vertical slices: feature folders own their domain, application, infrastructure, and UI concerns.
 - Drizzle SQLite as the canonical persistence layer; raw SQL remains confined to repositories and DB-specific adapters.
 - Feature-local workflow ownership: knowledge pipeline state is controlled by the `knowledge-embedding` aggregate instead of a shared global workflow engine.
+- Request-scoped search orchestration: `SearchKnowledgeUseCase` orchestrates, `SemanticSearchService` executes retrieval logic, and repository adapters remain the SQL boundary.
 - Retry semantics are conservative: resume only from the active or partial stage, never duplicate completed work, and require parent-child validation before a retry.
+- Content deduplication is separate from document identity: SHA-256 is indexed on `documents`, duplicate rows are retained, and `rag_source_document_id` aliases duplicate RAG reads to the original document's workflow and artifacts.
 
 ### Non-Goals
 

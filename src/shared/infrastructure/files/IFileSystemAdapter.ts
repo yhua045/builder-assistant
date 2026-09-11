@@ -11,6 +11,8 @@ export interface IFileSystemAdapter {
    * @returns New URI in app private storage
    */
   copyToAppStorage(sourceUri: string, destinationFilename: string): Promise<string>;
+
+  computeSha256?(filePath: string): Promise<string>;
   
   /**
    * Get app's private documents directory path

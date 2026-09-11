@@ -1076,6 +1076,16 @@ const migrations: RNMigration[] = [
       }
     },
   },
+  {
+    tag: '0031_document_rag_deduplication',
+    hash: '0031_document_rag_deduplication',
+    folderMillis: 1775088000000,
+    sql: [
+      `ALTER TABLE "documents" ADD COLUMN "rag_source_document_id" text`,
+      `CREATE INDEX IF NOT EXISTS "idx_documents_checksum" ON "documents" ("checksum")`,
+      `CREATE INDEX IF NOT EXISTS "idx_documents_rag_source" ON "documents" ("rag_source_document_id")`,
+    ],
+  },
 ];
 
 export function getBundledMigrations(): RNMigration[] {

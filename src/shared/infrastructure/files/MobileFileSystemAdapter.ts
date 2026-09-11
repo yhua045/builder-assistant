@@ -36,6 +36,10 @@ export class MobileFileSystemAdapter implements IFileSystemAdapter {
     return `file://${destPath}`;
   }
 
+  async computeSha256(filePath: string): Promise<string> {
+    return RNFS.hash(filePath.replace('file://', ''), 'sha256');
+  }
+
   /**
    * Get app's private documents directory path
    */

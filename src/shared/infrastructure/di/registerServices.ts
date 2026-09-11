@@ -53,6 +53,13 @@ import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/appl
 import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
 import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
 import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
+import { InMemoryWorkflowQueue } from '../../../features/knowledge-embedding/application/services/InMemoryWorkflowQueue.ts';
+import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingDocumentService.ts';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
+import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/application/usecases/SearchKnowledgeUseCase.ts';
+import { DefaultKeywordSearchService } from '../../../features/knowledge-embedding/application/services/KeywordSearchService.ts';
+import { DefaultSemanticSearchService } from '../../../features/knowledge-embedding/application/services/SemanticSearchService.ts';
+import { DrizzleSemanticSearchRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleSemanticSearchRepository.ts';
 import {
 	DefaultEmbeddingModelFactory,
 	EmbeddingProviderConfig,
@@ -128,8 +135,34 @@ if (typeof (container as any).registerSingleton === 'function') {
 	container.register('ExtractParsedDocumentUseCase', {
 		useFactory: (c) => new ExtractParsedDocumentUseCase(c.resolve('ExtractedDocumentTextRepository' as any)),
 	});
+	container.registerSingleton('InMemoryWorkflowQueue', InMemoryWorkflowQueue);
+	container.registerSingleton('KnowledgeEmbeddingWorkflowRepository', DrizzleDocumentChunkingWorkflowRepository);
+	container.register('KnowledgeEmbeddingDocumentService', {
+		useFactory: (c) => new KnowledgeEmbeddingDocumentService({
+			documentRepository: c.resolve('DocumentRepository' as any),
+			workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+			fileSystem: c.resolve('FileSystemAdapter' as any),
+			queue: c.resolve('InMemoryWorkflowQueue' as any),
+		}),
+	});
 	container.register('ChunkDocumentUseCase', {
 		useFactory: (c) => new ChunkDocumentUseCase(),
+	});
+	container.registerSingleton('SemanticSearchQueryRepository', DrizzleSemanticSearchRepository);
+	container.register('SemanticSearchService', {
+		useFactory: (c) => new DefaultSemanticSearchService(
+			c.resolve('SemanticSearchQueryRepository' as any),
+			c.resolve('EmbeddingRuntimeService' as any),
+		),
+	});
+	container.register('KeywordSearchService', {
+		useFactory: () => new DefaultKeywordSearchService(),
+	});
+	container.register('SearchKnowledgeUseCase', {
+		useFactory: (c) => new SearchKnowledgeUseCaseImpl(
+			c.resolve('SemanticSearchService' as any),
+			c.resolve('KeywordSearchService' as any),
+		),
 	});
 	container.registerSingleton('EmbeddingModelFactory', DefaultEmbeddingModelFactory);
 	container.register('EmbeddingProviderConfig', {

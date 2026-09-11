@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,21 +21,19 @@ import {
   Upload,
   X,
 } from 'lucide-react-native';
-import { useKnowledgeEmbeddingFlow } from '../hooks/useKnowledgeEmbeddingFlow';
+import {
+  KnowledgeEmbeddingDocument,
+  KnowledgeEmbeddingDocumentType,
+  useKnowledgeEmbeddingFlow,
+} from '../hooks/useKnowledgeEmbeddingFlow';
+import { KnowledgeEmbeddingStep } from '../domain/value-objects/KnowledgeEmbeddingStep';
 import { useProjects } from '../../projects';
 
-type Screen = 'welcome' | 'project-type' | 'add-documents' | 'processing';
-type DocType = 'engineering' | 'flooring' | 'council' | 'other';
+type DocType = KnowledgeEmbeddingDocumentType;
 
 type ConstructionType = 'new-home' | 'renovation' | 'other' | null;
 
-interface DocFile {
-  id: string;
-  name: string;
-  size: string;
-  type: DocType;
-  status: 'ready' | 'uploading' | 'done';
-}
+type DocFile = KnowledgeEmbeddingDocument;
 
 const DOC_ICONS: Record<DocType, React.ReactNode> = {
   engineering: <Ruler size={16} color="#4f46e5" />,
@@ -85,14 +83,6 @@ const PROCESSING_STEPS = [
   'Cross-referencing approvals',
   'Building your project model',
 ];
-
-function inferDocType(name: string): DocType {
-  const lower = name.toLowerCase();
-  if (lower.includes('engineer') || lower.includes('struct')) return 'engineering';
-  if (lower.includes('floor') || lower.includes('layout')) return 'flooring';
-  if (lower.includes('council') || lower.includes('permit') || lower.includes('approv')) return 'council';
-  return 'other';
-}
 
 function WelcomeStep({
   projectName,
@@ -358,7 +348,7 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [progress, setProgress] = useState(0);
-  const [done, setDone] = useState(false);
+  const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
 
   React.useEffect(() => {
     let stepIndex = 0;
@@ -368,7 +358,7 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
 
     const runStep = () => {
       if (stepIndex >= PROCESSING_STEPS.length) {
-        setDone(true);
+        setIsAnalysisComplete(true);
         setProgress(100);
         const doneTimer = setTimeout(onComplete, 900);
         timers.push(doneTimer);
@@ -406,7 +396,7 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
 
       <View style={styles.processingHeader}>
         <Text style={styles.stepTextProcessing}>Analysing</Text>
-        <Text style={styles.processingTitle}>{done ? 'Analysis complete.' : 'Reading your\ndocuments…'}</Text>
+        <Text style={styles.processingTitle}>{isAnalysisComplete ? 'Analysis complete.' : 'Reading your\ndocuments…'}</Text>
       </View>
 
       <View style={styles.progressSection}>
@@ -454,48 +444,32 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-type FlowState = 'welcome' | 'project-type' | 'add-documents' | 'processing';
-
 const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
   const vm = useKnowledgeEmbeddingFlow();
   const { createProject } = useProjects();
-  const [currentStep, setCurrentStep] = useState<FlowState>('welcome');
-  const [projectName, setProjectName] = useState('');
-  const [address, setAddress] = useState('');
-  const [selectedType, setSelectedType] = useState<ConstructionType>(null);
-  const [docs, setDocs] = useState<DocFile[]>([]);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
-
-  const title = useMemo(() => {
-    if (currentStep === 'welcome') return 'Welcome';
-    if (currentStep === 'project-type') return 'Type';
-    if (currentStep === 'add-documents') return 'Documents';
-    return 'Processing';
-  }, [currentStep]);
 
   const handleAddDemoDoc = (demo: Omit<DocFile, 'status'>) => {
-    setDocs((prev) => (prev.some((item) => item.id === demo.id) ? prev : [{ ...demo, status: 'ready' as const }, ...prev]));
+    vm.addDocument(demo);
   };
 
   const handleRemoveDoc = (id: string) => {
-    setDocs((prev) => prev.filter((doc) => doc.id !== id));
+    vm.removeDocument(id);
   };
 
   const handleCreateProject = async (): Promise<boolean> => {
-    const trimmedName = projectName.trim();
+    const trimmedName = vm.projectName.trim();
     if (!trimmedName) return false;
 
     setIsCreatingProject(true);
     try {
       const result = await createProject({
         name: trimmedName,
-        address: address.trim() || undefined,
-        description: `Knowledge embedding onboarding • ${selectedType ?? 'project'} project`,
+        address: vm.address.trim() || undefined,
+        description: `Knowledge embedding onboarding • ${vm.projectType || 'project'} project`,
       });
 
       if (result.success && result.projectId) {
-        setCreatedProjectId(result.projectId);
         return true;
       }
 
@@ -519,60 +493,62 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.outerStage}>
         <View style={styles.phoneFrame}>
-          {currentStep === 'welcome' && (
+          {vm.currentStep === KnowledgeEmbeddingStep.WELCOME && (
             <WelcomeStep
-              projectName={projectName}
-              setProjectName={setProjectName}
-              address={address}
-              setAddress={setAddress}
+              projectName={vm.projectName}
+              setProjectName={vm.setProjectName}
+              address={vm.address}
+              setAddress={vm.setAddress}
               isCreating={isCreatingProject}
               onStart={async () => {
-                const trimmedName = projectName.trim();
+                const trimmedName = vm.projectName.trim();
                 if (!trimmedName) return;
-                await vm.startFlow({ projectName: trimmedName, address: address.trim(), projectType: selectedType ?? undefined });
-                setCurrentStep('project-type');
+                vm.continueFlow();
               }}
             />
           )}
 
-          {currentStep === 'project-type' && (
+          {vm.currentStep === KnowledgeEmbeddingStep.PROJECT_SETUP && (
             <ProjectTypeStep
-              selected={selectedType}
-              setSelected={setSelectedType}
-              onBack={() => setCurrentStep('welcome')}
+              selected={(vm.projectType || null) as ConstructionType}
+              setSelected={(value) => vm.setProjectType(value ?? '')}
+              onBack={() => vm.skipForNow()}
               onContinue={async () => {
-                const didCreate = await handleCreateProject();
-                if (didCreate) {
-                  await vm.startFlow({ projectName: projectName.trim(), address: address.trim(), projectType: selectedType ?? undefined });
-                  setCurrentStep('add-documents');
+                const isCreated = await handleCreateProject();
+                if (isCreated) {
+                  vm.continueFlow();
                 }
               }}
             />
           )}
 
-          {currentStep === 'add-documents' && (
+          {vm.currentStep === KnowledgeEmbeddingStep.UPLOAD_DOCUMENTS && (
             <UploadDocumentsStep
-              docs={docs}
+              docs={vm.documents}
               onAddDemoDoc={handleAddDemoDoc}
               onRemoveDoc={handleRemoveDoc}
               onProcess={async () => {
-                await vm.startFlow({ projectName: projectName.trim(), address: address.trim(), projectType: selectedType ?? undefined });
-                setCurrentStep('processing');
+                vm.continueFlow();
               }}
             />
           )}
 
-          {currentStep === 'processing' && <ProcessingStep onComplete={() => setCurrentStep('welcome')} />}
+          {vm.currentStep === KnowledgeEmbeddingStep.PROCESSING && <ProcessingStep onComplete={vm.skipForNow} />}
         </View>
 
         <View style={styles.tabBar}>
-          {(['welcome', 'project-type', 'add-documents', 'processing'] as FlowState[]).map((screen) => (
+          {([
+            KnowledgeEmbeddingStep.WELCOME,
+            KnowledgeEmbeddingStep.PROJECT_SETUP,
+            KnowledgeEmbeddingStep.UPLOAD_DOCUMENTS,
+            KnowledgeEmbeddingStep.PROCESSING,
+          ] as KnowledgeEmbeddingStep[]).map((screen) => (
             <Pressable
               key={screen}
-              onPress={() => setCurrentStep(screen)}
-              style={[styles.tabButton, currentStep === screen && styles.tabButtonActive]}
+              onPress={() => vm.goToStep(screen)}
+              style={[styles.tabButton, vm.currentStep === screen && styles.tabButtonActive]}
             >
-              <Text style={[styles.tabLabel, currentStep === screen && styles.tabLabelActive]}>{titleMap[screen]}</Text>
+              <Text style={[styles.tabLabel, vm.currentStep === screen && styles.tabLabelActive]}>{titleMap[screen]}</Text>
             </Pressable>
           ))}
         </View>
@@ -581,11 +557,12 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
   );
 };
 
-const titleMap: Record<FlowState, string> = {
-  welcome: 'Welcome',
-  'project-type': 'Type',
-  'add-documents': 'Documents',
-  processing: 'Processing',
+const titleMap: Record<KnowledgeEmbeddingStep, string> = {
+  [KnowledgeEmbeddingStep.WELCOME]: 'Welcome',
+  [KnowledgeEmbeddingStep.PROJECT_SETUP]: 'Type',
+  [KnowledgeEmbeddingStep.UPLOAD_DOCUMENTS]: 'Documents',
+  [KnowledgeEmbeddingStep.PROCESSING]: 'Processing',
+  [KnowledgeEmbeddingStep.SUMMARY]: 'Summary',
 };
 
 const styles = StyleSheet.create({

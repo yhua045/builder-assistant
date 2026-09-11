@@ -165,4 +165,13 @@ export class DrizzleDocumentChunkingWorkflowRepository implements DocumentChunki
     }
     return records;
   }
+
+  async deleteByDocumentVersion(documentId: string, version: number): Promise<void> {
+    await this.ensureInitialized();
+    const { db } = getDatabase();
+    await db.executeSql(
+      'DELETE FROM knowledge_embedding_runs WHERE document_id = ? AND document_version = ?',
+      [documentId, version],
+    );
+  }
 }
