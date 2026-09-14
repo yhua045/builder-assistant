@@ -7,7 +7,7 @@ import {
 	LOCATION_REMOTE_ENABLED as ENV_LOCATION_REMOTE_ENABLED,
 	VOICE_USE_MOCK_PARSER as ENV_VOICE_USE_MOCK_PARSER,
 } from '@env';
-import { container } from 'tsyringe';
+import { container, instancePerContainerCachingFactory } from 'tsyringe';
 import { DrizzleProjectRepository } from '../../../features/projects/infrastructure/DrizzleProjectRepository.ts';
 import { DrizzleInvoiceRepository } from '../../../features/invoices/infrastructure/DrizzleInvoiceRepository.ts';
 import { DrizzlePaymentRepository } from '../../../features/payments/infrastructure/DrizzlePaymentRepository.ts';
@@ -52,8 +52,23 @@ import { PdfTextParser } from '../../../features/knowledge-embedding/infrastruct
 import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ParseDocumentUseCase.ts';
 import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
 import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
-import { DrizzleChunkDocumentProgressRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleChunkDocumentProgressRepository.ts';
 import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
+import { InMemoryWorkflowQueue } from '../../../features/knowledge-embedding/application/services/InMemoryWorkflowQueue.ts';
+import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingDocumentService.ts';
+import { KnowledgeEmbeddingQueueConsumer } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts';
+import { RagPipelineOrchestrator } from '../../../features/knowledge-embedding/application/services/RagPipelineOrchestrator.ts';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
+import { DrizzleEmbeddingRepository } from '../repositories/DrizzleEmbeddingRepository.ts';
+import { EmbedChunkUseCaseImpl } from '../../../features/knowledge-embedding/application/contracts/EmbeddingWorkflowContracts.ts';
+import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/application/usecases/SearchKnowledgeUseCase.ts';
+import { DefaultKeywordSearchService } from '../../../features/knowledge-embedding/application/services/KeywordSearchService.ts';
+import { DefaultSemanticSearchService } from '../../../features/knowledge-embedding/application/services/SemanticSearchService.ts';
+import { DrizzleSemanticSearchRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleSemanticSearchRepository.ts';
+import {
+	DefaultEmbeddingModelFactory,
+	EmbeddingProviderConfig,
+	EmbeddingRuntimeService,
+} from '../../../features/knowledge-embedding/application/services/EmbeddingRuntimeService.ts';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter.ts';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter.ts';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter.ts';
@@ -121,14 +136,75 @@ if (typeof (container as any).registerSingleton === 'function') {
 		),
 	});
 	container.registerSingleton('ExtractedDocumentTextRepository', DrizzleExtractedDocumentTextRepository);
-	container.registerSingleton('ChunkDocumentProgressRepository', DrizzleChunkDocumentProgressRepository);
 	container.register('ExtractParsedDocumentUseCase', {
 		useFactory: (c) => new ExtractParsedDocumentUseCase(c.resolve('ExtractedDocumentTextRepository' as any)),
 	});
-	container.register('ChunkDocumentUseCase', {
-		useFactory: (c) => new ChunkDocumentUseCase({
-			progressRepository: c.resolve('ChunkDocumentProgressRepository' as any),
+	container.registerSingleton('InMemoryWorkflowQueue', InMemoryWorkflowQueue);
+	container.registerSingleton('KnowledgeEmbeddingWorkflowRepository', DrizzleDocumentChunkingWorkflowRepository);
+	container.register('KnowledgeEmbeddingDocumentService', {
+		useFactory: (c) => new KnowledgeEmbeddingDocumentService({
+			documentRepository: c.resolve('DocumentRepository' as any),
+			workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+			fileSystem: c.resolve('FileSystemAdapter' as any),
+			queue: c.resolve('InMemoryWorkflowQueue' as any),
 		}),
+	});
+	container.register('ChunkDocumentUseCase', {
+		useFactory: (c) => new ChunkDocumentUseCase(),
+	});
+	container.registerSingleton('KnowledgeEmbeddingEmbeddingRepository', DrizzleEmbeddingRepository);
+	container.register('EmbedChunkUseCase', {
+		useFactory: (c) => new EmbedChunkUseCaseImpl(c.resolve('EmbeddingRuntimeService' as any)),
+	});
+	container.register('RagPipelineOrchestrator', {
+		useFactory: (c) => new RagPipelineOrchestrator({
+			queue: c.resolve('InMemoryWorkflowQueue' as any),
+			pipeline: {
+				documentRepository: c.resolve('DocumentRepository' as any),
+				workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+				parseDocument: c.resolve('ParseDocumentUseCase' as any),
+				extractParsedDocument: c.resolve('ExtractParsedDocumentUseCase' as any),
+				chunkDocument: c.resolve('ChunkDocumentUseCase' as any),
+				embedChunk: c.resolve('EmbedChunkUseCase' as any),
+				embeddingRepository: c.resolve('KnowledgeEmbeddingEmbeddingRepository' as any),
+			},
+		}),
+	});
+	container.register('KnowledgeEmbeddingQueueConsumer', {
+		useFactory: instancePerContainerCachingFactory((c) => new KnowledgeEmbeddingQueueConsumer(
+			c.resolve('InMemoryWorkflowQueue' as any),
+			c.resolve('RagPipelineOrchestrator' as any),
+		)),
+	});
+	container.registerSingleton('SemanticSearchQueryRepository', DrizzleSemanticSearchRepository);
+	container.register('SemanticSearchService', {
+		useFactory: (c) => new DefaultSemanticSearchService(
+			c.resolve('SemanticSearchQueryRepository' as any),
+			c.resolve('EmbeddingRuntimeService' as any),
+		),
+	});
+	container.register('KeywordSearchService', {
+		useFactory: () => new DefaultKeywordSearchService(),
+	});
+	container.register('SearchKnowledgeUseCase', {
+		useFactory: (c) => new SearchKnowledgeUseCaseImpl(
+			c.resolve('SemanticSearchService' as any),
+			c.resolve('KeywordSearchService' as any),
+		),
+	});
+	container.registerSingleton('EmbeddingModelFactory', DefaultEmbeddingModelFactory);
+	container.register('EmbeddingProviderConfig', {
+		useValue: {
+			provider: 'local',
+			modelVersion: 'deterministic-local-v1',
+			dimension: 8,
+		} as EmbeddingProviderConfig,
+	});
+	container.register('EmbeddingRuntimeService', {
+		useFactory: (c) => new EmbeddingRuntimeService(
+			c.resolve('EmbeddingProviderConfig' as any),
+			c.resolve('EmbeddingModelFactory' as any),
+		),
 	});
 
 	// ── Analytics Adapters (unified) ──────────────────────────────────────────────

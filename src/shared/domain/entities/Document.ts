@@ -3,6 +3,7 @@ export type DocumentStatus = 'local-only' | 'upload-pending' | 'uploaded' | 'fai
 export interface Document {
   id: string;
   localId?: number; // SQLite INTEGER PRIMARY KEY
+  ragSourceDocumentId?: string;
   projectId?: string; // Optional
   type?: 'plan' | 'permit' | 'invoice' | 'photo' | string;
   title?: string;

@@ -7,6 +7,7 @@
  * - openQuickActions / closeQuickActions toggles modal state
  * - handleQuickAction('1') closes quick actions modal and opens snapReceipt
  * - Correctly sets appropriate showXxx true based on Quick Action ID
+ * - handleQuickAction('6') closes quick actions and opens knowledge embedding
  * - Infrastructure adapters are populated and stable references
  * - navigateToProject('id') correctly calls React Navigation dispatcher
  */
@@ -195,6 +196,16 @@ describe('useDashboard', () => {
       expect(result.current.showAdHocTask).toBe(true);
     });
 
+    it('action "6" closes quick actions and opens knowledge embedding', () => {
+      const { result } = renderHook(() => useDashboard());
+
+      act(() => { result.current.openQuickActions(); });
+      act(() => { result.current.handleQuickAction('6'); });
+
+      expect(result.current.showQuickActions).toBe(false);
+      expect(result.current.showKnowledgeEmbedding).toBe(true);
+    });
+
     it('action "3" (Log Payment) closes quick actions but opens nothing', () => {
       const { result } = renderHook(() => useDashboard());
 
@@ -237,6 +248,13 @@ describe('useDashboard', () => {
       act(() => { result.current.handleQuickAction('4'); });
       act(() => { result.current.closeQuotation(); });
       expect(result.current.showQuotation).toBe(false);
+    });
+
+    it('closeKnowledgeEmbedding sets showKnowledgeEmbedding to false', () => {
+      const { result } = renderHook(() => useDashboard());
+      act(() => { result.current.handleQuickAction('6'); });
+      act(() => { result.current.closeKnowledgeEmbedding(); });
+      expect(result.current.showKnowledgeEmbedding).toBe(false);
     });
   });
 
@@ -312,9 +330,9 @@ describe('useDashboard', () => {
 
   // AC: quickActions array is returned from the hook
   describe('quickActions', () => {
-    it('returns exactly 5 quick actions', () => {
+    it('returns exactly 6 quick actions', () => {
       const { result } = renderHook(() => useDashboard());
-      expect(result.current.quickActions).toHaveLength(5);
+      expect(result.current.quickActions).toHaveLength(6);
     });
 
     it('each action has id, title, icon (truthy), and color', () => {
@@ -336,6 +354,7 @@ describe('useDashboard', () => {
         'Log Payment',
         'Add Quote',
         'Ad Hoc Task',
+        'Knowledge Embedding',
       ]);
     });
 

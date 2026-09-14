@@ -1012,11 +1012,11 @@ const migrations: RNMigration[] = [
     ],
   },
   {
-    tag: '0027_document_chunking_workflows',
-    hash: '0027_document_chunking_workflows',
+    tag: '0027_knowledge_embedding_runs',
+    hash: '0027_knowledge_embedding_runs',
     folderMillis: 1774742400000,
     sql: [
-      `CREATE TABLE IF NOT EXISTS "document_chunking_workflows" (
+      `CREATE TABLE IF NOT EXISTS "knowledge_embedding_runs" (
         "id" text PRIMARY KEY NOT NULL,
         "document_id" text NOT NULL,
         "document_version" integer NOT NULL DEFAULT 1,
@@ -1034,9 +1034,9 @@ const migrations: RNMigration[] = [
         "created_at" integer NOT NULL,
         "updated_at" integer NOT NULL
       );`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_document" ON "document_chunking_workflows" ("document_id");`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_version" ON "document_chunking_workflows" ("document_version");`,
-      `CREATE INDEX IF NOT EXISTS "idx_document_chunking_workflows_status" ON "document_chunking_workflows" ("status");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_document" ON "knowledge_embedding_runs" ("document_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_version" ON "knowledge_embedding_runs" ("document_version");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_embedding_runs_status" ON "knowledge_embedding_runs" ("status");`,
     ],
   },
   {
@@ -1061,24 +1061,6 @@ const migrations: RNMigration[] = [
     ],
   },
   {
-    tag: '0029_chunk_document_progress',
-    hash: '0029_chunk_document_progress',
-    folderMillis: 1774915200000,
-    sql: [
-      `CREATE TABLE IF NOT EXISTS "chunk_document_progress" (
-        "document_id" text NOT NULL,
-        "document_version" integer NOT NULL,
-        "processing_scope" text NOT NULL,
-        "completed_unit_ids" text NOT NULL,
-        "selected_strategy" text,
-        "fallback_events" text NOT NULL,
-        "failures" text NOT NULL,
-        "updated_at" integer NOT NULL,
-        PRIMARY KEY ("document_id", "document_version", "processing_scope")
-      );`,
-    ],
-  },
-  {
     tag: '0030_extracted_document_elements',
     hash: '0030_extracted_document_elements',
     folderMillis: 1775001600000,
@@ -1093,6 +1075,50 @@ const migrations: RNMigration[] = [
         await db.executeSql(`ALTER TABLE "extracted_document_text" ADD COLUMN "elements" text`);
       }
     },
+  },
+  {
+    tag: '0031_document_rag_deduplication',
+    hash: '0031_document_rag_deduplication',
+    folderMillis: 1775088000000,
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('documents')`);
+      const columns = new Set<string>();
+      for (let index = 0; index < result.rows.length; index++) {
+        columns.add(result.rows.item(index).name);
+      }
+      if (!columns.has('rag_source_document_id')) {
+        await db.executeSql(`ALTER TABLE "documents" ADD COLUMN "rag_source_document_id" text`);
+      }
+      await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_documents_checksum" ON "documents" ("checksum")`);
+      await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_documents_rag_source" ON "documents" ("rag_source_document_id")`);
+    },
+  },
+  {
+    tag: '0032_knowledge_detail_runs',
+    hash: '0032_knowledge_detail_runs',
+    folderMillis: 1775174400000,
+    sql: [
+      `CREATE TABLE IF NOT EXISTS "knowledge_detail_runs" (
+        "id" text PRIMARY KEY NOT NULL,
+        "run_id" text NOT NULL,
+        "stage" text NOT NULL,
+        "status" text NOT NULL,
+        "started_at" integer,
+        "completed_at" integer,
+        "items_total" integer,
+        "items_processed" integer,
+        "items_succeeded" integer,
+        "items_failed" integer,
+        "error_message" text,
+        "retry_count" integer NOT NULL DEFAULT 0,
+        "checkpoint" text,
+        "created_at" integer NOT NULL,
+        "updated_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_detail_runs_run" ON "knowledge_detail_runs" ("run_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_detail_runs_run_stage" ON "knowledge_detail_runs" ("run_id", "stage");`,
+    ],
   },
 ];
 

@@ -148,6 +148,7 @@ export const expenses = sqliteTable('expenses', {
 export const documents = sqliteTable('documents', {
   localId: integer('local_id').primaryKey({ autoIncrement: true }),
   id: text('id').notNull().unique(),
+  ragSourceDocumentId: text('rag_source_document_id'),
   projectId: text('project_id'), // Optional
   taskId: text('task_id'),       // Optional link to a Task
   type: text('type'),
@@ -186,6 +187,7 @@ export const documents = sqliteTable('documents', {
 }, (table) => ({
   projectIdx: index('idx_documents_project').on(table.projectId),
   statusIdx: index('idx_documents_status').on(table.status),
+  checksumIdx: index('idx_documents_checksum').on(table.checksum),
 }));
 
 // Invoices Table
@@ -553,19 +555,6 @@ export const extractedDocumentText = sqliteTable('extracted_document_text', {
   documentVersionIdx: index('idx_extracted_document_text_version').on(table.documentId, table.documentVersion),
 }));
 
-export const chunkDocumentProgress = sqliteTable('chunk_document_progress', {
-  documentId: text('document_id').notNull(),
-  documentVersion: integer('document_version').notNull(),
-  processingScope: text('processing_scope').notNull(),
-  completedUnitIds: text('completed_unit_ids').notNull(),
-  selectedStrategy: text('selected_strategy'),
-  fallbackEvents: text('fallback_events').notNull(),
-  failures: text('failures').notNull(),
-  updatedAt: integer('updated_at').notNull(),
-}, (table) => ({
-  scopePk: primaryKey({ columns: [table.documentId, table.documentVersion, table.processingScope] }),
-}));
-
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
@@ -606,7 +595,7 @@ export const knowledgeEmbeddings = sqliteTable('knowledge_embeddings', {
   providerIdx: index('idx_knowledge_embeddings_provider').on(table.provider),
 }));
 
-export const documentChunkingWorkflows = sqliteTable('document_chunking_workflows', {
+export const knowledgeEmbeddingRuns = sqliteTable('knowledge_embedding_runs', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
   documentVersion: integer('document_version').notNull().default(1),
@@ -624,7 +613,28 @@ export const documentChunkingWorkflows = sqliteTable('document_chunking_workflow
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 }, (table) => ({
-  documentIdx: index('idx_document_chunking_workflows_document').on(table.documentId),
-  versionIdx: index('idx_document_chunking_workflows_version').on(table.documentVersion),
-  statusIdx: index('idx_document_chunking_workflows_status').on(table.status),
+  documentIdx: index('idx_knowledge_embedding_runs_document').on(table.documentId),
+  versionIdx: index('idx_knowledge_embedding_runs_version').on(table.documentVersion),
+  statusIdx: index('idx_knowledge_embedding_runs_status').on(table.status),
+}));
+
+export const knowledgeDetailRuns = sqliteTable('knowledge_detail_runs', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  stage: text('stage').notNull(),
+  status: text('status').notNull(),
+  startedAt: integer('started_at'),
+  completedAt: integer('completed_at'),
+  itemsTotal: integer('items_total'),
+  itemsProcessed: integer('items_processed'),
+  itemsSucceeded: integer('items_succeeded'),
+  itemsFailed: integer('items_failed'),
+  errorMessage: text('error_message'),
+  retryCount: integer('retry_count').notNull().default(0),
+  checkpoint: text('checkpoint'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  runIdx: index('idx_knowledge_detail_runs_run').on(table.runId),
+  stageIdx: index('idx_knowledge_detail_runs_run_stage').on(table.runId, table.stage),
 }));

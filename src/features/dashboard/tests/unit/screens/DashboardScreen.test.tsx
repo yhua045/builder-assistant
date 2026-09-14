@@ -18,11 +18,12 @@ jest.mock('lucide-react-native', () => ({
   DollarSign: 'DollarSign',
   FileText: 'FileText',
   Wrench: 'Wrench',
+  BookOpen: 'BookOpen',
   X: 'X',
   Plus: 'Plus',
 }));
 
-jest.mock('../../../../../components/ThemeToggle', () => ({
+jest.mock('../../../../../shared/ui/components/ThemeToggle', () => ({
   ThemeToggle: () => null,
 }));
 
@@ -57,6 +58,11 @@ jest.mock('../../../../tasks/screens/TaskScreen', () => ({
   default: () => null,
 }));
 
+jest.mock('../../../../knowledge-embedding/screens/KnowledgeEmbeddingLaunchScreen', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 // ── Mock the single ViewModel hook ────────────────────────────────────────────
 
 jest.mock('../../../hooks/useDashboard', () => ({
@@ -83,6 +89,7 @@ function makeDefaultVm(overrides: Partial<ReturnType<typeof useDashboard>> = {})
     showAddInvoice: false,
     showAdHocTask: false,
     showQuotation: false,
+    showKnowledgeEmbedding: false,
     createKey: 0,
     invoiceOcrAdapter: {} as any,
     invoiceNormalizer: {} as any,
@@ -96,6 +103,8 @@ function makeDefaultVm(overrides: Partial<ReturnType<typeof useDashboard>> = {})
     closeAddInvoice: jest.fn(),
     closeAdHocTask: jest.fn(),
     closeQuotation: jest.fn(),
+    openKnowledgeEmbedding: jest.fn(),
+    closeKnowledgeEmbedding: jest.fn(),
     onManualEntry: jest.fn(),
     navigateToProject: jest.fn(),
     ...overrides,
@@ -202,6 +211,19 @@ describe('DashboardScreen', () => {
     const invoiceModal = tree.root.findAllByProps({ testID: 'add-invoice-modal' });
     expect(invoiceModal.length).toBeGreaterThan(0);
     expect(invoiceModal[0].props.visible).toBe(true);
+  });
+
+  it('Knowledge Embedding modal visible flag reflects vm.showKnowledgeEmbedding', () => {
+    mockUseDashboard.mockReturnValue(makeDefaultVm({ showKnowledgeEmbedding: true }));
+
+    let tree: any;
+    act(() => {
+      tree = renderer.create(<DashboardScreen />);
+    });
+
+    const embeddingModal = tree.root.findAllByProps({ testID: 'knowledge-embedding-modal' });
+    expect(embeddingModal.length).toBeGreaterThan(0);
+    expect(embeddingModal[0].props.visible).toBe(true);
   });
 
   it('renders TaskScreen when showAdHocTask=true', () => {

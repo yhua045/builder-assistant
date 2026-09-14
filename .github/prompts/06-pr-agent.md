@@ -26,6 +26,8 @@ Run the following checks sequentially in the terminal:
 * Push the local branch to the remote origin (`git push origin <branch-name>`).
 * Call the GitHub MCP tool to open a Pull Request targeting `main` (or default branch).
 
+### 4. Update Code Graph
+`codegraph index .` to update the code graph for the repository, ensuring that all new and modified files are indexed for future analysis.
 ---
 
 # Pull Request Template
