@@ -97,8 +97,8 @@ export class DrizzleDocumentRepository implements DocumentRepository {
            local_path, storage_key, cloud_url, uri, issued_by, issued_date,
            expires_at, notes, tags, ocr_text, source, uploaded_by, uploaded_at,
            checksum, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       `, params);
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, params);
     }
   }
 

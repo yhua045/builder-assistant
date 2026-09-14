@@ -1,5 +1,6 @@
 import type {
   AddKnowledgeEmbeddingDocumentCommand,
+  CommitKnowledgeEmbeddingDocumentsCommand,
   KnowledgeEmbeddingDocumentError,
   KnowledgeEmbeddingDocumentMutationResult,
   KnowledgeEmbeddingDocumentService as KnowledgeEmbeddingDocumentServiceContract,
@@ -145,6 +146,61 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
     return views;
   }
 
+  async getRuns(documentIds: string[]): Promise<KnowledgeEmbeddingRunView[]> {
+    const views: KnowledgeEmbeddingRunView[] = [];
+    for (const documentId of documentIds) {
+      const document = await this.documentRepository.findById(documentId);
+      if (!document) continue;
+      const record = await this.workflowRepository.findLatestByDocumentId(documentId) ??
+        (document.ragSourceDocumentId
+          ? await this.workflowRepository.findLatestByDocumentId(document.ragSourceDocumentId)
+          : null);
+      if (record) views.push(this.toView(record, document, documentId));
+    }
+    return views;
+  }
+
+  async commitDocuments(command: CommitKnowledgeEmbeddingDocumentsCommand): Promise<KnowledgeEmbeddingRunView[]> {
+    if (command.files.length === 0) {
+      throw new Error('At least one document is required');
+    }
+
+    console.info('[knowledge-embedding] committing selected documents', {
+      projectId: command.projectId,
+      documentCount: command.files.length,
+      documentIds: command.files.map((file) => file.id),
+    });
+    const committed: KnowledgeEmbeddingRunView[] = [];
+    for (const file of command.files) {
+      if (!file.uri.trim() || !file.name.trim()) {
+        throw new Error('Document URI and name are required');
+      }
+
+      const result = await this.addDocument({
+        documentId: file.id,
+        documentVersion: 1,
+        projectId: command.projectId,
+        metadata: {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          uri: file.uri,
+          contentHash: undefined,
+        },
+      });
+      committed.push(result.run);
+      console.info('[knowledge-embedding] document commit completed', {
+        documentId: result.run.documentId,
+        runId: result.run.id,
+        alreadyHandled: result.alreadyHandled,
+      });
+    }
+    console.info('[knowledge-embedding] selected document commit finished', {
+      runCount: committed.length,
+    });
+    return committed;
+  }
+
   async addDocument(command: AddKnowledgeEmbeddingDocumentCommand): Promise<KnowledgeEmbeddingDocumentMutationResult> {
     if (!command.documentId.trim() || command.documentVersion < 1) {
       throw new Error('Document identity and version are required');
@@ -152,6 +208,12 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
 
     const existing = await this.workflowRepository.findByDocumentVersion(command.documentId, command.documentVersion);
     if (existing) {
+      console.info('[knowledge-embedding] existing workflow found; skipping duplicate document commit', {
+        documentId: command.documentId,
+        documentVersion: command.documentVersion,
+        runId: existing.id,
+        status: existing.status,
+      });
       const document = await this.documentRepository.findById(command.documentId);
       if (!document) throw new Error('Persisted workflow is missing its document');
       return { run: this.toView(existing, document), alreadyHandled: true };
@@ -160,6 +222,11 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
     const storedPath = command.metadata.uri
       ? await this.fileSystem.copyToAppStorage(command.metadata.uri, command.metadata.name)
       : undefined;
+    console.info('[knowledge-embedding] document copied to app storage', {
+      documentId: command.documentId,
+      documentVersion: command.documentVersion,
+      storedPath,
+    });
     let contentHash = command.metadata.contentHash;
     try {
       if (!contentHash && storedPath && this.fileSystem.computeSha256) {
@@ -180,6 +247,7 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
     const document: Document = {
       id: command.documentId,
       ragSourceDocumentId: matchingRun ? matchingDocument?.id : undefined,
+      projectId: command.projectId,
       filename: command.metadata.name,
       title: command.metadata.name,
       type: command.metadata.type,
@@ -202,6 +270,7 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
       id: `run-${command.documentId}-${command.documentVersion}`,
       documentId: command.documentId,
       documentVersion: command.documentVersion,
+      projectId: command.projectId,
       status: 'pending',
       workflowState: 'pending',
       lastEvent: 'document-added',
@@ -214,14 +283,36 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
 
     try {
       await this.documentRepository.save(document);
+      console.info('[knowledge-embedding] document saved', {
+        documentId: document.id,
+        documentVersion: command.documentVersion,
+        localPath: document.localPath,
+        checksum: document.checksum,
+      });
       await this.workflowRepository.upsert(record);
+      console.info('[knowledge-embedding] workflow saved', {
+        documentId: record.documentId,
+        runId: record.id,
+        status: record.status,
+        stage: record.workflowState,
+      });
     } catch (error) {
+      console.info('[knowledge-embedding] document/workflow persistence failed', {
+        documentId: command.documentId,
+        runId: record.id,
+        error,
+      });
       await this.documentRepository.delete(command.documentId).catch(() => undefined);
       if (storedPath) await this.fileSystem.deleteFile(storedPath).catch(() => undefined);
       throw error;
     }
 
     this.queue.publish(this.toQueueItem(record));
+    console.info('[knowledge-embedding] workflow queued for processing', {
+      documentId: record.documentId,
+      runId: record.id,
+      documentVersion: record.documentVersion,
+    });
     return { run: this.toView(record, document), alreadyHandled: false };
   }
 

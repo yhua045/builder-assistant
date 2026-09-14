@@ -127,6 +127,13 @@
       "when": 1774656000000,
       "tag": "0026_rag_knowledge_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1775174400000,
+      "tag": "0032_knowledge_detail_runs",
+      "breakpoints": true
     }
   ]
 }

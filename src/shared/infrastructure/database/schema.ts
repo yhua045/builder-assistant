@@ -617,3 +617,24 @@ export const knowledgeEmbeddingRuns = sqliteTable('knowledge_embedding_runs', {
   versionIdx: index('idx_knowledge_embedding_runs_version').on(table.documentVersion),
   statusIdx: index('idx_knowledge_embedding_runs_status').on(table.status),
 }));
+
+export const knowledgeDetailRuns = sqliteTable('knowledge_detail_runs', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  stage: text('stage').notNull(),
+  status: text('status').notNull(),
+  startedAt: integer('started_at'),
+  completedAt: integer('completed_at'),
+  itemsTotal: integer('items_total'),
+  itemsProcessed: integer('items_processed'),
+  itemsSucceeded: integer('items_succeeded'),
+  itemsFailed: integer('items_failed'),
+  errorMessage: text('error_message'),
+  retryCount: integer('retry_count').notNull().default(0),
+  checkpoint: text('checkpoint'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  runIdx: index('idx_knowledge_detail_runs_run').on(table.runId),
+  stageIdx: index('idx_knowledge_detail_runs_run_stage').on(table.runId, table.stage),
+}));

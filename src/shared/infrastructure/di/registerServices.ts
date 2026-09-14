@@ -7,7 +7,7 @@ import {
 	LOCATION_REMOTE_ENABLED as ENV_LOCATION_REMOTE_ENABLED,
 	VOICE_USE_MOCK_PARSER as ENV_VOICE_USE_MOCK_PARSER,
 } from '@env';
-import { container } from 'tsyringe';
+import { container, instancePerContainerCachingFactory } from 'tsyringe';
 import { DrizzleProjectRepository } from '../../../features/projects/infrastructure/DrizzleProjectRepository.ts';
 import { DrizzleInvoiceRepository } from '../../../features/invoices/infrastructure/DrizzleInvoiceRepository.ts';
 import { DrizzlePaymentRepository } from '../../../features/payments/infrastructure/DrizzlePaymentRepository.ts';
@@ -55,7 +55,11 @@ import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowle
 import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
 import { InMemoryWorkflowQueue } from '../../../features/knowledge-embedding/application/services/InMemoryWorkflowQueue.ts';
 import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingDocumentService.ts';
+import { KnowledgeEmbeddingQueueConsumer } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts';
+import { RagPipelineOrchestrator } from '../../../features/knowledge-embedding/application/services/RagPipelineOrchestrator.ts';
 import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
+import { DrizzleEmbeddingRepository } from '../repositories/DrizzleEmbeddingRepository.ts';
+import { EmbedChunkUseCaseImpl } from '../../../features/knowledge-embedding/application/contracts/EmbeddingWorkflowContracts.ts';
 import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/application/usecases/SearchKnowledgeUseCase.ts';
 import { DefaultKeywordSearchService } from '../../../features/knowledge-embedding/application/services/KeywordSearchService.ts';
 import { DefaultSemanticSearchService } from '../../../features/knowledge-embedding/application/services/SemanticSearchService.ts';
@@ -147,6 +151,30 @@ if (typeof (container as any).registerSingleton === 'function') {
 	});
 	container.register('ChunkDocumentUseCase', {
 		useFactory: (c) => new ChunkDocumentUseCase(),
+	});
+	container.registerSingleton('KnowledgeEmbeddingEmbeddingRepository', DrizzleEmbeddingRepository);
+	container.register('EmbedChunkUseCase', {
+		useFactory: (c) => new EmbedChunkUseCaseImpl(c.resolve('EmbeddingRuntimeService' as any)),
+	});
+	container.register('RagPipelineOrchestrator', {
+		useFactory: (c) => new RagPipelineOrchestrator({
+			queue: c.resolve('InMemoryWorkflowQueue' as any),
+			pipeline: {
+				documentRepository: c.resolve('DocumentRepository' as any),
+				workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+				parseDocument: c.resolve('ParseDocumentUseCase' as any),
+				extractParsedDocument: c.resolve('ExtractParsedDocumentUseCase' as any),
+				chunkDocument: c.resolve('ChunkDocumentUseCase' as any),
+				embedChunk: c.resolve('EmbedChunkUseCase' as any),
+				embeddingRepository: c.resolve('KnowledgeEmbeddingEmbeddingRepository' as any),
+			},
+		}),
+	});
+	container.register('KnowledgeEmbeddingQueueConsumer', {
+		useFactory: instancePerContainerCachingFactory((c) => new KnowledgeEmbeddingQueueConsumer(
+			c.resolve('InMemoryWorkflowQueue' as any),
+			c.resolve('RagPipelineOrchestrator' as any),
+		)),
 	});
 	container.registerSingleton('SemanticSearchQueryRepository', DrizzleSemanticSearchRepository);
 	container.register('SemanticSearchService', {

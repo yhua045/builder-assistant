@@ -60,6 +60,25 @@ describe('InMemoryWorkflowQueue', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
   });
+
+  it('keeps different document versions independently claimable', () => {
+    const queue = new InMemoryWorkflowQueue();
+
+    queue.publish({ runId: 'run-v1', documentId: 'doc-1', documentVersion: 1 });
+    queue.publish({ runId: 'run-v2', documentId: 'doc-1', documentVersion: 2 });
+
+    expect(queue.dequeue()).toEqual({ runId: 'run-v1', documentId: 'doc-1', documentVersion: 1 });
+    expect(queue.dequeue()).toEqual({ runId: 'run-v2', documentId: 'doc-1', documentVersion: 2 });
+  });
+
+  it('allows only one subscriber for the queue', () => {
+    const queue = new InMemoryWorkflowQueue();
+
+    const unsubscribe = queue.subscribe(jest.fn());
+
+    expect(() => queue.subscribe(jest.fn())).toThrow('already has an active subscriber');
+    unsubscribe();
+  });
 });
 
 describe('RagPipelineOrchestrator', () => {

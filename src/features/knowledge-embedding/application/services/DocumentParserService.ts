@@ -194,12 +194,23 @@ export class DefaultDocumentParserService implements DocumentParserServiceContra
       throw new Error('Document version must be at least 1');
     }
 
+    console.info('[knowledge-embedding] document parsing started', {
+      documentId: input.documentId,
+      documentVersion: input.documentVersion,
+      sourceType: input.sourceType,
+      filePath: input.filePath,
+    });
+
     const stored = await this.dependencies.extractedDocumentTextRepository.findByDocumentVersion(
       input.documentId,
       input.documentVersion,
     );
 
     if (stored) {
+      console.info('[knowledge-embedding] stored parsed document reused', {
+        documentId: input.documentId,
+        documentVersion: input.documentVersion,
+      });
       return this.mapStoredResult(stored) ?? stored;
     }
 
@@ -224,6 +235,12 @@ export class DefaultDocumentParserService implements DocumentParserServiceContra
 
       const extractedText = this.toExtractedDocumentText(input, parsed);
       await this.dependencies.extractedDocumentTextRepository.save(extractedText);
+      console.info('[knowledge-embedding] parsed document saved', {
+        documentId: input.documentId,
+        documentVersion: input.documentVersion,
+        textLength: parsed.text.length,
+        pageCount: parsed.pageMetadata.length,
+      });
 
       if (version) {
         await this.updateVersion(version, {
@@ -239,6 +256,11 @@ export class DefaultDocumentParserService implements DocumentParserServiceContra
       return parsed;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'PDF parsing failed';
+      console.info('[knowledge-embedding] document parsing failed', {
+        documentId: input.documentId,
+        documentVersion: input.documentVersion,
+        error: message,
+      });
 
       if (version) {
         const nextRetryCount = (version.retryCount ?? 0) + 1;

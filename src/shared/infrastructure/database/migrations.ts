@@ -1080,10 +1080,44 @@ const migrations: RNMigration[] = [
     tag: '0031_document_rag_deduplication',
     hash: '0031_document_rag_deduplication',
     folderMillis: 1775088000000,
+    sql: [],
+    run: async (db) => {
+      const [result] = await db.executeSql(`SELECT name FROM pragma_table_info('documents')`);
+      const columns = new Set<string>();
+      for (let index = 0; index < result.rows.length; index++) {
+        columns.add(result.rows.item(index).name);
+      }
+      if (!columns.has('rag_source_document_id')) {
+        await db.executeSql(`ALTER TABLE "documents" ADD COLUMN "rag_source_document_id" text`);
+      }
+      await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_documents_checksum" ON "documents" ("checksum")`);
+      await db.executeSql(`CREATE INDEX IF NOT EXISTS "idx_documents_rag_source" ON "documents" ("rag_source_document_id")`);
+    },
+  },
+  {
+    tag: '0032_knowledge_detail_runs',
+    hash: '0032_knowledge_detail_runs',
+    folderMillis: 1775174400000,
     sql: [
-      `ALTER TABLE "documents" ADD COLUMN "rag_source_document_id" text`,
-      `CREATE INDEX IF NOT EXISTS "idx_documents_checksum" ON "documents" ("checksum")`,
-      `CREATE INDEX IF NOT EXISTS "idx_documents_rag_source" ON "documents" ("rag_source_document_id")`,
+      `CREATE TABLE IF NOT EXISTS "knowledge_detail_runs" (
+        "id" text PRIMARY KEY NOT NULL,
+        "run_id" text NOT NULL,
+        "stage" text NOT NULL,
+        "status" text NOT NULL,
+        "started_at" integer,
+        "completed_at" integer,
+        "items_total" integer,
+        "items_processed" integer,
+        "items_succeeded" integer,
+        "items_failed" integer,
+        "error_message" text,
+        "retry_count" integer NOT NULL DEFAULT 0,
+        "checkpoint" text,
+        "created_at" integer NOT NULL,
+        "updated_at" integer NOT NULL
+      );`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_detail_runs_run" ON "knowledge_detail_runs" ("run_id");`,
+      `CREATE INDEX IF NOT EXISTS "idx_knowledge_detail_runs_run_stage" ON "knowledge_detail_runs" ("run_id", "stage");`,
     ],
   },
 ];

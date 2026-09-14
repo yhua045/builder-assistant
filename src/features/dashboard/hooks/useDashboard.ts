@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, ComponentType } from 'react';
-import { Camera, Receipt, DollarSign, FileText, Wrench } from 'lucide-react-native';
+import { BookOpen, Camera, Receipt, DollarSign, FileText, Wrench } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import { useProjectsOverview } from './useProjectsOverview';
@@ -27,6 +27,7 @@ const QUICK_ACTIONS: readonly QuickAction[] = [
   { id: '3', title: 'Log Payment', icon: DollarSign, color: 'bg-chart-2' },
   { id: '4', title: 'Add Quote', icon: FileText, color: 'bg-chart-3' },
   { id: '5', title: 'Ad Hoc Task', icon: Wrench, color: 'bg-chart-4' },
+  { id: '6', title: 'Knowledge Embedding', icon: BookOpen, color: 'bg-chart-6' },
 ];
 
 export interface DashboardViewModel {
@@ -45,6 +46,7 @@ export interface DashboardViewModel {
   showAddInvoice: boolean;
   showAdHocTask: boolean;
   showQuotation: boolean;
+  showKnowledgeEmbedding: boolean;
   createKey: number;
 
   // Infrastructure services (wired here so UI stays clean)
@@ -62,6 +64,8 @@ export interface DashboardViewModel {
   closeAddInvoice: () => void;
   closeAdHocTask: () => void;
   closeQuotation: () => void;
+  openKnowledgeEmbedding: () => void;
+  closeKnowledgeEmbedding: () => void;
   onManualEntry: () => void;
   navigateToProject: (projectId: string) => void;
 }
@@ -77,6 +81,7 @@ export function useDashboard(): DashboardViewModel {
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   const [showAdHocTask, setShowAdHocTask] = useState(false);
   const [showQuotation, setShowQuotation] = useState(false);
+  const [showKnowledgeEmbedding, setShowKnowledgeEmbedding] = useState(false);
 
   const invoiceOcrAdapter = useMemo(() => new MobileOcrAdapter(), []);
   const invoiceNormalizer = useMemo(() => new InvoiceNormalizer(), []);
@@ -104,6 +109,8 @@ export function useDashboard(): DashboardViewModel {
       setShowQuotation(true);
     } else if (actionId === '5') {
       setShowAdHocTask(true);
+    } else if (actionId === '6') {
+      setShowKnowledgeEmbedding(true);
     }
     // actionId '3' (Log Payment) — TODO: not yet implemented
   }, [track]);
@@ -133,6 +140,8 @@ export function useDashboard(): DashboardViewModel {
   const closeAddInvoice = useCallback(() => setShowAddInvoice(false), []);
   const closeAdHocTask = useCallback(() => setShowAdHocTask(false), []);
   const closeQuotation = useCallback(() => setShowQuotation(false), []);
+  const openKnowledgeEmbedding = useCallback(() => setShowKnowledgeEmbedding(true), []);
+  const closeKnowledgeEmbedding = useCallback(() => setShowKnowledgeEmbedding(false), []);
   const onManualEntry = useCallback(() => setCreateKey(k => k + 1), []);
 
   return {
@@ -146,6 +155,7 @@ export function useDashboard(): DashboardViewModel {
     showAddInvoice,
     showAdHocTask,
     showQuotation,
+    showKnowledgeEmbedding,
     createKey,
     invoiceOcrAdapter,
     invoiceNormalizer,
@@ -159,6 +169,8 @@ export function useDashboard(): DashboardViewModel {
     closeAddInvoice,
     closeAdHocTask,
     closeQuotation,
+    openKnowledgeEmbedding,
+    closeKnowledgeEmbedding,
     onManualEntry,
     navigateToProject,
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
   FileCheck,
   FileText,
   HardHat,
@@ -26,6 +27,7 @@ import {
   KnowledgeEmbeddingDocumentType,
   useKnowledgeEmbeddingFlow,
 } from '../hooks/useKnowledgeEmbeddingFlow';
+import type { KnowledgeEmbeddingRunView } from '../application/contracts/KnowledgeEmbeddingRunContracts';
 import { KnowledgeEmbeddingStep } from '../domain/value-objects/KnowledgeEmbeddingStep';
 import { useProjects } from '../../projects';
 
@@ -34,6 +36,13 @@ type DocType = KnowledgeEmbeddingDocumentType;
 type ConstructionType = 'new-home' | 'renovation' | 'other' | null;
 
 type DocFile = KnowledgeEmbeddingDocument;
+
+type ProjectOption = {
+  id: string;
+  name: string;
+  location?: string;
+  property?: { address?: string };
+};
 
 const DOC_ICONS: Record<DocType, React.ReactNode> = {
   engineering: <Ruler size={16} color="#4f46e5" />,
@@ -70,12 +79,6 @@ const CONSTRUCTION_TYPES: Array<{ id: ConstructionType; label: string; descripti
   },
 ];
 
-const SAMPLE_DOCS: Array<Omit<DocFile, 'status'>> = [
-  { id: '1', name: 'Engineering_Plan_v3.pdf', size: '4.2 MB', type: 'engineering' },
-  { id: '2', name: 'Council_Approval_2024.pdf', size: '1.8 MB', type: 'council' },
-  { id: '3', name: 'Flooring_Layout_Final.pdf', size: '2.6 MB', type: 'flooring' },
-];
-
 const PROCESSING_STEPS = [
   'Reading document structure',
   'Identifying plan types',
@@ -85,6 +88,11 @@ const PROCESSING_STEPS = [
 ];
 
 function WelcomeStep({
+  projects,
+  projectsLoading,
+  selectedProjectId,
+  onSelectExistingProject,
+  onSelectNewProject,
   projectName,
   setProjectName,
   address,
@@ -92,6 +100,11 @@ function WelcomeStep({
   onStart,
   isCreating,
 }: {
+  projects: ProjectOption[];
+  projectsLoading: boolean;
+  selectedProjectId?: string;
+  onSelectExistingProject: (projectId: string) => void;
+  onSelectNewProject: () => void;
   projectName: string;
   setProjectName: (value: string) => void;
   address: string;
@@ -99,14 +112,12 @@ function WelcomeStep({
   onStart: () => void;
   isCreating: boolean;
 }) {
+  const [projectOptionsVisible, setProjectOptionsVisible] = useState(false);
+  const selectedProject = projects.find((project) => project.id === selectedProjectId);
+
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.phoneShell}>
-        <View style={styles.statusBar}>
-          <Text style={styles.statusText}>9:41</Text>
-          <View style={styles.statusSignal} />
-        </View>
-
+      <ScrollView>
         <View style={styles.heroArea}>
           <View style={styles.gridOverlay} />
           <View style={styles.heroIconWrap}>
@@ -144,33 +155,90 @@ function WelcomeStep({
           </View>
 
           <View style={styles.ctaWrap}>
-            <Text style={styles.labelText}>Project name</Text>
-            <TextInput
-              value={projectName}
-              onChangeText={setProjectName}
-              placeholder="e.g. My New Home"
-              placeholderTextColor="#94a3b8"
-              style={styles.input}
-            />
+            {projectsLoading ? (
+              <Text style={styles.loadingText}>Loading projects...</Text>
+            ) : (
+              <>
+                {projects.length > 0 && (
+                  <View>
+                    <Text style={styles.labelText}>Project</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setProjectOptionsVisible((visible) => !visible)}
+                      style={styles.projectSelector}
+                    >
+                      <Text style={styles.projectSelectorText}>
+                        {selectedProject?.name ?? 'Create a new project'}
+                      </Text>
+                      <ChevronDown size={18} color="#475569" />
+                    </Pressable>
 
-            <Text style={styles.labelText}>Property address</Text>
-            <TextInput
-              value={address}
-              onChangeText={setAddress}
-              placeholder="e.g. 12 Maple Street, Sydney NSW 2000"
-              placeholderTextColor="#94a3b8"
-              style={styles.input}
-            />
+                    {projectOptionsVisible && (
+                      <View style={styles.projectOptions}>
+                        {projects.map((project) => (
+                          <Pressable
+                            key={project.id}
+                            onPress={() => {
+                              setProjectOptionsVisible(false);
+                              onSelectExistingProject(project.id);
+                            }}
+                            style={styles.projectOption}
+                          >
+                            <Text style={styles.projectOptionName}>{project.name}</Text>
+                            {!!(project.location || project.property?.address) && (
+                              <Text style={styles.projectOptionAddress}>
+                                {project.location ?? project.property?.address}
+                              </Text>
+                            )}
+                          </Pressable>
+                        ))}
+                        <Pressable
+                          onPress={() => {
+                            setProjectOptionsVisible(false);
+                            onSelectNewProject();
+                          }}
+                          style={styles.projectOption}
+                        >
+                          <Text style={styles.projectOptionName}>Create a new project</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                )}
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={onStart}
-              disabled={projectName.trim().length === 0 || isCreating}
-              style={[styles.primaryButton, (projectName.trim().length === 0 || isCreating) && styles.primaryButtonDisabled]}
-            >
-              <Text style={styles.primaryButtonText}>{isCreating ? 'Creating…' : 'Get started'}</Text>
-              <ArrowRight size={18} color="#ffffff" />
-            </Pressable>
+                {!selectedProjectId && (
+                  <>
+                    <Text style={styles.labelText}>Project name</Text>
+                    <TextInput
+                      value={projectName}
+                      onChangeText={setProjectName}
+                      placeholder="e.g. My New Home"
+                      placeholderTextColor="#94a3b8"
+                      style={styles.input}
+                    />
+
+                    <Text style={styles.labelText}>Property address</Text>
+                    <TextInput
+                      value={address}
+                      onChangeText={setAddress}
+                      placeholder="e.g. 12 Maple Street, Sydney NSW 2000"
+                      placeholderTextColor="#94a3b8"
+                      style={styles.input}
+                    />
+
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={onStart}
+                      disabled={projectName.trim().length === 0 || isCreating}
+                      style={[styles.primaryButton, (projectName.trim().length === 0 || isCreating) && styles.primaryButtonDisabled]}
+                    >
+                      <Text style={styles.primaryButtonText}>{isCreating ? 'Creating…' : 'Get started'}</Text>
+                      <ArrowRight size={18} color="#ffffff" />
+                    </Pressable>
+                  </>
+                )}
+              </>
+            )}
 
             <View style={styles.privacyRow}>
               <Shield size={13} color="#64748b" />
@@ -178,7 +246,7 @@ function WelcomeStep({
             </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -196,12 +264,6 @@ function ProjectTypeStep({
 }) {
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.phoneShell}>
-        <View style={styles.statusBar}>
-          <Text style={styles.statusText}>9:41</Text>
-          <View style={styles.statusSignal} />
-        </View>
-
         <View style={styles.headerSection}>
           <Pressable onPress={onBack} style={styles.backButton}>
             <ChevronLeft size={16} color="#dfe9ff" />
@@ -251,30 +313,27 @@ construction is this?`}</Text>
             <ArrowRight size={18} color="#ffffff" />
           </Pressable>
         </View>
-      </View>
     </View>
   );
 }
 
 function UploadDocumentsStep({
   docs,
-  onAddDemoDoc,
+  onSelectDocument,
   onRemoveDoc,
   onProcess,
+  isProcessing,
+  error,
 }: {
   docs: DocFile[];
-  onAddDemoDoc: (demo: Omit<DocFile, 'status'>) => void;
+  onSelectDocument: () => Promise<void>;
   onRemoveDoc: (id: string) => void;
-  onProcess: () => void;
+  onProcess: () => Promise<boolean>;
+  isProcessing: boolean;
+  error?: string;
 }) {
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.phoneShell}>
-        <View style={styles.statusBar}>
-          <Text style={styles.statusText}>9:41</Text>
-          <View style={styles.statusSignal} />
-        </View>
-
         <View style={styles.headerSectionAlt}>
           <Text style={styles.stepText}>Step 2 of 3</Text>
           <Text style={styles.headerTitle}>Add your documents</Text>
@@ -282,28 +341,19 @@ function UploadDocumentsStep({
         </View>
 
         <ScrollView contentContainerStyle={styles.documentsList}>
-          <View style={styles.dropZone}>
+          <Pressable onPress={onSelectDocument} style={styles.dropZone} disabled={isProcessing}>
             <View style={styles.dropZoneIcon}><Upload size={22} color="#64748b" /></View>
             <Text style={styles.dropZoneTitle}>Tap to upload files</Text>
             <Text style={styles.dropZoneHint}>PDF, DWG, JPG · Up to 50 MB each</Text>
-          </View>
+          </Pressable>
 
-          {docs.length === 0 && (
+          {docs.length === 0 && !error && (
             <View style={styles.demoSection}>
-              <Text style={styles.docSectionLabel}>Common document types</Text>
-              {SAMPLE_DOCS.map((demo) => (
-                <Pressable key={demo.id} onPress={() => onAddDemoDoc(demo)} style={styles.docRow}>
-                  <View style={styles.docIcon}>{DOC_ICONS[demo.type]}</View>
-                  <View style={styles.docInfo}>
-                    <Text style={styles.docName}>{demo.name}</Text>
-                    <Text style={styles.docMeta}>{DOC_LABELS[demo.type]} · {demo.size}</Text>
-                  </View>
-                  <View style={styles.chevronWrap}><ArrowRight size={14} color="#64748b" /></View>
-                </Pressable>
-              ))}
-              <Text style={styles.demoHint}>Tap any to add as a demo document</Text>
+              <Text style={styles.emptyDocumentsText}>No documents selected yet.</Text>
             </View>
           )}
+
+          {!!error && <Text style={styles.errorText}>{error}</Text>}
 
           {docs.length > 0 && (
             <View style={styles.demoSection}>
@@ -328,10 +378,10 @@ function UploadDocumentsStep({
           <Pressable
             accessibilityRole="button"
             onPress={onProcess}
-            disabled={docs.length === 0}
-            style={[styles.primaryButton, docs.length === 0 && styles.primaryButtonDisabled]}
+            disabled={docs.length === 0 || isProcessing}
+            style={[styles.primaryButton, (docs.length === 0 || isProcessing) && styles.primaryButtonDisabled]}
           >
-            <Text style={styles.primaryButtonText}>Analyse documents</Text>
+            <Text style={styles.primaryButtonText}>{isProcessing ? 'Analysing…' : 'Analyse documents'}</Text>
             <ArrowRight size={18} color="#ffffff" />
           </Pressable>
           <View style={styles.privacyRowCompact}>
@@ -339,58 +389,18 @@ function UploadDocumentsStep({
             <Text style={styles.privacySmallText}>Processed on-device only</Text>
           </View>
         </View>
-      </View>
     </View>
   );
 }
 
-function ProcessingStep({ onComplete }: { onComplete: () => void }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
-
-  React.useEffect(() => {
-    let stepIndex = 0;
-    let elapsed = 0;
-    const total = PROCESSING_STEPS.length * 1200;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    const runStep = () => {
-      if (stepIndex >= PROCESSING_STEPS.length) {
-        setIsAnalysisComplete(true);
-        setProgress(100);
-        const doneTimer = setTimeout(onComplete, 900);
-        timers.push(doneTimer);
-        return;
-      }
-
-      setCurrentStep(stepIndex);
-      const interval = setInterval(() => {
-        elapsed += 80;
-        setProgress(Math.min(100, Math.round((elapsed / total) * 100)));
-      }, 80);
-      timers.push(interval as unknown as ReturnType<typeof setTimeout>);
-
-      const stepTimer = setTimeout(() => {
-        clearInterval(interval);
-        setCompletedSteps((prev) => [...prev, stepIndex]);
-        stepIndex += 1;
-        runStep();
-      }, 1200);
-      timers.push(stepTimer);
-    };
-
-    runStep();
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer as ReturnType<typeof setTimeout>));
-    };
-  }, [onComplete]);
+function ProcessingStep({ runs }: { runs: KnowledgeEmbeddingRunView[] }) {
+  const completedCount = runs.filter((run) => run.status === 'completed').length;
+  const progress = runs.length === 0 ? 0 : Math.round((completedCount / runs.length) * 100);
+  const isAnalysisComplete = runs.length > 0 && completedCount === runs.length;
 
   return (
     <View style={[styles.processingContainer, styles.processingBg]}>
       <View style={styles.statusBarProcessing}>
-        <Text style={styles.statusTextProcessing}>9:41</Text>
         <View style={styles.statusSignal} />
       </View>
 
@@ -410,24 +420,28 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
       </View>
 
       <View style={styles.processingList}>
-        {PROCESSING_STEPS.map((step, index) => {
-          const isDone = completedSteps.includes(index);
-          const isActive = currentStep === index && !isDone;
-          const isPending = !isDone && !isActive;
+        {runs.map((run) => {
+          const isDone = run.status === 'completed';
+          const isActive = run.status === 'running';
+          const isFailed = run.status === 'failed' || run.status === 'partial';
 
           return (
-            <View key={index} style={[styles.processingRow, isActive && styles.processingRowActive]}>
+            <View key={run.id} style={[styles.processingRow, (isActive || isFailed) && styles.processingRowActive]}>
               <View style={styles.processingRowIconWrap}>
                 {isDone ? (
                   <CheckCircle2 size={18} color="#b8f2d6" />
+                ) : isFailed ? (
+                  <X size={18} color="#fca5a5" />
                 ) : isActive ? (
                   <View style={styles.spinnerDot} />
                 ) : (
                   <View style={styles.pendingDot} />
                 )}
               </View>
-              <Text style={[styles.processingText, isDone && styles.processingTextDone, isActive && styles.processingTextActive, isPending && styles.processingTextPending]}>
-                {step}
+              <Text style={[styles.processingText, isDone && styles.processingTextDone, isActive && styles.processingTextActive]}>
+                {run.metadata.name}: {isDone ? 'complete' : isFailed ? run.status : run.status === 'pending' ? 'pending' : 'processing'}
+                {!!run.currentStage && !isDone && ` · ${run.currentStage}`}
+                {!!run.errorMessage && ` · ${run.errorMessage}`}
               </Text>
             </View>
           );
@@ -437,7 +451,7 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
       <View style={styles.processingFooter}>
         <View style={styles.processingNote}>
           <Shield size={15} color="#8de4b9" />
-          <Text style={styles.processingNoteText}>All analysis runs locally on your device. Your documents are never uploaded to any server.</Text>
+            <Text style={styles.processingNoteText}>{isAnalysisComplete ? 'Analysis complete. All selected documents have been processed.' : 'All analysis runs locally on your device. Your documents are never uploaded to any server.'}</Text>
         </View>
       </View>
     </View>
@@ -446,20 +460,18 @@ function ProcessingStep({ onComplete }: { onComplete: () => void }) {
 
 const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
   const vm = useKnowledgeEmbeddingFlow();
-  const { createProject } = useProjects();
+  const { createProject, projects, loading: projectsLoading } = useProjects();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
 
-  const handleAddDemoDoc = (demo: Omit<DocFile, 'status'>) => {
-    vm.addDocument(demo);
-  };
+  useEffect(() => {
+    if (!projectsLoading && projects.length > 0 && !vm.selectedProjectId) {
+      vm.initializeExistingProject(projects[0].id);
+    }
+  }, [projects, projectsLoading, vm]);
 
-  const handleRemoveDoc = (id: string) => {
-    vm.removeDocument(id);
-  };
-
-  const handleCreateProject = async (): Promise<boolean> => {
+  const handleCreateProject = async (): Promise<string | undefined> => {
     const trimmedName = vm.projectName.trim();
-    if (!trimmedName) return false;
+    if (!trimmedName) return undefined;
 
     setIsCreatingProject(true);
     try {
@@ -470,10 +482,10 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
       });
 
       if (result.success && result.projectId) {
-        return true;
+        return result.projectId;
       }
 
-      return false;
+      return undefined;
     } finally {
       setIsCreatingProject(false);
     }
@@ -495,6 +507,11 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
         <View style={styles.phoneFrame}>
           {vm.currentStep === KnowledgeEmbeddingStep.WELCOME && (
             <WelcomeStep
+              projects={projects}
+              projectsLoading={projectsLoading}
+              selectedProjectId={vm.selectedProjectId}
+              onSelectExistingProject={vm.selectExistingProject}
+              onSelectNewProject={vm.selectNewProject}
               projectName={vm.projectName}
               setProjectName={vm.setProjectName}
               address={vm.address}
@@ -508,15 +525,15 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
             />
           )}
 
-          {vm.currentStep === KnowledgeEmbeddingStep.PROJECT_SETUP && (
+          {vm.isNewProject && vm.currentStep === KnowledgeEmbeddingStep.PROJECT_SETUP && (
             <ProjectTypeStep
               selected={(vm.projectType || null) as ConstructionType}
               setSelected={(value) => vm.setProjectType(value ?? '')}
               onBack={() => vm.skipForNow()}
               onContinue={async () => {
-                const isCreated = await handleCreateProject();
-                if (isCreated) {
-                  vm.continueFlow();
+                const projectId = await handleCreateProject();
+                if (projectId) {
+                  vm.selectExistingProject(projectId);
                 }
               }}
             />
@@ -525,24 +542,19 @@ const KnowledgeEmbeddingLaunchScreen: React.FC = () => {
           {vm.currentStep === KnowledgeEmbeddingStep.UPLOAD_DOCUMENTS && (
             <UploadDocumentsStep
               docs={vm.documents}
-              onAddDemoDoc={handleAddDemoDoc}
-              onRemoveDoc={handleRemoveDoc}
-              onProcess={async () => {
-                vm.continueFlow();
-              }}
+              onSelectDocument={vm.selectDocument}
+              onRemoveDoc={vm.removeDocument}
+              onProcess={vm.processDocuments}
+              isProcessing={vm.isProcessingDocuments}
+              error={vm.documentSelectionError}
             />
           )}
 
-          {vm.currentStep === KnowledgeEmbeddingStep.PROCESSING && <ProcessingStep onComplete={vm.skipForNow} />}
+          {vm.currentStep === KnowledgeEmbeddingStep.PROCESSING && <ProcessingStep runs={vm.committedRuns} />}
         </View>
 
         <View style={styles.tabBar}>
-          {([
-            KnowledgeEmbeddingStep.WELCOME,
-            KnowledgeEmbeddingStep.PROJECT_SETUP,
-            KnowledgeEmbeddingStep.UPLOAD_DOCUMENTS,
-            KnowledgeEmbeddingStep.PROCESSING,
-          ] as KnowledgeEmbeddingStep[]).map((screen) => (
+          {vm.visibleSteps.map((screen) => (
             <Pressable
               key={screen}
               onPress={() => vm.goToStep(screen)}
@@ -593,7 +605,6 @@ const styles = StyleSheet.create({
     height: 844,
     maxHeight: '90%',
     backgroundColor: '#f8fafc',
-    borderRadius: 42,
     overflow: 'hidden',
     shadowColor: '#0f172a',
     shadowOpacity: 0.22,
@@ -765,6 +776,47 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginBottom: 8,
     fontWeight: '600',
+  },
+  projectSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#dbe3ef',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 8,
+  },
+  projectSelectorText: {
+    fontSize: 14,
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+  projectOptions: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#dbe3ef',
+    borderRadius: 14,
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  projectOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2f7',
+  },
+  projectOptionName: {
+    fontSize: 14,
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+  projectOptionAddress: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 3,
   },
   input: {
     backgroundColor: '#ffffff',
@@ -970,6 +1022,16 @@ const styles = StyleSheet.create({
   dropZoneHint: {
     fontSize: 12,
     color: '#64748b',
+  },
+  emptyDocumentsText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#b91c1c',
+    textAlign: 'center',
   },
   demoSection: {
     gap: 10,

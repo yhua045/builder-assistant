@@ -13,7 +13,22 @@ export interface KnowledgeEmbeddingRunDocumentMetadata {
 export interface AddKnowledgeEmbeddingDocumentCommand {
   documentId: string;
   documentVersion: number;
+  projectId?: string;
   metadata: KnowledgeEmbeddingRunDocumentMetadata;
+}
+
+export interface SelectedKnowledgeEmbeddingFile {
+  id: string;
+  name: string;
+  size: string;
+  type: string;
+  uri: string;
+  mimeType?: string;
+}
+
+export interface CommitKnowledgeEmbeddingDocumentsCommand {
+  projectId?: string;
+  files: SelectedKnowledgeEmbeddingFile[];
 }
 
 export interface KnowledgeEmbeddingRunView extends KnowledgeEmbeddingRun {
@@ -38,6 +53,8 @@ export interface KnowledgeEmbeddingDocumentError {
 export interface KnowledgeEmbeddingDocumentService {
   listDocuments(): Promise<KnowledgeEmbeddingRunView[]>;
   addDocument(command: AddKnowledgeEmbeddingDocumentCommand): Promise<KnowledgeEmbeddingDocumentMutationResult>;
+  commitDocuments(command: CommitKnowledgeEmbeddingDocumentsCommand): Promise<KnowledgeEmbeddingRunView[]>;
+  getRuns(documentIds: string[]): Promise<KnowledgeEmbeddingRunView[]>;
   removeDocument(documentId: string, documentVersion: number): Promise<void>;
   updateStatus(
     runId: string,

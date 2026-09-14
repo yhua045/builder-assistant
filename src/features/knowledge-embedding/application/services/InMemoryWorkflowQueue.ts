@@ -14,6 +14,7 @@ export class InMemoryWorkflowQueue {
   private readonly queuedIds = new Set<string>();
 
   hydrate(items: KnowledgeEmbeddingQueueItem[]): void {
+    console.info('[knowledge-embedding] queue hydration started', { itemCount: items.length });
     this.queue.length = 0;
     this.queuedIds.clear();
 
@@ -26,16 +27,19 @@ export class InMemoryWorkflowQueue {
       this.queuedIds.add(key);
       this.queue.push(item);
     }
+    console.info('[knowledge-embedding] queue hydration completed', { queuedCount: this.queue.length });
   }
 
   enqueue(item: KnowledgeEmbeddingQueueItem): void {
     const key = this.keyFor(item);
     if (this.queuedIds.has(key)) {
+      console.info('[knowledge-embedding] duplicate queue item ignored', item);
       return;
     }
 
     this.queuedIds.add(key);
     this.queue.push(item);
+    console.info('[knowledge-embedding] queue item published', item);
     for (const listener of this.listeners) {
       listener(item);
     }
@@ -57,6 +61,10 @@ export class InMemoryWorkflowQueue {
   }
 
   subscribe(listener: WorkflowQueueListener): () => void {
+    if (this.listeners.size > 0) {
+      throw new Error('Workflow queue already has an active subscriber');
+    }
+
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
