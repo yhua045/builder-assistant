@@ -8,6 +8,8 @@
 - Use the existing SQLite + Drizzle schema as the canonical source of truth; never create a second DB or orchestration engine for the same feature.
 - Treat `documents.checksum` as content identity only: preserve duplicate `documents` rows and reuse RAG through `rag_source_document_id` instead of deleting or merging uploads.
 - Keep the RAG persistence chain intact: `documents` -> `extracted_document_text` -> `knowledge_chunks` -> `knowledge_embeddings`; workflow state belongs in `knowledge_embedding_runs`.
+- Treat `knowledge_embedding_runs` as the durable parent workflow and `knowledge_detail_runs` as per-stage progress/retry/checkpoint state; `InMemoryWorkflowQueue` is only an in-process projection.
+- Keep one container-cached `KnowledgeEmbeddingQueueConsumer`; startup restores pending/partial/running rows before draining, and duplicate run IDs must not execute concurrently.
 
 ## Directory & File Location Rules
 
@@ -16,6 +18,7 @@ Feature domain models:      src/features/<feature>/domain/entities/
 Feature repositories:       src/features/<feature>/infrastructure/repositories/
 Feature use cases:          src/features/<feature>/application/usecases/
 Feature services:           src/features/<feature>/application/services/
+Knowledge queue worker:     src/features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts
 Shared DB schema:           src/shared/infrastructure/database/schema.ts
 Shared DI wiring:           src/shared/infrastructure/di/registerServices.ts
 App bootstrap:              src/app/**
@@ -60,6 +63,12 @@ if (run.status === 'completed' || run.status === 'cancelled') {
 ```
 
 ```ts
+// Queue pattern: durable state first; runtime queue only dispatches work.
+await orchestrator.restorePipelineQueue();
+consumer.start();
+```
+
+```ts
 // Duplicate uploads remain independent documents but reuse completed RAG data.
 const source = await documentRepository.findAll({ checksum: document.checksum });
 duplicate.ragSourceDocumentId = sourceDocument.id;
@@ -79,6 +88,9 @@ npx jest src/features/knowledge-embedding/tests/unit --runInBand
 
 # Integration suite
 npx jest src/features/knowledge-embedding/tests/integration --runInBand
+
+# Lint
+npm run lint
 ```
 
 ## Quick Commands
