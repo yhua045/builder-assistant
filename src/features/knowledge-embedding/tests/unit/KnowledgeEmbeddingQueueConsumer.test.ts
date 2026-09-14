@@ -11,22 +11,22 @@ function item(runId: string, documentId = runId): KnowledgeEmbeddingQueueItem {
 describe('KnowledgeEmbeddingQueueConsumer', () => {
   it('processes work published after the consumer starts', async () => {
     const queue = new InMemoryWorkflowQueue();
-    const execute = jest.fn().mockResolvedValue(undefined);
-    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { execute });
+    const executeQueuedItem = jest.fn().mockResolvedValue(undefined);
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
 
     consumer.start();
     queue.publish(item('run-1', 'doc-1'));
     await consumer.drain();
 
-    expect(execute).toHaveBeenCalledWith(item('run-1', 'doc-1'));
-    expect(execute).toHaveBeenCalledTimes(1);
+    expect(executeQueuedItem).toHaveBeenCalledWith(item('run-1', 'doc-1'));
+    expect(executeQueuedItem).toHaveBeenCalledTimes(1);
   });
 
   it('drains items in FIFO order', async () => {
     const queue = new InMemoryWorkflowQueue();
     const processed: string[] = [];
     const executor: KnowledgeEmbeddingPipelineExecutor = {
-      execute: jest.fn(async (queuedItem) => {
+      executeQueuedItem: jest.fn(async (queuedItem) => {
         processed.push(queuedItem.runId);
       }),
     };
@@ -44,15 +44,15 @@ describe('KnowledgeEmbeddingQueueConsumer', () => {
     const firstExecution = new Promise<void>((resolve) => {
       releaseFirst = resolve;
     });
-    const execute = jest.fn(async () => firstExecution);
-    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { execute });
+    const executeQueuedItem = jest.fn(async () => firstExecution);
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
 
     consumer.start();
     queue.publish(item('run-1'));
     queue.publish(item('run-1'));
     await Promise.resolve();
 
-    expect(execute).toHaveBeenCalledTimes(1);
+    expect(executeQueuedItem).toHaveBeenCalledTimes(1);
     releaseFirst?.();
     await consumer.drain();
   });
@@ -60,10 +60,10 @@ describe('KnowledgeEmbeddingQueueConsumer', () => {
   it('rejects a second consumer for the same queue', () => {
     const queue = new InMemoryWorkflowQueue();
     const firstConsumer = new KnowledgeEmbeddingQueueConsumer(queue, {
-      execute: jest.fn().mockResolvedValue(undefined),
+      executeQueuedItem: jest.fn().mockResolvedValue(undefined),
     });
     const secondConsumer = new KnowledgeEmbeddingQueueConsumer(queue, {
-      execute: jest.fn().mockResolvedValue(undefined),
+      executeQueuedItem: jest.fn().mockResolvedValue(undefined),
     });
 
     firstConsumer.start();
@@ -77,45 +77,45 @@ describe('KnowledgeEmbeddingQueueConsumer', () => {
     const queue = new InMemoryWorkflowQueue();
     let activeExecutions = 0;
     let maximumActiveExecutions = 0;
-    const execute = jest.fn(async () => {
+    const executeQueuedItem = jest.fn(async () => {
       activeExecutions += 1;
       maximumActiveExecutions = Math.max(maximumActiveExecutions, activeExecutions);
       await Promise.resolve();
       activeExecutions -= 1;
     });
-    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { execute });
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
 
     queue.hydrate([item('run-1'), item('run-2')]);
     await consumer.drain();
 
     expect(maximumActiveExecutions).toBe(1);
-    expect(execute).toHaveBeenCalledTimes(2);
+    expect(executeQueuedItem).toHaveBeenCalledTimes(2);
   });
 
   it('continues draining after one item fails', async () => {
     const queue = new InMemoryWorkflowQueue();
-    const execute = jest.fn()
+    const executeQueuedItem = jest.fn()
       .mockRejectedValueOnce(new Error('parse failed'))
       .mockResolvedValueOnce(undefined);
-    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { execute });
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
 
     queue.hydrate([item('run-1'), item('run-2')]);
     await expect(consumer.drain()).resolves.toBeUndefined();
 
-    expect(execute).toHaveBeenCalledTimes(2);
-    expect(execute.mock.calls[1][0]).toEqual(item('run-2'));
+    expect(executeQueuedItem).toHaveBeenCalledTimes(2);
+    expect(executeQueuedItem.mock.calls[1][0]).toEqual(item('run-2'));
   });
 
   it('stops accepting newly published work after stop', async () => {
     const queue = new InMemoryWorkflowQueue();
-    const execute = jest.fn().mockResolvedValue(undefined);
-    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { execute });
+    const executeQueuedItem = jest.fn().mockResolvedValue(undefined);
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
 
     consumer.start();
     consumer.stop();
     queue.publish(item('run-1'));
     await consumer.drain();
 
-    expect(execute).not.toHaveBeenCalled();
+    expect(executeQueuedItem).not.toHaveBeenCalled();
   });
 });

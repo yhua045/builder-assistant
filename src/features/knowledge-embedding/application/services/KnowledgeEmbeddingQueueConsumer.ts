@@ -2,7 +2,7 @@ import type { KnowledgeEmbeddingQueueItem } from './InMemoryWorkflowQueue';
 import { InMemoryWorkflowQueue } from './InMemoryWorkflowQueue';
 
 export interface KnowledgeEmbeddingPipelineExecutor {
-  execute(item: KnowledgeEmbeddingQueueItem): Promise<unknown>;
+  executeQueuedItem(item: KnowledgeEmbeddingQueueItem): Promise<unknown>;
 }
 
 export class KnowledgeEmbeddingQueueConsumer {
@@ -58,7 +58,7 @@ export class KnowledgeEmbeddingQueueConsumer {
 
     this.activeRunIds.add(item.runId);
     try {
-      await this.executor.execute(item);
+      await this.executor.executeQueuedItem(item);
     } catch (error) {
       console.info('[knowledge-embedding] queue item processing failed', {
         runId: item.runId,

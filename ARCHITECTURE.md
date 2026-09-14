@@ -61,7 +61,7 @@ The project now follows a vertical-slice organization: each feature owns its dom
 │   │   ├── payments/
 │   │   ├── quotations/
 │   │   ├── receipts/
-│   │   ├── knowledge-embedding/
+│   │   ├── knowledge-embedding/   # Document parsing, RAG workflow, queue consumer, and search
 │   │   └── ...
 │   ├── shared/                    # Cross-cutting, shared primitives
 │   │   ├── application/           # shared use cases / ports / orchestration logic
@@ -149,9 +149,9 @@ The app uses a single SQLite database managed by Drizzle. Most data is project-s
 - `tasks` + `task_dependencies` + `delay_reason_types` + `task_delay_reasons` + `task_progress_logs`: work execution, dependency ordering, delays, and progress history.
 - `documents` + `expenses` + `invoices` + `payments` + `quotations` + `contacts`: financial records, attachments, quotations, suppliers, and contacts.
 - `audit_logs` + `last_known_locations`: operational traceability and location history.
-- `extracted_document_text` + `knowledge_chunks` + `knowledge_embeddings` + `knowledge_embedding_runs` + `project_facts`: knowledge extraction, chunking, embedding, and project fact persistence for AI-assisted analysis.
+- `extracted_document_text` + `knowledge_chunks` + `knowledge_embeddings` + `knowledge_embedding_runs` + `knowledge_detail_runs` + `project_facts`: knowledge extraction, chunking, embedding, workflow progress, per-stage retry/checkpoint metrics, and project fact persistence for AI-assisted analysis.
 
-The knowledge-embedding feature is treated as a first-class workflow boundary. `KnowledgeEmbeddingRunEntity` is the parent aggregate for the document lifecycle, while `KnowledgeDetailRunEntity` holds per-stage retry/resume metadata for the currently active stage. This keeps the workflow semantics local to the embedding feature without creating a second orchestration framework or a separate persistence stack.
+The knowledge-embedding feature is treated as a first-class workflow boundary. `KnowledgeEmbeddingRunEntity` is the parent aggregate for the document lifecycle, while `KnowledgeDetailRunEntity` and `knowledge_detail_runs` hold per-stage status, item counts, retry data, and checkpoints. `knowledge_embedding_runs` remains the durable parent state; `InMemoryWorkflowQueue` is only a runtime projection consumed by the singleton `KnowledgeEmbeddingQueueConsumer`.
 
 The document-to-RAG persistence path is documented in [docs/Embedding-Data-Flow.md](docs/Embedding-Data-Flow.md). The important storage chain is `documents` -> `extracted_document_text` -> `knowledge_chunks` -> `knowledge_embeddings`, with `knowledge_embedding_runs` carrying durable workflow state. Identical uploads remain separate `documents` rows; `checksum` and `rag_source_document_id` prevent duplicate RAG processing and allow retrieval to reuse the original chunks and embeddings.
 
@@ -161,7 +161,8 @@ For request-scoped retrieval, the feature uses a thin orchestration boundary: `S
 
 - `src/shared/infrastructure/database/schema.ts` is the single source of truth for the persisted schema and migration generation.
 - Timestamps are stored as Unix milliseconds; repository code converts them at the app boundary when needed.
-- `knowledge_embedding_runs` persists the durable run state for the document knowledge pipeline and its retry/restart checkpoints.
+- `knowledge_embedding_runs` persists the durable parent run state for the document knowledge pipeline and its retry/restart checkpoints.
+- `knowledge_detail_runs` persists stage-level progress, errors, item counts, retries, and checkpoints for parsing, chunking, embedding, and indexing.
 - `project_facts` and `knowledge_*` tables are the persisted substrate for RAG-style retrieval and downstream analysis.
 
 ---
@@ -170,11 +171,11 @@ For request-scoped retrieval, the feature uses a thin orchestration boundary: `S
 
 The document knowledge flow is a feature-owned state machine rather than a loose set of background jobs:
 
-1. A document enters the pipeline via `ReceiveDocumentUseCase` / `ValidateDocumentUseCase`.
-2. A parent `KnowledgeEmbeddingRun` is created or resumed for the document version; this run owns lifecycle state such as `pending`, `running`, `partial`, `failed`, or `completed`.
-3. The active stage is validated via the aggregate-level rules in `KnowledgeEmbeddingRunEntity` and its child `KnowledgeDetailRunEntity` records.
-4. `ChunkDocumentUseCase` resumes only incomplete work from the last durable checkpoint, persists chunk artifacts into `knowledge_chunks`, and keeps retry data scoped to the active stage.
-5. Embedding results are persisted to `knowledge_embeddings`, while the workflow records remain responsible only for orchestration and retry metadata.
+1. A document enters the pipeline through `KnowledgeEmbeddingDocumentService`, which persists the document and parent run, then publishes a `{ runId, documentId, documentVersion }` item to `InMemoryWorkflowQueue`.
+2. During app startup, `RagPipelineOrchestrator.restorePipelineQueue()` hydrates pending, partial, and running durable records; `KnowledgeEmbeddingQueueConsumer.start()` drains the shared queue and stops cleanly on unmount.
+3. The consumer enforces one active execution per run and delegates to `RagPipelineOrchestrator.executeQueuedItem()`, which reloads durable state rather than trusting stale queue metadata.
+4. The orchestrator restores extracted text when available or parses the stored document, then persists stage transitions while `ChunkDocumentUseCase` and the embedding use case write `knowledge_chunks` and `knowledge_embeddings`.
+5. Parent workflow state and per-stage detail records capture completion, failures, retry counts, and checkpoints; duplicate queue events reuse existing artifacts and do not create a second run.
 6. For search requests, `SearchKnowledgeUseCase` accepts the caller input and delegates to `SemanticSearchService`, which builds the query embedding through `EmbeddingRuntimeService` and fetches nearest matching chunks through `SemanticSearchQueryRepository`.
 
 The current `RagPipelineOrchestrator` creates, restores, and publishes workflow work; it does not itself invoke every parse, chunk, and embedding stage. Those stages remain separate application boundaries and persist their own artifacts through repositories. The full table-level flow, including this boundary and duplicate-content behavior, is maintained in [docs/Embedding-Data-Flow.md](docs/Embedding-Data-Flow.md).
@@ -191,6 +192,8 @@ This keeps chunk creation, embedding, and rerun logic tied to the document knowl
 - Drizzle SQLite as the canonical persistence layer; raw SQL remains confined to repositories and DB-specific adapters.
 - Feature-local workflow ownership: knowledge pipeline state is controlled by the `knowledge-embedding` aggregate instead of a shared global workflow engine.
 - Request-scoped search orchestration: `SearchKnowledgeUseCase` orchestrates, `SemanticSearchService` executes retrieval logic, and repository adapters remain the SQL boundary.
+- Runtime queue projection: one container-cached `KnowledgeEmbeddingQueueConsumer` drains the in-memory queue, while SQLite workflow rows remain authoritative across app restarts.
+- Stage-level observability: `KnowledgeDetailRunEntity` / `knowledge_detail_runs` records progress and retry state without moving artifact persistence out of repositories.
 - Retry semantics are conservative: resume only from the active or partial stage, never duplicate completed work, and require parent-child validation before a retry.
 - Content deduplication is separate from document identity: SHA-256 is indexed on `documents`, duplicate rows are retained, and `rag_source_document_id` aliases duplicate RAG reads to the original document's workflow and artifacts.
 
@@ -200,6 +203,7 @@ This keeps chunk creation, embedding, and rerun logic tied to the document knowl
 - No direct database writes from screens, hooks, or application service consumers.
 - No cross-feature workflow ownership: project management features do not own knowledge-embedding retry semantics.
 - No automatic duplication of previously persisted chunks or embeddings when a run is restarted or resumed.
+- No durable guarantee from the in-memory queue alone: restart recovery depends on restoring pending, partial, and running rows from SQLite.
 
 ---
 

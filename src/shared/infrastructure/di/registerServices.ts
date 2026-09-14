@@ -58,6 +58,7 @@ import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-e
 import { KnowledgeEmbeddingQueueConsumer } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts';
 import { RagPipelineOrchestrator } from '../../../features/knowledge-embedding/application/services/RagPipelineOrchestrator.ts';
 import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
+import { DrizzleKnowledgeEmbeddingRunRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleKnowledgeEmbeddingRunRepository.ts';
 import { DrizzleEmbeddingRepository } from '../repositories/DrizzleEmbeddingRepository.ts';
 import { EmbedChunkUseCaseImpl } from '../../../features/knowledge-embedding/application/contracts/EmbeddingWorkflowContracts.ts';
 import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/application/usecases/SearchKnowledgeUseCase.ts';
@@ -140,11 +141,12 @@ if (typeof (container as any).registerSingleton === 'function') {
 		useFactory: (c) => new ExtractParsedDocumentUseCase(c.resolve('ExtractedDocumentTextRepository' as any)),
 	});
 	container.registerSingleton('InMemoryWorkflowQueue', InMemoryWorkflowQueue);
-	container.registerSingleton('KnowledgeEmbeddingWorkflowRepository', DrizzleDocumentChunkingWorkflowRepository);
+	container.registerSingleton('KnowledgeEmbeddingRunRepository', DrizzleKnowledgeEmbeddingRunRepository);
+	container.registerSingleton('DocumentChunkingWorkflowRepository', DrizzleDocumentChunkingWorkflowRepository);
 	container.register('KnowledgeEmbeddingDocumentService', {
 		useFactory: (c) => new KnowledgeEmbeddingDocumentService({
 			documentRepository: c.resolve('DocumentRepository' as any),
-			workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+			workflowRepository: c.resolve('DocumentChunkingWorkflowRepository' as any),
 			fileSystem: c.resolve('FileSystemAdapter' as any),
 			queue: c.resolve('InMemoryWorkflowQueue' as any),
 		}),
@@ -158,10 +160,11 @@ if (typeof (container as any).registerSingleton === 'function') {
 	});
 	container.register('RagPipelineOrchestrator', {
 		useFactory: (c) => new RagPipelineOrchestrator({
+			workflowRepository: c.resolve('KnowledgeEmbeddingRunRepository' as any),
 			queue: c.resolve('InMemoryWorkflowQueue' as any),
 			pipeline: {
 				documentRepository: c.resolve('DocumentRepository' as any),
-				workflowRepository: c.resolve('KnowledgeEmbeddingWorkflowRepository' as any),
+				workflowRepository: c.resolve('DocumentChunkingWorkflowRepository' as any),
 				parseDocument: c.resolve('ParseDocumentUseCase' as any),
 				extractParsedDocument: c.resolve('ExtractParsedDocumentUseCase' as any),
 				chunkDocument: c.resolve('ChunkDocumentUseCase' as any),

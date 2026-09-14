@@ -23,7 +23,7 @@ export interface RagPipelineExecutionDependencies {
 }
 
 export interface RagPipelineOrchestratorDependencies {
-  workflowRepository?: KnowledgeEmbeddingRunRepository;
+  workflowRepository: KnowledgeEmbeddingRunRepository;
   queue?: InMemoryWorkflowQueue;
   pipeline?: RagPipelineExecutionDependencies;
 }
@@ -34,7 +34,7 @@ export class RagPipelineOrchestrator {
   private readonly pipeline?: RagPipelineExecutionDependencies;
 
   constructor(deps: RagPipelineOrchestratorDependencies) {
-    this.workflowRepository = deps.workflowRepository as KnowledgeEmbeddingRunRepository;
+    this.workflowRepository = deps.workflowRepository;
     this.queue = deps.queue ?? new InMemoryWorkflowQueue();
     this.pipeline = deps.pipeline;
   }
