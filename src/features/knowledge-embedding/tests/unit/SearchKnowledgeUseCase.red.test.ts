@@ -1,12 +1,12 @@
-import { LocalEmbeddingService } from '../../application/services/EmbeddingRuntimeService';
-import { DefaultKeywordSearchService } from '../../application/services/KeywordSearchService';
-import { DefaultSemanticSearchService } from '../../application/services/SemanticSearchService';
+import { LocalEmbeddingService } from '../../embedding/application/services/EmbeddingRuntimeService';
+import { DefaultKeywordSearchService } from '../../retrieval/application/services/KeywordSearchService';
+import { DefaultSemanticSearchService } from '../../retrieval/application/services/SemanticSearchService';
 import type {
   KnowledgeSearchRequest,
   KnowledgeSearchResult,
-} from '../../application/contracts/KnowledgeSearchContracts';
-import type { SemanticSearchQueryRepository } from '../../application/contracts/SemanticSearchContracts';
-import { SearchKnowledgeUseCaseImpl } from '../../application/usecases/SearchKnowledgeUseCase';
+} from '../../retrieval/application/contracts/KnowledgeSearchContracts';
+import type { SemanticSearchQueryRepository } from '../../retrieval/application/contracts/SemanticSearchContracts';
+import { SearchKnowledgeUseCaseImpl } from '../../retrieval/application/usecases/SearchKnowledgeUseCase';
 
 describe('SearchKnowledgeUseCase (red)', () => {
   const repository: SemanticSearchQueryRepository = {

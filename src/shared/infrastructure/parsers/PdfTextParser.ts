@@ -1,1 +1,1 @@
-export { PdfTextParser } from '../../../features/knowledge-embedding/infrastructure/parsers/PdfTextParser';
+export { PdfTextParser } from '../../../features/knowledge-embedding/document-processing/infrastructure/parsers/PdfTextParser';

@@ -1,14 +1,63 @@
-import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from '../../application/services/InMemoryWorkflowQueue';
+import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from '../../workflow/application/services/InMemoryWorkflowQueue';
 import {
   KnowledgeEmbeddingQueueConsumer,
   type KnowledgeEmbeddingPipelineExecutor,
-} from '../../application/services/KnowledgeEmbeddingQueueConsumer';
+} from '../../workflow/application/services/KnowledgeEmbeddingQueueConsumer';
 
 function item(runId: string, documentId = runId): KnowledgeEmbeddingQueueItem {
   return { runId, documentId, documentVersion: 1 };
 }
 
 describe('KnowledgeEmbeddingQueueConsumer', () => {
+  it('does not subscribe twice when start is called repeatedly', () => {
+    const queue = new InMemoryWorkflowQueue();
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, {
+      executeQueuedItem: jest.fn().mockResolvedValue(undefined),
+    });
+
+    consumer.start();
+    expect(() => consumer.start()).not.toThrow();
+
+    consumer.stop();
+  });
+
+  it('shares one in-flight drain when drain is called concurrently', async () => {
+    const queue = new InMemoryWorkflowQueue();
+    let releaseExecution: (() => void) | undefined;
+    const execution = new Promise<void>((resolve) => {
+      releaseExecution = resolve;
+    });
+    const executeQueuedItem = jest.fn().mockReturnValue(execution);
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
+
+    queue.hydrate([item('run-1')]);
+    const firstDrain = consumer.drain();
+    const secondDrain = consumer.drain();
+
+    expect(secondDrain).toBe(firstDrain);
+    expect(executeQueuedItem).toHaveBeenCalledTimes(1);
+    releaseExecution?.();
+    await firstDrain;
+  });
+
+  it('notifies consumer listeners after processing and supports listener cleanup', async () => {
+    const queue = new InMemoryWorkflowQueue();
+    const executeQueuedItem = jest.fn().mockResolvedValue(undefined);
+    const consumer = new KnowledgeEmbeddingQueueConsumer(queue, { executeQueuedItem });
+    const listener = jest.fn();
+    const removeListener = consumer.addListener(listener);
+
+    queue.hydrate([item('run-1')]);
+    await consumer.drain();
+
+    expect(listener).toHaveBeenCalledWith(item('run-1'));
+    removeListener();
+    queue.hydrate([item('run-2')]);
+    await consumer.drain();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('processes work published after the consumer starts', async () => {
     const queue = new InMemoryWorkflowQueue();
     const executeQueuedItem = jest.fn().mockResolvedValue(undefined);

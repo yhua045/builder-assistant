@@ -51,7 +51,7 @@ jest.mock('react-native-sqlite-storage', () => {
 });
 
 import { initDatabase, getDatabase } from '../../../../shared/infrastructure/database/connection';
-import { DrizzleSemanticSearchRepository } from '../../infrastructure/repositories/DrizzleSemanticSearchRepository';
+import { DrizzleSemanticSearchRepository } from '../../retrieval/infrastructure/repositories/DrizzleSemanticSearchRepository';
 
 describe('DrizzleSemanticSearchRepository (red)', () => {
   beforeEach(async () => {

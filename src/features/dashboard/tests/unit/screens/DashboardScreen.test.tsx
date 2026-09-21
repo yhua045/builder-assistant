@@ -58,7 +58,7 @@ jest.mock('../../../../tasks/screens/TaskScreen', () => ({
   default: () => null,
 }));
 
-jest.mock('../../../../knowledge-embedding/screens/KnowledgeEmbeddingLaunchScreen', () => ({
+jest.mock('../../../../knowledge-embedding/ui/screens/KnowledgeEmbeddingLaunchScreen', () => ({
   __esModule: true,
   default: () => null,
 }));

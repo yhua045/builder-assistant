@@ -1,5 +1,5 @@
-import { DefaultDocumentParserService, type DocumentParseInput, ParseWorkflowState } from '../../application/services/DocumentParserService';
-import { PdfTextParser } from '../../infrastructure/parsers/PdfTextParser';
+import { DefaultDocumentParserService, type DocumentParseInput, ParseWorkflowState } from '../../document-processing/application/services/DocumentParserService';
+import { PdfTextParser } from '../../document-processing/infrastructure/parsers/PdfTextParser';
 import { ParserRegistry } from '../../../../shared/application/services/DocumentParserService';
 import type { DocumentVersion } from '../../../../shared/domain/entities/DocumentVersion';
 

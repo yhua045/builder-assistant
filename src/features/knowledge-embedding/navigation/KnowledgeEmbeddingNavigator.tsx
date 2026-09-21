@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import KnowledgeEmbeddingLaunchScreen from '../screens/KnowledgeEmbeddingLaunchScreen';
+import KnowledgeEmbeddingLaunchScreen from '../ui/screens/KnowledgeEmbeddingLaunchScreen';
 
 export type KnowledgeEmbeddingStackParamList = {
   KnowledgeEmbeddingLaunch: undefined;

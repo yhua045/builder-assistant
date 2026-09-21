@@ -40,8 +40,8 @@ import { initDatabase } from './src/shared/infrastructure/database/connection';
 import { seedDemoData } from './src/shared/infrastructure/demo/seedDemoData';
 import { resetDemoData } from './src/shared/infrastructure/demo/resetDemoData';
 import { SEED_DEMO_DATA, RESET_DEMO_DATA } from '@env';
-import { RagPipelineOrchestrator } from './src/features/knowledge-embedding/application/services/RagPipelineOrchestrator';
-import { KnowledgeEmbeddingQueueConsumer } from './src/features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer';
+import { RagPipelineOrchestrator } from './src/features/knowledge-embedding/workflow/application/services/RagPipelineOrchestrator';
+import { KnowledgeEmbeddingQueueConsumer } from './src/features/knowledge-embedding/workflow/application/services/KnowledgeEmbeddingQueueConsumer';
 
 if (__DEV__) {
   verifyInstallation();
@@ -92,8 +92,6 @@ function AppContent() {
 
   // Initialize database and seed demo data on app startup
   useEffect(() => {
-    let consumer: KnowledgeEmbeddingQueueConsumer | undefined;
-
     const initializeApp = async () => {
       try {
         await initDatabase();
@@ -112,7 +110,7 @@ function AppContent() {
 
         const orchestrator = container.resolve<RagPipelineOrchestrator>('RagPipelineOrchestrator');
         await orchestrator.restorePipelineQueue();
-        consumer = container.resolve<KnowledgeEmbeddingQueueConsumer>('KnowledgeEmbeddingQueueConsumer');
+        const consumer = container.resolve<KnowledgeEmbeddingQueueConsumer>('KnowledgeEmbeddingQueueConsumer');
         consumer.start();
       } catch (error) {
         console.error('[app] Initialization error:', error);
@@ -120,8 +118,6 @@ function AppContent() {
     };
 
     initializeApp();
-
-    return () => consumer?.stop();
   }, []);
 
   const nwColor = nwUseColorScheme();

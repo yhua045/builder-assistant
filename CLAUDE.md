@@ -18,7 +18,7 @@ Feature domain models:      src/features/<feature>/domain/entities/
 Feature repositories:       src/features/<feature>/infrastructure/repositories/
 Feature use cases:          src/features/<feature>/application/usecases/
 Feature services:           src/features/<feature>/application/services/
-Knowledge queue worker:     src/features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts
+Knowledge queue worker:     src/features/knowledge-embedding/workflow/application/services/KnowledgeEmbeddingQueueConsumer.ts
 Shared DB schema:           src/shared/infrastructure/database/schema.ts
 Shared DI wiring:           src/shared/infrastructure/di/registerServices.ts
 App bootstrap:              src/app/**

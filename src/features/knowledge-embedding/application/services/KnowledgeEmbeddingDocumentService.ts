@@ -6,12 +6,12 @@ import type {
   KnowledgeEmbeddingDocumentService as KnowledgeEmbeddingDocumentServiceContract,
   KnowledgeEmbeddingRunView,
 } from '../contracts/KnowledgeEmbeddingRunContracts';
-import type { KnowledgeEmbeddingRunStage, KnowledgeEmbeddingRunStatus } from '../../domain/entities/KnowledgeEmbeddingRun';
+import type { KnowledgeEmbeddingRunStage, KnowledgeEmbeddingRunStatus } from '../../workflow/domain/entities/KnowledgeEmbeddingRun';
 import type { Document } from '../../../../shared/domain/entities/Document';
 import type { DocumentRepository } from '../../../../shared/domain/repositories/DocumentRepository';
 import type { DocumentChunkingWorkflowRecord, DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
 import type { IFileSystemAdapter } from '../../../../shared/infrastructure/files/IFileSystemAdapter';
-import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from './InMemoryWorkflowQueue';
+import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from '../../workflow/application/services/InMemoryWorkflowQueue';
 
 interface DeletableWorkflowRepository extends DocumentChunkingWorkflowRepository {
   deleteByDocumentVersion?(documentId: string, version: number): Promise<void>;
@@ -219,8 +219,10 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
       return { run: this.toView(existing, document), alreadyHandled: true };
     }
 
+    const storageFilename = command.metadata.name.replace(/[\\/]/g, '_');
+    const uniqueStorageFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${storageFilename}`;
     const storedPath = command.metadata.uri
-      ? await this.fileSystem.copyToAppStorage(command.metadata.uri, command.metadata.name)
+      ? await this.fileSystem.copyToAppStorage(command.metadata.uri, uniqueStorageFilename)
       : undefined;
     console.info('[knowledge-embedding] document copied to app storage', {
       documentId: command.documentId,
@@ -236,13 +238,32 @@ export class KnowledgeEmbeddingDocumentService implements KnowledgeEmbeddingDocu
       if (storedPath) await this.fileSystem.deleteFile(storedPath).catch(() => undefined);
       throw error;
     }
-    const matchingDocument = contentHash
-      ? (await this.documentRepository.findAll({ checksum: contentHash }))
-        .find((candidate) => candidate.id !== command.documentId && !candidate.ragSourceDocumentId)
-      : undefined;
-    const matchingRun = matchingDocument
-      ? await this.workflowRepository.findByDocumentVersion(matchingDocument.id, command.documentVersion)
-      : null;
+    const matchingDocuments = contentHash
+      ? (await this.documentRepository.findAll({ checksum: contentHash, projectId: command.projectId }))
+        .filter((candidate) => candidate.id !== command.documentId && !candidate.ragSourceDocumentId)
+      : [];
+    const matchingRuns = await Promise.all(matchingDocuments.map(async (candidate) => ({
+      document: candidate,
+      run: await this.workflowRepository.findByDocumentVersion(candidate.id, command.documentVersion),
+    })));
+    const completedMatch = matchingRuns
+      .filter(({ run }) => run?.status === 'completed')
+      .sort((left, right) => {
+        const updatedAtDifference = (right.run?.updatedAt ?? 0) - (left.run?.updatedAt ?? 0);
+        return updatedAtDifference || left.document.id.localeCompare(right.document.id);
+      })[0];
+    const queuedMatch = matchingRuns.find(({ run }) => run?.status === 'pending' || run?.status === 'running');
+
+    if (!completedMatch && queuedMatch?.run) {
+      if (storedPath) await this.fileSystem.deleteFile(storedPath).catch(() => undefined);
+      return {
+        run: this.toView(queuedMatch.run, queuedMatch.document, queuedMatch.document.id),
+        alreadyHandled: true,
+      };
+    }
+
+    const matchingDocument = completedMatch?.document;
+    const matchingRun = completedMatch?.run ?? null;
 
     const document: Document = {
       id: command.documentId,

@@ -7,7 +7,7 @@ import {
 	LOCATION_REMOTE_ENABLED as ENV_LOCATION_REMOTE_ENABLED,
 	VOICE_USE_MOCK_PARSER as ENV_VOICE_USE_MOCK_PARSER,
 } from '@env';
-import { container, instancePerContainerCachingFactory } from 'tsyringe';
+import { container, instanceCachingFactory } from 'tsyringe';
 import { DrizzleProjectRepository } from '../../../features/projects/infrastructure/DrizzleProjectRepository.ts';
 import { DrizzleInvoiceRepository } from '../../../features/invoices/infrastructure/DrizzleInvoiceRepository.ts';
 import { DrizzlePaymentRepository } from '../../../features/payments/infrastructure/DrizzlePaymentRepository.ts';
@@ -48,28 +48,28 @@ import { MlKitOcrAdapter } from '../ocr/MlKitOcrAdapter.ts';
 import { ApiOcrAdapter } from '../ocr/ApiOcrAdapter.ts';
 import { OcrAdapterFactory } from '../ocr/OcrAdapterFactory.ts';
 import { DefaultTextNormalizer, DefaultDocumentParser, ParserRegistry } from '../../application/services/DocumentParserService';
-import { PdfTextParser } from '../../../features/knowledge-embedding/infrastructure/parsers/PdfTextParser.ts';
-import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ParseDocumentUseCase.ts';
-import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase.ts';
-import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
-import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/application/usecases/ChunkDocumentUseCase.ts';
-import { InMemoryWorkflowQueue } from '../../../features/knowledge-embedding/application/services/InMemoryWorkflowQueue.ts';
-import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingDocumentService.ts';
-import { KnowledgeEmbeddingQueueConsumer } from '../../../features/knowledge-embedding/application/services/KnowledgeEmbeddingQueueConsumer.ts';
-import { RagPipelineOrchestrator } from '../../../features/knowledge-embedding/application/services/RagPipelineOrchestrator.ts';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
-import { DrizzleKnowledgeEmbeddingRunRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleKnowledgeEmbeddingRunRepository.ts';
+import { PdfTextParser } from '../../../features/knowledge-embedding/document-processing/infrastructure/parsers/PdfTextParser.ts';
+import { ParseDocumentUseCase } from '../../../features/knowledge-embedding/document-processing/application/usecases/ParseDocumentUseCase.ts';
+import { ExtractParsedDocumentUseCase } from '../../../features/knowledge-embedding/document-processing/application/usecases/ExtractParsedDocumentUseCase.ts';
+import { DrizzleExtractedDocumentTextRepository } from '../../../features/knowledge-embedding/document-processing/infrastructure/repositories/DrizzleExtractedDocumentTextRepository.ts';
+import { ChunkDocumentUseCase } from '../../../features/knowledge-embedding/document-processing/application/usecases/ChunkDocumentUseCase.ts';
+import { InMemoryWorkflowQueue } from '../../../features/knowledge-embedding/workflow/application/services/InMemoryWorkflowQueue.ts';
+import { KnowledgeEmbeddingDocumentService } from '../../../features/knowledge-embedding/document-intake/application/services/KnowledgeEmbeddingDocumentService.ts';
+import { KnowledgeEmbeddingQueueConsumer } from '../../../features/knowledge-embedding/workflow/application/services/KnowledgeEmbeddingQueueConsumer.ts';
+import { RagPipelineOrchestrator } from '../../../features/knowledge-embedding/workflow/application/services/RagPipelineOrchestrator.ts';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../../features/knowledge-embedding/workflow/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository.ts';
+import { DrizzleKnowledgeEmbeddingRunRepository } from '../../../features/knowledge-embedding/workflow/infrastructure/repositories/DrizzleKnowledgeEmbeddingRunRepository.ts';
 import { DrizzleEmbeddingRepository } from '../repositories/DrizzleEmbeddingRepository.ts';
-import { EmbedChunkUseCaseImpl } from '../../../features/knowledge-embedding/application/contracts/EmbeddingWorkflowContracts.ts';
-import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/application/usecases/SearchKnowledgeUseCase.ts';
-import { DefaultKeywordSearchService } from '../../../features/knowledge-embedding/application/services/KeywordSearchService.ts';
-import { DefaultSemanticSearchService } from '../../../features/knowledge-embedding/application/services/SemanticSearchService.ts';
-import { DrizzleSemanticSearchRepository } from '../../../features/knowledge-embedding/infrastructure/repositories/DrizzleSemanticSearchRepository.ts';
+import { EmbedChunkUseCaseImpl } from '../../../features/knowledge-embedding/embedding/application/usecases/EmbedChunkUseCase.ts';
+import { SearchKnowledgeUseCaseImpl } from '../../../features/knowledge-embedding/retrieval/application/usecases/SearchKnowledgeUseCase.ts';
+import { DefaultKeywordSearchService } from '../../../features/knowledge-embedding/retrieval/application/services/KeywordSearchService.ts';
+import { DefaultSemanticSearchService } from '../../../features/knowledge-embedding/retrieval/application/services/SemanticSearchService.ts';
+import { DrizzleSemanticSearchRepository } from '../../../features/knowledge-embedding/retrieval/infrastructure/repositories/DrizzleSemanticSearchRepository.ts';
 import {
 	DefaultEmbeddingModelFactory,
 	EmbeddingProviderConfig,
 	EmbeddingRuntimeService,
-} from '../../../features/knowledge-embedding/application/services/EmbeddingRuntimeService.ts';
+} from '../../../features/knowledge-embedding/embedding/application/services/EmbeddingRuntimeService.ts';
 import { AsyncStorageAnalyticsAdapter } from '../analytics/AsyncStorageAnalyticsAdapter.ts';
 import { CompositeAnalyticsAdapter } from '../analytics/CompositeAnalyticsAdapter.ts';
 import { FirebaseAnalyticsAdapter } from '../analytics/FirebaseAnalyticsAdapter.ts';
@@ -174,7 +174,7 @@ if (typeof (container as any).registerSingleton === 'function') {
 		}),
 	});
 	container.register('KnowledgeEmbeddingQueueConsumer', {
-		useFactory: instancePerContainerCachingFactory((c) => new KnowledgeEmbeddingQueueConsumer(
+		useFactory: instanceCachingFactory((c) => new KnowledgeEmbeddingQueueConsumer(
 			c.resolve('InMemoryWorkflowQueue' as any),
 			c.resolve('RagPipelineOrchestrator' as any),
 		)),

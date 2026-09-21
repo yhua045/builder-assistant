@@ -1,4 +1,4 @@
-import type { KnowledgeEmbeddingRun, KnowledgeEmbeddingRunStage, KnowledgeEmbeddingRunStatus } from '../../domain/entities/KnowledgeEmbeddingRun';
+import type { KnowledgeEmbeddingRun, KnowledgeEmbeddingRunStage, KnowledgeEmbeddingRunStatus } from '../../workflow/domain/entities/KnowledgeEmbeddingRun';
 
 export interface KnowledgeEmbeddingRunDocumentMetadata {
   name: string;

@@ -1,8 +1,8 @@
-import { ChunkDocumentUseCase } from '../../application/usecases/ChunkDocumentUseCase';
-import { InMemoryDocumentChunkingWorkflowRepository } from '../../infrastructure/repository/InMemoryDocumentChunkingWorkflowRepository';
-import type { ChunkRepository } from '../../infrastructure/repositories/DrizzleChunkRepository';
-import type { KnowledgeChunk } from '../../domain/entities/KnowledgeChunk';
-import type { ChunkDocumentProgress, ChunkDocumentProgressRepository } from '../../domain/repositories/ChunkDocumentProgressRepository';
+import { ChunkDocumentUseCase } from '../../document-processing/application/usecases/ChunkDocumentUseCase';
+import { InMemoryDocumentChunkingWorkflowRepository } from '../../document-processing/infrastructure/repository/InMemoryDocumentChunkingWorkflowRepository';
+import type { ChunkRepository } from '../../document-processing/infrastructure/repositories/DrizzleChunkRepository';
+import type { KnowledgeChunk } from '../../document-processing/domain/entities/KnowledgeChunk';
+import type { ChunkDocumentProgress, ChunkDocumentProgressRepository } from '../../document-processing/domain/repositories/ChunkDocumentProgressRepository';
 
 function createProgressRepository(): ChunkDocumentProgressRepository {
   let progress: ChunkDocumentProgress | null = null;

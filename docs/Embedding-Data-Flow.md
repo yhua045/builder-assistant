@@ -41,6 +41,30 @@ sequenceDiagram
 
 `KnowledgeEmbeddingDocumentService` persists the document and parent workflow before publishing a runtime queue item. At app startup, `RagPipelineOrchestrator.restorePipelineQueue()` hydrates pending, partial, and running parent rows, then the container-cached `KnowledgeEmbeddingQueueConsumer` drains the shared queue. The consumer prevents concurrent execution of the same run and delegates stage execution to `RagPipelineOrchestrator.executeQueuedItem()`.
 
+### RagPipelineOrchestrator Control Flow
+
+`RagPipelineOrchestrator.executeQueuedItem()` is the durable workflow executor. Its current control flow is:
+
+1. Load the workflow by `(document_id, document_version)` and verify that its ID matches the queue item's `runId`.
+2. Return immediately for `completed` or `cancelled` records.
+3. Load the persisted `Document`; fail if the document is missing.
+4. Mark the parent workflow `running/parsing`.
+5. Try to reload `extracted_document_text`. If no stored result is available, invoke `ParseDocumentUseCase` with the document path/OCR text and then reload the extracted artifact.
+6. Mark the workflow `running/chunking` and invoke `ChunkDocumentUseCase`.
+7. Mark the workflow `running/embedding` and embed only non-superseded chunks.
+8. Skip any chunk that already has an embedding, persist each new vector, and mark the workflow `completed/completed`.
+9. On any exception, mark the workflow `failed` with the current `workflowState`, error message, incremented `retryCount`, and `resumeFromCheckpoint = true`, then rethrow to the queue consumer.
+
+The queue consumer catches the exception after the workflow failure has been persisted. It releases the run's single-flight lock, so a later retry or startup recovery can enqueue the same run without concurrent execution. It does not itself retry with a delay or change workflow state.
+
+The executor is idempotent at the artifact boundaries:
+
+- Parsing first reloads the stored extracted artifact, so a completed parse is reused.
+- Chunking loads durable page progress and existing non-superseded chunks; completed pages and pages with existing chunks are skipped.
+- Embedding checks `knowledge_embeddings` by chunk ID before creating a vector.
+
+These safeguards make a full pipeline replay materially safe, but they are not equivalent to stage-aware resumption. The current executor always enters through `parsing`, even when the durable record says `chunking`, `embedding`, or `failed` at a later stage. It therefore relies on the idempotency checks above instead of selecting a starting stage.
+
 ## Document Capture and Content Identity
 
 `documents` is the user-facing file record. It is separate from the RAG workflow and remains one row per uploaded document, including exact-content duplicates.
@@ -201,6 +225,31 @@ The embedding runtime chooses the configured provider, native ExecuTorch when av
 ### 6. Complete and recover
 
 Parent workflow rows carry status, stage, retry, and checkpoint fields; `knowledge_detail_runs` provides the finer-grained stage model. `RagPipelineOrchestrator.restorePipelineQueue()` rehydrates `pending`, `partial`, and `running` rows into `InMemoryWorkflowQueue`, and the consumer drains them after startup. Resume/retry must operate against the existing document/version run and must not create duplicate chunks or embeddings for completed work.
+
+### Resume and Retry Decision
+
+The durable `workflowState`, `checkpointId`, `resumeFromCheckpoint`, `retryCount`, and chunk-progress repository together define recovery state. The intended policy is:
+
+| Failed or interrupted stage | Resume/retry entry point | Work to repeat | Durable guard |
+|---|---|---|---|
+| `parsing` / `validation_*` | Parse stage | Read/extract the source, then continue to chunking | Reuse `extracted_document_text` when it exists; persist only a non-empty result. |
+| `chunking` / `chunking_in_progress` | Chunk stage | Retry only incomplete pages/units | `ChunkDocumentUseCase` reloads page progress and existing chunks, skips completed units, and records fallback/failure details. |
+| `embedding` | Embed stage | Retry only chunks without vectors | `embedChunks()` checks `findByChunkId()` before invoking the embedding service. |
+| `completed` | No retry | None | `executeQueuedItem()` returns the completed record. |
+| `cancelled` | No retry | None | Cancellation is terminal for this run. |
+
+The recommended implementation is to make `executeQueuedItem()` choose the starting stage from the persisted record instead of unconditionally writing `running/parsing`:
+
+1. Reload the workflow immediately before execution; reject stale queue identity and terminal states.
+2. If the stage is parsing or no extracted artifact exists, parse and persist the artifact.
+3. If the stage is chunking, invoke chunking with the durable extracted artifact. Let page progress and existing chunks determine the remaining work.
+4. If the stage is embedding, load the current non-superseded chunks and invoke embedding. Existing vectors determine the remaining work.
+5. Persist a stage checkpoint only after that stage's durable output is complete.
+6. Mark the parent completed only after all active chunks have embeddings.
+
+The retry API should transition a retryable `failed` or `partial` record to `running` while preserving its last failed stage, checkpoint, and retry count increment. It should then enqueue the same `(runId, documentId, documentVersion)` item. It must not create a new parent run or reset the stage to parsing. A retry of failed parsing must repeat parsing; a retry of failed chunking must preserve extracted text and retry incomplete chunking units; a retry of failed embedding must preserve chunks and retry only missing vectors.
+
+The current implementation partially supports this policy: `KnowledgeEmbeddingDocumentService.retryDocument()` preserves `workflowState`, `RagPipelineOrchestrator.restorePipelineQueue()` rehydrates pending/partial/running rows, and the idempotent chunk/embedding operations protect completed work. The missing behavior is stage dispatch in `executeQueuedItem()` and a consistent distinction between `partial` (recoverable checkpoint) and `failed` (terminal until explicitly retried). Until that is implemented, recovery should be described as safe replay from the beginning of the orchestrator method, not true stage-aware resume.
 
 ## Retrieval Path
 

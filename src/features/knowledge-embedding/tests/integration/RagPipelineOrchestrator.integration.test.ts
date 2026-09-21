@@ -50,19 +50,19 @@ jest.mock('react-native-sqlite-storage', () => {
 
 import type { Document } from '../../../../shared/domain/entities/Document';
 import { ParserRegistry } from '../../../../shared/application/services/DocumentParserService';
-import { PdfTextParser } from '../../infrastructure/parsers/PdfTextParser';
+import { PdfTextParser } from '../../document-processing/infrastructure/parsers/PdfTextParser';
 import { closeDatabase, getDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection';
 import { DrizzleDocumentRepository } from '../../../../shared/infrastructure/repositories/DrizzleDocumentRepository';
 import { DrizzleEmbeddingRepository } from '../../../../shared/infrastructure/repositories/DrizzleEmbeddingRepository';
-import { DrizzleExtractedDocumentTextRepository } from '../../infrastructure/repositories/DrizzleExtractedDocumentTextRepository';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
-import { DrizzleKnowledgeEmbeddingRunRepository } from '../../infrastructure/repositories/DrizzleKnowledgeEmbeddingRunRepository';
-import { ParseDocumentUseCase } from '../../application/usecases/ParseDocumentUseCase';
-import { ExtractParsedDocumentUseCase } from '../../application/usecases/ExtractParsedDocumentUseCase';
-import { ChunkDocumentUseCase } from '../../application/usecases/ChunkDocumentUseCase';
-import { InMemoryWorkflowQueue } from '../../application/services/InMemoryWorkflowQueue';
-import { KnowledgeEmbeddingQueueConsumer } from '../../application/services/KnowledgeEmbeddingQueueConsumer';
-import { RagPipelineOrchestrator } from '../../application/services/RagPipelineOrchestrator';
+import { DrizzleExtractedDocumentTextRepository } from '../../document-processing/infrastructure/repositories/DrizzleExtractedDocumentTextRepository';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../workflow/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import { DrizzleKnowledgeEmbeddingRunRepository } from '../../workflow/infrastructure/repositories/DrizzleKnowledgeEmbeddingRunRepository';
+import { ParseDocumentUseCase } from '../../document-processing/application/usecases/ParseDocumentUseCase';
+import { ExtractParsedDocumentUseCase } from '../../document-processing/application/usecases/ExtractParsedDocumentUseCase';
+import { ChunkDocumentUseCase } from '../../document-processing/application/usecases/ChunkDocumentUseCase';
+import { InMemoryWorkflowQueue } from '../../workflow/application/services/InMemoryWorkflowQueue';
+import { KnowledgeEmbeddingQueueConsumer } from '../../workflow/application/services/KnowledgeEmbeddingQueueConsumer';
+import { RagPipelineOrchestrator } from '../../workflow/application/services/RagPipelineOrchestrator';
 
 const documentText = 'The project schedule requires concrete delivery before the final inspection. '.repeat(12).trim();
 

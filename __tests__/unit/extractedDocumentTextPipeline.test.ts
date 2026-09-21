@@ -1,7 +1,7 @@
-import { ExtractParsedDocumentUseCase } from '../../src/features/knowledge-embedding/application/usecases/ExtractParsedDocumentUseCase';
-import type { ExtractedDocumentTextRepository } from '../../src/features/knowledge-embedding/domain/repositories/ExtractedDocumentTextRepository';
-import type { ExtractedDocumentText } from '../../src/features/knowledge-embedding/domain/entities/ExtractedDocumentText';
-import { ParseDocumentUseCase } from '../../src/features/knowledge-embedding/application/usecases/ParseDocumentUseCase';
+import { ExtractParsedDocumentUseCase } from '../../src/features/knowledge-embedding/document-processing/application/usecases/ExtractParsedDocumentUseCase';
+import type { ExtractedDocumentTextRepository } from '../../src/features/knowledge-embedding/document-processing/domain/repositories/ExtractedDocumentTextRepository';
+import type { ExtractedDocumentText } from '../../src/features/knowledge-embedding/document-processing/domain/entities/ExtractedDocumentText';
+import { ParseDocumentUseCase } from '../../src/features/knowledge-embedding/document-processing/application/usecases/ParseDocumentUseCase';
 import type { ParsedDocumentElement } from '../../src/shared/domain/services/DocumentParser';
 
 const extractedText: ExtractedDocumentText = {

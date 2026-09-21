@@ -1,5 +1,5 @@
-import { KnowledgeEmbeddingRunEntity, type KnowledgeEmbeddingRun } from '../../domain/entities/KnowledgeEmbeddingRun';
-import { KnowledgeDetailRunEntity, type KnowledgeDetailRun } from '../../domain/entities/KnowledgeDetailRun';
+import { KnowledgeEmbeddingRunEntity, type KnowledgeEmbeddingRun } from '../../workflow/domain/entities/KnowledgeEmbeddingRun';
+import { KnowledgeDetailRunEntity, type KnowledgeDetailRun } from '../../workflow/domain/entities/KnowledgeDetailRun';
 
 describe('KnowledgeEmbeddingRunRefactor', () => {
   it('creates and starts a valid parent run for a document workflow', () => {

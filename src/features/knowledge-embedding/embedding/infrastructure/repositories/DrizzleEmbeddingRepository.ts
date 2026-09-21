@@ -1,0 +1,1 @@
+export { DrizzleEmbeddingRepository } from '../../../../../shared/infrastructure/repositories/DrizzleEmbeddingRepository';

@@ -1,7 +1,7 @@
-import { KnowledgeEmbeddingRunEntity } from '../../domain/entities/KnowledgeEmbeddingRun';
-import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from '../../application/services/InMemoryWorkflowQueue';
-import { RagPipelineOrchestrator } from '../../application/services/RagPipelineOrchestrator';
-import type { KnowledgeEmbeddingRunRepository } from '../../domain/repositories/KnowledgeEmbeddingRunRepository';
+import { KnowledgeEmbeddingRunEntity } from '../../workflow/domain/entities/KnowledgeEmbeddingRun';
+import { InMemoryWorkflowQueue, type KnowledgeEmbeddingQueueItem } from '../../workflow/application/services/InMemoryWorkflowQueue';
+import { RagPipelineOrchestrator } from '../../workflow/application/services/RagPipelineOrchestrator';
+import type { KnowledgeEmbeddingRunRepository } from '../../workflow/domain/repositories/KnowledgeEmbeddingRunRepository';
 
 describe('InMemoryWorkflowQueue', () => {
   it('hydrates pending, partial, and interrupted running rows', async () => {

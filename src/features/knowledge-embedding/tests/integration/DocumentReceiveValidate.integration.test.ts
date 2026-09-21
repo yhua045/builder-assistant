@@ -50,11 +50,11 @@ jest.mock('react-native-sqlite-storage', () => {
   };
 });
 
-import { ReceiveDocumentUseCase } from '../../application/usecases/ReceiveDocumentUseCase';
-import { ValidateDocumentUseCase } from '../../application/usecases/ValidateDocumentUseCase';
+import { ReceiveDocumentUseCase } from '../../document-intake/application/usecases/ReceiveDocumentUseCase';
+import { ValidateDocumentUseCase } from '../../document-intake/application/usecases/ValidateDocumentUseCase';
 import type { DocumentChunkingWorkflowRecord, DocumentChunkingWorkflowRepository } from '../../../../shared/domain/repositories/DocumentChunkingWorkflowRepository';
 import { closeDatabase, initDatabase } from '../../../../shared/infrastructure/database/connection';
-import { DrizzleDocumentChunkingWorkflowRepository } from '../../infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
+import { DrizzleDocumentChunkingWorkflowRepository } from '../../workflow/infrastructure/repositories/DrizzleDocumentChunkingWorkflowRepository';
 
 class InMemoryCheckpointRepository implements DocumentChunkingWorkflowRepository {
   public records: DocumentChunkingWorkflowRecord[] = [];

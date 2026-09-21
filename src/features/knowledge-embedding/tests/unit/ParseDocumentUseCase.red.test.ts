@@ -1,9 +1,9 @@
 import {
   ParseWorkflowState,
   type DocumentParseInput,
-} from '../../application/services/DocumentParserService';
-import { ParseDocumentUseCase, type ParseDocumentUseCaseContract } from '../../application/usecases/ParseDocumentUseCase';
-import { PdfTextParser } from '../../infrastructure/parsers/PdfTextParser';
+} from '../../document-processing/application/services/DocumentParserService';
+import { ParseDocumentUseCase, type ParseDocumentUseCaseContract } from '../../document-processing/application/usecases/ParseDocumentUseCase';
+import { PdfTextParser } from '../../document-processing/infrastructure/parsers/PdfTextParser';
 import { ParserRegistry } from '../../../../shared/application/services/DocumentParserService';
 
 describe('ParseDocumentUseCase red tests', () => {

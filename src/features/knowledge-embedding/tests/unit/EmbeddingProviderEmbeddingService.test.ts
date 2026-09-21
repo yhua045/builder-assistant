@@ -3,7 +3,7 @@ import {
   EmbeddingRuntimeService,
   LocalEmbeddingService,
   type AppEmbeddingCapabilityStore,
-} from '../../application/services/EmbeddingRuntimeService';
+} from '../../embedding/application/services/EmbeddingRuntimeService';
 
 describe('EmbeddingRuntimeService', () => {
   it('creates deterministic local embeddings with stored dimension and model metadata', async () => {

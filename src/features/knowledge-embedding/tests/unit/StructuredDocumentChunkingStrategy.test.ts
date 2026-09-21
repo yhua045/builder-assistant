@@ -1,4 +1,4 @@
-import { StructuredDocumentChunkingStrategy } from '../../application/services/StructuredDocumentChunkingStrategy';
+import { StructuredDocumentChunkingStrategy } from '../../document-processing/application/services/StructuredDocumentChunkingStrategy';
 import type { ParsedDocumentElement } from '../../../../shared/domain/services/DocumentParser';
 
 describe('StructuredDocumentChunkingStrategy', () => {

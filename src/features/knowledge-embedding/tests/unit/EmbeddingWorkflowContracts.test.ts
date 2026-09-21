@@ -1,12 +1,12 @@
 import {
-  EmbedChunkUseCaseImpl,
   EmbeddingWorkflowState,
-  QueryEmbeddingUseCaseImpl,
-} from '../../application/contracts/EmbeddingWorkflowContracts';
+} from '../../embedding/application/contracts/EmbeddingContracts';
+import { EmbedChunkUseCaseImpl } from '../../embedding/application/usecases/EmbedChunkUseCase';
+import { QueryEmbeddingUseCaseImpl } from '../../retrieval/application/usecases/QueryEmbeddingUseCase';
 import {
   DefaultEmbeddingModelFactory,
   EmbeddingRuntimeService,
-} from '../../application/services/EmbeddingRuntimeService';
+} from '../../embedding/application/services/EmbeddingRuntimeService';
 
 describe('Embedding workflow contracts', () => {
   it('exposes the simplified embedding workflow state model', () => {

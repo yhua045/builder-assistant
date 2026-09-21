@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 import '../../../../shared/infrastructure/di/registerServices';
-import { InMemoryWorkflowQueue } from '../../application/services/InMemoryWorkflowQueue';
-import { KnowledgeEmbeddingQueueConsumer } from '../../application/services/KnowledgeEmbeddingQueueConsumer';
+import { InMemoryWorkflowQueue } from '../../workflow/application/services/InMemoryWorkflowQueue';
+import { KnowledgeEmbeddingQueueConsumer } from '../../workflow/application/services/KnowledgeEmbeddingQueueConsumer';
 
 describe('knowledge embedding queue registration', () => {
   it('resolves one shared queue and one shared consumer', () => {
